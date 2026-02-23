@@ -1,24 +1,26 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import { useAuthStore } from "../contexts/authStore";
 
-// Auth pages
-import LoginPage from "../pages/auth/LoginPage";
-
-// Layout (placeholder – implemented in Sprint 2)
+// Layout
 import DashboardLayout from "../components/common/DashboardLayout";
 
-// Dashboard pages
+// Auth
+import LoginPage from "../pages/auth/LoginPage";
+
+// Dashboards
 import AdminDashboardPage from "../pages/dashboard/AdminDashboardPage";
 import OwnerDashboardPage from "../pages/dashboard/OwnerDashboardPage";
 
-// Building pages
+// Sprint 1
+import UsersPage from "../pages/users/UsersPage";
+import ProfilePage from "../pages/profile/ProfilePage";
+
+// Future sprints (stubs)
 import BuildingsPage from "../pages/buildings/BuildingsPage";
-
-// Expense pages
 import ExpensesPage from "../pages/expenses/ExpensesPage";
-
-// Payment pages
 import PaymentsPage from "../pages/payments/PaymentsPage";
+
+// ── Route guards ──────────────────────────────────────────────────────────────
 
 function RequireAuth({ children }) {
   const { accessToken } = useAuthStore();
@@ -32,6 +34,8 @@ function RequireAdmin({ children }) {
   return children;
 }
 
+// ── Router ────────────────────────────────────────────────────────────────────
+
 export default function AppRouter() {
   const { user } = useAuthStore();
 
@@ -40,7 +44,7 @@ export default function AppRouter() {
       {/* Public */}
       <Route path="/login" element={<LoginPage />} />
 
-      {/* Protected */}
+      {/* Protected – all routes share the DashboardLayout shell */}
       <Route
         path="/"
         element={
@@ -50,12 +54,18 @@ export default function AppRouter() {
         }
       >
         <Route index element={<Navigate to="/dashboard" replace />} />
+
+        {/* Dashboard – role-split */}
         <Route
           path="dashboard"
-          element={
-            user?.role === "admin" ? <AdminDashboardPage /> : <OwnerDashboardPage />
-          }
+          element={user?.role === "admin" ? <AdminDashboardPage /> : <OwnerDashboardPage />}
         />
+
+        {/* Sprint 1 */}
+        <Route path="profile" element={<ProfilePage />} />
+        <Route path="users" element={<RequireAdmin><UsersPage /></RequireAdmin>} />
+
+        {/* Sprint 2+ (stubs) */}
         <Route path="buildings" element={<RequireAdmin><BuildingsPage /></RequireAdmin>} />
         <Route path="expenses" element={<ExpensesPage />} />
         <Route path="payments" element={<PaymentsPage />} />
