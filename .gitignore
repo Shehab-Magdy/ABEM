@@ -1,0 +1,61 @@
+# ── Environment & secrets ─────────────────────────────────────────────────────
+.env
+.env.prod
+.env.local
+*.pem
+*-credentials.json
+firebase-credentials.json
+
+# ── Python / Django ────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+env/
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
+backend/staticfiles/
+backend/media/
+
+# ── Node / React ───────────────────────────────────────────────────────────────
+node_modules/
+frontend/dist/
+frontend/.env
+.npm
+
+# ── Flutter / Dart ─────────────────────────────────────────────────────────────
+mobile/.dart_tool/
+mobile/build/
+mobile/.flutter-plugins
+mobile/.flutter-plugins-dependencies
+mobile/pubspec.lock
+mobile/android/.gradle/
+mobile/android/local.properties
+mobile/ios/Pods/
+mobile/ios/.symlinks/
+mobile/ios/Flutter/Flutter.framework
+mobile/ios/Flutter/Flutter.podspec
+*.iml
+
+# ── Docker ─────────────────────────────────────────────────────────────────────
+.docker/
+
+# ── IDE ────────────────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# ── Logs ───────────────────────────────────────────────────────────────────────
+*.log
+logs/
