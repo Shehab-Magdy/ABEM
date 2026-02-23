@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../repositories/auth_repository.dart';
@@ -84,8 +85,12 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       emit(AuthAuthenticated(user: result['user'] as Map<String, dynamic>));
     } on AccountLockedException catch (e) {
       emit(AuthError(message: e.message, isLocked: true));
+    } on DioException catch (e) {
+      final detail = (e.response?.data as Map<String, dynamic>?)?['detail']
+          as String?;
+      emit(AuthError(message: detail ?? 'Invalid email or password.'));
     } catch (e) {
-      emit(AuthError(message: e.toString()));
+      emit(AuthError(message: 'An unexpected error occurred.'));
     }
   }
 
