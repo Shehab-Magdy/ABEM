@@ -12,6 +12,7 @@ urlpatterns = [
 
     # API v1
     path("api/v1/auth/", include("apps.authentication.urls")),
+    path("api/v1/users/", include("apps.authentication.user_urls")),
     path("api/v1/buildings/", include("apps.buildings.urls")),
     path("api/v1/apartments/", include("apps.apartments.urls")),
     path("api/v1/expenses/", include("apps.expenses.urls")),
