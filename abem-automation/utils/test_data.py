@@ -151,14 +151,77 @@ class TokenFactory:
 
 
 class BuildingFactory:
-    """Payloads for Building API tests (Sprint 2+)."""
+    """Payloads for Building API tests (Sprint 2)."""
 
     @staticmethod
-    def valid() -> dict:
+    def valid(num_floors: int | None = None) -> dict:
+        """Valid building creation payload matching POST /buildings/ contract."""
         return {
             "name": f"{fake.last_name()} Building",
             "address": fake.address().replace("\n", ", "),
             "city": fake.city(),
-            "floors": random.randint(3, 20),
-            "units_per_floor": random.randint(2, 8),
+            "country": fake.country(),
+            "num_floors": num_floors if num_floors is not None else random.randint(3, 20),
+            "num_apartments": random.randint(2, 8),
         }
+
+    @staticmethod
+    def missing_name() -> dict:
+        d = BuildingFactory.valid()
+        d.pop("name")
+        return d
+
+    @staticmethod
+    def missing_address() -> dict:
+        d = BuildingFactory.valid()
+        d.pop("address")
+        return d
+
+    @staticmethod
+    def zero_floors() -> dict:
+        d = BuildingFactory.valid()
+        d["num_floors"] = 0
+        return d
+
+    @staticmethod
+    def negative_apartments() -> dict:
+        d = BuildingFactory.valid()
+        d["num_apartments"] = -1
+        return d
+
+
+class ApartmentFactory:
+    """Payloads for Apartment API tests (Sprint 2)."""
+
+    @staticmethod
+    def valid(building_id: str, num_floors: int = 10) -> dict:
+        """Valid apartment creation payload matching POST /apartments/ contract."""
+        floor = random.randint(1, num_floors)
+        uid = str(uuid.uuid4())[:6]
+        return {
+            "building_id": building_id,
+            "unit_number": f"{floor}{uid}",
+            "floor": floor,
+            "unit_type": "apartment",
+            "size_sqm": round(random.uniform(50.0, 200.0), 2),
+            "status": "vacant",
+        }
+
+    @staticmethod
+    def store(building_id: str, num_floors: int = 10) -> dict:
+        """Valid store-type apartment payload."""
+        d = ApartmentFactory.valid(building_id, num_floors)
+        d["unit_type"] = "store"
+        return d
+
+    @staticmethod
+    def invalid_type(building_id: str) -> dict:
+        d = ApartmentFactory.valid(building_id)
+        d["unit_type"] = "InvalidType"
+        return d
+
+    @staticmethod
+    def floor_exceeds_max(building_id: str, num_floors: int) -> dict:
+        d = ApartmentFactory.valid(building_id, num_floors)
+        d["floor"] = num_floors + 1
+        return d

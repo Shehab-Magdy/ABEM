@@ -1,9 +1,166 @@
-"""Building views – stubs to be fully implemented in Sprint 2."""
-from rest_framework.viewsets import ModelViewSet
+"""Building views — Sprint 2."""
+from django.utils import timezone
+from rest_framework import status
+from rest_framework.decorators import action
+from rest_framework.filters import OrderingFilter, SearchFilter
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from .models import Building
+from rest_framework.viewsets import ModelViewSet
+
+from django_filters.rest_framework import DjangoFilterBackend
+
+from apps.audit.mixins import log_action
+from apps.authentication.models import User
+from apps.authentication.permissions import IsAdminRole
+
+from .models import Building, UserBuilding
+from .serializers import AssignUserSerializer, BuildingSerializer
 
 
 class BuildingViewSet(ModelViewSet):
-    queryset = Building.objects.none()
-    # TODO Sprint 2: add serializer, permissions, queryset scoped to tenant
+    """
+    CRUD for buildings with multi-tenant scoping.
+
+    Permissions:
+      - Admin: full CRUD on all buildings.
+      - Owner: read-only, limited to buildings they are members of.
+      - Unauthenticated: 401 on every endpoint.
+    """
+
+    serializer_class = BuildingSerializer
+    http_method_names = ["get", "post", "patch", "delete", "options", "head"]
+
+    filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
+    search_fields = ["name", "address", "city"]
+    ordering_fields = ["name", "created_at", "num_floors"]
+    ordering = ["name"]
+
+    # ── Scoping ────────────────────────────────────────────────────────────────
+
+    def get_queryset(self):
+        qs = Building.objects.filter(deleted_at__isnull=True, is_active=True)
+        if self.request.user.role == "admin":
+            return qs
+        # Owners see only buildings where a UserBuilding record exists for them
+        return qs.filter(members=self.request.user)
+
+    # ── Permissions ────────────────────────────────────────────────────────────
+
+    def get_permissions(self):
+        write_actions = ("create", "partial_update", "update", "destroy", "assign_user")
+        if self.action in write_actions:
+            return [IsAuthenticated(), IsAdminRole()]
+        return [IsAuthenticated()]
+
+    # ── Write helpers ──────────────────────────────────────────────────────────
+
+    def perform_create(self, serializer):
+        building = serializer.save(admin=self.request.user)
+        # Auto-add the creating admin as a member so they can see it
+        UserBuilding.objects.get_or_create(user=self.request.user, building=building)
+        log_action(
+            user=self.request.user,
+            action="create",
+            entity="building",
+            entity_id=building.pk,
+            request=self.request,
+        )
+
+    def perform_update(self, serializer):
+        old = {
+            field: getattr(serializer.instance, field)
+            for field in serializer.validated_data
+        }
+        instance = serializer.save()
+        changes = {
+            field: {
+                "before": str(old.get(field, "")),
+                "after": str(getattr(instance, field, "")),
+            }
+            for field in serializer.validated_data
+        }
+        log_action(
+            user=self.request.user,
+            action="update",
+            entity="building",
+            entity_id=instance.pk,
+            changes=changes,
+            request=self.request,
+        )
+
+    def perform_destroy(self, instance):
+        log_action(
+            user=self.request.user,
+            action="delete",
+            entity="building",
+            entity_id=instance.pk,
+            request=self.request,
+        )
+        instance.deleted_at = timezone.now()
+        instance.is_active = False
+        instance.save()
+
+    # ── Custom actions ─────────────────────────────────────────────────────────
+
+    @action(
+        detail=True,
+        methods=["post"],
+        url_path="assign-user",
+        permission_classes=[IsAuthenticated, IsAdminRole],
+    )
+    def assign_user(self, request, pk=None):
+        """
+        POST /buildings/{id}/assign-user/
+        Body: {"user_id": "<uuid>"}
+        Assigns an Owner-role user to this building.
+        """
+        building = self.get_object()
+        serializer = AssignUserSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        user = User.objects.get(pk=serializer.validated_data["user_id"])
+        _, created = UserBuilding.objects.get_or_create(user=user, building=building)
+
+        log_action(
+            user=request.user,
+            action="update",
+            entity="building",
+            entity_id=building.pk,
+            changes={"assigned_user": {"before": None, "after": str(user.pk)}},
+            request=request,
+        )
+
+        http_status = status.HTTP_201_CREATED if created else status.HTTP_200_OK
+        return Response(
+            {"detail": f"User '{user.email}' assigned to building '{building.name}'."},
+            status=http_status,
+        )
+
+    @action(
+        detail=True,
+        methods=["get"],
+        url_path="apartments",
+        permission_classes=[IsAuthenticated],
+    )
+    def list_apartments(self, request, pk=None):
+        """
+        GET /buildings/{id}/apartments/
+        Returns all active apartments belonging to this building.
+        Admin sees all; Owner sees only their own apartment.
+        """
+        building = self.get_object()
+        from apps.apartments.models import Apartment
+        from apps.apartments.serializers import ApartmentSerializer
+
+        qs = Apartment.objects.filter(building=building)
+        if request.user.role == "owner":
+            qs = qs.filter(owner=request.user)
+
+        page = self.paginate_queryset(qs)
+        serializer = ApartmentSerializer(
+            page if page is not None else qs,
+            many=True,
+        )
+        if page is not None:
+            return self.get_paginated_response(serializer.data)
+        return Response(serializer.data)

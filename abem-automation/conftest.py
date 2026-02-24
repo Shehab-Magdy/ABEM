@@ -2,15 +2,22 @@
 Root conftest.py — session and function-scoped fixtures shared across all tests.
 
 Fixture tree:
-  env_config          (session)  – parsed Config from environments.yaml
-  ├── admin_api        (session)  – authenticated APIClient (admin role)
-  ├── owner_api        (function) – fresh authenticated APIClient (owner role)
-  └── unauthenticated_api (function) – bare APIClient, no token
-  web_driver           (function) – Selenium WebDriver (Chrome/Firefox)
-  mobile_driver        (session)  – Appium driver (re-used across mobile tests)
+  env_config              (session)  – parsed Config from environments.yaml
+  ├── admin_api            (session)  – authenticated APIClient (admin role)
+  ├── owner_api            (function) – fresh authenticated APIClient (owner role)
+  ├── owner_with_id        (function) – (APIClient, user_id) for Sprint 2 RBAC tests
+  └── unauthenticated_api  (function) – bare APIClient, no token
+  create_temp_user         (function) – factory: create/delete temporary users
+  create_temp_building     (function) – factory: create/delete temporary buildings
+  temp_building            (function) – single temporary building
+  create_temp_apartment    (function) – factory: create/delete temporary apartments
+  temp_apartment           (function) – single temporary apartment in a temp building
+  web_driver               (function) – Selenium WebDriver (Chrome/Firefox)
+  mobile_driver            (session)  – Appium driver (re-used across mobile tests)
 
 Cleanup strategy:
   - owner_api creates a transient owner user and deletes it in teardown
+  - create_temp_building / create_temp_apartment delete all created objects on teardown
   - web_driver quits after each test
   - mobile_driver is session-scoped (Appium sessions are expensive)
 """
@@ -25,9 +32,11 @@ from core.api_client import APIClient
 from core.driver_factory import DriverFactory
 from core.mobile_driver_factory import MobileDriverFactory
 from api.auth_api import AuthAPI
+from api.building_api import BuildingAPI
+from api.apartment_api import ApartmentAPI
 from api.user_api import UserAPI
 from utils.logger import get_logger
-from utils.test_data import UserFactory
+from utils.test_data import ApartmentFactory, BuildingFactory, UserFactory
 
 logger = get_logger("conftest")
 
@@ -42,6 +51,7 @@ def pytest_configure(config):
     config.addinivalue_line("markers", "smoke:    Smoke tests")
     config.addinivalue_line("markers", "sprint_0: Sprint 0 infrastructure tests")
     config.addinivalue_line("markers", "sprint_1: Sprint 1 auth & user tests")
+    config.addinivalue_line("markers", "sprint_2: Sprint 2 buildings & apartment management tests")
     config.addinivalue_line("markers", "positive: Happy-path test cases")
     config.addinivalue_line("markers", "negative: Edge-case / error-path test cases")
 
@@ -220,3 +230,118 @@ def mobile_driver(env_config: Config):
     driver = MobileDriverFactory.create_driver(env_config.mobile)
     yield driver
     driver.quit()
+
+
+# ── Sprint 2: Owner with ID ────────────────────────────────────────────────────
+
+@pytest.fixture(scope="function")
+def owner_with_id(env_config: Config, admin_api: APIClient):
+    """
+    Function-scoped fixture yielding (APIClient, user_id) for an owner user.
+    Useful when a test needs to assign an owner to a building and also call
+    the API as that owner.
+
+    Teardown: logs out the owner and deletes the user.
+    """
+    user_data = UserFactory.owner()
+    admin_user_api = UserAPI(admin_api)
+    admin_auth_api = AuthAPI(admin_api)
+
+    resp = admin_auth_api.register(
+        **{k: user_data[k] for k in ["email", "password", "first_name", "last_name", "role"]}
+    )
+    assert resp.status_code == 201, f"Could not create owner for fixture: {resp.text}"
+    created_user = resp.json()
+    user_id = created_user["id"]
+
+    client = APIClient(env_config.api_url)
+    client.authenticate(user_data["email"], user_data["password"])
+
+    yield client, user_id
+
+    client.logout()
+    admin_user_api.delete_user(user_id)
+
+
+# ── Sprint 2: Building fixtures ────────────────────────────────────────────────
+
+@pytest.fixture(scope="function")
+def create_temp_building(admin_api: APIClient):
+    """
+    Factory fixture: call it to create temporary buildings via admin.
+    All buildings created through this fixture are soft-deleted after the test.
+
+    Usage:
+        def test_something(create_temp_building):
+            building = create_temp_building()
+            building = create_temp_building(name="Custom", num_floors=5)
+    """
+    created_ids: list[str] = []
+    building_api = BuildingAPI(admin_api)
+
+    def _create(**overrides) -> dict:
+        data = BuildingFactory.valid()
+        data.update(overrides)
+        resp = building_api.create(**data)
+        assert resp.status_code == 201, f"Building creation failed: {resp.text}"
+        building = resp.json()
+        created_ids.append(building["id"])
+        return building
+
+    yield _create
+
+    for bid in created_ids:
+        try:
+            building_api.delete(bid)
+        except Exception as e:
+            logger.warning("Could not delete temp building %s: %s", bid, e)
+
+
+@pytest.fixture(scope="function")
+def temp_building(create_temp_building) -> dict:
+    """Single temporary building — convenience wrapper around create_temp_building."""
+    return create_temp_building()
+
+
+# ── Sprint 2: Apartment fixtures ───────────────────────────────────────────────
+
+@pytest.fixture(scope="function")
+def create_temp_apartment(admin_api: APIClient):
+    """
+    Factory fixture: call it to create temporary apartments via admin.
+    All apartments created through this fixture are hard-deleted after the test.
+
+    Usage:
+        def test_something(create_temp_building, create_temp_apartment):
+            bld = create_temp_building()
+            apt = create_temp_apartment(building_id=bld["id"])
+    """
+    created_ids: list[str] = []
+    apartment_api = ApartmentAPI(admin_api)
+
+    def _create(building_id: str, num_floors: int = 10, **overrides) -> dict:
+        data = ApartmentFactory.valid(building_id=building_id, num_floors=num_floors)
+        data.update(overrides)
+        resp = apartment_api.create(**data)
+        assert resp.status_code == 201, f"Apartment creation failed: {resp.text}"
+        apartment = resp.json()
+        created_ids.append(apartment["id"])
+        return apartment
+
+    yield _create
+
+    for aid in created_ids:
+        try:
+            apartment_api.delete(aid)
+        except Exception as e:
+            logger.warning("Could not delete temp apartment %s: %s", aid, e)
+
+
+@pytest.fixture(scope="function")
+def temp_apartment(create_temp_building, create_temp_apartment) -> dict:
+    """Single temporary apartment inside a fresh building."""
+    building = create_temp_building(num_floors=10)
+    return create_temp_apartment(
+        building_id=building["id"],
+        num_floors=building["num_floors"],
+    )

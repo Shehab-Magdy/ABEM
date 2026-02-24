@@ -9,12 +9,35 @@ Page interactions go through LoginPage / DashboardPage POMs.
 Markers: web, sprint_1
 """
 
+import socket
+from urllib.parse import urlparse
+
 import pytest
 
 from pages.web.dashboard_page import DashboardPage
 from pages.web.login_page import LoginPage
 
-pytestmark = [pytest.mark.web, pytest.mark.sprint_1]
+pytestmark = [
+    pytest.mark.web,
+    pytest.mark.sprint_1,
+    pytest.mark.usefixtures("_frontend_up_s1"),
+]
+
+
+@pytest.fixture(scope="session", autouse=False)
+def _frontend_up_s1(env_config):
+    """Skip all Sprint 1 web tests when the React dev server is not running."""
+    parsed = urlparse(env_config.base_url)
+    host = parsed.hostname or "localhost"
+    port = parsed.port or 80
+    try:
+        sock = socket.create_connection((host, port), timeout=3)
+        sock.close()
+    except OSError:
+        pytest.skip(
+            f"React frontend not reachable at {env_config.base_url} "
+            "— skipping Sprint 1 web UI tests"
+        )
 
 LOGIN_MAX_ATTEMPTS = 5   # keep in sync with backend setting
 
