@@ -1,6 +1,6 @@
 environments:
   dev:
-    base_url: "http://localhost:3000"
+    base_url: "http://localhost:5173"
     api_url: "http://localhost:8000/api/v1"
     admin_email: "admin@abem.local"
     admin_password: "Admin@1234"
