@@ -59,3 +59,10 @@ mobile/ios/Flutter/Flutter.podspec
 # ── Logs ───────────────────────────────────────────────────────────────────────
 *.log
 logs/
+
+# ── Test artifacts (generated; not source) ─────────────────────────────────────
+abem-automation/screenshots/
+abem-automation/reports/
+
+# ── Claude Code ────────────────────────────────────────────────────────────────
+.claude/
