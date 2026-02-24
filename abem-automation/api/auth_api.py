@@ -57,9 +57,9 @@ class AuthAPI:
         )
 
     def refresh_token(self, refresh: str) -> Response:
-        """POST /auth/token/refresh/ — exchange refresh for new access token."""
+        """POST /auth/refresh/ — exchange refresh for new access token."""
         return self._c.session.post(
-            f"{self._c.base_url}/auth/token/refresh/",
+            f"{self._c.base_url}/auth/refresh/",
             json={"refresh": refresh},
         )
 
@@ -102,7 +102,7 @@ class AuthAPI:
         confirm_password: Optional[str] = None,
     ) -> Response:
         """
-        POST /auth/change-password/
+        PATCH /auth/change-password/
 
         Expected responses:
           200 – password changed
@@ -114,7 +114,7 @@ class AuthAPI:
             "new_password": new_password,
             "confirm_password": confirm_password or new_password,
         }
-        return self._c.post("/auth/change-password/", json=payload)
+        return self._c.patch("/auth/change-password/", json=payload)
 
     # ── Profile ────────────────────────────────────────────────────────────────
 

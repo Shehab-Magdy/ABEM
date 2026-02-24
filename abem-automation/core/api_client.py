@@ -69,7 +69,7 @@ class APIClient:
         try:
             resp = self._raw_request(
                 "POST",
-                "/auth/token/refresh/",
+                "/auth/refresh/",
                 json={"refresh": self.refresh_token},
             )
             if resp.status_code == 200:

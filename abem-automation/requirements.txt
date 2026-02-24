@@ -8,11 +8,11 @@ pytest-rerunfailures==14.0   # retry flaky tests   (--reruns 2)
 allure-pytest==2.13.5        # Allure rich reports
 
 # ── Web (Selenium) ─────────────────────────────────────────────────────────────
-selenium==4.24.0
-webdriver-manager==4.0.2     # auto-install chromedriver / geckodriver
+selenium>=4.20.0
+webdriver-manager>=4.0.2     # auto-install chromedriver / geckodriver
 
 # ── Mobile (Appium) ────────────────────────────────────────────────────────────
-Appium-Python-Client==4.3.0
+Appium-Python-Client>=3.1.0
 
 # ── API ────────────────────────────────────────────────────────────────────────
 requests==2.32.3

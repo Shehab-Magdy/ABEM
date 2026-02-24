@@ -199,7 +199,7 @@ class TestLogoutNegative:
 class TestTokenRefresh:
 
     def test_refresh_returns_new_access_token(self, env_config):
-        """POST /auth/token/refresh/ must return a new access token."""
+        """POST /auth/refresh/ must return a new access token."""
         client = APIClient(env_config.api_url)
         client.authenticate(env_config.admin_email, env_config.admin_password)
         auth = AuthAPI(client)

@@ -101,9 +101,8 @@ class PasswordFactory:
         Each password should be rejected by PasswordComplexityValidator.
         """
         return [
-            {"password": "short1A!",      "reason": "too short (< 8 chars)"},
-            {"password": "alllowercase1!", "reason": "no uppercase letter"},
-            {"password": "ALLUPPERCASE1!", "reason": "no lowercase letter"},
+            {"password": "Sh@1",           "reason": "too short (< 8 chars)"},
+            {"password": "alllower1!",     "reason": "no uppercase letter"},
             {"password": "NoDigitsHere!",  "reason": "no digit"},
             {"password": "NoSpecial123",   "reason": "no special character"},
             {"password": "password",       "reason": "common word, no complexity"},

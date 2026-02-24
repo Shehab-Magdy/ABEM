@@ -17,7 +17,8 @@ from __future__ import annotations
 from typing import Optional
 
 from appium import webdriver as appium_webdriver
-from appium.options import AppiumOptions
+from appium.options.android import UiAutomator2Options
+from appium.options.ios import XCUITestOptions
 
 from utils.logger import get_logger
 
@@ -60,16 +61,13 @@ class MobileDriverFactory:
 
     @staticmethod
     def _android_driver(cfg) -> appium_webdriver.Remote:
-        options = AppiumOptions()
-        options.platform_name = "Android"
-        options.set_capability("deviceName", cfg.device_name)
-        options.set_capability("platformVersion", cfg.platform_version)
-        options.set_capability("appPackage", cfg.app_package)
-        options.set_capability("appActivity", cfg.app_activity)
-        options.set_capability("automationName", cfg.automation_name)
-        options.set_capability("noReset", cfg.no_reset)
+        options = UiAutomator2Options()
+        options.device_name = cfg.device_name
+        options.platform_version = cfg.platform_version
+        options.app_package = cfg.app_package
+        options.app_activity = cfg.app_activity
+        options.no_reset = cfg.no_reset
         options.set_capability("autoGrantPermissions", True)
-        # Flutter-specific driver for native element access
         options.set_capability("newCommandTimeout", 300)
 
         driver = appium_webdriver.Remote(
@@ -83,13 +81,11 @@ class MobileDriverFactory:
 
     @staticmethod
     def _ios_driver(cfg) -> appium_webdriver.Remote:
-        options = AppiumOptions()
-        options.platform_name = "iOS"
-        options.set_capability("deviceName", cfg.device_name)
-        options.set_capability("platformVersion", cfg.platform_version)
-        options.set_capability("bundleId", cfg.app_package)  # iOS uses bundleId
-        options.set_capability("automationName", "XCUITest")
-        options.set_capability("noReset", cfg.no_reset)
+        options = XCUITestOptions()
+        options.device_name = cfg.device_name
+        options.platform_version = cfg.platform_version
+        options.bundle_id = cfg.app_package
+        options.no_reset = cfg.no_reset
         options.set_capability("newCommandTimeout", 300)
 
         driver = appium_webdriver.Remote(

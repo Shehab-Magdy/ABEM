@@ -22,11 +22,9 @@ pytestmark = [pytest.mark.sprint_0, pytest.mark.smoke]
 class TestAPIInfrastructure:
 
     def test_health_endpoint_returns_200(self, env_config):
-        """GET /health/ must respond 200 with an 'ok' status."""
-        # Build health URL from api_url (strip /api/v1 suffix)
-        base = env_config.api_url.rstrip("/")
-        root = base.rsplit("/api/v1", 1)[0]
-        resp = requests.get(f"{root}/health/", timeout=10)
+        """GET /api/health/ must respond 200 with an 'ok' status."""
+        root = env_config.api_url.rstrip("/").rsplit("/api/v1", 1)[0]
+        resp = requests.get(f"{root}/api/health/", timeout=10)
         assert resp.status_code == 200, (
             f"Health check failed: {resp.status_code} — {resp.text}"
         )
@@ -43,9 +41,9 @@ class TestAPIInfrastructure:
         )
 
     def test_openapi_schema_is_accessible(self, env_config):
-        """GET /api/v1/schema/ (or /docs/) should return 200."""
-        # drf-spectacular serves at /api/v1/schema/ by default
-        resp = requests.get(env_config.api_url + "/schema/", timeout=10)
+        """GET /api/schema/ should return 200 (drf-spectacular, not under /v1)."""
+        root = env_config.api_url.rstrip("/").rsplit("/api/v1", 1)[0]
+        resp = requests.get(f"{root}/api/schema/", timeout=10)
         assert resp.status_code in (200, 301, 302), (
             f"OpenAPI schema not accessible: {resp.status_code}"
         )
@@ -84,7 +82,27 @@ class TestAPIInfrastructure:
 
 # ── Web Frontend Infrastructure ────────────────────────────────────────────────
 
+@pytest.fixture(scope="session")
+def _frontend_up(env_config):
+    """Skip all web infra tests when the React dev server is not running."""
+    import socket
+    from urllib.parse import urlparse
+
+    parsed = urlparse(env_config.base_url)
+    host = parsed.hostname or "localhost"
+    port = parsed.port or 80
+    try:
+        sock = socket.create_connection((host, port), timeout=3)
+        sock.close()
+    except OSError:
+        pytest.skip(
+            f"React frontend not reachable at {env_config.base_url} "
+            "— skipping web infrastructure tests"
+        )
+
+
 @pytest.mark.web
+@pytest.mark.usefixtures("_frontend_up")
 class TestWebInfrastructure:
 
     def test_frontend_is_reachable(self, env_config):

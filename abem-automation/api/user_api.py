@@ -147,7 +147,7 @@ class UserAPI:
         """
         return self._c.post(
             f"/users/{user_id}/reset-password/",
-            json={"new_password": new_password},
+            json={"new_password": new_password, "confirm_password": new_password},
         )
 
     # ── Helpers ────────────────────────────────────────────────────────────────
