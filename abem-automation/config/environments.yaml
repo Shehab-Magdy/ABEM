@@ -1,0 +1,63 @@
+environments:
+  dev:
+    base_url: "http://localhost:3000"
+    api_url: "http://localhost:8000/api/v1"
+    admin_email: "admin@abem.local"
+    admin_password: "Admin@1234"
+    owner_email: "owner@abem.local"
+    owner_password: "Owner@1234"
+    browser: "chrome"
+    headless: true
+    implicit_wait: 10
+    explicit_wait: 15
+    mobile:
+      platform_name: "Android"
+      device_name: "emulator-5554"
+      platform_version: "13.0"
+      app_package: "com.abem.mobile"
+      app_activity: ".MainActivity"
+      automation_name: "UiAutomator2"
+      appium_url: "http://localhost:4723"
+      no_reset: true
+
+  staging:
+    base_url: "${STAGING_BASE_URL}"
+    api_url: "${STAGING_API_URL}"
+    admin_email: "${STAGING_ADMIN_EMAIL}"
+    admin_password: "${STAGING_ADMIN_PASSWORD}"
+    owner_email: "${STAGING_OWNER_EMAIL}"
+    owner_password: "${STAGING_OWNER_PASSWORD}"
+    browser: "chrome"
+    headless: true
+    implicit_wait: 15
+    explicit_wait: 20
+    mobile:
+      platform_name: "Android"
+      device_name: "${STAGING_DEVICE_NAME}"
+      platform_version: "${STAGING_PLATFORM_VERSION}"
+      app_package: "com.abem.mobile"
+      app_activity: ".MainActivity"
+      automation_name: "UiAutomator2"
+      appium_url: "${APPIUM_URL}"
+      no_reset: false
+
+  prod:
+    base_url: "${PROD_BASE_URL}"
+    api_url: "${PROD_API_URL}"
+    admin_email: "${PROD_ADMIN_EMAIL}"
+    admin_password: "${PROD_ADMIN_PASSWORD}"
+    owner_email: "${PROD_OWNER_EMAIL}"
+    owner_password: "${PROD_OWNER_PASSWORD}"
+    browser: "chrome"
+    headless: true
+    implicit_wait: 20
+    explicit_wait: 30
+    mobile:
+      platform_name: "Android"
+      device_name: "${PROD_DEVICE_NAME}"
+      platform_version: "${PROD_PLATFORM_VERSION}"
+      app_package: "com.abem.mobile"
+      app_activity: ".MainActivity"
+      automation_name: "UiAutomator2"
+      appium_url: "${APPIUM_URL}"
+      no_reset: false

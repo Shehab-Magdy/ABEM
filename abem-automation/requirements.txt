@@ -1,0 +1,23 @@
+# ── Test runner ────────────────────────────────────────────────────────────────
+pytest==8.3.5
+pytest-xdist==3.6.1          # parallel execution  (-n auto)
+pytest-html==4.1.1           # HTML report
+pytest-rerunfailures==14.0   # retry flaky tests   (--reruns 2)
+
+# ── Reporting ──────────────────────────────────────────────────────────────────
+allure-pytest==2.13.5        # Allure rich reports
+
+# ── Web (Selenium) ─────────────────────────────────────────────────────────────
+selenium==4.24.0
+webdriver-manager==4.0.2     # auto-install chromedriver / geckodriver
+
+# ── Mobile (Appium) ────────────────────────────────────────────────────────────
+Appium-Python-Client==4.3.0
+
+# ── API ────────────────────────────────────────────────────────────────────────
+requests==2.32.3
+
+# ── Config & utilities ─────────────────────────────────────────────────────────
+PyYAML==6.0.2
+python-dotenv==1.0.1
+Faker==30.1.0
