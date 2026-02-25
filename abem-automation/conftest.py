@@ -36,6 +36,7 @@ from api.building_api import BuildingAPI
 from api.apartment_api import ApartmentAPI
 from api.expense_api import ExpenseAPI
 from api.category_api import CategoryAPI
+from api.payment_api import PaymentAPI
 from api.user_api import UserAPI
 from utils.logger import get_logger
 from utils.test_data import (
@@ -43,6 +44,7 @@ from utils.test_data import (
     BuildingFactory,
     CategoryFactory,
     ExpenseFactory,
+    PaymentFactory,
     UserFactory,
 )
 
@@ -61,6 +63,7 @@ def pytest_configure(config):
     config.addinivalue_line("markers", "sprint_1: Sprint 1 auth & user tests")
     config.addinivalue_line("markers", "sprint_2: Sprint 2 buildings & apartment management tests")
     config.addinivalue_line("markers", "sprint_3: Sprint 3 expense management tests")
+    config.addinivalue_line("markers", "sprint_4: Sprint 4 payment management tests")
     config.addinivalue_line("markers", "positive: Happy-path test cases")
     config.addinivalue_line("markers", "negative: Edge-case / error-path test cases")
 
@@ -438,3 +441,76 @@ def temp_expense(create_temp_building, create_temp_category, create_temp_expense
     building = create_temp_building(num_floors=5)
     category = create_temp_category(building_id=building["id"])
     return create_temp_expense(building_id=building["id"], category_id=category["id"])
+
+
+# ── Sprint 4: Payment fixtures ─────────────────────────────────────────────────
+
+@pytest.fixture(scope="function")
+def payment_api(admin_api: APIClient) -> PaymentAPI:
+    """Function-scoped PaymentAPI backed by the admin client."""
+    return PaymentAPI(admin_api)
+
+
+@pytest.fixture(scope="function")
+def create_temp_payment(admin_api: APIClient):
+    """
+    Factory fixture: call it to create temporary payment records via admin.
+    Payments are immutable, so teardown only logs — it does not delete them.
+
+    Usage:
+        def test_something(create_temp_building, create_temp_apartment,
+                           create_temp_category, create_temp_expense,
+                           create_temp_payment):
+            bld = create_temp_building(num_floors=3)
+            apt = create_temp_apartment(building_id=bld["id"])
+            cat = create_temp_category(building_id=bld["id"])
+            exp = create_temp_expense(building_id=bld["id"], category_id=cat["id"])
+            pmt = create_temp_payment(apartment_id=apt["id"], expense_id=exp["id"])
+    """
+    created_ids: list[str] = []
+    pmt_api = PaymentAPI(admin_api)
+
+    def _create(apartment_id: str, expense_id: str | None = None,
+                amount: float = 100.00, **overrides) -> dict:
+        data = PaymentFactory.valid(apartment_id=apartment_id,
+                                    expense_id=expense_id,
+                                    amount=amount)
+        data.update(overrides)
+        resp = pmt_api.create(**data)
+        assert resp.status_code == 201, f"Payment creation failed: {resp.text}"
+        payment = resp.json()
+        created_ids.append(payment["id"])
+        return payment
+
+    yield _create
+
+    # Payments are immutable — no delete endpoint; just log for awareness
+    if created_ids:
+        logger.debug("Sprint 4 temp payments (immutable, not deleted): %s", created_ids)
+
+
+@pytest.fixture(scope="function")
+def temp_payment(
+    create_temp_building, create_temp_apartment, create_temp_category,
+    create_temp_expense, create_temp_payment
+) -> dict:
+    """
+    Single temporary payment for a fresh building, apartment, category, and expense.
+    The expense split assigns a share to the apartment, enabling a valid payment.
+    """
+    building = create_temp_building(num_floors=3)
+    apartment = create_temp_apartment(building_id=building["id"])
+    category = create_temp_category(building_id=building["id"])
+    expense = create_temp_expense(
+        building_id=building["id"],
+        category_id=category["id"],
+        amount="100.00",
+        split_type="equal_all",
+    )
+    # After split engine, apartment owes share_amount (rounds up to nearest 5)
+    # Use a partial payment so balance isn't zeroed for subsequent assertions
+    return create_temp_payment(
+        apartment_id=apartment["id"],
+        expense_id=expense["id"],
+        amount=50.00,
+    )

@@ -320,3 +320,64 @@ class ExpenseFactory:
         d["split_type"] = "custom"
         d["custom_split_apartments"] = apartment_ids
         return d
+
+
+class PaymentFactory:
+    """Payloads for Payment API tests (Sprint 4)."""
+
+    @staticmethod
+    def valid(apartment_id: str, expense_id: Optional[str] = None,
+              amount: float = 100.00) -> dict:
+        """Valid payment creation payload."""
+        payload: dict = {
+            "apartment_id": apartment_id,
+            "amount_paid": str(round(amount, 2)),
+            "payment_date": fake.date_between(start_date="-30d", end_date="today").isoformat(),
+            "payment_method": "cash",
+            "notes": fake.sentence(nb_words=5),
+        }
+        if expense_id is not None:
+            payload["expense_id"] = expense_id
+        return payload
+
+    @staticmethod
+    def bank_transfer(apartment_id: str) -> dict:
+        d = PaymentFactory.valid(apartment_id)
+        d["payment_method"] = "bank_transfer"
+        return d
+
+    @staticmethod
+    def cheque(apartment_id: str) -> dict:
+        d = PaymentFactory.valid(apartment_id)
+        d["payment_method"] = "cheque"
+        return d
+
+    @staticmethod
+    def zero_amount(apartment_id: str) -> dict:
+        d = PaymentFactory.valid(apartment_id)
+        d["amount_paid"] = "0.00"
+        return d
+
+    @staticmethod
+    def negative_amount(apartment_id: str) -> dict:
+        d = PaymentFactory.valid(apartment_id)
+        d["amount_paid"] = "-50.00"
+        return d
+
+    @staticmethod
+    def missing_amount(apartment_id: str) -> dict:
+        d = PaymentFactory.valid(apartment_id)
+        d.pop("amount_paid")
+        return d
+
+    @staticmethod
+    def missing_date(apartment_id: str) -> dict:
+        d = PaymentFactory.valid(apartment_id)
+        d.pop("payment_date")
+        return d
+
+    @staticmethod
+    def invalid_method(apartment_id: str) -> dict:
+        d = PaymentFactory.valid(apartment_id)
+        d["payment_method"] = "bitcoin"
+        return d
