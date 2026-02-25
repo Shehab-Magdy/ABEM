@@ -38,7 +38,7 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import { Add as AddIcon, AccountBalance as BalanceIcon } from "@mui/icons-material";
+import { Add as AddIcon, AccountBalance as BalanceIcon, PictureAsPdf } from "@mui/icons-material";
 import { paymentsApi } from "../../api/paymentsApi";
 import { buildingsApi } from "../../api/buildingsApi";
 import axiosClient from "../../api/axiosClient";
@@ -302,7 +302,7 @@ export default function PaymentsPage() {
         <Table size="small">
           <TableHead>
             <TableRow sx={{ backgroundColor: "primary.main" }}>
-              {["Date", "Amount", "Method", "Notes", "Balance After"].map((h) => (
+              {["Date", "Amount", "Method", "Notes", "Balance After", ...(isAdmin ? ["Receipt"] : [])].map((h) => (
                 <TableCell key={h} sx={{ color: "white", fontWeight: 600 }}>
                   {h}
                 </TableCell>
@@ -312,13 +312,13 @@ export default function PaymentsPage() {
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={5} align="center" sx={{ py: 4 }}>
+                <TableCell colSpan={isAdmin ? 6 : 5} align="center" sx={{ py: 4 }}>
                   <CircularProgress size={28} />
                 </TableCell>
               </TableRow>
             ) : payments.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} align="center" sx={{ py: 4, color: "text.secondary" }}>
+                <TableCell colSpan={isAdmin ? 6 : 5} align="center" sx={{ py: 4, color: "text.secondary" }}>
                   {selectedApartment
                     ? "No payment history for this apartment."
                     : "Select an apartment to view payment history."}
@@ -347,6 +347,21 @@ export default function PaymentsPage() {
                       size="small"
                     />
                   </TableCell>
+                  {isAdmin && (
+                    <TableCell>
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        startIcon={<PictureAsPdf fontSize="small" />}
+                        data-testid="print-receipt"
+                        href={`/api/v1/payments/${p.id}/receipt/`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        Receipt
+                      </Button>
+                    </TableCell>
+                  )}
                 </TableRow>
               ))
             )}

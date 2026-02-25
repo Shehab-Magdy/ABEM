@@ -29,6 +29,7 @@ import {
   Assessment,
   Business,
   ExitToApp,
+  History,
   Menu as MenuIcon,
   Notifications,
   Payment,
@@ -101,6 +102,7 @@ export default function DashboardLayout() {
     { to: "/payments", icon: <Payment />, label: "Payments", show: true },
     { to: "/users", icon: <People />, label: "Users", show: isAdmin },
     { to: "/notifications", icon: <Notifications />, label: "Notifications", show: true },
+    { to: "/audit", icon: <History />, label: "Audit Log", show: isAdmin },
   ].filter((item) => item.show);
 
   const drawer = (
