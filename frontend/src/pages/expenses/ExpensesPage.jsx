@@ -51,7 +51,7 @@ import {
 } from "@mui/icons-material";
 import { expensesApi } from "../../api/expensesApi";
 import { buildingsApi } from "../../api/buildingsApi";
-import { useAuthStore } from "../../contexts/authStore";
+import { useAuth } from "../../hooks/useAuth";
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
@@ -92,8 +92,7 @@ function statusChip(expense) {
 // ── Main component ─────────────────────────────────────────────────────────────
 
 export default function ExpensesPage() {
-  const role = useAuthStore((s) => s.role);
-  const isAdmin = role === "admin";
+  const { isAdmin } = useAuth();
 
   const [buildings, setBuildings] = useState([]);
   const [expenses, setExpenses] = useState([]);
