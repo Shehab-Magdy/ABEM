@@ -68,6 +68,7 @@ def pytest_configure(config):
     config.addinivalue_line("markers", "sprint_4: Sprint 4 payment management tests")
     config.addinivalue_line("markers", "sprint_5: Sprint 5 dashboard tests")
     config.addinivalue_line("markers", "sprint_6: Sprint 6 notification system tests")
+    config.addinivalue_line("markers", "sprint_7: Sprint 7 Flutter finalization tests")
     config.addinivalue_line("markers", "positive: Happy-path test cases")
     config.addinivalue_line("markers", "negative: Edge-case / error-path test cases")
 
