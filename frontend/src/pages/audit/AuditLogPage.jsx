@@ -160,7 +160,7 @@ export default function AuditLogPage() {
                 size="small"
                 startIcon={<CloudDownload />}
                 data-testid="export-csv"
-                onClick={() => handleExport("/exports/payments/?format=csv", "payments.csv")}
+                onClick={() => handleExport("/exports/payments/?file_format=csv", "payments.csv")}
               >
                 Payments CSV
               </Button>
@@ -171,7 +171,7 @@ export default function AuditLogPage() {
                 size="small"
                 startIcon={<CloudDownload />}
                 data-testid="export-xlsx"
-                onClick={() => handleExport("/exports/payments/?format=xlsx", "payments.xlsx")}
+                onClick={() => handleExport("/exports/payments/?file_format=xlsx", "payments.xlsx")}
               >
                 Payments XLSX
               </Button>
@@ -182,7 +182,7 @@ export default function AuditLogPage() {
                 size="small"
                 startIcon={<CloudDownload />}
                 data-testid="export-expenses"
-                onClick={() => handleExport("/exports/expenses/?format=csv", "expenses.csv")}
+                onClick={() => handleExport("/exports/expenses/?file_format=csv", "expenses.csv")}
               >
                 Expenses CSV
               </Button>

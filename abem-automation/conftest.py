@@ -39,6 +39,8 @@ from api.category_api import CategoryAPI
 from api.payment_api import PaymentAPI
 from api.dashboard_api import DashboardAPI
 from api.notification_api import NotificationAPI
+from api.audit_api import AuditAPI
+from api.exports_api import ExportsAPI
 from api.user_api import UserAPI
 from utils.logger import get_logger
 from utils.test_data import (
@@ -69,6 +71,7 @@ def pytest_configure(config):
     config.addinivalue_line("markers", "sprint_5: Sprint 5 dashboard tests")
     config.addinivalue_line("markers", "sprint_6: Sprint 6 notification system tests")
     config.addinivalue_line("markers", "sprint_7: Sprint 7 Flutter finalization tests")
+    config.addinivalue_line("markers", "sprint_8: Sprint 8 audit logs & data exports tests")
     config.addinivalue_line("markers", "positive: Happy-path test cases")
     config.addinivalue_line("markers", "negative: Edge-case / error-path test cases")
 
@@ -651,6 +654,77 @@ def notification_data(
         "expense": expense,
         "owner_client": owner_client,
         "owner_notification_api": NotificationAPI(owner_client),
+    }
+
+    owner_client.logout()
+
+
+# ── Sprint 8: Audit & Export fixtures ──────────────────────────────────────────
+
+@pytest.fixture(scope="session")
+def audit_api(admin_api: APIClient) -> AuditAPI:
+    """Session-scoped AuditAPI backed by the admin client."""
+    return AuditAPI(admin_api)
+
+
+@pytest.fixture(scope="session")
+def exports_api(admin_api: APIClient) -> ExportsAPI:
+    """Session-scoped ExportsAPI backed by the admin client."""
+    return ExportsAPI(admin_api)
+
+
+@pytest.fixture(scope="function")
+def audit_data(
+    admin_api: APIClient,
+    env_config,
+    create_temp_building,
+    create_temp_apartment,
+    create_temp_category,
+    create_temp_expense,
+    create_temp_payment,
+    create_temp_user,
+):
+    """
+    Full audit test chain: building + category + owner + apartment + expense + payment.
+    Creating these entities triggers audit log entries for each action.
+
+    Returns a dict with all entities plus an owner_client.
+    Payments are immutable — not deleted on teardown.
+    """
+    from core.api_client import APIClient as _APIClient
+
+    building = create_temp_building(num_floors=5)
+    category = create_temp_category(building_id=building["id"])
+    owner_user = create_temp_user(role="owner")
+    apartment = create_temp_apartment(
+        building_id=building["id"],
+        num_floors=5,
+        owner_id=owner_user["id"],
+    )
+    expense = create_temp_expense(
+        building_id=building["id"],
+        category_id=category["id"],
+        amount="200.00",
+        split_type="equal_all",
+    )
+    payment = create_temp_payment(
+        apartment_id=apartment["id"],
+        expense_id=expense["id"],
+        amount=100.00,
+    )
+
+    owner_client = _APIClient(env_config.api_url)
+    owner_client.authenticate(owner_user["email"], owner_user["password"])
+
+    yield {
+        "admin_api": admin_api,
+        "owner_api": owner_client,
+        "building": building,
+        "category": category,
+        "owner_user": owner_user,
+        "apartment": apartment,
+        "expense": expense,
+        "payment": payment,
     }
 
     owner_client.logout()

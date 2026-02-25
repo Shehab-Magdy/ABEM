@@ -41,7 +41,7 @@ class ExportPaymentsView(APIView):
         if d_to := p.get("date_to"):
             qs = qs.filter(payment_date__lte=d_to)
 
-        fmt = (p.get("format") or "csv").lower()
+        fmt = (p.get("file_format") or "csv").lower()
 
         if fmt == "xlsx":
             return self._xlsx_response(qs)
@@ -122,7 +122,7 @@ class ExportExpensesView(APIView):
         if d_to := p.get("date_to"):
             qs = qs.filter(expense_date__lte=d_to)
 
-        fmt = (p.get("format") or "csv").lower()
+        fmt = (p.get("file_format") or "csv").lower()
 
         if fmt == "xlsx":
             return self._xlsx_response(qs)
