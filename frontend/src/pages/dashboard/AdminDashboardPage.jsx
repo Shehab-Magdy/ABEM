@@ -58,7 +58,7 @@ export default function AdminDashboardPage() {
     if (selectedBuilding) params.building_id = selectedBuilding;
     if (dateFrom) params.date_from = dateFrom;
     if (dateTo) params.date_to = dateTo;
-    api
+    axiosClient
       .get("/dashboard/admin/", { params })
       .then((r) => setData(r.data))
       .catch(() => setError("Failed to load dashboard data."))
@@ -71,11 +71,8 @@ export default function AdminDashboardPage() {
 
   const incomeValues = data?.monthly_trend?.map((m) => parseFloat(m.income)) ?? [];
   const expenseValues = data?.monthly_trend?.map((m) => parseFloat(m.expenses)) ?? [];
-  const hasData =
-    data &&
-    (parseFloat(data.total_income) > 0 ||
-      parseFloat(data.total_expenses) > 0 ||
-      data.overdue_count > 0);
+  // Show content sections whenever data is loaded (even with zero values)
+  const hasData = data !== null;
 
   return (
     <Box sx={{ p: 3 }}>

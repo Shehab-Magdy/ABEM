@@ -37,7 +37,7 @@ export default function OwnerDashboardPage() {
     const params = {};
     if (dateFrom) params.date_from = dateFrom;
     if (dateTo) params.date_to = dateTo;
-    api
+    axiosClient
       .get("/dashboard/owner/", { params })
       .then((r) => setData(r.data))
       .catch(() => setError("Failed to load dashboard data."))
@@ -60,7 +60,8 @@ export default function OwnerDashboardPage() {
 
   const hasPayments = (data?.recent_payments ?? []).length > 0;
   const hasBreakdown = pieData.length > 0;
-  const hasData = data && (hasPayments || hasBreakdown || balance !== 0);
+  // Show content sections whenever data is loaded (even with zeros)
+  const dataLoaded = data !== null;
 
   return (
     <Box sx={{ p: 3 }}>
@@ -100,7 +101,7 @@ export default function OwnerDashboardPage() {
         <Box sx={{ display: "flex", justifyContent: "center", mt: 6 }}>
           <CircularProgress />
         </Box>
-      ) : !hasData ? (
+      ) : !dataLoaded ? (
         <Alert severity="info" data-testid="empty-state">
           No data available for the selected period.
         </Alert>

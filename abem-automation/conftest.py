@@ -37,6 +37,7 @@ from api.apartment_api import ApartmentAPI
 from api.expense_api import ExpenseAPI
 from api.category_api import CategoryAPI
 from api.payment_api import PaymentAPI
+from api.dashboard_api import DashboardAPI
 from api.user_api import UserAPI
 from utils.logger import get_logger
 from utils.test_data import (
@@ -64,6 +65,7 @@ def pytest_configure(config):
     config.addinivalue_line("markers", "sprint_2: Sprint 2 buildings & apartment management tests")
     config.addinivalue_line("markers", "sprint_3: Sprint 3 expense management tests")
     config.addinivalue_line("markers", "sprint_4: Sprint 4 payment management tests")
+    config.addinivalue_line("markers", "sprint_5: Sprint 5 dashboard tests")
     config.addinivalue_line("markers", "positive: Happy-path test cases")
     config.addinivalue_line("markers", "negative: Edge-case / error-path test cases")
 
@@ -514,3 +516,72 @@ def temp_payment(
         expense_id=expense["id"],
         amount=50.00,
     )
+
+
+# ── Sprint 5: Dashboard fixtures ───────────────────────────────────────────────
+
+@pytest.fixture(scope="function")
+def admin_dashboard_api(admin_api: APIClient) -> DashboardAPI:
+    """Function-scoped DashboardAPI backed by the admin client."""
+    return DashboardAPI(admin_api)
+
+
+@pytest.fixture(scope="function")
+def owner_dashboard_api(owner_api: APIClient) -> DashboardAPI:
+    """Function-scoped DashboardAPI backed by a fresh owner client."""
+    return DashboardAPI(owner_api)
+
+
+@pytest.fixture(scope="function")
+def dashboard_data(
+    admin_api: APIClient,
+    env_config,
+    create_temp_building,
+    create_temp_apartment,
+    create_temp_category,
+    create_temp_expense,
+    create_temp_payment,
+    create_temp_user,
+):
+    """
+    Full dashboard data chain: building + category + owner + apartment + expense + payment.
+    Returns a dict with all created entities plus an owner_client for dashboard/owner/ calls.
+    Payments are immutable — not deleted on teardown.
+    """
+    from core.api_client import APIClient as _APIClient
+
+    building = create_temp_building(num_floors=10)
+    category = create_temp_category(building_id=building["id"])
+    owner_user = create_temp_user(role="owner")
+    apartment = create_temp_apartment(
+        building_id=building["id"],
+        num_floors=10,
+        owner_id=owner_user["id"],
+    )
+    expense = create_temp_expense(
+        building_id=building["id"],
+        category_id=category["id"],
+        amount="200.00",
+        split_type="equal_all",
+    )
+    payment = create_temp_payment(
+        apartment_id=apartment["id"],
+        expense_id=expense["id"],
+        amount=100.00,
+    )
+
+    # Authenticate as the owner for owner-dashboard calls
+    owner_client = _APIClient(env_config.api_url)
+    owner_client.authenticate(owner_user["email"], owner_user["password"])
+
+    yield {
+        "building": building,
+        "category": category,
+        "owner_user": owner_user,
+        "apartment": apartment,
+        "expense": expense,
+        "payment": payment,
+        "owner_client": owner_client,
+    }
+
+    owner_client.logout()
