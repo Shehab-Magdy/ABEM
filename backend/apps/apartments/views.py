@@ -1,6 +1,11 @@
-"""Apartment views — Sprint 2."""
+"""Apartment views — Sprint 2 + Sprint 4 balance endpoint."""
+from decimal import Decimal
+
+from django.db.models import Sum
+from rest_framework.decorators import action
 from rest_framework.filters import OrderingFilter, SearchFilter
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 
 from django_filters.rest_framework import DjangoFilterBackend
@@ -97,3 +102,48 @@ class ApartmentViewSet(ModelViewSet):
             request=self.request,
         )
         instance.delete()
+
+    # ── Sprint 4: balance breakdown ─────────────────────────────────────────────
+
+    @action(detail=True, methods=["get"], url_path="balance",
+            permission_classes=[IsAuthenticated])
+    def balance(self, request, pk=None):
+        """
+        GET /api/v1/apartments/{id}/balance/
+
+        Returns the current balance breakdown for an apartment.
+          - Admin: can view any apartment.
+          - Owner: can view their own apartment only (403 otherwise).
+        """
+        apt = self.get_object()
+
+        if request.user.role != "admin" and apt.owner != request.user:
+            return Response(
+                {"detail": "You do not have permission to view this apartment's balance."},
+                status=403,
+            )
+
+        # Lazy imports to avoid circular dependency at module load time
+        from apps.expenses.models import ApartmentExpense
+        from apps.payments.models import Payment
+
+        total_owed = (
+            ApartmentExpense.objects
+            .filter(apartment=apt, expense__deleted_at__isnull=True)
+            .aggregate(s=Sum("share_amount"))["s"]
+            or Decimal("0.00")
+        )
+        total_paid = (
+            Payment.objects
+            .filter(apartment=apt)
+            .aggregate(s=Sum("amount_paid"))["s"]
+            or Decimal("0.00")
+        )
+
+        return Response({
+            "apartment_id":    str(apt.pk),
+            "current_balance": apt.balance,
+            "total_owed":      total_owed,
+            "total_paid":      total_paid,
+            "is_credit":       apt.balance < Decimal("0.00"),
+        })

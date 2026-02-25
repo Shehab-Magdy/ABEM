@@ -56,3 +56,9 @@ def run_split_engine(expense, custom_apartment_ids: list | None = None) -> None:
             for apt in apartments
         ]
     )
+
+    # Increment each apartment's running balance (positive = owes more)
+    from django.db.models import F
+    Apartment.objects.filter(
+        pk__in=[apt.pk for apt in apartments]
+    ).update(balance=F("balance") + share_amount)
