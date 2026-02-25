@@ -92,3 +92,8 @@ class PaymentViewSet(ModelViewSet):
             entity_id=payment.pk,
             request=self.request,
         )
+        try:
+            from apps.notifications.services import notify_payment_confirmed
+            notify_payment_confirmed(payment)
+        except Exception:
+            pass

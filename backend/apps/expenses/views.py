@@ -146,6 +146,16 @@ class ExpenseViewSet(ModelViewSet):
             entity_id=expense.pk,
             request=self.request,
         )
+        try:
+            from apps.notifications.services import notify_expense_created
+            from .models import ApartmentExpense
+            ae_list = list(
+                ApartmentExpense.objects.filter(expense=expense)
+                .select_related("apartment__owner")
+            )
+            notify_expense_created(expense, [ae.apartment for ae in ae_list])
+        except Exception:
+            pass
 
     def perform_update(self, serializer):
         tracked = {

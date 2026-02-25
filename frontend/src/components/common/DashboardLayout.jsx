@@ -2,11 +2,12 @@
  * Main app shell: sidebar navigation + top bar + content outlet.
  * Navigation items are role-aware (admin vs owner).
  */
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import {
   AppBar,
   Avatar,
+  Badge,
   Box,
   Divider,
   Drawer,
@@ -36,6 +37,7 @@ import {
 import { useAuth } from "../../hooks/useAuth";
 import { authApi } from "../../api/authApi";
 import { useAuthStore } from "../../contexts/authStore";
+import axiosClient from "../../api/axiosClient";
 
 const DRAWER_WIDTH = 240;
 
@@ -69,6 +71,20 @@ export default function DashboardLayout() {
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState(null);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    axiosClient
+      .get("/notifications/", { params: { is_read: "false" } })
+      .then((r) => {
+        const data = r.data;
+        const count = Array.isArray(data)
+          ? data.length
+          : (data.count ?? (data.results ?? []).length);
+        setUnreadCount(count);
+      })
+      .catch(() => {});
+  }, []);
 
   const handleLogout = async () => {
     try {
@@ -135,6 +151,19 @@ export default function DashboardLayout() {
               <MenuIcon />
             </IconButton>
             <Box flex={1} />
+            <Tooltip title="Notifications">
+              <IconButton
+                color="inherit"
+                onClick={() => navigate("/notifications")}
+                aria-label="notifications"
+                data-testid="notification-bell"
+                sx={{ mr: 1 }}
+              >
+                <Badge badgeContent={unreadCount || null} color="error" data-testid="notification-badge">
+                  <Notifications />
+                </Badge>
+              </IconButton>
+            </Tooltip>
             <Tooltip title="Account">
               <IconButton onClick={(e) => setAnchorEl(e.currentTarget)} size="small">
                 <Avatar sx={{ width: 32, height: 32, bgcolor: "primary.main", fontSize: 14 }}>
