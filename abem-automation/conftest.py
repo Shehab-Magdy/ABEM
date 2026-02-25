@@ -38,6 +38,7 @@ from api.expense_api import ExpenseAPI
 from api.category_api import CategoryAPI
 from api.payment_api import PaymentAPI
 from api.dashboard_api import DashboardAPI
+from api.notification_api import NotificationAPI
 from api.user_api import UserAPI
 from utils.logger import get_logger
 from utils.test_data import (
@@ -66,6 +67,7 @@ def pytest_configure(config):
     config.addinivalue_line("markers", "sprint_3: Sprint 3 expense management tests")
     config.addinivalue_line("markers", "sprint_4: Sprint 4 payment management tests")
     config.addinivalue_line("markers", "sprint_5: Sprint 5 dashboard tests")
+    config.addinivalue_line("markers", "sprint_6: Sprint 6 notification system tests")
     config.addinivalue_line("markers", "positive: Happy-path test cases")
     config.addinivalue_line("markers", "negative: Edge-case / error-path test cases")
 
@@ -582,6 +584,72 @@ def dashboard_data(
         "expense": expense,
         "payment": payment,
         "owner_client": owner_client,
+    }
+
+    owner_client.logout()
+
+
+# ── Sprint 6: Notification fixtures ────────────────────────────────────────────
+
+@pytest.fixture(scope="function")
+def notification_api(admin_api: APIClient) -> NotificationAPI:
+    """Function-scoped NotificationAPI backed by the admin client."""
+    return NotificationAPI(admin_api)
+
+
+@pytest.fixture(scope="function")
+def owner_notification_api(owner_api: APIClient) -> NotificationAPI:
+    """Function-scoped NotificationAPI backed by a fresh owner client."""
+    return NotificationAPI(owner_api)
+
+
+@pytest.fixture(scope="function")
+def notification_data(
+    admin_api: APIClient,
+    env_config,
+    create_temp_building,
+    create_temp_apartment,
+    create_temp_category,
+    create_temp_expense,
+    create_temp_user,
+):
+    """
+    Full notification test chain: building + category + owner + apartment + expense.
+    Creating the expense via the admin API triggers an EXPENSE_ADDED notification
+    for the apartment owner (Sprint 6 trigger in ExpenseViewSet.perform_create).
+
+    Returns a dict with all entities plus an owner_client for owner-notification calls.
+    """
+    from core.api_client import APIClient as _APIClient
+
+    building = create_temp_building(num_floors=5)
+    category = create_temp_category(building_id=building["id"])
+    owner_user = create_temp_user(role="owner")
+    apartment = create_temp_apartment(
+        building_id=building["id"],
+        num_floors=5,
+        owner_id=owner_user["id"],
+    )
+    # Creating the expense triggers EXPENSE_ADDED notification for the owner
+    expense = create_temp_expense(
+        building_id=building["id"],
+        category_id=category["id"],
+        amount="150.00",
+        split_type="equal_all",
+    )
+
+    # Authenticate as the owner so tests can check their own notifications
+    owner_client = _APIClient(env_config.api_url)
+    owner_client.authenticate(owner_user["email"], owner_user["password"])
+
+    yield {
+        "building": building,
+        "category": category,
+        "owner_user": owner_user,
+        "apartment": apartment,
+        "expense": expense,
+        "owner_client": owner_client,
+        "owner_notification_api": NotificationAPI(owner_client),
     }
 
     owner_client.logout()
