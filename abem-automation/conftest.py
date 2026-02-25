@@ -72,6 +72,7 @@ def pytest_configure(config):
     config.addinivalue_line("markers", "sprint_6: Sprint 6 notification system tests")
     config.addinivalue_line("markers", "sprint_7: Sprint 7 Flutter finalization tests")
     config.addinivalue_line("markers", "sprint_8: Sprint 8 audit logs & data exports tests")
+    config.addinivalue_line("markers", "sprint_9: Sprint 9 performance & security hardening tests")
     config.addinivalue_line("markers", "positive: Happy-path test cases")
     config.addinivalue_line("markers", "negative: Edge-case / error-path test cases")
 
@@ -728,3 +729,144 @@ def audit_data(
     }
 
     owner_client.logout()
+
+
+# ── Sprint 9 fixtures ───────────────────────────────────────────────────────────
+
+
+@pytest.fixture(scope="session")
+def perf_data(admin_api, env_config):
+    """
+    Session-scoped dataset for Sprint-9 performance benchmarks.
+
+    Creates a full chain once and reuses across all perf tests:
+      building → category → owner → apartment → expense (10 000 EGP) → payment
+
+    Session-scoped so setup/teardown happens only once.
+    Calls APIs directly (cannot inject function-scoped create_temp_* fixtures).
+    """
+    from api.building_api import BuildingAPI
+    from api.apartment_api import ApartmentAPI
+    from api.category_api import CategoryAPI
+    from api.expense_api import ExpenseAPI
+    from api.payment_api import PaymentAPI
+    from api.user_api import UserAPI
+    from api.auth_api import AuthAPI
+    from utils.test_data import (
+        BuildingFactory,
+        ApartmentFactory,
+        CategoryFactory,
+        ExpenseFactory,
+        UserFactory,
+    )
+
+    b_api   = BuildingAPI(admin_api)
+    apt_api = ApartmentAPI(admin_api)
+    cat_api = CategoryAPI(admin_api)
+    exp_api = ExpenseAPI(admin_api)
+    pay_api = PaymentAPI(admin_api)
+    u_api   = UserAPI(admin_api)
+    auth_a  = AuthAPI(admin_api)
+
+    # 1. Building
+    bld_r  = b_api.create(**BuildingFactory.valid(num_floors=5))
+    bld_id = bld_r.json()["id"]
+
+    # 2. Category
+    cat_r  = cat_api.create(**CategoryFactory.valid(building_id=bld_id))
+    cat_id = cat_r.json()["id"]
+
+    # 3. Owner user
+    owner_data = UserFactory.owner()
+    owner_r    = auth_a.register(**owner_data)
+    owner_id   = owner_r.json()["id"]
+    b_api.assign_user(bld_id, owner_id)
+
+    # 4. Apartment (owned)
+    apt_data             = ApartmentFactory.valid(building_id=bld_id, num_floors=5)
+    apt_data["owner_id"] = owner_id
+    apt_r  = apt_api.create(**apt_data)
+    apt_id = apt_r.json()["id"]
+
+    # 5. Expense — 10 000 EGP gives the apartment enough balance for payment tests
+    exp_r  = exp_api.create(
+        **ExpenseFactory.valid(building_id=bld_id, category_id=cat_id, amount=10000.00)
+    )
+    exp_id = exp_r.json()["id"]
+
+    # 6. One seed payment (needed for receipt / pagination tests)
+    pay_r  = pay_api.create(
+        apartment_id=apt_id,
+        amount_paid="10.00",
+        payment_date="2026-01-01",
+        payment_method="cash",
+    )
+    pay_id = pay_r.json()["id"]
+
+    yield {
+        "building_id":  bld_id,
+        "category_id":  cat_id,
+        "owner_id":     owner_id,
+        "apartment_id": apt_id,
+        "expense_id":   exp_id,
+        "payment_id":   pay_id,
+    }
+
+    # Teardown: payments are immutable; delete owner + building (cascade handles rest)
+    try:
+        u_api.delete_user(owner_id)
+    except Exception:
+        pass
+    try:
+        b_api.delete(bld_id)
+    except Exception:
+        pass
+
+
+@pytest.fixture(scope="function")
+def sec_data(
+    admin_api,
+    env_config,
+    create_temp_building,
+    create_temp_user,
+    create_temp_apartment,
+    create_temp_payment,
+):
+    """
+    Two isolated owners with separate apartments for Sprint-9 IDOR/security tests.
+
+    Owner A and Owner B are in the same building but own different apartments.
+    This setup verifies that cross-owner resource access is denied (404/403).
+    """
+    from core.api_client import APIClient as _APIClient
+
+    building = create_temp_building(num_floors=5)
+    owner_a  = create_temp_user(role="owner")
+    owner_b  = create_temp_user(role="owner")
+
+    apt_a = create_temp_apartment(
+        building_id=building["id"], num_floors=5, owner_id=owner_a["id"]
+    )
+    apt_b = create_temp_apartment(
+        building_id=building["id"], num_floors=5, owner_id=owner_b["id"]
+    )
+
+    pay_a = create_temp_payment(apartment_id=apt_a["id"], amount=10.00)
+    pay_b = create_temp_payment(apartment_id=apt_b["id"], amount=10.00)
+
+    a_client = _APIClient(env_config.api_url)
+    a_client.authenticate(owner_a["email"], owner_a["password"])
+    b_client = _APIClient(env_config.api_url)
+    b_client.authenticate(owner_b["email"], owner_b["password"])
+
+    yield {
+        "owner_a_token":        a_client.access_token,
+        "owner_b_token":        b_client.access_token,
+        "owner_a_apartment_id": apt_a["id"],
+        "owner_b_apartment_id": apt_b["id"],
+        "owner_a_payment_id":   pay_a["id"],
+        "owner_b_payment_id":   pay_b["id"],
+    }
+
+    a_client.logout()
+    b_client.logout()
