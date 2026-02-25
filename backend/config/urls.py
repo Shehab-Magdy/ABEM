@@ -33,3 +33,9 @@ if settings.DEBUG:
         urlpatterns = [path("__debug__/", include(debug_toolbar.urls))] + urlpatterns
     except ImportError:
         pass
+
+    # Serve uploaded media files locally in development
+    from django.conf.urls.static import static
+    urlpatterns += static(
+        settings.MEDIA_URL, document_root=getattr(settings, "MEDIA_ROOT", "")
+    )

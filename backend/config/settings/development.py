@@ -19,3 +19,8 @@ CORS_ALLOW_ALL_ORIGINS = True
 
 # Disable SSL requirement for local postgres
 DATABASES["default"]["OPTIONS"] = {"sslmode": "disable"}  # noqa: F405
+
+# Use local filesystem storage in development (avoids Cloudinary dependency)
+DEFAULT_FILE_STORAGE = "django.core.files.storage.FileSystemStorage"
+MEDIA_URL = "/media/"
+MEDIA_ROOT = BASE_DIR / "media"  # noqa: F405
