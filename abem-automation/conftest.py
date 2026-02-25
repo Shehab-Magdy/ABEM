@@ -34,9 +34,17 @@ from core.mobile_driver_factory import MobileDriverFactory
 from api.auth_api import AuthAPI
 from api.building_api import BuildingAPI
 from api.apartment_api import ApartmentAPI
+from api.expense_api import ExpenseAPI
+from api.category_api import CategoryAPI
 from api.user_api import UserAPI
 from utils.logger import get_logger
-from utils.test_data import ApartmentFactory, BuildingFactory, UserFactory
+from utils.test_data import (
+    ApartmentFactory,
+    BuildingFactory,
+    CategoryFactory,
+    ExpenseFactory,
+    UserFactory,
+)
 
 logger = get_logger("conftest")
 
@@ -52,6 +60,7 @@ def pytest_configure(config):
     config.addinivalue_line("markers", "sprint_0: Sprint 0 infrastructure tests")
     config.addinivalue_line("markers", "sprint_1: Sprint 1 auth & user tests")
     config.addinivalue_line("markers", "sprint_2: Sprint 2 buildings & apartment management tests")
+    config.addinivalue_line("markers", "sprint_3: Sprint 3 expense management tests")
     config.addinivalue_line("markers", "positive: Happy-path test cases")
     config.addinivalue_line("markers", "negative: Edge-case / error-path test cases")
 
@@ -345,3 +354,87 @@ def temp_apartment(create_temp_building, create_temp_apartment) -> dict:
         building_id=building["id"],
         num_floors=building["num_floors"],
     )
+
+
+# ── Sprint 3: Category fixtures ────────────────────────────────────────────────
+
+@pytest.fixture(scope="function")
+def create_temp_category(admin_api: APIClient):
+    """
+    Factory fixture: call it to create temporary expense categories via admin.
+    All categories created through this fixture are soft-deleted after the test.
+
+    Usage:
+        def test_something(create_temp_building, create_temp_category):
+            bld = create_temp_building()
+            cat = create_temp_category(building_id=bld["id"])
+    """
+    created_ids: list[str] = []
+    category_api = CategoryAPI(admin_api)
+
+    def _create(building_id: str, **overrides) -> dict:
+        data = CategoryFactory.valid(building_id=building_id)
+        data.update(overrides)
+        resp = category_api.create(**data)
+        assert resp.status_code == 201, f"Category creation failed: {resp.text}"
+        category = resp.json()
+        created_ids.append(category["id"])
+        return category
+
+    yield _create
+
+    for cid in created_ids:
+        try:
+            category_api.delete(cid)
+        except Exception as e:
+            logger.warning("Could not delete temp category %s: %s", cid, e)
+
+
+@pytest.fixture(scope="function")
+def temp_category(create_temp_building, create_temp_category) -> dict:
+    """Single temporary category inside a fresh building."""
+    building = create_temp_building()
+    return create_temp_category(building_id=building["id"])
+
+
+# ── Sprint 3: Expense fixtures ─────────────────────────────────────────────────
+
+@pytest.fixture(scope="function")
+def create_temp_expense(admin_api: APIClient):
+    """
+    Factory fixture: call it to create temporary expenses via admin.
+    All expenses created through this fixture are soft-deleted after the test.
+
+    Usage:
+        def test_something(create_temp_building, create_temp_category, create_temp_expense):
+            bld = create_temp_building()
+            cat = create_temp_category(building_id=bld["id"])
+            exp = create_temp_expense(building_id=bld["id"], category_id=cat["id"])
+    """
+    created_ids: list[str] = []
+    expense_api = ExpenseAPI(admin_api)
+
+    def _create(building_id: str, category_id: str, **overrides) -> dict:
+        data = ExpenseFactory.valid(building_id=building_id, category_id=category_id)
+        data.update(overrides)
+        resp = expense_api.create(**data)
+        assert resp.status_code == 201, f"Expense creation failed: {resp.text}"
+        expense = resp.json()
+        created_ids.append(expense["id"])
+        return expense
+
+    yield _create
+
+    for eid in created_ids:
+        try:
+            expense_api.delete(eid)
+        except Exception as e:
+            logger.warning("Could not delete temp expense %s: %s", eid, e)
+
+
+@pytest.fixture(scope="function")
+def temp_expense(create_temp_building, create_temp_category, create_temp_expense) -> dict:
+    """Single temporary expense in a fresh building with a fresh category."""
+    building = create_temp_building(num_floors=5)
+    category = create_temp_category(building_id=building["id"])
+    return create_temp_expense(building_id=building["id"], category_id=category["id"])

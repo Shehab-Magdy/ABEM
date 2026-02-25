@@ -225,3 +225,98 @@ class ApartmentFactory:
         d = ApartmentFactory.valid(building_id, num_floors)
         d["floor"] = num_floors + 1
         return d
+
+
+class CategoryFactory:
+    """Payloads for ExpenseCategory API tests (Sprint 3)."""
+
+    @staticmethod
+    def valid(building_id: str, name: Optional[str] = None) -> dict:
+        """Valid category creation payload."""
+        uid = str(uuid.uuid4())[:6]
+        return {
+            "building_id": building_id,
+            "name": name or f"Category-{uid}",
+            "description": fake.sentence(nb_words=6),
+        }
+
+    @staticmethod
+    def missing_building() -> dict:
+        """Payload without building_id — triggers 400."""
+        return {"name": f"Cat-{str(uuid.uuid4())[:6]}"}
+
+    @staticmethod
+    def missing_name(building_id: str) -> dict:
+        d = CategoryFactory.valid(building_id)
+        d.pop("name")
+        return d
+
+
+class ExpenseFactory:
+    """Payloads for Expense API tests (Sprint 3)."""
+
+    @staticmethod
+    def valid(building_id: str, category_id: str, amount: float = 100.0) -> dict:
+        """Valid expense creation payload."""
+        return {
+            "building_id": building_id,
+            "category_id": category_id,
+            "title": fake.sentence(nb_words=4).rstrip("."),
+            "description": fake.sentence(nb_words=8),
+            "amount": str(round(amount, 2)),
+            "expense_date": fake.date_between(start_date="-30d", end_date="today").isoformat(),
+            "split_type": "equal_all",
+        }
+
+    @staticmethod
+    def recurring(building_id: str, category_id: str) -> dict:
+        """Expense payload with is_recurring=True and monthly frequency."""
+        d = ExpenseFactory.valid(building_id, category_id)
+        d["is_recurring"] = True
+        d["frequency"] = "monthly"
+        return d
+
+    @staticmethod
+    def zero_amount(building_id: str, category_id: str) -> dict:
+        d = ExpenseFactory.valid(building_id, category_id)
+        d["amount"] = "0.00"
+        return d
+
+    @staticmethod
+    def negative_amount(building_id: str, category_id: str) -> dict:
+        d = ExpenseFactory.valid(building_id, category_id)
+        d["amount"] = "-50.00"
+        return d
+
+    @staticmethod
+    def missing_category(building_id: str) -> dict:
+        """Payload without category_id — triggers 400."""
+        return {
+            "building_id": building_id,
+            "title": "No Category",
+            "amount": "100.00",
+            "expense_date": "2026-01-01",
+            "split_type": "equal_all",
+        }
+
+    @staticmethod
+    def missing_date(building_id: str, category_id: str) -> dict:
+        d = ExpenseFactory.valid(building_id, category_id)
+        d.pop("expense_date")
+        return d
+
+    @staticmethod
+    def future_date(building_id: str, category_id: str) -> dict:
+        """Future expense date — valid per the SRS."""
+        d = ExpenseFactory.valid(building_id, category_id)
+        d["expense_date"] = fake.date_between(
+            start_date="+1d", end_date="+30d"
+        ).isoformat()
+        return d
+
+    @staticmethod
+    def custom_split(building_id: str, category_id: str, apartment_ids: list) -> dict:
+        d = ExpenseFactory.valid(building_id, category_id)
+        d["split_type"] = "custom"
+        d["custom_split_apartments"] = apartment_ids
+        return d
