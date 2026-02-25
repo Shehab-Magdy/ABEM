@@ -1,6 +1,10 @@
-"""Payment views – Sprint 4."""
+"""Payment views – Sprint 4 + Sprint 8 (PDF receipt)."""
 from __future__ import annotations
 
+import io
+
+from django.http import HttpResponse
+from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.viewsets import ModelViewSet
 from django.db import transaction
@@ -97,3 +101,44 @@ class PaymentViewSet(ModelViewSet):
             notify_payment_confirmed(payment)
         except Exception:
             pass
+
+    # ── PDF Receipt ─────────────────────────────────────────────────────────────
+
+    @action(
+        detail=True,
+        methods=["get"],
+        url_path="receipt",
+        permission_classes=[IsAuthenticated, IsAdminRole],
+    )
+    def receipt(self, request, pk=None):
+        """
+        GET /api/v1/payments/{id}/receipt/
+
+        Returns a single-page PDF receipt for the given payment.
+        """
+        from reportlab.pdfgen import canvas as rl_canvas
+
+        payment = self.get_object()
+
+        buf = io.BytesIO()
+        c = rl_canvas.Canvas(buf)
+        c.setFont("Helvetica-Bold", 16)
+        c.drawString(180, 800, "ABEM — Payment Receipt")
+        c.setFont("Helvetica", 12)
+        lines = [
+            f"Apartment: {payment.apartment.unit_number}",
+            f"Owner:     {payment.apartment.owner}",
+            f"Amount Paid:      {payment.amount_paid} EGP",
+            f"Payment Date:     {payment.payment_date}",
+            f"Method:           {payment.payment_method}",
+            f"Balance Before:   {payment.balance_before} EGP",
+            f"Balance After:    {payment.balance_after} EGP",
+        ]
+        for i, line in enumerate(lines):
+            c.drawString(50, 750 - i * 25, line)
+        c.save()
+        buf.seek(0)
+
+        resp = HttpResponse(buf.read(), content_type="application/pdf")
+        resp["Content-Disposition"] = f'inline; filename="receipt_{pk}.pdf"'
+        return resp

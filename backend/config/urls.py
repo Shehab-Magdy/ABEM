@@ -21,6 +21,7 @@ urlpatterns = [
     path("api/v1/dashboard/", include("apps.dashboard.urls")),
     path("api/v1/notifications/", include("apps.notifications.urls")),
     path("api/v1/audit/", include("apps.audit.urls")),
+    path("api/v1/exports/", include("apps.exports.urls")),
 
     # OpenAPI docs
     path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
