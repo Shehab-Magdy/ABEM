@@ -8,7 +8,7 @@
  */
 import { useEffect, useState } from "react";
 import { useNavigate, Link as RouterLink } from "react-router-dom";
-import { useForm, useFieldArray } from "react-hook-form";
+import { useForm, useFieldArray, Controller } from "react-hook-form";
 import {
   Alert,
   Box,
@@ -51,7 +51,7 @@ function AccountStep({ onDone }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const { login } = useAuthStore();
-  const { register, handleSubmit, watch, formState: { errors } } = useForm({ defaultValues: { role: "owner" } });
+  const { register, handleSubmit, watch, control, formState: { errors } } = useForm({ defaultValues: { role: "owner" } });
   const password = watch("password", "");
 
   const onSubmit = async (data) => {
@@ -71,11 +71,13 @@ function AccountStep({ onDone }) {
       login(user, access, refresh);
       onDone(user.role);
     } catch (err) {
-      const detail = err.response?.data;
-      if (detail && typeof detail === "object") {
-        setError(Object.values(detail).flat().join(" "));
+      const data = err.response?.data;
+      // Backend wraps errors: {"status":"error","code":400,"errors":{field:[msgs]}}
+      const errObj = (data && typeof data === "object") ? (data.errors ?? data) : data;
+      if (errObj && typeof errObj === "object") {
+        setError(Object.values(errObj).flat().join(" "));
       } else {
-        setError(detail || "Registration failed.");
+        setError(errObj || "Registration failed.");
       }
     } finally {
       setLoading(false);
@@ -122,10 +124,17 @@ function AccountStep({ onDone }) {
           })} />
         <FormControl component="fieldset">
           <FormLabel>I am a…</FormLabel>
-          <RadioGroup row defaultValue="owner">
-            <FormControlLabel value="owner" control={<Radio />} label="Owner (apartment / tenant)" {...register("role")} />
-            <FormControlLabel value="admin" control={<Radio />} label="Admin (building manager)" {...register("role")} />
-          </RadioGroup>
+          <Controller
+            name="role"
+            control={control}
+            defaultValue="owner"
+            render={({ field }) => (
+              <RadioGroup row {...field}>
+                <FormControlLabel value="owner" control={<Radio />} label="Owner (apartment / tenant)" />
+                <FormControlLabel value="admin" control={<Radio />} label="Admin (building manager)" />
+              </RadioGroup>
+            )}
+          />
         </FormControl>
         <Button type="submit" variant="contained" size="large" fullWidth disabled={loading}>
           {loading ? <CircularProgress size={24} color="inherit" /> : "Continue"}
@@ -163,8 +172,13 @@ function AdminBuildingsStep({ onDone, onSkip }) {
       }
       onDone();
     } catch (err) {
-      const detail = err.response?.data;
-      setError(typeof detail === "string" ? detail : JSON.stringify(detail));
+      const data = err.response?.data;
+      const errObj = (data && typeof data === "object") ? (data.errors ?? data) : data;
+      if (errObj && typeof errObj === "object") {
+        setError(Object.values(errObj).flat().join(" "));
+      } else {
+        setError(errObj || "Could not save buildings.");
+      }
     } finally {
       setSubmitting(false);
     }
