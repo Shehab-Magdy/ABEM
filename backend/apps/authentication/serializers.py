@@ -91,17 +91,18 @@ class ChangePasswordSerializer(serializers.Serializer):
 
 
 class SelfRegisterSerializer(serializers.ModelSerializer):
-    """Public self-registration — role is automatically set to 'owner'."""
+    """Public self-registration — caller chooses role (admin or owner)."""
 
     password = serializers.CharField(
         write_only=True,
         validators=[validate_password_complexity],
     )
     confirm_password = serializers.CharField(write_only=True)
+    role = serializers.ChoiceField(choices=["admin", "owner"], default="owner")
 
     class Meta:
         model = User
-        fields = ["id", "email", "first_name", "last_name", "phone", "password", "confirm_password"]
+        fields = ["id", "email", "first_name", "last_name", "phone", "role", "password", "confirm_password"]
         read_only_fields = ["id"]
 
     def validate_email(self, value):
@@ -116,7 +117,7 @@ class SelfRegisterSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         password = validated_data.pop("password")
-        user = User(role="owner", **validated_data)
+        user = User(**validated_data)
         user.set_password(password)
         user.save()
         return user

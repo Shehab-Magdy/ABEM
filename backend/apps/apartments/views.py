@@ -103,6 +103,71 @@ class ApartmentViewSet(ModelViewSet):
         )
         instance.delete()
 
+    # ── Sign-up wizard helpers ─────────────────────────────────────────────────
+
+    @action(detail=False, methods=["get"], url_path="available",
+            permission_classes=[IsAuthenticated])
+    def available(self, request):
+        """
+        GET /api/v1/apartments/available/?building_id={id}
+        Returns unowned apartments for a building.
+        Used in the owner sign-up wizard so the user can pick their unit.
+        """
+        building_id = request.query_params.get("building_id")
+        if not building_id:
+            return Response(
+                {"detail": "building_id query parameter is required."},
+                status=400,
+            )
+        apartments = (
+            Apartment.objects
+            .filter(building_id=building_id, owner__isnull=True)
+            .order_by("floor", "unit_number")
+        )
+        return Response(ApartmentSerializer(apartments, many=True).data)
+
+    @action(detail=True, methods=["post"], url_path="claim",
+            permission_classes=[IsAuthenticated])
+    def claim(self, request, pk=None):
+        """
+        POST /api/v1/apartments/{id}/claim/
+        An owner-role user claims an unowned apartment during sign-up.
+        Sets owner = request.user, status = occupied, and links user to building.
+        """
+        if request.user.role != "owner":
+            return Response(
+                {"detail": "Only users with role 'owner' can claim apartments."},
+                status=403,
+            )
+        try:
+            apartment = Apartment.objects.select_related("building").get(pk=pk)
+        except Apartment.DoesNotExist:
+            return Response({"detail": "Apartment not found."}, status=404)
+
+        if apartment.owner is not None:
+            return Response(
+                {"detail": "This apartment is already assigned to an owner."},
+                status=409,
+            )
+
+        apartment.owner = request.user
+        apartment.status = "occupied"
+        apartment.save(update_fields=["owner", "status", "updated_at"])
+
+        # Auto-join the owner to the building so they can see it
+        from apps.buildings.models import UserBuilding
+        UserBuilding.objects.get_or_create(user=request.user, building=apartment.building)
+
+        log_action(
+            user=request.user,
+            action="claim",
+            entity="apartment",
+            entity_id=apartment.pk,
+            changes={"owner": {"before": None, "after": str(request.user.pk)}},
+            request=request,
+        )
+        return Response(ApartmentSerializer(apartment).data)
+
     # ── Sprint 4: balance breakdown ─────────────────────────────────────────────
 
     @action(detail=True, methods=["get"], url_path="balance",

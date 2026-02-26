@@ -137,6 +137,27 @@ class BuildingViewSet(ModelViewSet):
         )
 
     @action(
+        detail=False,
+        methods=["get"],
+        url_path="directory",
+        permission_classes=[IsAuthenticated],
+    )
+    def directory(self, request):
+        """
+        GET /buildings/directory/
+        Returns all active buildings (id, name, city, country, address, num_floors).
+        Accessible to any authenticated user — used in the sign-up wizard so that
+        a new owner can browse all buildings before they are a member of any.
+        """
+        buildings = (
+            Building.objects
+            .filter(deleted_at__isnull=True, is_active=True)
+            .order_by("name")
+            .values("id", "name", "city", "country", "address", "num_floors")
+        )
+        return Response(list(buildings))
+
+    @action(
         detail=True,
         methods=["get"],
         url_path="apartments",
