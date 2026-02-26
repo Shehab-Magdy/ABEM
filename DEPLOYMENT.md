@@ -417,27 +417,43 @@ REDIS_URL=redis://redis:6379/0
 # ── JWT ───────────────────────────────────────────────────────────────────────
 # (uses Django SECRET_KEY by default — no extra var needed unless overriding)
 
-# ── Cloudinary (media storage) ─────────────────────────────────────────────────
-# Reference: https://cloudinary.com/documentation/django_integration
+# ── Media storage ─── pick ONE (see Section 2.3 for MinIO setup) ──────────────
+# Option A — Cloudinary (commercial SaaS, free 25 GB tier)
 CLOUDINARY_CLOUD_NAME=<your-cloud-name>
 CLOUDINARY_API_KEY=<your-api-key>
 CLOUDINARY_API_SECRET=<your-api-secret>
+# Option B — MinIO (open-source, self-hosted S3-compatible) ← uncomment to use
+# AWS_ACCESS_KEY_ID=<minio-root-user>
+# AWS_SECRET_ACCESS_KEY=<minio-root-password>
+# AWS_STORAGE_BUCKET_NAME=abem-media
+# AWS_S3_ENDPOINT_URL=http://minio:9000
 
-# ── Celery / Email ─────────────────────────────────────────────────────────────
+# ── Email ─── pick ONE (see Section 2.6 for Postfix setup) ────────────────────
 CELERY_BROKER_URL=redis://redis:6379/0
+# Option A — Gmail SMTP (Google free tier, 500 msgs/day)
 EMAIL_HOST=smtp.gmail.com
 EMAIL_PORT=587
 EMAIL_USE_TLS=True
 EMAIL_HOST_USER=<your-email@gmail.com>
 EMAIL_HOST_PASSWORD=<gmail-app-password>   # https://support.google.com/accounts/answer/185833
+# Option B — Postfix self-hosted (open-source) ← uncomment to use
+# EMAIL_HOST=localhost
+# EMAIL_PORT=25
+# EMAIL_USE_TLS=False
+# EMAIL_HOST_USER=
+# EMAIL_HOST_PASSWORD=
 
-# ── Firebase (push notifications) ─────────────────────────────────────────────
-# Reference: https://firebase.google.com/docs/admin/setup
+# ── Push notifications ─── pick ONE (see Section 2.4 for ntfy setup) ──────────
+# Option A — Firebase FCM (Google, free; required for native Android/iOS push)
 FIREBASE_CREDENTIALS_PATH=/app/firebase-credentials.json
+# Option B — ntfy self-hosted (open-source, replaces FCM for web/in-app) ← uncomment to use
+# NTFY_BASE_URL=http://ntfy:80
 
-# ── Sentry (error tracking — optional but recommended) ────────────────────────
-# Reference: https://docs.sentry.io/platforms/python/guides/django/
+# ── Error tracking ─── pick ONE (see Section 2.5 for GlitchTip setup) ─────────
+# Option A — Sentry cloud (commercial SaaS, free 5k events/mo)
 SENTRY_DSN=<your-sentry-dsn>
+# Option B — GlitchTip self-hosted (open-source, Sentry-compatible) ← uncomment to use
+# SENTRY_DSN=https://<key>@glitchtip.yourdomain.com/<project-id>
 
 # ── Frontend ──────────────────────────────────────────────────────────────────
 VITE_API_BASE_URL=https://abem.yourdomain.com/api/v1
@@ -685,9 +701,14 @@ docker compose -f docker-compose.prod.yml exec backend \
 
 **Reference:** [WhiteNoise documentation](https://whitenoise.readthedocs.io/en/stable/django.html)
 
-### Media Files (Cloudinary)
+### Media Files
 
-User-uploaded files (expense bills, profile photos) are stored on [Cloudinary](https://cloudinary.com/documentation/django_integration).  Ensure the three Cloudinary environment variables are set in `.env.prod`.
+User-uploaded files (expense bills, profile photos) require an object store.
+
+| Option | Type | Setup |
+|--------|------|-------|
+| **Cloudinary** | Commercial SaaS (free 25 GB tier) | Set `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` in `.env.prod` |
+| **MinIO** | Open-source, self-hosted | See [Section 2.3](#23-open-source-alternative-minio-replaces-cloudinary) for Docker Compose snippet and Django settings |
 
 ---
 
@@ -981,18 +1002,27 @@ Append a deployment job to `backend-ci.yml` (after tests pass):
 
 ## 16. Monitoring & Logging
 
-### Application Error Tracking (Sentry)
+### Application Error Tracking
 
+The backend is pre-wired to the Sentry SDK in `config/settings/production.py`. Two options:
+
+**Option A — Sentry cloud** (commercial SaaS, free tier 5k events/mo):
 1. Create a project at [sentry.io](https://sentry.io/welcome/)
-2. Copy the DSN and add to `.env.prod`:
-
+2. Add the DSN to `.env.prod`:
    ```bash
    SENTRY_DSN=https://<key>@o<org>.ingest.sentry.io/<project>
    ```
 
-Sentry is already integrated in `config/settings/production.py`.
+**Option B — GlitchTip** (open-source, self-hosted, Sentry-compatible — see [Section 2.5](#25-open-source-alternative-glitchtip-replaces-sentry-cloud)):
+1. Deploy GlitchTip alongside the app (Docker Compose snippet in Section 2.5)
+2. Add its DSN to `.env.prod`:
+   ```bash
+   SENTRY_DSN=https://<key>@glitchtip.yourdomain.com/<project-id>
+   ```
 
-**Reference:** [Sentry Django integration](https://docs.sentry.io/platforms/python/guides/django/)
+No code change needed — the existing `sentry_sdk.init()` call works with both.
+
+**Reference:** [Sentry Django integration](https://docs.sentry.io/platforms/python/guides/django/) · [GlitchTip self-hosting docs](https://glitchtip.com/documentation/install)
 
 ### Container Logs
 
@@ -1108,6 +1138,8 @@ docker compose -f docker-compose.prod.yml start backend celery_worker
 
 ## 20. Useful References
 
+### Core Stack (all open-source)
+
 | Topic | Link |
 |-------|------|
 | Django deployment checklist | https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/ |
@@ -1125,9 +1157,30 @@ docker compose -f docker-compose.prod.yml start backend celery_worker
 | Flutter Android release | https://docs.flutter.dev/deployment/android |
 | Flutter iOS release | https://docs.flutter.dev/deployment/ios |
 | GitHub Actions | https://docs.github.com/en/actions |
-| Sentry Django | https://docs.sentry.io/platforms/python/guides/django/ |
-| Cloudinary Django | https://cloudinary.com/documentation/django_integration |
 | OWASP Top 10 | https://owasp.org/www-project-top-ten/ |
+
+### Open-Source Alternatives
+
+| Tool | Replaces | Link |
+|------|---------|------|
+| MinIO (media storage) | Cloudinary | https://min.io/docs/minio/linux/index.html |
+| django-storages S3 backend | Cloudinary SDK | https://django-storages.readthedocs.io/en/latest/backends/amazon-S3.html |
+| ntfy (push notifications) | Firebase FCM | https://docs.ntfy.sh/ |
+| GlitchTip (error tracking) | Sentry cloud | https://glitchtip.com/documentation/install |
+| Postfix (email MTA) | Gmail SMTP | http://www.postfix.org/documentation.html |
+| OpenDKIM (email signing) | — | http://www.opendkim.org/opendkim-README |
+| Gitea (source control) | GitHub | https://docs.gitea.com/ |
+| Woodpecker CI (CI/CD) | GitHub Actions | https://woodpecker-ci.org/docs/intro |
+
+### Commercial / Third-Party (referenced in this guide)
+
+| Service | Link |
+|---------|------|
+| Cloudinary Django SDK | https://cloudinary.com/documentation/django_integration |
+| Firebase FCM setup | https://firebase.google.com/docs/admin/setup |
+| Sentry Django | https://docs.sentry.io/platforms/python/guides/django/ |
+| Google Play Console | https://play.google.com/console |
+| Apple App Store Connect | https://developer.apple.com/app-store-connect/ |
 
 ---
 
