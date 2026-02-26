@@ -223,12 +223,60 @@ FIREBASE_CREDENTIALS_PATH = config("FIREBASE_CREDENTIALS_PATH", default="")
 # drf-spectacular (OpenAPI docs)
 # ---------------------------------------------------------------------------
 SPECTACULAR_SETTINGS = {
+    # ── Identity ───────────────────────────────────────────────────────────────
     "TITLE": "ABEM API",
-    "DESCRIPTION": "Apartment & Building Expense Management — REST API",
+    "DESCRIPTION": (
+        "**Apartment & Building Expense Management** — multi-tenant financial platform.\n\n"
+        "Manages buildings, apartments, shared expenses, payments, notifications, and audit logs.\n\n"
+        "### Authentication\n"
+        "All endpoints (except `/auth/login/` and `/auth/register/`) require a **Bearer JWT** token.\n"
+        "Obtain tokens via `POST /api/v1/auth/login/` and include `Authorization: Bearer <access>` "
+        "in every request.  Access tokens expire after 60 minutes; use the refresh endpoint to "
+        "obtain a new one.\n\n"
+        "### Roles\n"
+        "| Role  | Description |\n"
+        "|-------|-------------|\n"
+        "| **admin** | Full CRUD on all resources, audit log, exports |\n"
+        "| **owner** | Read-only access scoped to their own buildings/apartments/payments |"
+    ),
     "VERSION": "1.0.0",
+    "CONTACT": {
+        "name": "ABEM Support",
+        "email": "cegres1@yahoo.com",
+    },
+    "LICENSE": {"name": "Proprietary"},
+    # ── Schema generation ──────────────────────────────────────────────────────
     "SERVE_INCLUDE_SCHEMA": False,
     "COMPONENT_SPLIT_REQUEST": True,
     "SCHEMA_PATH_PREFIX": "/api/v1/",
+    # ── Security schemes ───────────────────────────────────────────────────────
+    "SECURITY": [{"BearerAuth": []}],
+    "APPEND_COMPONENTS": {
+        "securitySchemes": {
+            "BearerAuth": {
+                "type": "http",
+                "scheme": "bearer",
+                "bearerFormat": "JWT",
+                "description": "Enter your access token (obtained from POST /api/v1/auth/login/)",
+            }
+        }
+    },
+    # ── Tag grouping (matches app names) ──────────────────────────────────────
+    "TAGS": [
+        {"name": "auth",          "description": "Login, logout, register, token refresh, profile"},
+        {"name": "users",         "description": "User management (admin only)"},
+        {"name": "buildings",     "description": "Building CRUD and user assignment"},
+        {"name": "apartments",    "description": "Apartment CRUD with owner assignment"},
+        {"name": "expenses",      "description": "Shared expense creation and split management"},
+        {"name": "payments",      "description": "Payment recording and receipt generation"},
+        {"name": "dashboard",     "description": "Aggregated financial dashboards"},
+        {"name": "notifications", "description": "In-app notification inbox"},
+        {"name": "audit",         "description": "Immutable audit log (admin only)"},
+        {"name": "exports",       "description": "CSV/XLSX data exports (admin only)"},
+    ],
+    # ── UI enhancements ────────────────────────────────────────────────────────
+    "SORT_OPERATIONS": False,
+    "ENUM_GENERATE_CHOICE_DESCRIPTION": True,
 }
 
 # ---------------------------------------------------------------------------
