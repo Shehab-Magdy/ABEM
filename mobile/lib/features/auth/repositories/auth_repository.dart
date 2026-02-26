@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:dio/dio.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/api/api_client.dart';
 
@@ -97,5 +98,31 @@ class AuthRepository {
   Future<void> _clearUser() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_userKey);
+  }
+
+  /// Upload a new profile picture and persist the updated user locally.
+  Future<Map<String, dynamic>> uploadProfilePicture(XFile imageFile) async {
+    final formData = FormData.fromMap({
+      'profile_picture': await MultipartFile.fromFile(
+        imageFile.path,
+        filename: imageFile.name,
+      ),
+    });
+    final response = await apiClient.dio.patch(
+      '/auth/profile/',
+      data: formData,
+      options: Options(contentType: 'multipart/form-data'),
+    );
+    final data = response.data as Map<String, dynamic>;
+    await _storeUser(data);
+    return data;
+  }
+
+  /// Update profile fields (first_name, last_name, phone) and persist locally.
+  Future<Map<String, dynamic>> updateProfile(Map<String, dynamic> fields) async {
+    final response = await apiClient.dio.patch('/auth/profile/', data: fields);
+    final data = response.data as Map<String, dynamic>;
+    await _storeUser(data);
+    return data;
   }
 }

@@ -8,4 +8,11 @@ export const authApi = {
   changePassword: (data) => axiosClient.patch("/auth/change-password/", data),
   getProfile: () => axiosClient.get("/auth/profile/"),
   updateProfile: (data) => axiosClient.patch("/auth/profile/", data),
+  uploadProfilePicture: (file) => {
+    const fd = new FormData();
+    fd.append("profile_picture", file);
+    return axiosClient.patch("/auth/profile/", fd, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+  },
 };

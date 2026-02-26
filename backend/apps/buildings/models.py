@@ -12,6 +12,8 @@ class Building(models.Model):
     city = models.CharField(max_length=100, blank=True)
     country = models.CharField(max_length=100, blank=True)
     num_floors = models.PositiveSmallIntegerField(default=1)
+    num_apartments = models.PositiveSmallIntegerField(default=0)
+    num_stores = models.PositiveSmallIntegerField(default=0)
     photo = models.ImageField(upload_to="buildings/photos/", null=True, blank=True)
 
     admin = models.ForeignKey(

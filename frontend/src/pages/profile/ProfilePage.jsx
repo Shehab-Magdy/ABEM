@@ -1,17 +1,20 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import {
   Alert,
+  Avatar,
   Box,
   Button,
   Card,
   CardContent,
   CircularProgress,
-  Divider,
+  IconButton,
   Stack,
   TextField,
+  Tooltip,
   Typography,
 } from "@mui/material";
+import { CameraAlt } from "@mui/icons-material";
 import { authApi } from "../../api/authApi";
 import { useAuth } from "../../hooks/useAuth";
 
@@ -23,9 +26,29 @@ export default function ProfilePage() {
   const [pwError, setPwError] = useState(null);
   const [savingProfile, setSavingProfile] = useState(false);
   const [savingPw, setSavingPw] = useState(false);
+  const [uploadingPic, setUploadingPic] = useState(false);
+  const [picError, setPicError] = useState(null);
+  const fileInputRef = useRef(null);
 
   const profileForm = useForm({ defaultValues: { first_name: user?.first_name, last_name: user?.last_name, phone: user?.phone } });
   const pwForm = useForm();
+
+  // ── Profile picture upload ───────────────────────────────────────────────────
+  const handlePictureChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setPicError(null);
+    setUploadingPic(true);
+    try {
+      const res = await authApi.uploadProfilePicture(file);
+      setUser(res.data);
+    } catch {
+      setPicError("Could not upload photo. Please try again.");
+    } finally {
+      setUploadingPic(false);
+      e.target.value = "";
+    }
+  };
 
   // ── Update profile ──────────────────────────────────────────────────────────
   const onSaveProfile = async (data) => {
@@ -63,6 +86,63 @@ export default function ProfilePage() {
   return (
     <Box maxWidth={640}>
       <Typography variant="h5" mb={3}>My Profile</Typography>
+
+      {/* Profile picture */}
+      <Card sx={{ mb: 3 }}>
+        <CardContent>
+          <Typography variant="h6" mb={2}>Profile Picture</Typography>
+          {picError && <Alert severity="error" sx={{ mb: 2 }}>{picError}</Alert>}
+          <Stack direction="row" spacing={3} alignItems="center">
+            <Box sx={{ position: "relative", display: "inline-flex" }}>
+              <Avatar
+                src={user?.profile_picture || undefined}
+                sx={{ width: 88, height: 88, fontSize: 32 }}
+              >
+                {!user?.profile_picture && (user?.first_name?.[0] ?? "?")}
+              </Avatar>
+              <Tooltip title="Change photo">
+                <IconButton
+                  size="small"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploadingPic}
+                  sx={{
+                    position: "absolute",
+                    bottom: 0,
+                    right: 0,
+                    bgcolor: "primary.main",
+                    color: "white",
+                    "&:hover": { bgcolor: "primary.dark" },
+                    width: 28,
+                    height: 28,
+                  }}
+                >
+                  {uploadingPic
+                    ? <CircularProgress size={14} color="inherit" />
+                    : <CameraAlt sx={{ fontSize: 16 }} />}
+                </IconButton>
+              </Tooltip>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                hidden
+                onChange={handlePictureChange}
+              />
+            </Box>
+            <Stack spacing={0.5}>
+              <Typography variant="body2" fontWeight={500}>
+                {user?.first_name} {user?.last_name}
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                Click the camera icon to upload a new photo.
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                Accepted: JPG, PNG, WEBP (max 5 MB).
+              </Typography>
+            </Stack>
+          </Stack>
+        </CardContent>
+      </Card>
 
       {/* Profile details */}
       <Card sx={{ mb: 3 }}>

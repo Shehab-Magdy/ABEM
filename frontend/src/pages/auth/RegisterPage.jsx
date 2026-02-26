@@ -1,10 +1,11 @@
 /**
  * Multi-step registration wizard.
  *
- * Step 1 (all):   Account details + role selection (Admin | Owner)
- * Step 2 Admin:   Add one or more buildings to manage (can skip)
- * Step 2 Owner:   Select a building → select an available apartment to claim (can skip)
- * Step 3:         Success — redirect to dashboard
+ * Step 1 (all):         Account details + role selection (Admin | Owner)
+ * Step 2 Admin:         Add one or more buildings to manage (can skip)
+ * Step 2.5 Admin:       Optionally claim an apartment/store in one of those buildings
+ * Step 2 Owner:         Select a building → select an available unit to claim (can skip)
+ * Step 3:               Success — redirect to dashboard
  */
 import { useEffect, useState } from "react";
 import { useNavigate, Link as RouterLink } from "react-router-dom";
@@ -15,6 +16,7 @@ import {
   Button,
   Card,
   CardContent,
+  Chip,
   CircularProgress,
   Divider,
   FormControl,
@@ -33,6 +35,8 @@ import {
   StepLabel,
   Stepper,
   TextField,
+  ToggleButton,
+  ToggleButtonGroup,
   Typography,
 } from "@mui/material";
 import { Add, Delete, Visibility, VisibilityOff } from "@mui/icons-material";
@@ -41,8 +45,8 @@ import { buildingsApi } from "../../api/buildingsApi";
 import { apartmentsApi } from "../../api/apartmentsApi";
 import { useAuthStore } from "../../contexts/authStore";
 
-const STEPS_ADMIN = ["Account", "Your Buildings", "Done"];
-const STEPS_OWNER = ["Account", "Your Apartment", "Done"];
+const STEPS_ADMIN = ["Account", "Your Buildings", "Your Unit", "Done"];
+const STEPS_OWNER = ["Account", "Your Unit", "Done"];
 
 // ── Step 1: Account ────────────────────────────────────────────────────────────
 
@@ -154,7 +158,9 @@ function AdminBuildingsStep({ onDone, onSkip }) {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
   const { control, register, handleSubmit, formState: { errors } } = useForm({
-    defaultValues: { buildings: [{ name: "", address: "", city: "", country: "", num_floors: 1 }] },
+    defaultValues: {
+      buildings: [{ name: "", address: "", city: "", country: "", num_floors: 1, num_apartments: 0, num_stores: 0 }],
+    },
   });
   const { fields, append, remove } = useFieldArray({ control, name: "buildings" });
 
@@ -165,8 +171,13 @@ function AdminBuildingsStep({ onDone, onSkip }) {
       for (const b of data.buildings) {
         if (b.name.trim()) {
           await buildingsApi.create({
-            name: b.name, address: b.address, city: b.city,
-            country: b.country || "", num_floors: parseInt(b.num_floors, 10) || 1,
+            name: b.name,
+            address: b.address,
+            city: b.city,
+            country: b.country || "",
+            num_floors: parseInt(b.num_floors, 10) || 1,
+            num_apartments: parseInt(b.num_apartments, 10) || 0,
+            num_stores: parseInt(b.num_stores, 10) || 0,
           });
         }
       }
@@ -215,14 +226,24 @@ function AdminBuildingsStep({ onDone, onSkip }) {
                 <TextField label="Country" fullWidth size="small"
                   {...register(`buildings.${idx}.country`)} />
               </Stack>
-              <TextField label="Number of floors *" type="number" size="small"
-                inputProps={{ min: 1 }} sx={{ maxWidth: 200 }}
-                {...register(`buildings.${idx}.num_floors`)} />
+              <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+                <TextField label="Floors *" type="number" size="small" fullWidth
+                  inputProps={{ min: 1 }}
+                  {...register(`buildings.${idx}.num_floors`)} />
+                <TextField label="# Apartments" type="number" size="small" fullWidth
+                  inputProps={{ min: 0 }}
+                  helperText="Auto-created as A1, A2…"
+                  {...register(`buildings.${idx}.num_apartments`)} />
+                <TextField label="# Stores" type="number" size="small" fullWidth
+                  inputProps={{ min: 0 }}
+                  helperText="Auto-created as S1, S2…"
+                  {...register(`buildings.${idx}.num_stores`)} />
+              </Stack>
             </Stack>
           </Box>
         ))}
         <Button variant="outlined" startIcon={<Add />} size="small" sx={{ alignSelf: "flex-start" }}
-          onClick={() => append({ name: "", address: "", city: "", country: "", num_floors: 1 })}>
+          onClick={() => append({ name: "", address: "", city: "", country: "", num_floors: 1, num_apartments: 0, num_stores: 0 })}>
           Add another building
         </Button>
         <Stack direction="row" spacing={2}>
@@ -236,13 +257,14 @@ function AdminBuildingsStep({ onDone, onSkip }) {
   );
 }
 
-// ── Step 2 Owner: Select building + apartment ──────────────────────────────────
+// ── Shared: Select and claim a unit ───────────────────────────────────────────
 
-function OwnerApartmentStep({ onDone, onSkip }) {
+function ClaimUnitStep({ onDone, onSkip, isAdmin }) {
   const [buildings, setBuildings] = useState([]);
   const [apartments, setApartments] = useState([]);
   const [selectedBuilding, setSelectedBuilding] = useState("");
   const [selectedApartment, setSelectedApartment] = useState("");
+  const [unitTypeFilter, setUnitTypeFilter] = useState("all");
   const [loadingBuildings, setLoadingBuildings] = useState(true);
   const [loadingApts, setLoadingApts] = useState(false);
   const [claiming, setClaiming] = useState(false);
@@ -261,7 +283,7 @@ function OwnerApartmentStep({ onDone, onSkip }) {
     setSelectedApartment("");
     apartmentsApi.available(selectedBuilding)
       .then((r) => setApartments(r.data))
-      .catch(() => setError("Could not load apartments."))
+      .catch(() => setError("Could not load units."))
       .finally(() => setLoadingApts(false));
   }, [selectedBuilding]);
 
@@ -273,11 +295,15 @@ function OwnerApartmentStep({ onDone, onSkip }) {
       await apartmentsApi.claim(selectedApartment);
       onDone();
     } catch (err) {
-      setError(err.response?.data?.detail || "Could not claim apartment.");
+      setError(err.response?.data?.detail || "Could not claim unit.");
     } finally {
       setClaiming(false);
     }
   };
+
+  const filtered = unitTypeFilter === "all"
+    ? apartments
+    : apartments.filter((a) => a.unit_type === unitTypeFilter);
 
   if (loadingBuildings) return <Box display="flex" justifyContent="center" p={4}><CircularProgress /></Box>;
 
@@ -285,43 +311,82 @@ function OwnerApartmentStep({ onDone, onSkip }) {
     <Stack spacing={3}>
       {error && <Alert severity="error" onClose={() => setError(null)}>{error}</Alert>}
       <Typography variant="body2" color="text.secondary">
-        Select your building and the apartment you own. You can update this later from your profile.
+        {isAdmin
+          ? "If you also own a unit in one of your buildings, select it here. You can skip and do this later."
+          : "Select your building and the unit you own. You can update this later from your profile."}
       </Typography>
       {buildings.length === 0 ? (
         <Alert severity="info">
-          No buildings registered yet. Ask your building manager to add your building first, then you can link your apartment from the dashboard.
+          No buildings registered yet.{" "}
+          {isAdmin
+            ? "Go back and add your building first, or skip."
+            : "Ask your building manager to register the building first."}
         </Alert>
       ) : (
         <>
           <FormControl fullWidth>
-            <InputLabel>Select your building</InputLabel>
-            <Select label="Select your building" value={selectedBuilding}
-              onChange={(e) => setSelectedBuilding(e.target.value)}>
+            <InputLabel>Select building</InputLabel>
+            <Select
+              label="Select building"
+              value={selectedBuilding}
+              onChange={(e) => { setSelectedBuilding(e.target.value); setUnitTypeFilter("all"); setSelectedApartment(""); }}
+            >
               {buildings.map((b) => (
                 <MenuItem key={b.id} value={b.id}>{b.name} — {b.city}</MenuItem>
               ))}
             </Select>
           </FormControl>
+
           {selectedBuilding && (
             loadingApts ? (
               <Box display="flex" justifyContent="center"><CircularProgress size={28} /></Box>
             ) : apartments.length === 0 ? (
-              <Alert severity="info">
-                No available (unassigned) apartments in this building. Ask your manager to add your unit.
-              </Alert>
+              <Alert severity="info">No available units in this building.</Alert>
             ) : (
-              <FormControl fullWidth>
-                <InputLabel>Select your apartment</InputLabel>
-                <Select label="Select your apartment" value={selectedApartment}
-                  onChange={(e) => setSelectedApartment(e.target.value)}>
-                  {apartments.map((a) => (
-                    <MenuItem key={a.id} value={a.id}>
-                      Unit {a.unit_number} — Floor {a.floor}
-                      {a.size_sqm ? ` — ${a.size_sqm} m²` : ""}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
+              <>
+                <Stack direction="row" spacing={1} alignItems="center">
+                  <Typography variant="body2" color="text.secondary">Filter by type:</Typography>
+                  <ToggleButtonGroup
+                    value={unitTypeFilter}
+                    exclusive
+                    onChange={(_, v) => { if (v) { setUnitTypeFilter(v); setSelectedApartment(""); } }}
+                    size="small"
+                  >
+                    <ToggleButton value="all">All</ToggleButton>
+                    <ToggleButton value="apartment">Apartments</ToggleButton>
+                    <ToggleButton value="store">Stores</ToggleButton>
+                  </ToggleButtonGroup>
+                </Stack>
+                {filtered.length === 0 ? (
+                  <Alert severity="info">No {unitTypeFilter} units available in this building.</Alert>
+                ) : (
+                  <FormControl fullWidth>
+                    <InputLabel>Select your unit number</InputLabel>
+                    <Select
+                      label="Select your unit number"
+                      value={selectedApartment}
+                      onChange={(e) => setSelectedApartment(e.target.value)}
+                    >
+                      {filtered.map((a) => (
+                        <MenuItem key={a.id} value={a.id}>
+                          <Stack direction="row" spacing={1} alignItems="center">
+                            <Chip
+                              label={a.unit_type === "store" ? "Store" : "Apt"}
+                              size="small"
+                              color={a.unit_type === "store" ? "warning" : "primary"}
+                              variant="outlined"
+                            />
+                            <span>
+                              Unit {a.unit_number} — Floor {a.floor}
+                              {a.size_sqm ? ` — ${a.size_sqm} m²` : ""}
+                            </span>
+                          </Stack>
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                )}
+              </>
             )
           )}
         </>
@@ -329,14 +394,14 @@ function OwnerApartmentStep({ onDone, onSkip }) {
       <Stack direction="row" spacing={2}>
         <Button variant="outlined" fullWidth onClick={onSkip}>Skip for now</Button>
         <Button variant="contained" fullWidth disabled={!selectedApartment || claiming} onClick={handleClaim}>
-          {claiming ? <CircularProgress size={22} color="inherit" /> : "Claim Apartment"}
+          {claiming ? <CircularProgress size={22} color="inherit" /> : "Claim Unit"}
         </Button>
       </Stack>
     </Stack>
   );
 }
 
-// ── Step 3: Done ───────────────────────────────────────────────────────────────
+// ── Step 3 / 4: Done ──────────────────────────────────────────────────────────
 
 function DoneStep({ role, onFinish }) {
   return (
@@ -359,6 +424,8 @@ export default function RegisterPage() {
   const [step, setStep] = useState(0);
   const [role, setRole] = useState("owner");
 
+  // Admin: Account(0) → Buildings(1) → Unit(2) → Done(3)
+  // Owner: Account(0) → Unit(1) → Done(2)
   const steps = role === "admin" ? STEPS_ADMIN : STEPS_OWNER;
 
   return (
@@ -380,13 +447,23 @@ export default function RegisterPage() {
           {step === 0 && (
             <AccountStep onDone={(r) => { setRole(r); setStep(1); }} />
           )}
+
+          {/* Admin path: Buildings → Unit → Done */}
           {step === 1 && role === "admin" && (
             <AdminBuildingsStep onDone={() => setStep(2)} onSkip={() => setStep(2)} />
           )}
-          {step === 1 && role === "owner" && (
-            <OwnerApartmentStep onDone={() => setStep(2)} onSkip={() => setStep(2)} />
+          {step === 2 && role === "admin" && (
+            <ClaimUnitStep isAdmin onDone={() => setStep(3)} onSkip={() => setStep(3)} />
           )}
-          {step === 2 && (
+          {step === 3 && role === "admin" && (
+            <DoneStep role={role} onFinish={() => navigate("/dashboard", { replace: true })} />
+          )}
+
+          {/* Owner path: Unit → Done */}
+          {step === 1 && role === "owner" && (
+            <ClaimUnitStep onDone={() => setStep(2)} onSkip={() => setStep(2)} />
+          )}
+          {step === 2 && role === "owner" && (
             <DoneStep role={role} onFinish={() => navigate("/dashboard", { replace: true })} />
           )}
         </CardContent>

@@ -9,21 +9,24 @@ class BuildingSerializer(serializers.ModelSerializer):
     """
     Full CRUD serializer for Building.
 
-    Read:  returns id, tenant_id (= id), name, address, city, country,
-           num_floors, is_active, created_at, updated_at.
-    Write: accepts name, address, city, country, num_floors,
-           and optional num_apartments (validated >= 0, not persisted).
+    Read:  returns id, tenant_id, name, address, city, country,
+           num_floors, num_apartments, num_stores, is_active, created_at, updated_at.
+    Write: accepts the same fields; num_apartments and num_stores are persisted
+           and trigger auto-creation of vacant Apartment/store records.
     """
 
-    # tenant_id mirrors the building UUID (each building is its own tenant)
     tenant_id = serializers.UUIDField(source="id", read_only=True)
-    # num_apartments: request-only hint; validated but not stored in Building
     num_apartments = serializers.IntegerField(
-        write_only=True,
         required=False,
         default=0,
         min_value=0,
-        help_text="Non-negative count of apartments. Validated but not persisted.",
+        help_text="Number of apartment units in the building.",
+    )
+    num_stores = serializers.IntegerField(
+        required=False,
+        default=0,
+        min_value=0,
+        help_text="Number of store/commercial units in the building.",
     )
 
     class Meta:
@@ -37,6 +40,7 @@ class BuildingSerializer(serializers.ModelSerializer):
             "country",
             "num_floors",
             "num_apartments",
+            "num_stores",
             "is_active",
             "created_at",
             "updated_at",
@@ -50,13 +54,72 @@ class BuildingSerializer(serializers.ModelSerializer):
             )
         return value
 
+    def _create_units(self, building):
+        """Auto-create vacant apartment and store records for a new building."""
+        # Import here to avoid circular-import at module level
+        from apps.apartments.models import Apartment
+
+        units = []
+        for i in range(1, building.num_apartments + 1):
+            units.append(Apartment(
+                building=building,
+                unit_number=f"A{i}",
+                floor=1,
+                unit_type="apartment",
+                status="vacant",
+            ))
+        for i in range(1, building.num_stores + 1):
+            units.append(Apartment(
+                building=building,
+                unit_number=f"S{i}",
+                floor=1,
+                unit_type="store",
+                status="vacant",
+            ))
+        if units:
+            Apartment.objects.bulk_create(units)
+
     def create(self, validated_data):
-        validated_data.pop("num_apartments", None)
-        return super().create(validated_data)
+        building = super().create(validated_data)
+        self._create_units(building)
+        return building
 
     def update(self, instance, validated_data):
-        validated_data.pop("num_apartments", None)
-        return super().update(instance, validated_data)
+        old_apts = instance.num_apartments
+        old_stores = instance.num_stores
+        building = super().update(instance, validated_data)
+
+        # Auto-create newly added units only (never delete existing ones)
+        from apps.apartments.models import Apartment
+        new_apts = building.num_apartments - old_apts
+        new_stores = building.num_stores - old_stores
+
+        units = []
+        if new_apts > 0:
+            existing = set(
+                Apartment.objects.filter(building=building, unit_type="apartment")
+                .values_list("unit_number", flat=True)
+            )
+            for i in range(1, building.num_apartments + 1):
+                if f"A{i}" not in existing:
+                    units.append(Apartment(
+                        building=building, unit_number=f"A{i}",
+                        floor=1, unit_type="apartment", status="vacant",
+                    ))
+        if new_stores > 0:
+            existing = set(
+                Apartment.objects.filter(building=building, unit_type="store")
+                .values_list("unit_number", flat=True)
+            )
+            for i in range(1, building.num_stores + 1):
+                if f"S{i}" not in existing:
+                    units.append(Apartment(
+                        building=building, unit_number=f"S{i}",
+                        floor=1, unit_type="store", status="vacant",
+                    ))
+        if units:
+            Apartment.objects.bulk_create(units)
+        return building
 
 
 class AssignUserSerializer(serializers.Serializer):

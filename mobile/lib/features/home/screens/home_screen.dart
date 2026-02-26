@@ -1,5 +1,7 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../auth/bloc/auth_bloc.dart';
 import '../../buildings/screens/buildings_screen.dart';
@@ -24,6 +26,31 @@ class _HomeScreenState extends State<HomeScreen> {
     NotificationsScreen(),
   ];
 
+  CircleAvatar _buildAvatar(
+    Map<String, dynamic> user,
+    ThemeData theme, {
+    double radius = 20,
+    double fontSize = 14,
+  }) {
+    final pictureUrl = user['profile_picture'] as String?;
+    final initials =
+        ((user['first_name'] as String? ?? '?')[0]).toUpperCase();
+    if (pictureUrl != null && pictureUrl.isNotEmpty) {
+      return CircleAvatar(
+        radius: radius,
+        backgroundImage: CachedNetworkImageProvider(pictureUrl),
+      );
+    }
+    return CircleAvatar(
+      radius: radius,
+      backgroundColor: theme.colorScheme.primary,
+      child: Text(
+        initials,
+        style: TextStyle(color: theme.colorScheme.onPrimary, fontSize: fontSize),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -36,22 +63,23 @@ class _HomeScreenState extends State<HomeScreen> {
         title: const Text('ABEM'),
         centerTitle: false,
         actions: [
-          // User info chip
+          // User avatar chip — taps open Profile screen
           if (user != null)
             Padding(
               padding: const EdgeInsets.only(right: 8),
               child: Center(
-                child: Chip(
-                  avatar: CircleAvatar(
-                    backgroundColor: theme.colorScheme.primary,
-                    child: Text(
-                      (user['first_name'] as String? ?? '?')[0].toUpperCase(),
-                      style: TextStyle(
-                          color: theme.colorScheme.onPrimary, fontSize: 12),
+                child: GestureDetector(
+                  onTap: () => context.push('/profile'),
+                  child: Chip(
+                    avatar: _buildAvatar(
+                      user,
+                      theme,
+                      radius: 14,
+                      fontSize: 12,
                     ),
+                    label: Text(user['first_name'] as String? ?? ''),
+                    backgroundColor: theme.colorScheme.surfaceContainerHighest,
                   ),
-                  label: Text(user['first_name'] as String? ?? ''),
-                  backgroundColor: theme.colorScheme.surfaceContainerHighest,
                 ),
               ),
             ),

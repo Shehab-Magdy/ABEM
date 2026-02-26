@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:image_picker/image_picker.dart';
 import '../repositories/auth_repository.dart';
 
 // ── Events ────────────────────────────────────────────────────────────────────
@@ -21,6 +22,20 @@ class AuthLoginRequested extends AuthEvent {
 }
 
 class AuthLogoutRequested extends AuthEvent {}
+
+class AuthProfileUpdateRequested extends AuthEvent {
+  final Map<String, dynamic> fields;
+  const AuthProfileUpdateRequested(this.fields);
+  @override
+  List<Object?> get props => [fields];
+}
+
+class AuthProfilePictureUpdateRequested extends AuthEvent {
+  final XFile imageFile;
+  const AuthProfilePictureUpdateRequested(this.imageFile);
+  @override
+  List<Object?> get props => [imageFile];
+}
 
 // ── States ────────────────────────────────────────────────────────────────────
 abstract class AuthState extends Equatable {
@@ -58,6 +73,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<AuthCheckRequested>(_onCheckRequested);
     on<AuthLoginRequested>(_onLoginRequested);
     on<AuthLogoutRequested>(_onLogoutRequested);
+    on<AuthProfileUpdateRequested>(_onProfileUpdateRequested);
+    on<AuthProfilePictureUpdateRequested>(_onProfilePictureUpdateRequested);
   }
 
   Future<void> _onCheckRequested(
@@ -100,5 +117,33 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   ) async {
     await authRepository.logout();
     emit(AuthUnauthenticated());
+  }
+
+  Future<void> _onProfileUpdateRequested(
+    AuthProfileUpdateRequested event,
+    Emitter<AuthState> emit,
+  ) async {
+    try {
+      final updated = await authRepository.updateProfile(event.fields);
+      emit(AuthAuthenticated(user: updated));
+    } on DioException catch (e) {
+      final msg = (e.response?.data as Map<String, dynamic>?)?['detail']
+          as String? ?? 'Profile update failed.';
+      emit(AuthError(message: msg));
+    }
+  }
+
+  Future<void> _onProfilePictureUpdateRequested(
+    AuthProfilePictureUpdateRequested event,
+    Emitter<AuthState> emit,
+  ) async {
+    try {
+      final updated = await authRepository.uploadProfilePicture(event.imageFile);
+      emit(AuthAuthenticated(user: updated));
+    } on DioException catch (e) {
+      final msg = (e.response?.data as Map<String, dynamic>?)?['detail']
+          as String? ?? 'Profile picture upload failed.';
+      emit(AuthError(message: msg));
+    }
   }
 }
