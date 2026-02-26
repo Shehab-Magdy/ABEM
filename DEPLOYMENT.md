@@ -352,7 +352,204 @@ The only unavoidable platform costs are:
 
 ## 3. Server Provisioning
 
-Recommended cloud providers:
+### 3.1 Free & Trial Hosting (start here)
+
+The ABEM stack requires: **compute** (Django + Celery), **PostgreSQL**, and **Redis**.
+All three can be covered for free using the combinations below.
+
+#### Option A — Railway (recommended for beginners)
+
+[Railway](https://railway.app/) is the easiest platform for a full Docker-based deployment.
+It supports all three services (app, Postgres, Redis) from one dashboard.
+
+| What | How |
+|------|-----|
+| **Free credit** | $5 of usage credit/month (no card required for trial) |
+| **Included subdomain** | `yourapp.up.railway.app` (HTTPS, free) |
+| **Postgres** | One-click Railway Postgres plugin |
+| **Redis** | One-click Railway Redis plugin |
+| **Deploy** | Connect GitHub repo → Railway auto-detects `Dockerfile` |
+
+```bash
+# Install Railway CLI
+npm install -g @railway/cli
+
+# Login and deploy from the project root
+railway login
+railway init          # link to a new Railway project
+railway up            # deploy using the Dockerfile
+```
+
+**Reference:** [Railway documentation](https://docs.railway.app/) · [Railway Docker deployments](https://docs.railway.app/guides/dockerfiles)
+
+---
+
+#### Option B — Render (web service + managed Postgres)
+
+[Render](https://render.com/) has a permanently free web service tier and a
+90-day free PostgreSQL instance.
+
+| Service | Free tier |
+|---------|-----------|
+| Web Service (Django via Gunicorn) | Free — spins down after 15 min inactivity |
+| PostgreSQL | Free — expires after 90 days, then $7/mo |
+| Redis | **Not free** — use [Upstash Redis](#free-redis--upstash) instead |
+| Subdomain | `yourapp.onrender.com` (HTTPS, free) |
+
+**Reference:** [Render Django deployment guide](https://render.com/docs/deploy-django)
+
+---
+
+#### Option C — Fly.io (Docker-native, generous free tier)
+
+[Fly.io](https://fly.io/) runs Docker containers natively and has a real
+always-free tier (no credit card required for the basics).
+
+| Resource | Free allowance |
+|----------|---------------|
+| Compute | 3 × shared-CPU-1x / 256 MB VMs |
+| Storage | 3 GB persistent volumes |
+| Outbound bandwidth | 160 GB/month |
+| Postgres | Fly Postgres (free single-node) |
+| Subdomain | `yourapp.fly.dev` (HTTPS, free) |
+
+```bash
+# Install flyctl
+curl -L https://fly.io/install.sh | sh
+
+# Deploy from project root (reads Dockerfile automatically)
+fly auth login
+fly launch          # creates fly.toml config
+fly deploy
+```
+
+**Reference:** [Fly.io documentation](https://fly.io/docs/) · [Fly.io Django guide](https://fly.io/docs/django/)
+
+---
+
+#### Option D — Oracle Cloud Always Free (most powerful, zero cost forever)
+
+[Oracle Cloud](https://www.oracle.com/cloud/free/) has a genuinely always-free
+tier — no expiry, no credit card required after sign-up.
+
+| Resource | Always-free allowance |
+|----------|-----------------------|
+| Compute (ARM) | 4 OCPUs + 24 GB RAM total (split across up to 4 VMs) |
+| Compute (AMD) | 2 × 1/8 OCPU / 1 GB RAM VMs |
+| Block storage | 200 GB total |
+| Outbound bandwidth | 10 TB/month |
+| Autonomous Database | 2 × 20 GB (can use as PostgreSQL-compatible) |
+| Subdomain | Via free DNS (see Section 3.3) |
+
+> The ARM instances (Ampere A1) are the best deal in cloud computing — a
+> single `VM.Standard.A1.Flex` with 4 OCPUs / 24 GB RAM can run the entire
+> ABEM stack comfortably.
+
+**Reference:** [Oracle Cloud free tier overview](https://docs.oracle.com/en-us/iaas/Content/FreeTier/freetier_topic-Always_Free_Resources.htm) · [Oracle Cloud sign-up](https://signup.cloud.oracle.com/)
+
+---
+
+#### Free Redis — Upstash
+
+When your hosting provider does not include Redis (e.g. Render free tier),
+use [Upstash](https://upstash.com/) — serverless Redis with a free tier.
+
+| Free allowance | Details |
+|----------------|---------|
+| Commands | 10,000/day |
+| Storage | 256 MB |
+| Connections | Unlimited |
+
+Set the Upstash connection URL as `REDIS_URL` in `.env.prod`:
+
+```bash
+REDIS_URL=rediss://default:<password>@<host>.upstash.io:6379
+```
+
+**Reference:** [Upstash Redis docs](https://docs.upstash.com/redis)
+
+---
+
+#### Free Managed PostgreSQL alternatives
+
+| Service | Free tier | Notes |
+|---------|-----------|-------|
+| [Neon](https://neon.tech/) | 512 MB, auto-suspend | Serverless Postgres, great free tier |
+| [Supabase](https://supabase.com/) | 500 MB, pauses after 1 week inactivity | Also provides auth & storage |
+| [Render Postgres](https://render.com/docs/free#free-postgresql-databases) | Free for 90 days | Then $7/mo |
+| [Railway Postgres](https://railway.app/) | Included in $5/mo credit | Usually free for small apps |
+
+---
+
+#### Trial credits — paid providers
+
+If you want a full VPS (best performance, no cold starts), use a free trial:
+
+| Provider | Trial | Notes |
+|----------|-------|-------|
+| [DigitalOcean](https://www.digitalocean.com/) | **$200 credit for 60 days** | New accounts — full VPS, Docker, everything works |
+| [AWS](https://aws.amazon.com/free/) | **12-month free tier** | t2.micro EC2 + RDS free tier (20 GB Postgres) |
+| [Google Cloud](https://cloud.google.com/free) | **$300 credit for 90 days** | + always-free e2-micro instance |
+| [Azure](https://azure.microsoft.com/en-us/free/) | **$200 credit for 30 days** | + 12-month free services |
+| [Hetzner Cloud](https://www.hetzner.com/cloud/) | No free trial, but **€3.29/mo** | CX11 — 2 vCPU / 2 GB RAM, cheapest paid VPS |
+
+---
+
+### 3.2 Domain Names
+
+#### Free subdomains (no registration required)
+
+Every hosting platform above provides a free HTTPS subdomain automatically:
+
+| Platform | Your free URL |
+|----------|--------------|
+| Railway | `yourapp.up.railway.app` |
+| Render | `yourapp.onrender.com` |
+| Fly.io | `yourapp.fly.dev` |
+| Oracle Cloud | configure via free DNS (see below) |
+
+#### Free custom subdomains
+
+| Service | Domain you get | How |
+|---------|---------------|-----|
+| [DuckDNS](https://www.duckdns.org/) | `yourname.duckdns.org` | Free, instant, no approval needed — points to any IP |
+| [is-a.dev](https://www.is-a.dev/) | `yourname.is-a.dev` | Free for developers — submit a PR to their GitHub repo |
+| [FreeDNS (afraid.org)](https://freedns.afraid.org/) | hundreds of shared domains | Free subdomain on community-owned domains |
+
+#### Cheapest paid domains (< $2/year first year)
+
+| Registrar | TLD | Price |
+|-----------|-----|-------|
+| [Porkbun](https://porkbun.com/) | `.xyz` | ~$1/year (first year) |
+| [Namecheap](https://www.namecheap.com/) | `.xyz` / `.site` | ~$1–2/year (first year) |
+| [Cloudflare Registrar](https://www.cloudflare.com/products/registrar/) | `.com` | ~$9/year at-cost (no markup) |
+
+> **Tip:** Pair any domain with [Cloudflare's free DNS + CDN](https://developers.cloudflare.com/dns/)
+> for free DDoS protection, automatic HTTPS, and global caching.
+
+---
+
+### 3.3 Recommended Zero-Cost Setup
+
+For getting ABEM running at no cost:
+
+```
+Hosting:    Railway (free $5/mo credit)
+Postgres:   Railway Postgres plugin  OR  Neon free tier
+Redis:      Railway Redis plugin     OR  Upstash free tier
+Domain:     yourapp.up.railway.app   OR  yourname.duckdns.org
+TLS/HTTPS:  Included free on Railway / DuckDNS + Certbot
+Media:      MinIO on the same VM     OR  Cloudinary free tier (25 GB)
+Email:      Gmail SMTP free tier (500/day)
+Push:       Firebase FCM (free)
+Monitoring: GlitchTip on the same VM OR  Sentry free tier (5k events/mo)
+```
+
+Total cost: **$0/month** for a small to medium deployment.
+
+---
+
+### 3.4 Paid Providers (production scale)
 
 | Provider | Plan | Notes |
 |----------|------|-------|
