@@ -350,3 +350,68 @@ class TestBuildingSecurity:
         assert resp.status_code in (403, 404), (
             f"Owner must not delete buildings (got {resp.status_code})"
         )
+
+
+# ── Building Directory — sign-up wizard ───────────────────────────────────────
+
+@pytest.mark.positive
+class TestBuildingDirectory:
+    """
+    GET /buildings/directory/ — public-ish endpoint used in the sign-up wizard.
+    Any authenticated user (including a brand-new owner with no memberships)
+    can browse all active buildings.
+    """
+
+    def test_admin_can_access_directory(self, admin_api, temp_building):
+        """Admin GET /buildings/directory/ → 200 with list of buildings."""
+        building_api = BuildingAPI(admin_api)
+        resp = building_api.directory()
+        assert resp.status_code == 200, resp.text
+        body = resp.json()
+        assert isinstance(body, list), "Directory must return a JSON array"
+
+    def test_directory_includes_active_building(self, admin_api, temp_building):
+        """The just-created temp_building must appear in the directory."""
+        building_api = BuildingAPI(admin_api)
+        resp = building_api.directory()
+        assert resp.status_code == 200, resp.text
+        ids = [b["id"] for b in resp.json()]
+        assert temp_building["id"] in ids, (
+            "Active building must be listed in /buildings/directory/"
+        )
+
+    def test_owner_without_membership_can_access_directory(self, owner_api, temp_building):
+        """
+        An owner-role user who is NOT a member of any building must still be
+        able to call GET /buildings/directory/ and receive all active buildings.
+        This is the key use-case: new user browses buildings during sign-up.
+        """
+        building_api = BuildingAPI(owner_api)
+        resp = building_api.directory()
+        assert resp.status_code == 200, (
+            f"Owner without membership must access directory (got {resp.status_code})"
+        )
+        ids = [b["id"] for b in resp.json()]
+        assert temp_building["id"] in ids, (
+            "Directory must include the building even though owner is not a member"
+        )
+
+    def test_directory_requires_authentication(self, unauthenticated_api):
+        """Unauthenticated GET /buildings/directory/ must return 401."""
+        building_api = BuildingAPI(unauthenticated_api)
+        resp = building_api.directory()
+        assert resp.status_code == 401, (
+            f"Directory must require authentication (got {resp.status_code})"
+        )
+
+    def test_directory_entry_contains_required_fields(self, admin_api, temp_building):
+        """Each entry in the directory must contain id, name, city, country, address."""
+        building_api = BuildingAPI(admin_api)
+        resp = building_api.directory()
+        assert resp.status_code == 200, resp.text
+        entries = resp.json()
+        assert len(entries) > 0, "Directory must contain at least one building"
+        entry = next((b for b in entries if b["id"] == temp_building["id"]), None)
+        assert entry is not None, "temp_building not found in directory"
+        for field in ("id", "name", "city", "country", "address"):
+            assert field in entry, f"Directory entry missing field '{field}'"

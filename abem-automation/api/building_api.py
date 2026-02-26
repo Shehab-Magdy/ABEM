@@ -68,3 +68,12 @@ class BuildingAPI:
             f"{self.ENDPOINT}{building_id}/apartments/",
             params=params or None,
         )
+
+    def directory(self):
+        """
+        GET /buildings/directory/
+        Returns all active buildings to any authenticated user.
+        Used by the sign-up wizard so new owners can browse all buildings
+        before they are a member of any.
+        """
+        return self._c.get(f"{self.ENDPOINT}directory/")

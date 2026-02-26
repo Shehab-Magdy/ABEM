@@ -77,3 +77,30 @@ class ApartmentAPI:
     def delete(self, apartment_id: str):
         """DELETE /apartments/{id}/"""
         return self._c.delete(f"{self.ENDPOINT}{apartment_id}/")
+
+    # ── Sign-up wizard helpers ─────────────────────────────────────────────────
+
+    def available(self, building_id: str):
+        """
+        GET /apartments/available/?building_id={id}
+        Returns unowned apartments for a building.
+        Used in the owner sign-up wizard so the user can pick their unit.
+        """
+        return self._c.get(
+            f"{self.ENDPOINT}available/",
+            params={"building_id": building_id},
+        )
+
+    def claim(self, apartment_id: str):
+        """
+        POST /apartments/{id}/claim/
+        Owner-role user claims a vacant apartment during sign-up.
+        Sets owner=request.user, status=occupied, auto-joins the building.
+
+        Expected responses:
+          200 – apartment object with owner set
+          403 – caller is not owner-role
+          404 – apartment not found
+          409 – apartment already owned
+        """
+        return self._c.post(f"{self.ENDPOINT}{apartment_id}/claim/")

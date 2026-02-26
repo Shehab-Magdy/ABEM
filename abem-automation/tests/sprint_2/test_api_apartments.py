@@ -299,3 +299,229 @@ class TestApartmentFilter:
             assert str(a["building_id"]) == building["id"], (
                 f"Apartment {a['id']} has wrong building_id: {a['building_id']}"
             )
+
+
+# ── Available Apartments & Claim — sign-up wizard ─────────────────────────────
+
+@pytest.mark.positive
+class TestApartmentAvailablePositive:
+    """
+    GET /apartments/available/?building_id={id}
+    Used in the owner sign-up wizard to list unowned (vacant) apartments.
+    """
+
+    def test_available_returns_200_with_list(
+        self, admin_api, create_temp_building, create_temp_apartment
+    ):
+        """Authenticated user gets 200 + a JSON array for a valid building."""
+        building = create_temp_building(num_floors=5)
+        apartment_api = ApartmentAPI(admin_api)
+        resp = apartment_api.available(building["id"])
+        assert resp.status_code == 200, resp.text
+        assert isinstance(resp.json(), list), "Available endpoint must return a JSON array"
+
+    def test_available_includes_vacant_apartment(
+        self, admin_api, create_temp_building, create_temp_apartment
+    ):
+        """A newly created (unowned, status=vacant) apartment appears in available."""
+        building = create_temp_building(num_floors=5)
+        apt = create_temp_apartment(
+            building_id=building["id"],
+            num_floors=building["num_floors"],
+        )
+        apartment_api = ApartmentAPI(admin_api)
+        resp = apartment_api.available(building["id"])
+        assert resp.status_code == 200, resp.text
+        ids = [a["id"] for a in resp.json()]
+        assert apt["id"] in ids, (
+            "Unowned apartment must appear in /apartments/available/"
+        )
+
+    def test_available_excludes_owned_apartment(
+        self, admin_api, owner_with_id, create_temp_building, create_temp_apartment
+    ):
+        """An apartment that has an owner assigned must NOT appear in available."""
+        _, owner_id = owner_with_id
+        building = create_temp_building(num_floors=5)
+        apt = create_temp_apartment(
+            building_id=building["id"],
+            num_floors=building["num_floors"],
+            owner_id=str(owner_id),
+        )
+        apartment_api = ApartmentAPI(admin_api)
+        resp = apartment_api.available(building["id"])
+        assert resp.status_code == 200, resp.text
+        ids = [a["id"] for a in resp.json()]
+        assert apt["id"] not in ids, (
+            "Owned apartment must NOT appear in /apartments/available/"
+        )
+
+
+@pytest.mark.negative
+class TestApartmentAvailableNegative:
+
+    def test_available_without_building_id_returns_400(self, admin_api):
+        """GET /apartments/available/ without building_id param → 400."""
+        resp = admin_api.get("/apartments/available/")
+        assert resp.status_code == 400, (
+            f"Missing building_id must return 400, got {resp.status_code}: {resp.text}"
+        )
+
+    def test_available_requires_authentication(self, unauthenticated_api):
+        """Unauthenticated GET /apartments/available/ → 401."""
+        resp = unauthenticated_api.get(
+            "/apartments/available/", params={"building_id": "any"}
+        )
+        assert resp.status_code == 401, (
+            f"Available must require auth (got {resp.status_code})"
+        )
+
+
+@pytest.mark.positive
+class TestApartmentClaimPositive:
+    """
+    POST /apartments/{id}/claim/
+    Owner self-assigns to a vacant apartment during sign-up.
+    """
+
+    def test_owner_can_claim_vacant_apartment(
+        self, env_config, create_temp_building, create_temp_apartment, create_temp_user
+    ):
+        """
+        New owner claims an unowned apartment.
+        Expected: 200, apartment.owner set to the caller, status='occupied'.
+        """
+        from core.api_client import APIClient
+
+        building = create_temp_building(num_floors=5)
+        apt = create_temp_apartment(
+            building_id=building["id"],
+            num_floors=building["num_floors"],
+        )
+
+        # Create a fresh owner and authenticate
+        owner = create_temp_user(role="owner")
+        owner_client = APIClient(env_config.api_url)
+        owner_client.authenticate(owner["email"], owner["password"])
+
+        apartment_api = ApartmentAPI(owner_client)
+        resp = apartment_api.claim(apt["id"])
+        assert resp.status_code == 200, (
+            f"Owner claiming a vacant apartment must return 200, "
+            f"got {resp.status_code}: {resp.text}"
+        )
+        body = resp.json()
+        assert body["status"] == "occupied", (
+            f"Claimed apartment status must be 'occupied', got '{body.get('status')}'"
+        )
+        assert str(body["owner_id"]) == str(owner["id"]), (
+            "Claimed apartment owner_id must match the requesting user"
+        )
+        owner_client.logout()
+
+    def test_claim_auto_joins_building(
+        self, env_config, create_temp_building, create_temp_apartment, create_temp_user
+    ):
+        """
+        After claiming an apartment, the owner must automatically be a member of
+        the building (GET /buildings/{id}/ returns 200 for that owner).
+        """
+        from core.api_client import APIClient
+
+        building = create_temp_building(num_floors=5)
+        apt = create_temp_apartment(
+            building_id=building["id"],
+            num_floors=building["num_floors"],
+        )
+
+        owner = create_temp_user(role="owner")
+        owner_client = APIClient(env_config.api_url)
+        owner_client.authenticate(owner["email"], owner["password"])
+
+        # Claim the apartment — should auto-join the building
+        apartment_api = ApartmentAPI(owner_client)
+        claim_resp = apartment_api.claim(apt["id"])
+        assert claim_resp.status_code == 200, claim_resp.text
+
+        # Owner must now see the building
+        building_api_owner = BuildingAPI(owner_client)
+        get_resp = building_api_owner.get(building["id"])
+        assert get_resp.status_code == 200, (
+            f"Owner must be auto-joined to building after claim "
+            f"(got {get_resp.status_code})"
+        )
+        owner_client.logout()
+
+
+@pytest.mark.negative
+class TestApartmentClaimNegative:
+
+    def test_claim_already_owned_apartment_returns_409(
+        self, env_config, create_temp_building, create_temp_apartment,
+        create_temp_user, owner_with_id
+    ):
+        """Claiming an apartment that already has an owner must return 409."""
+        from core.api_client import APIClient
+
+        _, existing_owner_id = owner_with_id
+        building = create_temp_building(num_floors=5)
+        apt = create_temp_apartment(
+            building_id=building["id"],
+            num_floors=building["num_floors"],
+            owner_id=str(existing_owner_id),
+        )
+
+        # A second owner tries to claim the same apartment
+        second_owner = create_temp_user(role="owner")
+        second_client = APIClient(env_config.api_url)
+        second_client.authenticate(second_owner["email"], second_owner["password"])
+
+        apartment_api = ApartmentAPI(second_client)
+        resp = apartment_api.claim(apt["id"])
+        assert resp.status_code == 409, (
+            f"Claiming owned apartment must return 409, "
+            f"got {resp.status_code}: {resp.text}"
+        )
+        second_client.logout()
+
+    def test_admin_cannot_claim_apartment_returns_403(
+        self, admin_api, create_temp_building, create_temp_apartment
+    ):
+        """Admin-role users must not be able to use the claim endpoint → 403."""
+        building = create_temp_building(num_floors=5)
+        apt = create_temp_apartment(
+            building_id=building["id"],
+            num_floors=building["num_floors"],
+        )
+        apartment_api = ApartmentAPI(admin_api)
+        resp = apartment_api.claim(apt["id"])
+        assert resp.status_code == 403, (
+            f"Admin claiming apartment must return 403, got {resp.status_code}: {resp.text}"
+        )
+
+    def test_claim_nonexistent_apartment_returns_404(
+        self, env_config, create_temp_user
+    ):
+        """Claiming a non-existent apartment UUID must return 404."""
+        import uuid as _uuid
+        from core.api_client import APIClient
+
+        owner = create_temp_user(role="owner")
+        owner_client = APIClient(env_config.api_url)
+        owner_client.authenticate(owner["email"], owner["password"])
+
+        apartment_api = ApartmentAPI(owner_client)
+        resp = apartment_api.claim(str(_uuid.uuid4()))
+        assert resp.status_code == 404, (
+            f"Claiming non-existent apartment must return 404, got {resp.status_code}"
+        )
+        owner_client.logout()
+
+    def test_claim_requires_authentication(self, unauthenticated_api):
+        """Unauthenticated POST /apartments/{id}/claim/ must return 401."""
+        import uuid as _uuid
+        apartment_api = ApartmentAPI(unauthenticated_api)
+        resp = apartment_api.claim(str(_uuid.uuid4()))
+        assert resp.status_code == 401, (
+            f"Claim must require authentication (got {resp.status_code})"
+        )

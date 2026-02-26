@@ -93,6 +93,41 @@ class AuthAPI:
             payload["phone"] = phone
         return self._c.post("/auth/register/", json=payload)
 
+    def self_register(
+        self,
+        email: str,
+        password: str,
+        first_name: str,
+        last_name: str,
+        role: str = "owner",
+        phone: Optional[str] = None,
+        confirm_password: Optional[str] = None,
+    ) -> Response:
+        """
+        POST /auth/self-register/ — public (AllowAny).
+
+        Caller chooses role: 'admin' or 'owner'.
+
+        Expected responses:
+          201 – {"access": "...", "refresh": "...", "user": {...}}
+          400 – validation error (missing fields, weak password, duplicate email)
+        """
+        payload: dict = {
+            "email": email,
+            "password": password,
+            "confirm_password": confirm_password or password,
+            "first_name": first_name,
+            "last_name": last_name,
+            "role": role,
+        }
+        if phone:
+            payload["phone"] = phone
+        logger.info("Self-register → %s (role=%s)", email, role)
+        return self._c.session.post(
+            f"{self._c.base_url}/auth/self-register/",
+            json=payload,
+        )
+
     # ── Password management ─────────────────────────────────────────────────────
 
     def change_password(
