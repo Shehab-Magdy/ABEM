@@ -4,10 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../features/auth/bloc/auth_bloc.dart';
 import '../../features/auth/screens/login_screen.dart';
-import '../../features/buildings/screens/buildings_screen.dart';
-import '../../features/expenses/screens/expenses_screen.dart';
-import '../../features/payments/screens/payments_screen.dart';
-import '../../features/notifications/screens/notifications_screen.dart';
+import '../../features/home/screens/home_screen.dart';
 
 class AppRouter {
   static final router = GoRouter(
@@ -18,15 +15,12 @@ class AppRouter {
       final isLoginRoute = state.matchedLocation == '/login';
 
       if (!isLoggedIn && !isLoginRoute) return '/login';
-      if (isLoggedIn && isLoginRoute) return '/buildings';
+      if (isLoggedIn && isLoginRoute) return '/home';
       return null;
     },
     routes: [
       GoRoute(path: '/login', builder: (_, __) => const LoginScreen()),
-      GoRoute(path: '/buildings', builder: (_, __) => const BuildingsScreen()),
-      GoRoute(path: '/expenses', builder: (_, __) => const ExpensesScreen()),
-      GoRoute(path: '/payments', builder: (_, __) => const PaymentsScreen()),
-      GoRoute(path: '/notifications', builder: (_, __) => const NotificationsScreen()),
+      GoRoute(path: '/home', builder: (_, __) => const HomeScreen()),
     ],
   );
 }

@@ -90,6 +90,38 @@ class ChangePasswordSerializer(serializers.Serializer):
         return data
 
 
+class SelfRegisterSerializer(serializers.ModelSerializer):
+    """Public self-registration — role is automatically set to 'owner'."""
+
+    password = serializers.CharField(
+        write_only=True,
+        validators=[validate_password_complexity],
+    )
+    confirm_password = serializers.CharField(write_only=True)
+
+    class Meta:
+        model = User
+        fields = ["id", "email", "first_name", "last_name", "phone", "password", "confirm_password"]
+        read_only_fields = ["id"]
+
+    def validate_email(self, value):
+        if User.objects.filter(email__iexact=value).exists():
+            raise serializers.ValidationError("A user with this email already exists.")
+        return value.lower()
+
+    def validate(self, data):
+        if data["password"] != data.pop("confirm_password"):
+            raise serializers.ValidationError({"confirm_password": "Passwords do not match."})
+        return data
+
+    def create(self, validated_data):
+        password = validated_data.pop("password")
+        user = User(role="owner", **validated_data)
+        user.set_password(password)
+        user.save()
+        return user
+
+
 class AdminResetPasswordSerializer(serializers.Serializer):
     """Admin-initiated password reset — no current password required."""
 

@@ -6,6 +6,7 @@ import DashboardLayout from "../components/common/DashboardLayout";
 
 // Auth
 import LoginPage from "../pages/auth/LoginPage";
+import RegisterPage from "../pages/auth/RegisterPage";
 
 // Dashboards
 import AdminDashboardPage from "../pages/dashboard/AdminDashboardPage";
@@ -45,6 +46,7 @@ export default function AppRouter() {
     <Routes>
       {/* Public */}
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/register" element={<RegisterPage />} />
 
       {/* Protected – all routes share the DashboardLayout shell */}
       <Route

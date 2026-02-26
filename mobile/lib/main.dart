@@ -10,7 +10,13 @@ import 'features/auth/repositories/auth_repository.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp();
+  // Firebase is optional — skip gracefully when google-services.json / plist
+  // is not yet configured (e.g. local development without FCM).
+  try {
+    await Firebase.initializeApp();
+  } catch (_) {
+    // Firebase not configured — push notifications disabled.
+  }
   runApp(const AbemApp());
 }
 

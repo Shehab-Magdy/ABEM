@@ -6,4 +6,6 @@ export const buildingsApi = {
   create: (data) => axiosClient.post("/buildings/", data),
   update: (id, data) => axiosClient.patch(`/buildings/${id}/`, data),
   remove: (id) => axiosClient.delete(`/buildings/${id}/`),
+  assignUser: (id, userId) =>
+    axiosClient.post(`/buildings/${id}/assign-user/`, { user_id: userId }),
 };

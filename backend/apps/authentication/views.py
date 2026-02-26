@@ -20,6 +20,7 @@ from .serializers import (
     LoginSerializer,
     ProfileUpdateSerializer,
     RegisterUserSerializer,
+    SelfRegisterSerializer,
     UserSerializer,
 )
 from .tokens import CustomRefreshToken
@@ -162,6 +163,28 @@ class RegisterView(APIView):
         )
 
         return Response(UserSerializer(user).data, status=status.HTTP_201_CREATED)
+
+
+# ── Self-Register (public, role forced to 'owner') ────────────────────────────
+
+class SelfRegisterView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        serializer = SelfRegisterSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.save()
+
+        refresh = CustomRefreshToken.for_user(user)
+
+        return Response(
+            {
+                "access": str(refresh.access_token),
+                "refresh": str(refresh),
+                "user": UserSerializer(user).data,
+            },
+            status=status.HTTP_201_CREATED,
+        )
 
 
 # ── Change Password ────────────────────────────────────────────────────────────
