@@ -51,6 +51,7 @@ mobile/ios/Flutter/Flutter.podspec
 
 # ── IDE ────────────────────────────────────────────────────────────────────────
 .vscode/
+!.vscode/settings.json
 .idea/
 *.swp
 *.swo
