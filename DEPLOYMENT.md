@@ -8,24 +8,25 @@
 ## Table of Contents
 
 1. [Prerequisites](#1-prerequisites)
-2. [Server Provisioning](#2-server-provisioning)
-3. [Repository Setup](#3-repository-setup)
-4. [Environment Variables](#4-environment-variables)
-5. [Docker — Production Deployment](#5-docker--production-deployment)
-6. [Manual (Non-Docker) Deployment](#6-manual-non-docker-deployment)
-7. [Database Setup & Migrations](#7-database-setup--migrations)
-8. [Superuser Creation](#8-superuser-creation)
-9. [Static & Media Files](#9-static--media-files)
-10. [Nginx & TLS / HTTPS](#10-nginx--tls--https)
-11. [Celery (Background Tasks)](#11-celery-background-tasks)
-12. [Frontend Build & Deployment](#12-frontend-build--deployment)
-13. [Mobile (Flutter) Release](#13-mobile-flutter-release)
-14. [CI/CD — GitHub Actions](#14-cicd--github-actions)
-15. [Monitoring & Logging](#15-monitoring--logging)
-16. [Post-Deployment Smoke Tests](#16-post-deployment-smoke-tests)
-17. [Rollback Procedure](#17-rollback-procedure)
-18. [Security Hardening Checklist](#18-security-hardening-checklist)
-19. [Useful References](#19-useful-references)
+2. [External Services Audit](#2-external-services-audit)
+3. [Server Provisioning](#3-server-provisioning)
+4. [Repository Setup](#4-repository-setup)
+5. [Environment Variables](#5-environment-variables)
+6. [Docker — Production Deployment](#6-docker--production-deployment)
+7. [Manual (Non-Docker) Deployment](#7-manual-non-docker-deployment)
+8. [Database Setup & Migrations](#8-database-setup--migrations)
+9. [Superuser Creation](#9-superuser-creation)
+10. [Static & Media Files](#10-static--media-files)
+11. [Nginx & TLS / HTTPS](#11-nginx--tls--https)
+12. [Celery (Background Tasks)](#12-celery-background-tasks)
+13. [Frontend Build & Deployment](#13-frontend-build--deployment)
+14. [Mobile (Flutter) Release](#14-mobile-flutter-release)
+15. [CI/CD — GitHub Actions](#15-cicd--github-actions)
+16. [Monitoring & Logging](#16-monitoring--logging)
+17. [Post-Deployment Smoke Tests](#17-post-deployment-smoke-tests)
+18. [Rollback Procedure](#18-rollback-procedure)
+19. [Security Hardening Checklist](#19-security-hardening-checklist)
+20. [Useful References](#20-useful-references)
 
 ---
 
@@ -78,7 +79,278 @@ Before deployment, ensure:
 
 ---
 
-## 2. Server Provisioning
+## 2. External Services Audit
+
+ABEM uses a mix of fully open-source tools (self-hostable, zero cost) and
+third-party SaaS services.  This section identifies every external dependency,
+whether it is required or optional, and provides a **fully open-source
+self-hosted alternative** for each commercial service.
+
+### 2.1 Core Stack — 100% Open Source
+
+Every component below is free, self-hosted, and requires no external account.
+
+| Component | License | Notes |
+|-----------|---------|-------|
+| Django 4.2 | BSD-3 | Backend API framework |
+| Django REST Framework | BSD-2 | REST layer |
+| PostgreSQL 16 | PostgreSQL License | Primary database |
+| Redis 7 | BSD-3 | Celery broker & cache |
+| Celery 5 | BSD-3 | Background task queue |
+| Nginx 1.27 | BSD-2 | Reverse proxy & SPA server |
+| React + Vite | MIT | Web frontend |
+| Flutter 3 | BSD-3 | Mobile (Android & iOS) |
+| WhiteNoise | MIT | Static file serving |
+| Let's Encrypt / Certbot | Apache 2.0 | Free TLS certificates |
+| Docker & Docker Compose | Apache 2.0 | Containerisation |
+| drf-spectacular | BSD-3 | OpenAPI / Swagger docs |
+
+### 2.2 Commercial / Third-Party Services
+
+Four external SaaS services are currently configured.  **None of them block a
+basic deployment** — each has a fully open-source self-hosted replacement
+documented below.
+
+| Service | Purpose | Commercial? | Free Tier | Required for launch? |
+|---------|---------|-------------|-----------|----------------------|
+| **Cloudinary** | Media file storage (uploads, images) | Yes (proprietary) | 25 GB / 25 GB bandwidth/mo | **No** — MinIO replaces it |
+| **Firebase FCM** | Push notifications to mobile devices | Google (free) | Unlimited | Partial — unavoidable for native Android/iOS push; replaceable for web |
+| **Sentry** (cloud) | Error tracking & alerting | Yes (open-core) | 5k events/mo | **No** — GlitchTip replaces it |
+| **Gmail SMTP** | Transactional email (notifications) | Google (free) | 500 msgs/day | **No** — Postfix replaces it |
+
+> **Mobile stores** — Google Play Store (US $25 one-time) and Apple App Store
+> (US $99/year) are **platform requirements** for official app distribution.
+> There is no open-source equivalent; direct APK sideloading is the only
+> alternative for Android.
+
+---
+
+### 2.3 Open-Source Alternative: MinIO (replaces Cloudinary)
+
+[MinIO](https://min.io/) is an S3-compatible self-hosted object store.
+Django's `django-storages` + `boto3` already installed connect to it with
+a one-line config change.
+
+#### Add MinIO to docker-compose.prod.yml
+
+```yaml
+  minio:
+    image: minio/minio:latest
+    restart: always
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    volumes:
+      - minio_data:/data
+    ports:
+      - "9000:9000"   # S3 API
+      - "9001:9001"   # Web console
+
+volumes:
+  minio_data:
+```
+
+#### Create the media bucket (one-time)
+
+```bash
+# Install mc (MinIO client)
+curl -O https://dl.min.io/client/mc/release/linux-amd64/mc
+chmod +x mc && sudo mv mc /usr/local/bin/
+
+# Configure alias
+mc alias set local http://localhost:9000 "$MINIO_ROOT_USER" "$MINIO_ROOT_PASSWORD"
+
+# Create the bucket and make it publicly readable
+mc mb local/abem-media
+mc anonymous set download local/abem-media
+```
+
+#### Django settings — switch to MinIO
+
+In `.env.prod` replace the Cloudinary block with:
+
+```bash
+# MinIO (S3-compatible)
+AWS_ACCESS_KEY_ID=<MINIO_ROOT_USER>
+AWS_SECRET_ACCESS_KEY=<MINIO_ROOT_PASSWORD>
+AWS_STORAGE_BUCKET_NAME=abem-media
+AWS_S3_ENDPOINT_URL=http://minio:9000       # internal Docker network
+AWS_S3_CUSTOM_DOMAIN=abem.yourdomain.com:9000
+AWS_DEFAULT_ACL=public-read
+AWS_QUERYSTRING_AUTH=False
+```
+
+In `config/settings/production.py` (or `base.py`) add:
+
+```python
+DEFAULT_FILE_STORAGE = "storages.backends.s3boto3.S3Boto3Storage"
+```
+
+**Reference:** [django-storages S3 docs](https://django-storages.readthedocs.io/en/latest/backends/amazon-S3.html) · [MinIO quickstart](https://min.io/docs/minio/linux/index.html)
+
+---
+
+### 2.4 Open-Source Alternative: ntfy (replaces Firebase FCM for web / in-app)
+
+[ntfy](https://ntfy.sh/) is a self-hosted push notification server (MIT
+license).  It handles **web-push and in-app notifications** without any Google
+dependency.
+
+> **Important:** Android native push (displayed in the system notification
+> shade while the app is closed) **still requires FCM at the OS level** —
+> this is an Android platform constraint, not a library choice.  ntfy has an
+> [Android app](https://f-droid.org/packages/io.heckel.ntfy/) on F-Droid that
+> routes through a self-hosted server, bypassing FCM entirely, but users must
+> install that app separately.
+
+#### Add ntfy to docker-compose.prod.yml
+
+```yaml
+  ntfy:
+    image: binwiederhier/ntfy:latest
+    restart: always
+    command: serve
+    environment:
+      NTFY_BASE_URL: https://ntfy.yourdomain.com
+      NTFY_UPSTREAM_BASE_URL: https://ntfy.sh   # relay for FCM-free Android push
+    volumes:
+      - ntfy_data:/var/lib/ntfy
+    ports:
+      - "8080:80"
+
+volumes:
+  ntfy_data:
+```
+
+#### Send a notification from Django (Celery task)
+
+```python
+import requests
+
+def send_push_notification(topic: str, title: str, message: str):
+    requests.post(
+        f"http://ntfy:80/{topic}",
+        data=message.encode("utf-8"),
+        headers={"Title": title, "Priority": "default"},
+    )
+```
+
+**Reference:** [ntfy documentation](https://docs.ntfy.sh/) · [ntfy self-hosting guide](https://docs.ntfy.sh/install/)
+
+---
+
+### 2.5 Open-Source Alternative: GlitchTip (replaces Sentry cloud)
+
+[GlitchTip](https://glitchtip.com/) is a Sentry-compatible open-source error
+tracker (MIT license).  It accepts the same Sentry SDK and DSN format — no
+code changes required.
+
+#### Add GlitchTip to docker-compose.prod.yml
+
+```yaml
+  glitchtip_db:
+    image: postgres:16-alpine
+    restart: always
+    environment:
+      POSTGRES_DB: glitchtip
+      POSTGRES_USER: glitchtip
+      POSTGRES_PASSWORD: ${GLITCHTIP_DB_PASSWORD}
+    volumes:
+      - glitchtip_data:/var/lib/postgresql/data
+
+  glitchtip:
+    image: glitchtip/glitchtip:latest
+    restart: always
+    depends_on:
+      - glitchtip_db
+      - redis
+    environment:
+      DATABASE_URL: postgres://glitchtip:${GLITCHTIP_DB_PASSWORD}@glitchtip_db/glitchtip
+      SECRET_KEY: ${GLITCHTIP_SECRET_KEY}
+      EMAIL_URL: smtp://user:pass@mail:25
+      GLITCHTIP_DOMAIN: https://glitchtip.yourdomain.com
+      DEFAULT_FROM_EMAIL: errors@yourdomain.com
+    ports:
+      - "8080:8080"
+
+volumes:
+  glitchtip_data:
+```
+
+#### Point the Sentry SDK at GlitchTip
+
+In `.env.prod`, change the DSN to your GlitchTip project DSN:
+
+```bash
+SENTRY_DSN=https://<key>@glitchtip.yourdomain.com/<project-id>
+```
+
+No change to `config/settings/production.py` — the existing `sentry_sdk.init()` call works as-is.
+
+**Reference:** [GlitchTip self-hosting docs](https://glitchtip.com/documentation/install) · [GlitchTip Docker Compose guide](https://glitchtip.com/documentation/install#docker-compose)
+
+---
+
+### 2.6 Open-Source Alternative: Postfix + OpenDKIM (replaces Gmail SMTP)
+
+[Postfix](http://www.postfix.org/) is a battle-tested self-hosted mail
+transfer agent.  Combined with OpenDKIM (email signing) it handles
+transactional email without any Google dependency.
+
+```bash
+sudo apt install -y postfix opendkim opendkim-tools
+
+# Configure as "Internet Site" during postfix setup
+sudo postconf -e "myhostname = mail.yourdomain.com"
+sudo postconf -e "smtp_use_tls = yes"
+
+# Generate DKIM key pair
+sudo mkdir -p /etc/opendkim/keys/yourdomain.com
+sudo opendkim-genkey -b 2048 -d yourdomain.com \
+  -D /etc/opendkim/keys/yourdomain.com -s mail -v
+
+# Add the public key to your DNS as a TXT record
+# (shown in: /etc/opendkim/keys/yourdomain.com/mail.txt)
+```
+
+In `.env.prod`:
+
+```bash
+EMAIL_HOST=localhost
+EMAIL_PORT=25
+EMAIL_USE_TLS=False
+EMAIL_HOST_USER=
+EMAIL_HOST_PASSWORD=
+DEFAULT_FROM_EMAIL=noreply@yourdomain.com
+```
+
+> **Easier alternative:** [Brevo](https://www.brevo.com/) (formerly Sendinblue) offers 300 free emails/day on their free plan with standard SMTP — no self-hosting required.
+
+**Reference:** [Postfix documentation](http://www.postfix.org/documentation.html) · [OpenDKIM setup guide](http://www.opendkim.org/opendkim-README)
+
+---
+
+### 2.7 Summary — Fully Open-Source Deployment
+
+To deploy ABEM **without any commercial account**, use:
+
+| Role | Replace | With |
+|------|---------|------|
+| Media storage | Cloudinary | MinIO |
+| Push notifications (web) | Firebase FCM | ntfy |
+| Error tracking | Sentry cloud | GlitchTip |
+| Email | Gmail SMTP | Postfix + OpenDKIM |
+| Source control | GitHub | Gitea (self-hosted) |
+| CI/CD | GitHub Actions | Woodpecker CI (works with Gitea) |
+
+The only unavoidable platform costs are:
+- **Google Play Store** — $25 one-time registration fee
+- **Apple App Store** — $99/year Apple Developer Program membership
+
+---
+
+## 3. Server Provisioning
 
 Recommended cloud providers:
 
@@ -101,7 +373,7 @@ sudo ufw status
 
 ---
 
-## 3. Repository Setup
+## 4. Repository Setup
 
 ```bash
 # Clone the repository
@@ -114,7 +386,7 @@ git checkout v1.0.0
 
 ---
 
-## 4. Environment Variables
+## 5. Environment Variables
 
 Create the production environment file from the example:
 
@@ -175,11 +447,11 @@ VITE_API_BASE_URL=https://abem.yourdomain.com/api/v1
 
 ---
 
-## 5. Docker — Production Deployment
+## 6. Docker — Production Deployment
 
 This is the **recommended** deployment method.
 
-### 5.1 Build and Start All Services
+### 6.1 Build and Start All Services
 
 ```bash
 cd /opt/abem
@@ -206,13 +478,13 @@ abem-redis-1            redis:7       Up (healthy)   6379/tcp
 abem-frontend-1         abem-frontend Up             0.0.0.0:80->80/tcp
 ```
 
-### 5.2 Run Migrations
+### 6.2 Run Migrations
 
 ```bash
 docker compose -f docker-compose.prod.yml exec backend python manage.py migrate
 ```
 
-### 5.3 Collect Static Files
+### 6.3 Collect Static Files
 
 ```bash
 docker compose -f docker-compose.prod.yml exec backend python manage.py collectstatic --noinput
@@ -220,7 +492,7 @@ docker compose -f docker-compose.prod.yml exec backend python manage.py collects
 
 > Static files are served by [WhiteNoise](https://whitenoise.readthedocs.io/) directly from Gunicorn — no separate Nginx step needed for static files.
 
-### 5.4 Update Without Downtime
+### 6.4 Update Without Downtime
 
 ```bash
 cd /opt/abem
@@ -232,11 +504,11 @@ docker compose -f docker-compose.prod.yml exec backend python manage.py migrate
 
 ---
 
-## 6. Manual (Non-Docker) Deployment
+## 7. Manual (Non-Docker) Deployment
 
 Use this if you prefer managing services directly on the host.
 
-### 6.1 Python Environment
+### 7.1 Python Environment
 
 ```bash
 # Install Python 3.13
@@ -250,7 +522,7 @@ pip install --upgrade pip
 pip install -r requirements/production.txt
 ```
 
-### 6.2 Gunicorn Service (systemd)
+### 7.2 Gunicorn Service (systemd)
 
 ```bash
 sudo nano /etc/systemd/system/abem-gunicorn.service
@@ -307,9 +579,9 @@ sudo systemctl status abem-gunicorn
 
 ---
 
-## 7. Database Setup & Migrations
+## 8. Database Setup & Migrations
 
-### 7.1 PostgreSQL (Manual, Non-Docker)
+### 8.1 PostgreSQL (Manual, Non-Docker)
 
 ```bash
 sudo apt install -y postgresql postgresql-contrib
@@ -324,7 +596,7 @@ GRANT ALL PRIVILEGES ON DATABASE abem_prod TO abem_user;
 
 **Reference:** [PostgreSQL installation guide (Ubuntu)](https://www.postgresql.org/download/linux/ubuntu/)
 
-### 7.2 Run Migrations
+### 8.2 Run Migrations
 
 ```bash
 # Docker
@@ -336,7 +608,7 @@ cd /opt/abem/backend
 python manage.py migrate
 ```
 
-### 7.3 Database Backups
+### 8.3 Database Backups
 
 ```bash
 # Create a backup
@@ -352,11 +624,11 @@ docker compose -f docker-compose.prod.yml exec -T db \
 
 ---
 
-## 8. Superuser Creation
+## 9. Superuser Creation
 
 The initial admin account must be created manually on first deployment.
 
-### 8.1 Using Django `createsuperuser`
+### 9.1 Using Django `createsuperuser`
 
 ```bash
 # Docker
@@ -374,11 +646,11 @@ When prompted, enter:
 |----------|---------------------|
 | Username | `shebo`             |
 | Email    | `cegres1@yahoo.com` |
-| Password | `L7r@xval8`         |
+| Password | `A12@xval`         |
 
 > **Important:** Change the password immediately after the first login via the Django Admin panel at `/admin/` or the profile API endpoint `PATCH /api/v1/auth/profile/change-password/`.
 
-### 8.2 Non-interactive Superuser (CI/CD)
+### 9.2 Non-interactive Superuser (CI/CD)
 
 ```bash
 docker compose -f docker-compose.prod.yml exec backend \
@@ -388,7 +660,7 @@ if not User.objects.filter(email='cegres1@yahoo.com').exists():
     User.objects.create_superuser(
         email='cegres1@yahoo.com',
         username='shebo',
-        password='L7r@xval8',
+        password='A12@xval',
         role='admin',
     )
     print('Superuser created.')
@@ -399,7 +671,7 @@ else:
 
 ---
 
-## 9. Static & Media Files
+## 10. Static & Media Files
 
 ### Static Files (WhiteNoise)
 
@@ -419,9 +691,9 @@ User-uploaded files (expense bills, profile photos) are stored on [Cloudinary](h
 
 ---
 
-## 10. Nginx & TLS / HTTPS
+## 11. Nginx & TLS / HTTPS
 
-### 10.1 Install Certbot (Let's Encrypt)
+### 11.1 Install Certbot (Let's Encrypt)
 
 ```bash
 sudo apt install -y nginx certbot python3-certbot-nginx
@@ -435,7 +707,7 @@ sudo certbot renew --dry-run
 
 **Reference:** [Certbot documentation](https://certbot.eff.org/instructions?os=ubuntufocal&tab=standard)
 
-### 10.2 Nginx Configuration (API + Frontend Reverse Proxy)
+### 11.2 Nginx Configuration (API + Frontend Reverse Proxy)
 
 > Skip this step if using Docker — the production `docker-compose.prod.yml` embeds Nginx inside the `frontend` container.
 
@@ -513,15 +785,15 @@ sudo systemctl reload nginx
 
 ---
 
-## 11. Celery (Background Tasks)
+## 12. Celery (Background Tasks)
 
 Celery processes email notifications, push notifications (FCM), and scheduled tasks.
 
-### 11.1 Docker (Automatic)
+### 12.1 Docker (Automatic)
 
 The `celery_worker` and `celery_beat` services start automatically with `docker compose up`.
 
-### 11.2 systemd Services (Non-Docker)
+### 12.2 systemd Services (Non-Docker)
 
 **Worker:**
 
@@ -580,13 +852,13 @@ sudo systemctl enable --now abem-celery-worker abem-celery-beat
 
 ---
 
-## 12. Frontend Build & Deployment
+## 13. Frontend Build & Deployment
 
-### 12.1 Docker (Automatic)
+### 13.1 Docker (Automatic)
 
 The `frontend` container in `docker-compose.prod.yml` builds and serves the React app via Nginx automatically.
 
-### 12.2 Manual Build
+### 13.2 Manual Build
 
 ```bash
 cd /opt/abem/frontend
@@ -606,9 +878,9 @@ npm run build
 
 ---
 
-## 13. Mobile (Flutter) Release
+## 14. Mobile (Flutter) Release
 
-### 13.1 Android (Google Play Store)
+### 14.1 Android (Google Play Store)
 
 1. **Set up signing key:**
 
@@ -650,7 +922,7 @@ npm run build
 
    **Reference:** [Flutter Android release guide](https://docs.flutter.dev/deployment/android)
 
-### 13.2 iOS (Apple App Store)
+### 14.2 iOS (Apple App Store)
 
 1. **Requirements:** macOS machine, Xcode 15+, Apple Developer account ($99/year)
 2. **Archive and distribute:**
@@ -665,7 +937,7 @@ npm run build
 
 ---
 
-## 14. CI/CD — GitHub Actions
+## 15. CI/CD — GitHub Actions
 
 Three workflows are already configured in `.github/workflows/`:
 
@@ -707,7 +979,7 @@ Append a deployment job to `backend-ci.yml` (after tests pass):
 
 ---
 
-## 15. Monitoring & Logging
+## 16. Monitoring & Logging
 
 ### Application Error Tracking (Sentry)
 
@@ -748,7 +1020,7 @@ docker stats
 
 ---
 
-## 16. Post-Deployment Smoke Tests
+## 17. Post-Deployment Smoke Tests
 
 Run the Sprint 10 smoke suite immediately after every deployment:
 
@@ -778,7 +1050,7 @@ pytest -m smoke --tb=short -q
 
 ---
 
-## 17. Rollback Procedure
+## 18. Rollback Procedure
 
 ### Docker Rollback
 
@@ -814,7 +1086,7 @@ docker compose -f docker-compose.prod.yml start backend celery_worker
 
 ---
 
-## 18. Security Hardening Checklist
+## 19. Security Hardening Checklist
 
 - [ ] `DEBUG=False` in production settings
 - [ ] `SECRET_KEY` is a random 50-character string (not the dev default)
@@ -834,7 +1106,7 @@ docker compose -f docker-compose.prod.yml start backend celery_worker
 
 ---
 
-## 19. Useful References
+## 20. Useful References
 
 | Topic | Link |
 |-------|------|
