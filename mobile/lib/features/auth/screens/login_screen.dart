@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import '../bloc/auth_bloc.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -179,6 +180,19 @@ class _LoginScreenState extends State<LoginScreen> {
                                           style: TextStyle(
                                               fontWeight: FontWeight.w600,
                                               fontSize: 16)),
+                                ),
+
+                                const SizedBox(height: 16),
+                                GestureDetector(
+                                  onTap: () => context.push('/register'),
+                                  child: Text(
+                                    "Don't have an account? Create account",
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      color: colorScheme.primary,
+                                      fontSize: 13,
+                                    ),
+                                  ),
                                 ),
                               ],
                             ),

@@ -44,6 +44,22 @@ class AuthRepository {
     }
   }
 
+  /// Self-register (public) — caller chooses role (admin | owner).
+  /// Persists tokens + user profile locally, same as login.
+  Future<Map<String, dynamic>> selfRegister(Map<String, dynamic> payload) async {
+    final response = await apiClient.dio.post(
+      '/auth/self-register/',
+      data: payload,
+    );
+    final data = response.data as Map<String, dynamic>;
+    await apiClient.saveTokens(
+      data['access'] as String,
+      data['refresh'] as String,
+    );
+    await _storeUser(data['user'] as Map<String, dynamic>);
+    return data;
+  }
+
   /// Logout: blacklist refresh token on server, clear local storage.
   Future<void> logout() async {
     try {
