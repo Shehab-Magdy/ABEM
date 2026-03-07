@@ -6,11 +6,14 @@ import '../repositories/auth_repository.dart';
 
 // ── Events ────────────────────────────────────────────────────────────────────
 abstract class AuthEvent extends Equatable {
+  const AuthEvent();
   @override
   List<Object?> get props => [];
 }
 
-class AuthCheckRequested extends AuthEvent {}
+class AuthCheckRequested extends AuthEvent {
+  const AuthCheckRequested();
+}
 
 class AuthLoginRequested extends AuthEvent {
   final String email;
@@ -21,7 +24,9 @@ class AuthLoginRequested extends AuthEvent {
   List<Object?> get props => [email, password];
 }
 
-class AuthLogoutRequested extends AuthEvent {}
+class AuthLogoutRequested extends AuthEvent {
+  const AuthLogoutRequested();
+}
 
 class AuthProfileUpdateRequested extends AuthEvent {
   final Map<String, dynamic> fields;
@@ -39,12 +44,18 @@ class AuthProfilePictureUpdateRequested extends AuthEvent {
 
 // ── States ────────────────────────────────────────────────────────────────────
 abstract class AuthState extends Equatable {
+  const AuthState();
   @override
   List<Object?> get props => [];
 }
 
-class AuthInitial extends AuthState {}
-class AuthLoading extends AuthState {}
+class AuthInitial extends AuthState {
+  const AuthInitial();
+}
+
+class AuthLoading extends AuthState {
+  const AuthLoading();
+}
 
 class AuthAuthenticated extends AuthState {
   final Map<String, dynamic> user;
@@ -54,7 +65,9 @@ class AuthAuthenticated extends AuthState {
   List<Object?> get props => [user];
 }
 
-class AuthUnauthenticated extends AuthState {}
+class AuthUnauthenticated extends AuthState {
+  const AuthUnauthenticated();
+}
 
 class AuthError extends AuthState {
   final String message;
@@ -103,8 +116,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     } on AccountLockedException catch (e) {
       emit(AuthError(message: e.message, isLocked: true));
     } on DioException catch (e) {
-      final detail = (e.response?.data as Map<String, dynamic>?)?['detail']
-          as String?;
+      final detail =
+          (e.response?.data as Map<String, dynamic>?)?['detail'] as String?;
       emit(AuthError(message: detail ?? 'Invalid email or password.'));
     } catch (e) {
       emit(AuthError(message: 'An unexpected error occurred.'));
@@ -127,8 +140,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       final updated = await authRepository.updateProfile(event.fields);
       emit(AuthAuthenticated(user: updated));
     } on DioException catch (e) {
-      final msg = (e.response?.data as Map<String, dynamic>?)?['detail']
-          as String? ?? 'Profile update failed.';
+      final msg =
+          (e.response?.data as Map<String, dynamic>?)?['detail'] as String? ??
+              'Profile update failed.';
       emit(AuthError(message: msg));
     }
   }
@@ -138,11 +152,13 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     Emitter<AuthState> emit,
   ) async {
     try {
-      final updated = await authRepository.uploadProfilePicture(event.imageFile);
+      final updated =
+          await authRepository.uploadProfilePicture(event.imageFile);
       emit(AuthAuthenticated(user: updated));
     } on DioException catch (e) {
-      final msg = (e.response?.data as Map<String, dynamic>?)?['detail']
-          as String? ?? 'Profile picture upload failed.';
+      final msg =
+          (e.response?.data as Map<String, dynamic>?)?['detail'] as String? ??
+              'Profile picture upload failed.';
       emit(AuthError(message: msg));
     }
   }

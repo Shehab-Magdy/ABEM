@@ -11,8 +11,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
-COPY requirements/development.txt requirements.txt
-RUN pip install --no-cache-dir -r requirements.txt
+COPY requirements/ /app/requirements/
+RUN pip install --no-cache-dir -r requirements/development.txt
 
 # Code is mounted at runtime (volume), not copied
 EXPOSE 8000
