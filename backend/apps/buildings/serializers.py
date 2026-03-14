@@ -54,6 +54,25 @@ class BuildingSerializer(serializers.ModelSerializer):
             )
         return value
 
+    DEFAULT_CATEGORIES = [
+        ("Maintenance", "Repairs and upkeep"),
+        ("Utilities", "Electricity, water, and gas"),
+        ("Cleaning", "Cleaning and janitorial services"),
+        ("Security", "Security personnel and systems"),
+        ("Management", "Administrative and management fees"),
+        ("Other", "Miscellaneous expenses"),
+    ]
+
+    def _create_default_categories(self, building):
+        """Auto-create default expense categories for a new building."""
+        from apps.expenses.models import ExpenseCategory
+
+        categories = [
+            ExpenseCategory(building=building, name=name, description=desc)
+            for name, desc in self.DEFAULT_CATEGORIES
+        ]
+        ExpenseCategory.objects.bulk_create(categories, ignore_conflicts=True)
+
     def _create_units(self, building):
         """Auto-create vacant apartment and store records for a new building."""
         # Import here to avoid circular-import at module level
@@ -82,6 +101,7 @@ class BuildingSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         building = super().create(validated_data)
         self._create_units(building)
+        self._create_default_categories(building)
         return building
 
     def update(self, instance, validated_data):
@@ -129,11 +149,7 @@ class AssignUserSerializer(serializers.Serializer):
 
     def validate_user_id(self, value):
         try:
-            user = User.objects.get(pk=value)
+            user = User.objects.get(pk=value, is_active=True)
         except User.DoesNotExist:
             raise serializers.ValidationError("User not found.")
-        if user.role != "owner":
-            raise serializers.ValidationError(
-                "Only users with the 'owner' role can be assigned to a building."
-            )
         return value

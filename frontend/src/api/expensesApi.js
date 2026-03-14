@@ -12,4 +12,6 @@ export const expensesApi = {
     }),
   listCategories: (buildingId) =>
     axiosClient.get("/expenses/categories/", { params: { building_id: buildingId } }),
+  createCategory: (data) => axiosClient.post("/expenses/categories/", data),
+  removeCategory: (id) => axiosClient.delete(`/expenses/categories/${id}/`),
 };

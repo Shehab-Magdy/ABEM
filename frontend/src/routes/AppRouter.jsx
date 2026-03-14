@@ -22,6 +22,7 @@ import ExpensesPage from "../pages/expenses/ExpensesPage";
 import PaymentsPage from "../pages/payments/PaymentsPage";
 import NotificationCenterPage from "../pages/notifications/NotificationCenterPage";
 import AuditLogPage from "../pages/audit/AuditLogPage";
+import ExpenseCategoriesPage from "../pages/expenses/ExpenseCategoriesPage";
 
 // ── Route guards ──────────────────────────────────────────────────────────────
 
@@ -75,6 +76,7 @@ export default function AppRouter() {
         <Route path="payments" element={<PaymentsPage />} />
         <Route path="notifications" element={<NotificationCenterPage />} />
         <Route path="audit" element={<RequireAdmin><AuditLogPage /></RequireAdmin>} />
+        <Route path="expense-categories" element={<RequireAdmin><ExpenseCategoriesPage /></RequireAdmin>} />
       </Route>
 
       {/* Fallback */}

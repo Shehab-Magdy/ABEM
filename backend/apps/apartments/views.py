@@ -63,6 +63,10 @@ class ApartmentViewSet(ModelViewSet):
 
     def perform_create(self, serializer):
         instance = serializer.save()
+        # If an owner was set on creation, auto-link them to the building
+        if instance.owner is not None:
+            from apps.buildings.models import UserBuilding
+            UserBuilding.objects.get_or_create(user=instance.owner, building=instance.building)
         log_action(
             user=self.request.user,
             action="create",
@@ -84,6 +88,10 @@ class ApartmentViewSet(ModelViewSet):
             }
             for field in serializer.validated_data
         }
+        # If an owner was assigned, auto-link them to the building
+        if "owner" in serializer.validated_data and instance.owner is not None:
+            from apps.buildings.models import UserBuilding
+            UserBuilding.objects.get_or_create(user=instance.owner, building=instance.building)
         log_action(
             user=self.request.user,
             action="update",
@@ -131,14 +139,9 @@ class ApartmentViewSet(ModelViewSet):
     def claim(self, request, pk=None):
         """
         POST /api/v1/apartments/{id}/claim/
-        An owner-role user claims an unowned apartment during sign-up.
+        Any authenticated user (admin or owner) claims an unowned apartment.
         Sets owner = request.user, status = occupied, and links user to building.
         """
-        if request.user.role != "owner":
-            return Response(
-                {"detail": "Only users with role 'owner' can claim apartments."},
-                status=403,
-            )
         try:
             apartment = Apartment.objects.select_related("building").get(pk=pk)
         except Apartment.DoesNotExist:
