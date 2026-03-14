@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>ABEM Design System</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: system-ui, -apple-system, Arial, sans-serif; background: #F9FAFB; color: #1F2937; padding: 40px; }
+h1 { font-size: 28px; font-weight: 700; color: #1F2937; margin-bottom: 4px; }
+.subtitle { color: #6B7280; font-size: 14px; margin-bottom: 40px; }
+.section { margin-bottom: 48px; }
+.section-title { font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: #9CA3AF; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 1px solid #E5E7EB; }
+/* Colors */
+.swatch-grid { display: flex; gap: 12px; flex-wrap: wrap; }
+.swatch { display: flex; flex-direction: column; gap: 6px; }
+.swatch-block { width: 80px; height: 60px; border-radius: 10px; border: 1px solid rgba(0,0,0,0.06); }
+.swatch-name { font-size: 11px; font-weight: 600; color: #374151; }
+.swatch-hex { font-size: 10px; color: #9CA3AF; font-family: monospace; }
+/* Typography */
+.type-sample { display: flex; align-items: baseline; gap: 16px; margin-bottom: 10px; }
+.type-meta { font-size: 11px; color: #9CA3AF; min-width: 140px; font-family: monospace; }
+/* Icons */
+.icon-grid { display: flex; gap: 12px; flex-wrap: wrap; }
+.icon-cell { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.icon-wrap { width: 52px; height: 52px; border-radius: 14px; display: flex; align-items: center; justify-content: center; border: 1px solid rgba(0,0,0,0.05); }
+.icon-label { font-size: 11px; color: #6B7280; text-align: center; }
+/* Status badges */
+.badge-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.badge { padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 500; }
+.badge-paid { background: #D1FAE5; color: #065F46; }
+.badge-partial { background: #FEF3C7; color: #92400E; }
+.badge-overdue { background: #FEE2E2; color: #991B1B; }
+.badge-unpaid { background: #F3F4F6; color: #374151; }
+.badge-admin { background: #DBEAFE; color: #1E40AF; }
+.badge-owner { background: #EDE9FE; color: #5B21B6; }
+/* Spacing demo */
+.space-row { display: flex; align-items: flex-end; gap: 16px; }
+.space-block { background: #DBEAFE; border-radius: 3px; }
+.space-label { font-size: 10px; color: #9CA3AF; text-align: center; margin-top: 4px; }
+/* Cards preview -->
+.card-preview { background: white; border: 1px solid #E5E7EB; border-radius: 16px; padding: 20px; max-width: 320px; }
+.metric-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px; }
+.metric { background: #F9FAFB; border-radius: 10px; padding: 14px; }
+.metric-label { font-size: 11px; color: #9CA3AF; margin-bottom: 4px; }
+.metric-value { font-size: 20px; font-weight: 700; color: #1F2937; }
+.metric-change { font-size: 11px; margin-top: 2px; }
+.up { color: #10B981; }
+.down { color: #EF4444; }
+</style>
+</head>
+<body>
+
+<h1>ABEM Design System</h1>
+<p class="subtitle">Apartment &amp; Building Expense Management · Visual Identity Reference</p>
+
+<!-- Colors -->
+<div class="section">
+  <div class="section-title">Color Palette</div>
+  <div class="swatch-grid">
+    <div class="swatch"><div class="swatch-block" style="background:#2563EB"></div><div class="swatch-name">Primary</div><div class="swatch-hex">#2563EB</div></div>
+    <div class="swatch"><div class="swatch-block" style="background:#1D4ED8"></div><div class="swatch-name">Primary Dark</div><div class="swatch-hex">#1D4ED8</div></div>
+    <div class="swatch"><div class="swatch-block" style="background:#DBEAFE"></div><div class="swatch-name">Primary Light</div><div class="swatch-hex">#DBEAFE</div></div>
+    <div class="swatch"><div class="swatch-block" style="background:#10B981"></div><div class="swatch-name">Secondary</div><div class="swatch-hex">#10B981</div></div>
+    <div class="swatch"><div class="swatch-block" style="background:#059669"></div><div class="swatch-name">Secondary Dark</div><div class="swatch-hex">#059669</div></div>
+    <div class="swatch"><div class="swatch-block" style="background:#D1FAE5"></div><div class="swatch-name">Secondary Light</div><div class="swatch-hex">#D1FAE5</div></div>
+    <div class="swatch"><div class="swatch-block" style="background:#F59E0B"></div><div class="swatch-name">Accent</div><div class="swatch-hex">#F59E0B</div></div>
+    <div class="swatch"><div class="swatch-block" style="background:#D97706"></div><div class="swatch-name">Accent Dark</div><div class="swatch-hex">#D97706</div></div>
+    <div class="swatch"><div class="swatch-block" style="background:#FEF3C7"></div><div class="swatch-name">Accent Light</div><div class="swatch-hex">#FEF3C7</div></div>
+    <div class="swatch"><div class="swatch-block" style="background:#1F2937"></div><div class="swatch-name">Neutral Dark</div><div class="swatch-hex">#1F2937</div></div>
+    <div class="swatch"><div class="swatch-block" style="background:#6B7280"></div><div class="swatch-name">Neutral Mid</div><div class="swatch-hex">#6B7280</div></div>
+    <div class="swatch"><div class="swatch-block" style="background:#F9FAFB; border:1px solid #E5E7EB;"></div><div class="swatch-name">Background</div><div class="swatch-hex">#F9FAFB</div></div>
+    <div class="swatch"><div class="swatch-block" style="background:#EF4444"></div><div class="swatch-name">Danger</div><div class="swatch-hex">#EF4444</div></div>
+    <div class="swatch"><div class="swatch-block" style="background:#7C3AED"></div><div class="swatch-name">Purple</div><div class="swatch-hex">#7C3AED</div></div>
+    <div class="swatch"><div class="swatch-block" style="background:#EA580C"></div><div class="swatch-name">Orange</div><div class="swatch-hex">#EA580C</div></div>
+  </div>
+</div>
+
+<!-- Typography -->
+<div class="section">
+  <div class="section-title">Typography</div>
+  <div class="type-sample"><span class="type-meta">Display / 32px 700</span><span style="font-size:32px;font-weight:700;color:#1F2937">Building Finance</span></div>
+  <div class="type-sample"><span class="type-meta">H1 / 24px 700</span><span style="font-size:24px;font-weight:700;color:#1F2937">Dashboard Overview</span></div>
+  <div class="type-sample"><span class="type-meta">H2 / 18px 600</span><span style="font-size:18px;font-weight:600;color:#1F2937">Expense Summary</span></div>
+  <div class="type-sample"><span class="type-meta">H3 / 16px 500</span><span style="font-size:16px;font-weight:500;color:#1F2937">Monthly Breakdown</span></div>
+  <div class="type-sample"><span class="type-meta">Body / 14px 400</span><span style="font-size:14px;color:#374151">Track shared expenses and payments across all buildings and apartments.</span></div>
+  <div class="type-sample"><span class="type-meta">Caption / 12px 400</span><span style="font-size:12px;color:#6B7280">Last updated 2 hours ago · Building A · 12 apartments</span></div>
+  <div class="type-sample"><span class="type-meta">Mono / 13px 500</span><span style="font-size:13px;font-weight:500;font-family:monospace;color:#2563EB">EGP 12,450.00</span></div>
+</div>
+
+<!-- Status Badges -->
+<div class="section">
+  <div class="section-title">Status Badges</div>
+  <div class="badge-row">
+    <span class="badge badge-paid">Paid</span>
+    <span class="badge badge-partial">Partial</span>
+    <span class="badge badge-overdue">Overdue</span>
+    <span class="badge badge-unpaid">Unpaid</span>
+    <span class="badge badge-admin">Admin</span>
+    <span class="badge badge-owner">Owner</span>
+  </div>
+</div>
+
+<!-- Spacing -->
+<div class="section">
+  <div class="section-title">Spacing Scale</div>
+  <div class="space-row">
+    <div><div class="space-block" style="width:4px;height:4px;"></div><div class="space-label">4px xs</div></div>
+    <div><div class="space-block" style="width:8px;height:8px;"></div><div class="space-label">8px sm</div></div>
+    <div><div class="space-block" style="width:16px;height:16px;"></div><div class="space-label">16px md</div></div>
+    <div><div class="space-block" style="width:24px;height:24px;"></div><div class="space-label">24px lg</div></div>
+    <div><div class="space-block" style="width:40px;height:40px;"></div><div class="space-label">40px xl</div></div>
+    <div><div class="space-block" style="width:64px;height:64px;"></div><div class="space-label">64px 2xl</div></div>
+  </div>
+</div>
+
+<!-- Card Preview -->
+<div class="section">
+  <div class="section-title">UI Component Preview — Metric Card</div>
+  <div class="card-preview">
+    <div style="display:flex;justify-content:space-between;align-items:center;">
+      <div>
+        <div style="font-size:13px;color:#6B7280;margin-bottom:2px;">Total Income</div>
+        <div style="font-size:26px;font-weight:700;color:#1F2937;">EGP 48,250</div>
+        <div style="font-size:12px;color:#10B981;margin-top:2px;">↑ 12.4% vs last month</div>
+      </div>
+      <div style="width:44px;height:44px;border-radius:12px;background:#ECFDF5;display:flex;align-items:center;justify-content:center;">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22,12 18,12 15,21 9,3 6,12 2,12"/></svg>
+      </div>
+    </div>
+    <div class="metric-grid">
+      <div class="metric"><div class="metric-label">Buildings</div><div class="metric-value">4</div></div>
+      <div class="metric"><div class="metric-label">Apartments</div><div class="metric-value">38</div></div>
+      <div class="metric"><div class="metric-label">Paid</div><div class="metric-value" style="color:#10B981">32</div></div>
+      <div class="metric"><div class="metric-label">Overdue</div><div class="metric-value" style="color:#EF4444">6</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- File Index -->
+<div class="section">
+  <div class="section-title">Asset File Index</div>
+  <table style="width:100%;border-collapse:collapse;font-size:13px;">
+    <thead>
+      <tr style="background:#F3F4F6;">
+        <th style="padding:8px 12px;text-align:left;border:1px solid #E5E7EB;color:#374151;">File</th>
+        <th style="padding:8px 12px;text-align:left;border:1px solid #E5E7EB;color:#374151;">Type</th>
+        <th style="padding:8px 12px;text-align:left;border:1px solid #E5E7EB;color:#374151;">Size</th>
+        <th style="padding:8px 12px;text-align:left;border:1px solid #E5E7EB;color:#374151;">Usage</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td style="padding:8px 12px;border:1px solid #E5E7EB;font-family:monospace;font-size:12px;">abem-logo-light.svg</td><td style="padding:8px 12px;border:1px solid #E5E7EB;">SVG</td><td style="padding:8px 12px;border:1px solid #E5E7EB;">220×60</td><td style="padding:8px 12px;border:1px solid #E5E7EB;">Web header, light bg</td></tr>
+      <tr style="background:#F9FAFB;"><td style="padding:8px 12px;border:1px solid #E5E7EB;font-family:monospace;font-size:12px;">abem-logo-dark.svg</td><td style="padding:8px 12px;border:1px solid #E5E7EB;">SVG</td><td style="padding:8px 12px;border:1px solid #E5E7EB;">220×60</td><td style="padding:8px 12px;border:1px solid #E5E7EB;">Web header, dark bg</td></tr>
+      <tr><td style="padding:8px 12px;border:1px solid #E5E7EB;font-family:monospace;font-size:12px;">abem-app-icon-1024.svg</td><td style="padding:8px 12px;border:1px solid #E5E7EB;">SVG</td><td style="padding:8px 12px;border:1px solid #E5E7EB;">1024×1024</td><td style="padding:8px 12px;border:1px solid #E5E7EB;">App stores, home screen</td></tr>
+      <tr style="background:#F9FAFB;"><td style="padding:8px 12px;border:1px solid #E5E7EB;font-family:monospace;font-size:12px;">abem-hero-banner-1920x1080.svg</td><td style="padding:8px 12px;border:1px solid #E5E7EB;">SVG</td><td style="padding:8px 12px;border:1px solid #E5E7EB;">1920×1080</td><td style="padding:8px 12px;border:1px solid #E5E7EB;">Landing page hero</td></tr>
+      <tr><td style="padding:8px 12px;border:1px solid #E5E7EB;font-family:monospace;font-size:12px;">abem-login-background-1920x1080.svg</td><td style="padding:8px 12px;border:1px solid #E5E7EB;">SVG</td><td style="padding:8px 12px;border:1px solid #E5E7EB;">1920×1080</td><td style="padding:8px 12px;border:1px solid #E5E7EB;">Login page background</td></tr>
+      <tr style="background:#F9FAFB;"><td style="padding:8px 12px;border:1px solid #E5E7EB;font-family:monospace;font-size:12px;">abem-dashboard-header-1200x280.svg</td><td style="padding:8px 12px;border:1px solid #E5E7EB;">SVG</td><td style="padding:8px 12px;border:1px solid #E5E7EB;">1200×280</td><td style="padding:8px 12px;border:1px solid #E5E7EB;">Web dashboard top header</td></tr>
+      <tr><td style="padding:8px 12px;border:1px solid #E5E7EB;font-family:monospace;font-size:12px;">abem-mobile-splash-430x932.svg</td><td style="padding:8px 12px;border:1px solid #E5E7EB;">SVG</td><td style="padding:8px 12px;border:1px solid #E5E7EB;">430×932</td><td style="padding:8px 12px;border:1px solid #E5E7EB;">Mobile splash screen</td></tr>
+      <tr style="background:#F9FAFB;"><td style="padding:8px 12px;border:1px solid #E5E7EB;font-family:monospace;font-size:12px;">abem-expense-category-icons.svg</td><td style="padding:8px 12px;border:1px solid #E5E7EB;">SVG</td><td style="padding:8px 12px;border:1px solid #E5E7EB;">480×120</td><td style="padding:8px 12px;border:1px solid #E5E7EB;">Expense categories (8 icons)</td></tr>
+      <tr><td style="padding:8px 12px;border:1px solid #E5E7EB;font-family:monospace;font-size:12px;">abem-payment-notification-icons.svg</td><td style="padding:8px 12px;border:1px solid #E5E7EB;">SVG</td><td style="padding:8px 12px;border:1px solid #E5E7EB;">480×200</td><td style="padding:8px 12px;border:1px solid #E5E7EB;">Payment + notification icons</td></tr>
+      <tr style="background:#F9FAFB;"><td style="padding:8px 12px;border:1px solid #E5E7EB;font-family:monospace;font-size:12px;">abem-empty-states.svg</td><td style="padding:8px 12px;border:1px solid #E5E7EB;">SVG</td><td style="padding:8px 12px;border:1px solid #E5E7EB;">600×220</td><td style="padding:8px 12px;border:1px solid #E5E7EB;">Empty state illustrations (3)</td></tr>
+      <tr><td style="padding:8px 12px;border:1px solid #E5E7EB;font-family:monospace;font-size:12px;">abem-design-system.html</td><td style="padding:8px 12px;border:1px solid #E5E7EB;">HTML</td><td style="padding:8px 12px;border:1px solid #E5E7EB;">—</td><td style="padding:8px 12px;border:1px solid #E5E7EB;">This reference document</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div style="margin-top:40px;padding-top:20px;border-top:1px solid #E5E7EB;font-size:12px;color:#9CA3AF;">
+  ABEM Design System · Version 1.0 · All assets are SVG vector format, scalable to any resolution
+</div>
+
+</body>
+</html>

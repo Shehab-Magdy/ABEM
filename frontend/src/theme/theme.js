@@ -4,21 +4,25 @@ const theme = createTheme({
   palette: {
     mode: "light",
     primary: {
-      main: "#1565C0",       // Deep blue
-      light: "#1E88E5",
-      dark: "#0D47A1",
+      main: "#2563EB",
+      light: "#DBEAFE",
+      dark: "#1D4ED8",
     },
     secondary: {
-      main: "#00897B",       // Teal
-      light: "#26A69A",
-      dark: "#00695C",
+      main: "#10B981",
+      light: "#D1FAE5",
+      dark: "#059669",
     },
-    error: { main: "#D32F2F" },
-    warning: { main: "#F57C00" },
-    success: { main: "#388E3C" },
+    error: { main: "#EF4444" },
+    warning: { main: "#F59E0B" },
+    success: { main: "#10B981" },
     background: {
-      default: "#F5F7FA",
+      default: "#F9FAFB",
       paper: "#FFFFFF",
+    },
+    text: {
+      primary: "#1F2937",
+      secondary: "#6B7280",
     },
   },
   typography: {

@@ -1,0 +1,61 @@
+<svg width="600" height="220" viewBox="0 0 600 220" fill="none" xmlns="http://www.w3.org/2000/svg">
+
+  <!-- === Empty: No Buildings === -->
+  <rect x="4" y="4" width="188" height="212" rx="16" fill="#F9FAFB" stroke="#E5E7EB" stroke-width="1"/>
+  <!-- Illustration -->
+  <circle cx="98" cy="80" r="52" fill="#EFF6FF" opacity="0.8"/>
+  <!-- Building outline dashed -->
+  <rect x="52" y="46" width="30" height="60" rx="4" fill="none" stroke="#BFDBFE" stroke-width="2" stroke-dasharray="4 3"/>
+  <rect x="88" y="56" width="30" height="50" rx="4" fill="none" stroke="#BFDBFE" stroke-width="2" stroke-dasharray="4 3"/>
+  <rect x="124" y="50" width="24" height="56" rx="4" fill="none" stroke="#BFDBFE" stroke-width="2" stroke-dasharray="4 3"/>
+  <!-- Windows -->
+  <rect x="57" y="54" width="8" height="6" rx="1.5" fill="#DBEAFE"/>
+  <rect x="69" y="54" width="8" height="6" rx="1.5" fill="#DBEAFE"/>
+  <rect x="93" y="63" width="8" height="6" rx="1.5" fill="#DBEAFE"/>
+  <rect x="105" y="63" width="8" height="6" rx="1.5" fill="#DBEAFE"/>
+  <!-- Plus action button -->
+  <circle cx="98" cy="116" r="14" fill="#2563EB"/>
+  <line x1="98" y1="110" x2="98" y2="122" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="92" y1="116" x2="104" y2="116" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+  <!-- Text -->
+  <rect x="34" y="144" width="128" height="12" rx="4" fill="#1F2937" opacity="0.55"/>
+  <rect x="50" y="164" width="96" height="10" rx="3" fill="#9CA3AF" opacity="0.7"/>
+  <rect x="60" y="180" width="76" height="10" rx="3" fill="#9CA3AF" opacity="0.5"/>
+
+  <!-- === Empty: No Expenses === -->
+  <rect x="208" y="4" width="188" height="212" rx="16" fill="#F9FAFB" stroke="#E5E7EB" stroke-width="1"/>
+  <circle cx="302" cy="80" r="52" fill="#FFFBEB" opacity="0.8"/>
+  <!-- Document outline dashed -->
+  <rect x="264" y="36" width="56" height="76" rx="4" fill="none" stroke="#FDE68A" stroke-width="2" stroke-dasharray="4 3"/>
+  <path d="M296 36V58H320" stroke="#FDE68A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <!-- Content lines -->
+  <line x1="272" y1="68" x2="312" y2="68" stroke="#FCD34D" stroke-width="2" stroke-linecap="round" opacity="0.6"/>
+  <line x1="272" y1="78" x2="304" y2="78" stroke="#FCD34D" stroke-width="2" stroke-linecap="round" opacity="0.5"/>
+  <line x1="272" y1="88" x2="292" y2="88" stroke="#FCD34D" stroke-width="2" stroke-linecap="round" opacity="0.4"/>
+  <!-- Magnifying glass -->
+  <circle cx="316" cy="102" r="12" fill="none" stroke="#F59E0B" stroke-width="2"/>
+  <line x1="325" y1="111" x2="333" y2="119" stroke="#F59E0B" stroke-width="2.5" stroke-linecap="round"/>
+  <!-- Text -->
+  <rect x="242" y="144" width="120" height="12" rx="4" fill="#1F2937" opacity="0.55"/>
+  <rect x="254" y="164" width="96" height="10" rx="3" fill="#9CA3AF" opacity="0.7"/>
+  <rect x="264" y="180" width="76" height="10" rx="3" fill="#9CA3AF" opacity="0.5"/>
+
+  <!-- === Empty: No Notifications === -->
+  <rect x="412" y="4" width="184" height="212" rx="16" fill="#F9FAFB" stroke="#E5E7EB" stroke-width="1"/>
+  <circle cx="504" cy="80" r="52" fill="#F0FDF4" opacity="0.8"/>
+  <!-- Bell outline dashed -->
+  <path d="M504 46a28 28 0 0128 28c0 18 7 28 7 28h-70s7-10 7-28a28 28 0 0128-28z" fill="none" stroke="#A7F3D0" stroke-width="2" stroke-dasharray="4 3"/>
+  <path d="M498 110a6 6 0 0012 0" fill="none" stroke="#A7F3D0" stroke-width="2"/>
+  <!-- Zzz sleep -->
+  <text x="524" y="64" font-family="system-ui, Arial, sans-serif" font-size="16" font-weight="700" fill="#34D399" opacity="0.8">z</text>
+  <text x="536" y="52" font-family="system-ui, Arial, sans-serif" font-size="13" font-weight="700" fill="#34D399" opacity="0.6">z</text>
+  <text x="546" y="42" font-family="system-ui, Arial, sans-serif" font-size="10" font-weight="700" fill="#34D399" opacity="0.4">z</text>
+  <!-- Green checkmark circle below bell -->
+  <circle cx="504" cy="116" r="10" fill="#D1FAE5" stroke="#10B981" stroke-width="1.5"/>
+  <path d="M499 116l3 3 6-6" stroke="#10B981" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <!-- Text -->
+  <rect x="444" y="144" width="120" height="12" rx="4" fill="#1F2937" opacity="0.55"/>
+  <rect x="454" y="164" width="100" height="10" rx="3" fill="#9CA3AF" opacity="0.7"/>
+  <rect x="464" y="180" width="76" height="10" rx="3" fill="#9CA3AF" opacity="0.5"/>
+
+</svg>
