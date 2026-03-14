@@ -108,8 +108,8 @@ export default function DashboardLayout() {
   const drawer = (
     <Box sx={{ height: "100%", bgcolor: "primary.dark", display: "flex", flexDirection: "column" }}>
       <Box sx={{ p: 2.5, pb: 2 }}>
-        <Typography variant="h6" color="white" fontWeight={700}>ABEM</Typography>
-        <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.6)" }}>
+        <Box component="img" src="/abem-logo-dark.svg" alt="ABEM" sx={{ height: 36, mb: 0.5 }} />
+        <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.6)", display: "block" }}>
           Building Expense Manager
         </Typography>
       </Box>

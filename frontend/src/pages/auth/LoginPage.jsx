@@ -70,9 +70,7 @@ export default function LoginPage() {
         <CardContent sx={{ p: 4 }}>
           {/* Header */}
           <Stack alignItems="center" spacing={1} mb={4}>
-            <Typography variant="h4" color="primary" fontWeight={700}>
-              ABEM
-            </Typography>
+            <Box component="img" src="/abem-logo-light.svg" alt="ABEM" sx={{ height: 48 }} />
             <Typography variant="body2" color="text.secondary">
               Apartment & Building Expense Management
             </Typography>

@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/api/api_client.dart';
 import '../../../core/api/apartments_api.dart';
 import '../../../core/api/buildings_api.dart';
+import '../../../core/theme/app_theme.dart';
 import '../bloc/auth_bloc.dart';
 import '../repositories/auth_repository.dart';
 
@@ -778,7 +779,7 @@ class _ClaimUnitStepState extends State<_ClaimUnitStep> {
                           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                           decoration: BoxDecoration(
                             color: isStore
-                                ? Colors.orange.withAlpha(40)
+                                ? AppColors.accentLight.withAlpha(40)
                                 : scheme.primary.withAlpha(30),
                             borderRadius: BorderRadius.circular(4),
                           ),
@@ -786,7 +787,7 @@ class _ClaimUnitStepState extends State<_ClaimUnitStep> {
                             isStore ? 'Store' : 'Apt',
                             style: TextStyle(
                               fontSize: 11, fontWeight: FontWeight.w600,
-                              color: isStore ? Colors.orange[800] : scheme.primary,
+                              color: isStore ? AppColors.accentDark : scheme.primary,
                             ),
                           ),
                         ),

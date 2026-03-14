@@ -232,8 +232,8 @@ export default function AdminDashboardPage() {
               >
                 <BarChart
                   series={[
-                    { data: incomeValues, label: "Income", color: "#4caf50" },
-                    { data: expenseValues, label: "Expenses", color: "#ff9800" },
+                    { data: incomeValues, label: "Income", color: "#10B981" },
+                    { data: expenseValues, label: "Expenses", color: "#F59E0B" },
                   ]}
                   xAxis={[{ data: MONTH_LABELS, scaleType: "band" }]}
                   height={300}

@@ -434,7 +434,7 @@ export default function RegisterPage() {
       <Card sx={{ width: "100%", maxWidth: 560 }}>
         <CardContent sx={{ p: 4 }}>
           <Stack alignItems="center" spacing={0.5} mb={3}>
-            <Typography variant="h4" color="primary" fontWeight={700}>ABEM</Typography>
+            <Box component="img" src="/abem-logo-light.svg" alt="ABEM" sx={{ height: 40 }} />
             <Typography variant="body2" color="text.secondary">Create your account</Typography>
           </Stack>
           <Stepper activeStep={step} alternativeLabel sx={{ mb: 4 }}>
