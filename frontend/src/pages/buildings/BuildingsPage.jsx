@@ -105,7 +105,7 @@ export default function BuildingsPage() {
   // ── Create ──────────────────────────────────────────────────────────────────
   const openCreate = () => {
     setEditTarget(null);
-    form.reset({ name: "", address: "", city: "", country: "", num_floors: 1 });
+    form.reset({ name: "", address: "", city: "", country: "", num_floors: 1, num_apartments: 0, num_stores: 0 });
     setDialogError(null);
     setDialogOpen(true);
   };
@@ -119,6 +119,8 @@ export default function BuildingsPage() {
       city: building.city,
       country: building.country || "",
       num_floors: building.num_floors,
+      num_apartments: building.num_apartments ?? 0,
+      num_stores: building.num_stores ?? 0,
     });
     setDialogError(null);
     setDialogOpen(true);
@@ -134,6 +136,8 @@ export default function BuildingsPage() {
         city: data.city,
         country: data.country,
         num_floors: parseInt(data.num_floors, 10),
+        num_apartments: parseInt(data.num_apartments, 10) || 0,
+        num_stores: parseInt(data.num_stores, 10) || 0,
       };
       if (editTarget) {
         await buildingsApi.update(editTarget.id, payload);
@@ -398,6 +402,24 @@ export default function BuildingsPage() {
                   min: { value: 1, message: "Must be at least 1." },
                 })}
               />
+              <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+                <TextField
+                  label="Apartments"
+                  type="number"
+                  inputProps={{ min: 0 }}
+                  fullWidth
+                  helperText="Number of apartment units (auto-creates vacant units)"
+                  {...form.register("num_apartments", { min: 0 })}
+                />
+                <TextField
+                  label="Stores"
+                  type="number"
+                  inputProps={{ min: 0 }}
+                  fullWidth
+                  helperText="Number of commercial/store units"
+                  {...form.register("num_stores", { min: 0 })}
+                />
+              </Stack>
             </Stack>
           </DialogContent>
           <DialogActions sx={{ px: 3, pb: 2 }}>
