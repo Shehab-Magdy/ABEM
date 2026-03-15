@@ -13,6 +13,7 @@ import {
   Box,
   Button,
   Chip,
+  CircularProgress,
   Dialog,
   DialogActions,
   DialogContent,
@@ -23,14 +24,20 @@ import {
   MenuItem,
   Select,
   Stack,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableRow,
   TextField,
   Tooltip,
   Typography,
 } from "@mui/material";
 import { DataGrid } from "@mui/x-data-grid";
-import { Add, Delete, Edit, PersonAdd } from "@mui/icons-material";
+import { Add, Apartment, Delete, Edit, PersonAdd } from "@mui/icons-material";
 import { useForm } from "react-hook-form";
 import { buildingsApi } from "../../api/buildingsApi";
+import { apartmentsApi } from "../../api/apartmentsApi";
 import { usersApi } from "../../api/usersApi";
 import { useAuth } from "../../hooks/useAuth";
 
@@ -53,6 +60,14 @@ export default function BuildingsPage() {
   // Delete dialog
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleting, setDeleting] = useState(false);
+
+  // Units dialog
+  const [unitsTarget, setUnitsTarget] = useState(null);
+  const [units, setUnits] = useState([]);
+  const [unitsLoading, setUnitsLoading] = useState(false);
+  const [floorEdits, setFloorEdits] = useState({});
+  const [savingFloors, setSavingFloors] = useState(false);
+  const [unitsError, setUnitsError] = useState(null);
 
   // Assign user dialog
   const [assignTarget, setAssignTarget] = useState(null);
@@ -146,6 +161,43 @@ export default function BuildingsPage() {
     }
   };
 
+  // ── Units ────────────────────────────────────────────────────────────────────
+  const openUnits = async (building) => {
+    setUnitsTarget(building);
+    setFloorEdits({});
+    setUnitsError(null);
+    setUnitsLoading(true);
+    try {
+      const res = await buildingsApi.apartments(building.id);
+      setUnits(res.data?.results ?? res.data);
+    } catch {
+      setUnitsError("Failed to load units.");
+    } finally {
+      setUnitsLoading(false);
+    }
+  };
+
+  const saveFloors = async () => {
+    const changed = Object.entries(floorEdits);
+    if (!changed.length) return;
+    setSavingFloors(true);
+    setUnitsError(null);
+    try {
+      await Promise.all(
+        changed.map(([id, floor]) =>
+          apartmentsApi.update(id, { floor: parseInt(floor, 10) })
+        )
+      );
+      setFloorEdits({});
+      const res = await buildingsApi.apartments(unitsTarget.id);
+      setUnits(res.data?.results ?? res.data);
+    } catch (err) {
+      setUnitsError(err.response?.data?.detail || "Failed to save floor changes.");
+    } finally {
+      setSavingFloors(false);
+    }
+  };
+
   // ── Assign user ─────────────────────────────────────────────────────────────
   const openAssign = async (building) => {
     setAssignTarget(building);
@@ -210,6 +262,11 @@ export default function BuildingsPage() {
                 <Tooltip title="Edit">
                   <IconButton size="small" onClick={() => openEdit(row)}>
                     <Edit fontSize="small" />
+                  </IconButton>
+                </Tooltip>
+                <Tooltip title="Manage units">
+                  <IconButton size="small" onClick={() => openUnits(row)}>
+                    <Apartment fontSize="small" color="secondary" />
                   </IconButton>
                 </Tooltip>
                 <Tooltip title="Assign owner">
@@ -334,6 +391,66 @@ export default function BuildingsPage() {
           <Button onClick={() => setDeleteTarget(null)}>Cancel</Button>
           <Button variant="contained" color="error" disabled={deleting} onClick={handleDelete}>
             {deleting ? "Deleting…" : "Delete"}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* ── Units Dialog ──────────────────────────────────────────────────── */}
+      <Dialog open={Boolean(unitsTarget)} onClose={() => setUnitsTarget(null)} maxWidth="md" fullWidth>
+        <DialogTitle>Units — {unitsTarget?.name}</DialogTitle>
+        <DialogContent>
+          {unitsError && <Alert severity="error" sx={{ mb: 2 }}>{unitsError}</Alert>}
+          {unitsLoading ? (
+            <Box display="flex" justifyContent="center" p={3}><CircularProgress /></Box>
+          ) : (
+            <Table size="small">
+              <TableHead>
+                <TableRow>
+                  <TableCell>Unit</TableCell>
+                  <TableCell>Type</TableCell>
+                  <TableCell>Status</TableCell>
+                  <TableCell width={110}>Floor</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {units.map((u) => (
+                  <TableRow key={u.id}>
+                    <TableCell>{u.unit_number}</TableCell>
+                    <TableCell>
+                      <Chip
+                        label={u.type === "store" ? "Store" : "Apt"}
+                        size="small"
+                        color={u.type === "store" ? "warning" : "primary"}
+                        variant="outlined"
+                      />
+                    </TableCell>
+                    <TableCell>{u.status}</TableCell>
+                    <TableCell>
+                      <TextField
+                        type="number"
+                        size="small"
+                        inputProps={{ min: 0, max: unitsTarget?.num_floors ?? 99 }}
+                        value={floorEdits[u.id] ?? u.floor}
+                        onChange={(e) =>
+                          setFloorEdits((prev) => ({ ...prev, [u.id]: e.target.value }))
+                        }
+                        sx={{ width: 80 }}
+                      />
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button onClick={() => setUnitsTarget(null)}>Close</Button>
+          <Button
+            variant="contained"
+            disabled={!Object.keys(floorEdits).length || savingFloors}
+            onClick={saveFloors}
+          >
+            {savingFloors ? "Saving…" : "Save Floor Changes"}
           </Button>
         </DialogActions>
       </Dialog>

@@ -1,4 +1,6 @@
 """Serializers for the buildings app — Sprint 2."""
+import math
+
 from rest_framework import serializers
 
 from apps.authentication.models import User
@@ -73,17 +75,24 @@ class BuildingSerializer(serializers.ModelSerializer):
         ]
         ExpenseCategory.objects.bulk_create(categories, ignore_conflicts=True)
 
+    @staticmethod
+    def _apt_floor(i, total_apts, num_floors):
+        """Return floor (1-based) for apartment i (1-based), distributed evenly."""
+        apts_per_floor = math.ceil(total_apts / num_floors) if num_floors > 0 else total_apts
+        return math.ceil(i / apts_per_floor) if apts_per_floor else 1
+
     def _create_units(self, building):
         """Auto-create vacant apartment and store records for a new building."""
         # Import here to avoid circular-import at module level
         from apps.apartments.models import Apartment
 
+        num_floors = max(building.num_floors, 1)
         units = []
         for i in range(1, building.num_apartments + 1):
             units.append(Apartment(
                 building=building,
                 unit_number=f"A{i}",
-                floor=1,
+                floor=self._apt_floor(i, building.num_apartments, num_floors),
                 unit_type="apartment",
                 status="vacant",
             ))
@@ -91,7 +100,7 @@ class BuildingSerializer(serializers.ModelSerializer):
             units.append(Apartment(
                 building=building,
                 unit_number=f"S{i}",
-                floor=1,
+                floor=0,  # ground floor for commercial units
                 unit_type="store",
                 status="vacant",
             ))
@@ -115,6 +124,7 @@ class BuildingSerializer(serializers.ModelSerializer):
         new_stores = building.num_stores - old_stores
 
         units = []
+        num_floors = max(building.num_floors, 1)
         if new_apts > 0:
             existing = set(
                 Apartment.objects.filter(building=building, unit_type="apartment")
@@ -124,7 +134,8 @@ class BuildingSerializer(serializers.ModelSerializer):
                 if f"A{i}" not in existing:
                     units.append(Apartment(
                         building=building, unit_number=f"A{i}",
-                        floor=1, unit_type="apartment", status="vacant",
+                        floor=self._apt_floor(i, building.num_apartments, num_floors),
+                        unit_type="apartment", status="vacant",
                     ))
         if new_stores > 0:
             existing = set(
@@ -135,7 +146,7 @@ class BuildingSerializer(serializers.ModelSerializer):
                 if f"S{i}" not in existing:
                     units.append(Apartment(
                         building=building, unit_number=f"S{i}",
-                        floor=1, unit_type="store", status="vacant",
+                        floor=0, unit_type="store", status="vacant",
                     ))
         if units:
             Apartment.objects.bulk_create(units)

@@ -303,7 +303,7 @@ function ClaimUnitStep({ onDone, onSkip, isAdmin }) {
 
   const filtered = unitTypeFilter === "all"
     ? apartments
-    : apartments.filter((a) => a.unit_type === unitTypeFilter);
+    : apartments.filter((a) => a.type === unitTypeFilter);
 
   if (loadingBuildings) return <Box display="flex" justifyContent="center" p={4}><CircularProgress /></Box>;
 
@@ -371,9 +371,9 @@ function ClaimUnitStep({ onDone, onSkip, isAdmin }) {
                         <MenuItem key={a.id} value={a.id}>
                           <Stack direction="row" spacing={1} alignItems="center">
                             <Chip
-                              label={a.unit_type === "store" ? "Store" : "Apt"}
+                              label={a.type === "store" ? "Store" : "Apt"}
                               size="small"
-                              color={a.unit_type === "store" ? "warning" : "primary"}
+                              color={a.type === "store" ? "warning" : "primary"}
                               variant="outlined"
                             />
                             <span>

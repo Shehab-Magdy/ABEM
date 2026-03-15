@@ -1,4 +1,5 @@
 """Building views — Sprint 2."""
+from django.db import models
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.decorators import action
@@ -145,13 +146,15 @@ class BuildingViewSet(ModelViewSet):
     def directory(self, request):
         """
         GET /buildings/directory/
-        Returns all active buildings (id, name, city, country, address, num_floors).
-        Accessible to any authenticated user — used in the sign-up wizard so that
-        a new owner can browse all buildings before they are a member of any.
+        Returns active buildings the requesting user administers or is a member of.
+        Used in the sign-up wizard so an owner can pick their building and unit.
         """
+        user = request.user
         buildings = (
             Building.objects
             .filter(deleted_at__isnull=True, is_active=True)
+            .filter(models.Q(admin=user) | models.Q(members=user))
+            .distinct()
             .order_by("name")
             .values("id", "name", "city", "country", "address", "num_floors")
         )
