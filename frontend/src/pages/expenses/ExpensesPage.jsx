@@ -34,6 +34,7 @@ import {
   TableBody,
   TableCell,
   TableContainer,
+  TableFooter,
   TableHead,
   TableRow,
   TextField,
@@ -701,6 +702,16 @@ export default function ExpensesPage() {
                         </TableRow>
                       ))}
                     </TableBody>
+                    <TableFooter>
+                      <TableRow sx={{ "& td": { borderTop: "2px solid", borderColor: "divider" } }}>
+                        <TableCell sx={{ fontWeight: 700 }}>Total Shares</TableCell>
+                        <TableCell align="right" sx={{ fontWeight: 700 }}>
+                          {detailExpense.apartment_shares
+                            .reduce((sum, s) => sum + parseFloat(s.share_amount), 0)
+                            .toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                        </TableCell>
+                      </TableRow>
+                    </TableFooter>
                   </Table>
                 )}
 
