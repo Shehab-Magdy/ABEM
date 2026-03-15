@@ -12,6 +12,7 @@ import {
   Alert,
   Box,
   Button,
+  Checkbox,
   Chip,
   CircularProgress,
   Dialog,
@@ -21,7 +22,9 @@ import {
   FormControl,
   IconButton,
   InputLabel,
+  ListItemText,
   MenuItem,
+  OutlinedInput,
   Select,
   Stack,
   Table,
@@ -76,6 +79,7 @@ export default function BuildingsPage() {
 
   // Admin selector for create/edit dialog
   const [adminUsers, setAdminUsers] = useState([]);
+  const [coAdminIds, setCoAdminIds] = useState([]);
 
   // Assign user dialog
   const [assignTarget, setAssignTarget] = useState(null);
@@ -118,6 +122,7 @@ export default function BuildingsPage() {
   const openCreate = () => {
     setEditTarget(null);
     form.reset({ name: "", address: "", city: "", country: "", num_floors: 1, num_apartments: 0, num_stores: 0, admin_id: "" });
+    setCoAdminIds([]);
     setDialogError(null);
     loadAdminUsers();
     setDialogOpen(true);
@@ -136,6 +141,7 @@ export default function BuildingsPage() {
       num_stores: building.num_stores ?? 0,
       admin_id: building.admin_id || "",
     });
+    setCoAdminIds(building.co_admin_ids ?? []);
     setDialogError(null);
     loadAdminUsers();
     setDialogOpen(true);
@@ -155,6 +161,7 @@ export default function BuildingsPage() {
         num_stores: parseInt(data.num_stores, 10) || 0,
       };
       if (data.admin_id) payload.admin_id = data.admin_id;
+      if (coAdminIds.length) payload.co_admin_ids = coAdminIds;
       if (editTarget) {
         await buildingsApi.update(editTarget.id, payload);
       } else {
@@ -451,6 +458,31 @@ export default function BuildingsPage() {
                   ))}
                 </Select>
               </FormControl>
+              <FormControl fullWidth size="small">
+                <InputLabel>Additional Admins</InputLabel>
+                <Select
+                  label="Additional Admins"
+                  multiple
+                  value={coAdminIds}
+                  onChange={(e) => setCoAdminIds(e.target.value)}
+                  input={<OutlinedInput label="Additional Admins" />}
+                  renderValue={(selected) =>
+                    selected.map((id) => {
+                      const u = adminUsers.find((a) => a.id === id);
+                      return u ? (
+                        <Chip key={id} label={`${u.first_name} ${u.last_name}`} size="small" sx={{ mr: 0.5 }} />
+                      ) : null;
+                    })
+                  }
+                >
+                  {adminUsers.map((u) => (
+                    <MenuItem key={u.id} value={u.id}>
+                      <Checkbox checked={coAdminIds.includes(u.id)} />
+                      <ListItemText primary={`${u.first_name} ${u.last_name}`} secondary={u.email} />
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
             </Stack>
           </DialogContent>
           <DialogActions sx={{ px: 3, pb: 2 }}>
@@ -523,8 +555,10 @@ export default function BuildingsPage() {
                       />
                     </TableCell>
                     <TableCell>
-                      {u.owner_id ? (
-                        <Typography variant="caption" color="text.disabled">Claimed</Typography>
+                      {(u.owner_ids?.length > 0 || u.owner_id) ? (
+                        <Typography variant="caption" color="text.disabled">
+                          Claimed ({u.owner_ids?.length ?? 1} owner{(u.owner_ids?.length ?? 1) !== 1 ? "s" : ""})
+                        </Typography>
                       ) : inviteLinks[u.id] ? (
                         <Stack spacing={0.5}>
                           <Stack direction="row" spacing={0.5} alignItems="center">

@@ -23,12 +23,19 @@ class ApartmentStatus(models.TextChoices):
 class Apartment(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     building = models.ForeignKey(Building, on_delete=models.CASCADE, related_name="apartments")
+    # Primary owner (kept for backward compatibility and single-owner fast queries)
     owner = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
         related_name="owned_apartments",
+    )
+    # Multiple owners support — all owners including the primary one
+    owners = models.ManyToManyField(
+        settings.AUTH_USER_MODEL,
+        related_name="co_owned_apartments",
+        blank=True,
     )
 
     unit_number = models.CharField(max_length=20)

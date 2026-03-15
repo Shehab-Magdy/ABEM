@@ -31,6 +31,12 @@ class ApartmentSerializer(serializers.ModelSerializer):
         required=False,
         allow_null=True,
     )
+    owner_ids = serializers.PrimaryKeyRelatedField(
+        source="owners",
+        queryset=User.objects.filter(is_active=True),
+        many=True,
+        required=False,
+    )
 
     # Map `type` in the API to `unit_type` in the model
     type = serializers.ChoiceField(
@@ -44,6 +50,7 @@ class ApartmentSerializer(serializers.ModelSerializer):
             "id",
             "building_id",
             "owner_id",
+            "owner_ids",
             "unit_number",
             "floor",
             "type",

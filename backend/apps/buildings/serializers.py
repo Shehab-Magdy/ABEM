@@ -25,6 +25,12 @@ class BuildingSerializer(serializers.ModelSerializer):
         required=False,
         allow_null=False,
     )
+    co_admin_ids = serializers.PrimaryKeyRelatedField(
+        source="co_admins",
+        queryset=User.objects.filter(is_active=True),
+        many=True,
+        required=False,
+    )
     num_apartments = serializers.IntegerField(
         required=False,
         default=0,
@@ -51,6 +57,7 @@ class BuildingSerializer(serializers.ModelSerializer):
             "num_apartments",
             "num_stores",
             "admin_id",
+            "co_admin_ids",
             "is_active",
             "created_at",
             "updated_at",

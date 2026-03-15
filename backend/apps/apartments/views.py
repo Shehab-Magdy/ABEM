@@ -50,8 +50,11 @@ class ApartmentViewSet(ModelViewSet):
                 qs = qs.filter(building_id=building_id)
             return qs
 
-        # Owners see only the apartments assigned to them
-        return qs.filter(owner=self.request.user)
+        # Owners see apartments where they are the primary owner OR in the owners M2M
+        from django.db.models import Q
+        return qs.filter(
+            Q(owner=self.request.user) | Q(owners=self.request.user)
+        ).distinct()
 
     # ── Permissions ────────────────────────────────────────────────────────────
 
@@ -160,6 +163,7 @@ class ApartmentViewSet(ModelViewSet):
         apartment.owner = request.user
         apartment.status = "occupied"
         apartment.save(update_fields=["owner", "status", "updated_at"])
+        apartment.owners.add(request.user)
 
         # Auto-join the owner to the building so they can see it
         from apps.buildings.models import UserBuilding
@@ -281,6 +285,7 @@ class ApartmentViewSet(ModelViewSet):
         apt.owner = request.user
         apt.status = "occupied"
         apt.save(update_fields=["owner", "status", "updated_at"])
+        apt.owners.add(request.user)
 
         invite.used_at = timezone.now()
         invite.save(update_fields=["used_at"])
@@ -312,7 +317,7 @@ class ApartmentViewSet(ModelViewSet):
         """
         apt = self.get_object()
 
-        if request.user.role != "admin" and apt.owner != request.user:
+        if request.user.role != "admin" and apt.owner != request.user and not apt.owners.filter(pk=request.user.pk).exists():
             return Response(
                 {"detail": "You do not have permission to view this apartment's balance."},
                 status=403,

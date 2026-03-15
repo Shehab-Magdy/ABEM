@@ -28,6 +28,13 @@ class Building(models.Model):
         related_name="buildings",
         blank=True,
     )
+    # Multiple admins support — co-admins in addition to the primary admin FK
+    co_admins = models.ManyToManyField(
+        settings.AUTH_USER_MODEL,
+        through="BuildingCoAdmin",
+        related_name="co_administered_buildings",
+        blank=True,
+    )
 
     is_active = models.BooleanField(default=True)
     deleted_at = models.DateTimeField(null=True, blank=True)
@@ -51,3 +58,14 @@ class UserBuilding(models.Model):
     class Meta:
         unique_together = ("user", "building")
         verbose_name = "User Building Access"
+
+
+class BuildingCoAdmin(models.Model):
+    """Explicit junction table for additional building admins."""
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    building = models.ForeignKey(Building, on_delete=models.CASCADE)
+    added_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ("user", "building")
+        verbose_name = "Building Co-Admin"

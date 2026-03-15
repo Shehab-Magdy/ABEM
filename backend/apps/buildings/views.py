@@ -160,7 +160,7 @@ class BuildingViewSet(ModelViewSet):
         buildings = (
             Building.objects
             .filter(deleted_at__isnull=True, is_active=True)
-            .filter(models.Q(admin=user) | models.Q(members=user))
+            .filter(models.Q(admin=user) | models.Q(co_admins=user) | models.Q(members=user))
             .distinct()
             .order_by("name")
             .values("id", "name", "city", "country", "address", "num_floors")
