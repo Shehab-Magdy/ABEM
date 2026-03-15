@@ -56,9 +56,16 @@ class BuildingViewSet(ModelViewSet):
     # ── Write helpers ──────────────────────────────────────────────────────────
 
     def perform_create(self, serializer):
-        building = serializer.save(admin=self.request.user)
-        # Auto-add the creating admin as a member so they can see it
+        # Use admin from payload if provided, else default to the creating user
+        if "admin" not in serializer.validated_data:
+            building = serializer.save(admin=self.request.user)
+        else:
+            building = serializer.save()
+        # Always add the creating user as a member
         UserBuilding.objects.get_or_create(user=self.request.user, building=building)
+        # Also add the assigned admin as a member if different from creator
+        if building.admin != self.request.user:
+            UserBuilding.objects.get_or_create(user=building.admin, building=building)
         log_action(
             user=self.request.user,
             action="create",

@@ -74,6 +74,9 @@ export default function BuildingsPage() {
   const [invitingUnit, setInvitingUnit] = useState(null);
   const [copiedUnit, setCopiedUnit] = useState(null);
 
+  // Admin selector for create/edit dialog
+  const [adminUsers, setAdminUsers] = useState([]);
+
   // Assign user dialog
   const [assignTarget, setAssignTarget] = useState(null);
   const [owners, setOwners] = useState([]);
@@ -103,10 +106,20 @@ export default function BuildingsPage() {
   useEffect(() => { fetchBuildings(); }, [fetchBuildings]);
 
   // ── Create ──────────────────────────────────────────────────────────────────
+  const loadAdminUsers = async () => {
+    try {
+      const res = await usersApi.list({ role: "admin", page_size: 200 });
+      setAdminUsers(res.data.results ?? res.data);
+    } catch {
+      setAdminUsers([]);
+    }
+  };
+
   const openCreate = () => {
     setEditTarget(null);
-    form.reset({ name: "", address: "", city: "", country: "", num_floors: 1, num_apartments: 0, num_stores: 0 });
+    form.reset({ name: "", address: "", city: "", country: "", num_floors: 1, num_apartments: 0, num_stores: 0, admin_id: "" });
     setDialogError(null);
+    loadAdminUsers();
     setDialogOpen(true);
   };
 
@@ -121,8 +134,10 @@ export default function BuildingsPage() {
       num_floors: building.num_floors,
       num_apartments: building.num_apartments ?? 0,
       num_stores: building.num_stores ?? 0,
+      admin_id: building.admin_id || "",
     });
     setDialogError(null);
+    loadAdminUsers();
     setDialogOpen(true);
   };
 
@@ -139,6 +154,7 @@ export default function BuildingsPage() {
         num_apartments: parseInt(data.num_apartments, 10) || 0,
         num_stores: parseInt(data.num_stores, 10) || 0,
       };
+      if (data.admin_id) payload.admin_id = data.admin_id;
       if (editTarget) {
         await buildingsApi.update(editTarget.id, payload);
       } else {
@@ -420,6 +436,21 @@ export default function BuildingsPage() {
                   {...form.register("num_stores", { min: 0 })}
                 />
               </Stack>
+              <FormControl fullWidth size="small">
+                <InputLabel>Building Admin</InputLabel>
+                <Select
+                  label="Building Admin"
+                  defaultValue=""
+                  {...form.register("admin_id")}
+                >
+                  <MenuItem value="">— Assign to me (default) —</MenuItem>
+                  {adminUsers.map((u) => (
+                    <MenuItem key={u.id} value={u.id}>
+                      {u.first_name} {u.last_name} ({u.email})
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
             </Stack>
           </DialogContent>
           <DialogActions sx={{ px: 3, pb: 2 }}>

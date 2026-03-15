@@ -4,7 +4,7 @@ import math
 from rest_framework import serializers
 
 from apps.authentication.models import User
-from .models import Building, UserBuilding
+from .models import Building
 
 
 class BuildingSerializer(serializers.ModelSerializer):
@@ -15,9 +15,16 @@ class BuildingSerializer(serializers.ModelSerializer):
            num_floors, num_apartments, num_stores, is_active, created_at, updated_at.
     Write: accepts the same fields; num_apartments and num_stores are persisted
            and trigger auto-creation of vacant Apartment/store records.
+           admin_id optionally overrides the building admin (defaults to request.user).
     """
 
     tenant_id = serializers.UUIDField(source="id", read_only=True)
+    admin_id = serializers.PrimaryKeyRelatedField(
+        source="admin",
+        queryset=User.objects.filter(is_active=True),
+        required=False,
+        allow_null=False,
+    )
     num_apartments = serializers.IntegerField(
         required=False,
         default=0,
@@ -43,6 +50,7 @@ class BuildingSerializer(serializers.ModelSerializer):
             "num_floors",
             "num_apartments",
             "num_stores",
+            "admin_id",
             "is_active",
             "created_at",
             "updated_at",
@@ -168,8 +176,6 @@ class AssignUserSerializer(serializers.Serializer):
     user_id = serializers.UUIDField()
 
     def validate_user_id(self, value):
-        try:
-            user = User.objects.get(pk=value, is_active=True)
-        except User.DoesNotExist:
+        if not User.objects.filter(pk=value, is_active=True).exists():
             raise serializers.ValidationError("User not found.")
         return value
