@@ -12,6 +12,10 @@ class ExpenseCategory(models.Model):
     building = models.ForeignKey(Building, on_delete=models.CASCADE, related_name="expense_categories")
     name = models.CharField(max_length=100)
     description = models.CharField(max_length=255, blank=True)
+    icon = models.CharField(max_length=100, blank=True, default="category",
+                            help_text="Material icon name (used by web and mobile)")
+    color = models.CharField(max_length=7, blank=True, default="#2563EB",
+                             help_text="Hex color for the category badge")
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
