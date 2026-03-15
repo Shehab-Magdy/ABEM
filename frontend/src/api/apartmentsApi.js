@@ -14,4 +14,10 @@ export const apartmentsApi = {
     axiosClient.get("/apartments/available/", { params: { building_id: buildingId } }),
   /** Owner claims a vacant apartment during sign-up. */
   claim: (apartmentId) => axiosClient.post(`/apartments/${apartmentId}/claim/`),
+  /** Admin creates an invite token for a unit. */
+  inviteUnit: (unitId, email) => axiosClient.post(`/apartments/${unitId}/invite/`, { email }),
+  /** Validate an invite token (public — no auth required). */
+  validateInvite: (token) => axiosClient.get("/apartments/invite/validate/", { params: { token } }),
+  /** Authenticated user redeems an invite token to claim their unit. */
+  useInvite: (token) => axiosClient.post("/apartments/invite/use/", { token }),
 };

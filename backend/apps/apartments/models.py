@@ -3,6 +3,7 @@ import uuid
 from decimal import Decimal
 from django.db import models
 from django.conf import settings
+from django.utils import timezone
 from apps.buildings.models import Building
 
 
@@ -50,3 +51,31 @@ class Apartment(models.Model):
 
     def __str__(self):
         return f"{self.building.name} – Unit {self.unit_number}"
+
+
+class UnitInvitation(models.Model):
+    """One-time invite token linking an email to a specific unit."""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    token = models.UUIDField(unique=True, default=uuid.uuid4, editable=False)
+    apartment = models.ForeignKey(Apartment, on_delete=models.CASCADE, related_name="invitations")
+    invited_email = models.EmailField()
+    invited_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name="sent_invitations",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()
+    used_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [models.Index(fields=["token"]), models.Index(fields=["apartment"])]
+
+    def __str__(self):
+        return f"Invite {self.invited_email} → {self.apartment}"
+
+    @property
+    def is_valid(self):
+        return self.used_at is None and self.expires_at > timezone.now()

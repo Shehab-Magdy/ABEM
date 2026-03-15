@@ -8,7 +8,7 @@
  * Step 3:               Success — redirect to dashboard
  */
 import { useEffect, useState } from "react";
-import { useNavigate, Link as RouterLink } from "react-router-dom";
+import { useNavigate, useSearchParams, Link as RouterLink } from "react-router-dom";
 import { useForm, useFieldArray, Controller } from "react-hook-form";
 import {
   Alert,
@@ -50,12 +50,14 @@ const STEPS_OWNER = ["Account", "Your Unit", "Done"];
 
 // ── Step 1: Account ────────────────────────────────────────────────────────────
 
-function AccountStep({ onDone }) {
+function AccountStep({ onDone, prefillEmail }) {
   const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const { login } = useAuthStore();
-  const { register, handleSubmit, watch, control, formState: { errors } } = useForm({ defaultValues: { role: "owner" } });
+  const { register, handleSubmit, watch, control, formState: { errors } } = useForm({
+    defaultValues: { role: "owner", email: prefillEmail ?? "" },
+  });
   const password = watch("password", "");
 
   const onSubmit = async (data) => {
@@ -106,14 +108,26 @@ function AccountStep({ onDone }) {
             required: "Required.",
             pattern: { value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: "Invalid email." },
           })} />
-        <TextField label="Phone (optional)" type="tel" fullWidth {...register("phone")} />
+        <TextField
+          label="Phone (optional)"
+          type="tel"
+          fullWidth
+          error={!!errors.phone}
+          helperText={errors.phone?.message || "Include country code, e.g. +20 1234567890"}
+          {...register("phone", {
+            validate: (v) => {
+              if (!v || v.trim() === "") return true;
+              return /^\+?[1-9][\d\s\-().]{6,19}$/.test(v.trim()) || "Enter a valid international phone number (e.g. +20 1234567890).";
+            },
+          })}
+        />
         <TextField label="Password *" type={showPw ? "text" : "password"} fullWidth
           error={!!errors.password}
           helperText={errors.password?.message || "Min 8 chars, 1 uppercase, 1 digit, 1 special char."}
           InputProps={{
             endAdornment: (
               <InputAdornment position="end">
-                <IconButton onClick={() => setShowPw((p) => !p)} edge="end">
+                <IconButton onClick={() => setShowPw((p) => !p)} edge="end" tabIndex={-1}>
                   {showPw ? <VisibilityOff /> : <Visibility />}
                 </IconButton>
               </InputAdornment>
@@ -417,16 +431,80 @@ function DoneStep({ role, onFinish }) {
   );
 }
 
+// ── Invite claim step ──────────────────────────────────────────────────────────
+
+function InviteClaimStep({ inviteToken, inviteInfo, onDone }) {
+  const [claiming, setClaiming] = useState(false);
+  const [error, setError] = useState(null);
+
+  const handleClaim = async () => {
+    setClaiming(true);
+    setError(null);
+    try {
+      await apartmentsApi.useInvite(inviteToken);
+      onDone();
+    } catch (err) {
+      setError(err.response?.data?.detail || "Failed to claim unit.");
+    } finally {
+      setClaiming(false);
+    }
+  };
+
+  return (
+    <Stack spacing={3}>
+      <Alert severity="success" icon={false}>
+        <Typography fontWeight={600}>You have been invited!</Typography>
+        <Typography variant="body2">
+          Claim <strong>Unit {inviteInfo.unit_number}</strong> in{" "}
+          <strong>{inviteInfo.building_name}</strong> ({inviteInfo.building_city})
+        </Typography>
+      </Alert>
+      {error && <Alert severity="error">{error}</Alert>}
+      <Stack direction="row" spacing={2}>
+        <Button variant="outlined" fullWidth onClick={onDone}>Skip for now</Button>
+        <Button variant="contained" fullWidth disabled={claiming} onClick={handleClaim}>
+          {claiming ? <CircularProgress size={22} color="inherit" /> : "Claim My Unit"}
+        </Button>
+      </Stack>
+    </Stack>
+  );
+}
+
 // ── Main wizard ────────────────────────────────────────────────────────────────
 
 export default function RegisterPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [step, setStep] = useState(0);
   const [role, setRole] = useState("owner");
 
-  // Admin: Account(0) → Buildings(1) → Unit(2) → Done(3)
-  // Owner: Account(0) → Unit(1) → Done(2)
-  const steps = role === "admin" ? STEPS_ADMIN : STEPS_OWNER;
+  // Invite flow state
+  const inviteToken = searchParams.get("invite");
+  const [inviteInfo, setInviteInfo] = useState(null);
+  const [inviteError, setInviteError] = useState(null);
+  const [inviteLoading, setInviteLoading] = useState(!!inviteToken);
+
+  useEffect(() => {
+    if (!inviteToken) return;
+    apartmentsApi.validateInvite(inviteToken)
+      .then((res) => setInviteInfo(res.data))
+      .catch((err) => setInviteError(err.response?.data?.detail || "Invalid or expired invite link."))
+      .finally(() => setInviteLoading(false));
+  }, [inviteToken]);
+
+  // For invited owners: Account(0) → Claim Unit(1) → Done(2)
+  const STEPS_INVITE = ["Account", "Claim Unit", "Done"];
+  const steps = inviteToken
+    ? STEPS_INVITE
+    : role === "admin" ? STEPS_ADMIN : STEPS_OWNER;
+
+  if (inviteLoading) {
+    return (
+      <Box display="flex" alignItems="center" justifyContent="center" minHeight="100vh">
+        <CircularProgress />
+      </Box>
+    );
+  }
 
   return (
     <Box display="flex" alignItems="center" justifyContent="center"
@@ -437,34 +515,71 @@ export default function RegisterPage() {
             <Box component="img" src="/abem-logo-light.svg" alt="ABEM" sx={{ height: 40 }} />
             <Typography variant="body2" color="text.secondary">Create your account</Typography>
           </Stack>
-          <Stepper activeStep={step} alternativeLabel sx={{ mb: 4 }}>
-            {steps.map((label) => (
-              <Step key={label}><StepLabel>{label}</StepLabel></Step>
-            ))}
-          </Stepper>
-          <Divider sx={{ mb: 3 }} />
 
-          {step === 0 && (
-            <AccountStep onDone={(r) => { setRole(r); setStep(1); }} />
-          )}
-
-          {/* Admin path: Buildings → Unit → Done */}
-          {step === 1 && role === "admin" && (
-            <AdminBuildingsStep onDone={() => setStep(2)} onSkip={() => setStep(2)} />
-          )}
-          {step === 2 && role === "admin" && (
-            <ClaimUnitStep isAdmin onDone={() => setStep(3)} onSkip={() => setStep(3)} />
-          )}
-          {step === 3 && role === "admin" && (
-            <DoneStep role={role} onFinish={() => navigate("/dashboard", { replace: true })} />
+          {inviteToken && inviteError ? (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              {inviteError}{" "}
+              <Link component={RouterLink} to="/register">Register without invite</Link>
+            </Alert>
+          ) : (
+            <>
+              <Stepper activeStep={step} alternativeLabel sx={{ mb: 4 }}>
+                {steps.map((label) => (
+                  <Step key={label}><StepLabel>{label}</StepLabel></Step>
+                ))}
+              </Stepper>
+              <Divider sx={{ mb: 3 }} />
+            </>
           )}
 
-          {/* Owner path: Unit → Done */}
-          {step === 1 && role === "owner" && (
-            <ClaimUnitStep onDone={() => setStep(2)} onSkip={() => setStep(2)} />
+          {/* Invite path: Account → Claim Unit → Done */}
+          {inviteToken && !inviteError && (
+            <>
+              {step === 0 && (
+                <AccountStep
+                  prefillEmail={inviteInfo?.invited_email}
+                  onDone={(r) => { setRole(r); setStep(1); }}
+                />
+              )}
+              {step === 1 && (
+                <InviteClaimStep
+                  inviteToken={inviteToken}
+                  inviteInfo={inviteInfo}
+                  onDone={() => setStep(2)}
+                />
+              )}
+              {step === 2 && (
+                <DoneStep role="owner" onFinish={() => navigate("/dashboard", { replace: true })} />
+              )}
+            </>
           )}
-          {step === 2 && role === "owner" && (
-            <DoneStep role={role} onFinish={() => navigate("/dashboard", { replace: true })} />
+
+          {/* Normal path */}
+          {!inviteToken && (
+            <>
+              {step === 0 && (
+                <AccountStep onDone={(r) => { setRole(r); setStep(1); }} />
+              )}
+
+              {/* Admin path: Buildings → Unit → Done */}
+              {step === 1 && role === "admin" && (
+                <AdminBuildingsStep onDone={() => setStep(2)} onSkip={() => setStep(2)} />
+              )}
+              {step === 2 && role === "admin" && (
+                <ClaimUnitStep isAdmin onDone={() => setStep(3)} onSkip={() => setStep(3)} />
+              )}
+              {step === 3 && role === "admin" && (
+                <DoneStep role={role} onFinish={() => navigate("/dashboard", { replace: true })} />
+              )}
+
+              {/* Owner path: Unit → Done */}
+              {step === 1 && role === "owner" && (
+                <ClaimUnitStep onDone={() => setStep(2)} onSkip={() => setStep(2)} />
+              )}
+              {step === 2 && role === "owner" && (
+                <DoneStep role={role} onFinish={() => navigate("/dashboard", { replace: true })} />
+              )}
+            </>
           )}
         </CardContent>
       </Card>

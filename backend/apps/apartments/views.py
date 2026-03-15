@@ -1,10 +1,12 @@
 """Apartment views — Sprint 2 + Sprint 4 balance endpoint."""
+from datetime import timedelta
 from decimal import Decimal
 
 from django.db.models import Sum
+from django.utils import timezone
 from rest_framework.decorators import action
 from rest_framework.filters import OrderingFilter, SearchFilter
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 
@@ -13,7 +15,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 from apps.audit.mixins import log_action
 from apps.authentication.permissions import IsAdminRole
 
-from .models import Apartment
+from .models import Apartment, UnitInvitation
 from .serializers import ApartmentSerializer
 
 
@@ -54,7 +56,9 @@ class ApartmentViewSet(ModelViewSet):
     # ── Permissions ────────────────────────────────────────────────────────────
 
     def get_permissions(self):
-        write_actions = ("create", "partial_update", "update", "destroy")
+        if self.action == "invite_validate":
+            return [AllowAny()]
+        write_actions = ("create", "partial_update", "update", "destroy", "invite")
         if self.action in write_actions:
             return [IsAuthenticated(), IsAdminRole()]
         return [IsAuthenticated()]
@@ -170,6 +174,115 @@ class ApartmentViewSet(ModelViewSet):
             request=request,
         )
         return Response(ApartmentSerializer(apartment).data)
+
+    # ── Unit invitation ────────────────────────────────────────────────────────
+
+    @action(detail=True, methods=["post"], url_path="invite",
+            permission_classes=[IsAuthenticated, IsAdminRole])
+    def invite(self, request, pk=None):  # noqa: ARG002
+        """
+        POST /api/v1/apartments/{id}/invite/
+        Admin creates (or re-creates) an invite token for a unit.
+        Body: {"email": "owner@example.com"}
+        Returns: {token, invited_email, expires_at}
+        """
+        apartment = self.get_object()
+        email = request.data.get("email", "").strip().lower()
+        if not email:
+            return Response({"detail": "email is required."}, status=400)
+
+        # Invalidate any existing unused invites for this unit+email
+        UnitInvitation.objects.filter(
+            apartment=apartment, invited_email=email, used_at__isnull=True
+        ).update(expires_at=timezone.now())
+
+        invite = UnitInvitation.objects.create(
+            apartment=apartment,
+            invited_email=email,
+            invited_by=request.user,
+            expires_at=timezone.now() + timedelta(days=30),
+        )
+        return Response({
+            "token": str(invite.token),
+            "invited_email": invite.invited_email,
+            "expires_at": invite.expires_at,
+        }, status=201)
+
+    @action(detail=False, methods=["get"], url_path="invite/validate",
+            permission_classes=[AllowAny], authentication_classes=[])
+    def invite_validate(self, request):
+        """
+        GET /api/v1/apartments/invite/validate/?token={token}
+        Public endpoint — validates an invite token and returns unit/building info.
+        """
+        token = request.query_params.get("token")
+        if not token:
+            return Response({"detail": "token is required."}, status=400)
+        try:
+            invite = UnitInvitation.objects.select_related(
+                "apartment__building"
+            ).get(token=token)
+        except UnitInvitation.DoesNotExist:
+            return Response({"detail": "Invalid invite link."}, status=404)
+
+        if not invite.is_valid:
+            return Response({"detail": "This invite link has expired or already been used."}, status=410)
+
+        apt = invite.apartment
+        return Response({
+            "apartment_id": str(apt.id),
+            "unit_number": apt.unit_number,
+            "unit_type": apt.unit_type,
+            "building_id": str(apt.building.id),
+            "building_name": apt.building.name,
+            "building_city": apt.building.city,
+            "invited_email": invite.invited_email,
+        })
+
+    @action(detail=False, methods=["post"], url_path="invite/use",
+            permission_classes=[IsAuthenticated])
+    def invite_use(self, request):
+        """
+        POST /api/v1/apartments/invite/use/
+        Authenticated user redeems an invite token to claim the unit.
+        Body: {"token": "..."}
+        """
+        token = request.data.get("token", "").strip()
+        if not token:
+            return Response({"detail": "token is required."}, status=400)
+        try:
+            invite = UnitInvitation.objects.select_related(
+                "apartment__building"
+            ).get(token=token)
+        except UnitInvitation.DoesNotExist:
+            return Response({"detail": "Invalid invite link."}, status=404)
+
+        if not invite.is_valid:
+            return Response({"detail": "This invite link has expired or already been used."}, status=410)
+
+        apt = invite.apartment
+        if apt.owner is not None and apt.owner != request.user:
+            return Response({"detail": "This unit is already claimed."}, status=409)
+
+        apt.owner = request.user
+        apt.status = "occupied"
+        apt.save(update_fields=["owner", "status", "updated_at"])
+
+        invite.used_at = timezone.now()
+        invite.save(update_fields=["used_at"])
+
+        from apps.buildings.models import UserBuilding
+        UserBuilding.objects.get_or_create(user=request.user, building=apt.building)
+
+        log_action(
+            user=request.user,
+            action="claim",
+            entity="apartment",
+            entity_id=apt.pk,
+            changes={"owner": {"before": None, "after": str(request.user.pk)}, "via": "invite"},
+            request=request,
+        )
+        return Response(ApartmentSerializer(apt).data)
 
     # ── Sprint 4: balance breakdown ─────────────────────────────────────────────
 

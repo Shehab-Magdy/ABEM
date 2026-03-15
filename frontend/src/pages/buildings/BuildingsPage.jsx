@@ -34,7 +34,7 @@ import {
   Typography,
 } from "@mui/material";
 import { DataGrid } from "@mui/x-data-grid";
-import { Add, Apartment, Delete, Edit, PersonAdd } from "@mui/icons-material";
+import { Add, Apartment, Check, ContentCopy, Delete, Edit, PersonAdd, Send } from "@mui/icons-material";
 import { useForm } from "react-hook-form";
 import { buildingsApi } from "../../api/buildingsApi";
 import { apartmentsApi } from "../../api/apartmentsApi";
@@ -68,6 +68,10 @@ export default function BuildingsPage() {
   const [floorEdits, setFloorEdits] = useState({});
   const [savingFloors, setSavingFloors] = useState(false);
   const [unitsError, setUnitsError] = useState(null);
+  const [inviteEmails, setInviteEmails] = useState({});
+  const [inviteLinks, setInviteLinks] = useState({});
+  const [invitingUnit, setInvitingUnit] = useState(null);
+  const [copiedUnit, setCopiedUnit] = useState(null);
 
   // Assign user dialog
   const [assignTarget, setAssignTarget] = useState(null);
@@ -162,9 +166,33 @@ export default function BuildingsPage() {
   };
 
   // ── Units ────────────────────────────────────────────────────────────────────
+  const generateInvite = async (unit) => {
+    const email = inviteEmails[unit.id]?.trim();
+    if (!email) return;
+    setInvitingUnit(unit.id);
+    setUnitsError(null);
+    try {
+      const res = await apartmentsApi.inviteUnit(unit.id, email);
+      const link = `${window.location.origin}/register?invite=${res.data.token}`;
+      setInviteLinks((prev) => ({ ...prev, [unit.id]: link }));
+    } catch (err) {
+      setUnitsError(err.response?.data?.detail || "Failed to generate invite link.");
+    } finally {
+      setInvitingUnit(null);
+    }
+  };
+
+  const copyLink = (unitId) => {
+    navigator.clipboard.writeText(inviteLinks[unitId]);
+    setCopiedUnit(unitId);
+    setTimeout(() => setCopiedUnit(null), 2000);
+  };
+
   const openUnits = async (building) => {
     setUnitsTarget(building);
     setFloorEdits({});
+    setInviteEmails({});
+    setInviteLinks({});
     setUnitsError(null);
     setUnitsLoading(true);
     try {
@@ -410,6 +438,7 @@ export default function BuildingsPage() {
                   <TableCell>Type</TableCell>
                   <TableCell>Status</TableCell>
                   <TableCell width={110}>Floor</TableCell>
+                  <TableCell>Invite Owner</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -436,6 +465,45 @@ export default function BuildingsPage() {
                         }
                         sx={{ width: 80 }}
                       />
+                    </TableCell>
+                    <TableCell>
+                      {u.owner_id ? (
+                        <Typography variant="caption" color="text.disabled">Claimed</Typography>
+                      ) : inviteLinks[u.id] ? (
+                        <Stack direction="row" spacing={0.5} alignItems="center">
+                          <Typography variant="caption" sx={{ maxWidth: 180, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                            {inviteLinks[u.id]}
+                          </Typography>
+                          <Tooltip title={copiedUnit === u.id ? "Copied!" : "Copy link"}>
+                            <IconButton size="small" onClick={() => copyLink(u.id)}>
+                              {copiedUnit === u.id ? <Check fontSize="small" color="success" /> : <ContentCopy fontSize="small" />}
+                            </IconButton>
+                          </Tooltip>
+                        </Stack>
+                      ) : (
+                        <Stack direction="row" spacing={0.5} alignItems="center">
+                          <TextField
+                            size="small"
+                            placeholder="owner@email.com"
+                            type="email"
+                            value={inviteEmails[u.id] ?? ""}
+                            onChange={(e) => setInviteEmails((prev) => ({ ...prev, [u.id]: e.target.value }))}
+                            sx={{ width: 180 }}
+                          />
+                          <Tooltip title="Generate invite link">
+                            <span>
+                              <IconButton
+                                size="small"
+                                color="primary"
+                                disabled={!inviteEmails[u.id]?.trim() || invitingUnit === u.id}
+                                onClick={() => generateInvite(u)}
+                              >
+                                {invitingUnit === u.id ? <CircularProgress size={16} /> : <Send fontSize="small" />}
+                              </IconButton>
+                            </span>
+                          </Tooltip>
+                        </Stack>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))}
