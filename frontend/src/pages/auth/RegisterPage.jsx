@@ -284,6 +284,13 @@ function ClaimUnitStep({ onDone, onSkip, isAdmin }) {
   const [claiming, setClaiming] = useState(false);
   const [error, setError] = useState(null);
 
+  // Registration code entry
+  const [regCode, setRegCode] = useState("");
+  const [validatingCode, setValidatingCode] = useState(false);
+  const [codeInfo, setCodeInfo] = useState(null);
+  const [codeError, setCodeError] = useState(null);
+  const [claimingCode, setClaimingCode] = useState(false);
+
   useEffect(() => {
     apartmentsApi.buildingDirectory()
       .then((r) => setBuildings(r.data))
@@ -318,6 +325,34 @@ function ClaimUnitStep({ onDone, onSkip, isAdmin }) {
   const filtered = unitTypeFilter === "all"
     ? apartments
     : apartments.filter((a) => a.type === unitTypeFilter);
+
+  const handleValidateCode = async () => {
+    if (!regCode.trim()) return;
+    setCodeError(null);
+    setCodeInfo(null);
+    setValidatingCode(true);
+    try {
+      const res = await apartmentsApi.validateInvite(undefined, regCode.trim().toUpperCase());
+      setCodeInfo(res.data);
+    } catch (err) {
+      setCodeError(err.response?.data?.detail || "Invalid or expired code.");
+    } finally {
+      setValidatingCode(false);
+    }
+  };
+
+  const handleClaimCode = async () => {
+    setClaimingCode(true);
+    setCodeError(null);
+    try {
+      await apartmentsApi.useInviteCode(regCode.trim().toUpperCase());
+      onDone();
+    } catch (err) {
+      setCodeError(err.response?.data?.detail || "Could not claim unit.");
+    } finally {
+      setClaimingCode(false);
+    }
+  };
 
   if (loadingBuildings) return <Box display="flex" justifyContent="center" p={4}><CircularProgress /></Box>;
 
@@ -411,6 +446,42 @@ function ClaimUnitStep({ onDone, onSkip, isAdmin }) {
           {claiming ? <CircularProgress size={22} color="inherit" /> : "Claim Unit"}
         </Button>
       </Stack>
+
+      {/* Registration code alternative */}
+      <Divider sx={{ my: 1 }}>
+        <Typography variant="caption" color="text.secondary">or use a registration code</Typography>
+      </Divider>
+      {codeError && <Alert severity="error" onClose={() => setCodeError(null)}>{codeError}</Alert>}
+      {codeInfo && (
+        <Alert severity="success">
+          Found: <strong>Unit {codeInfo.unit_number}</strong> in <strong>{codeInfo.building_name}</strong>
+        </Alert>
+      )}
+      <Stack direction="row" spacing={1} alignItems="flex-start">
+        <TextField
+          label="Registration Code"
+          value={regCode}
+          onChange={(e) => { setRegCode(e.target.value.toUpperCase()); setCodeInfo(null); setCodeError(null); }}
+          size="small"
+          inputProps={{ maxLength: 8, style: { fontFamily: "monospace", letterSpacing: 2 } }}
+          placeholder="e.g. AB12CD34"
+          sx={{ flex: 1 }}
+        />
+        <Button
+          variant="outlined"
+          size="small"
+          disabled={regCode.length < 8 || validatingCode}
+          onClick={handleValidateCode}
+          sx={{ mt: 0.5 }}
+        >
+          {validatingCode ? <CircularProgress size={18} /> : "Validate"}
+        </Button>
+      </Stack>
+      {codeInfo && (
+        <Button variant="contained" color="success" fullWidth disabled={claimingCode} onClick={handleClaimCode}>
+          {claimingCode ? <CircularProgress size={22} color="inherit" /> : `Claim Unit ${codeInfo.unit_number}`}
+        </Button>
+      )}
     </Stack>
   );
 }

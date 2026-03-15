@@ -1,7 +1,8 @@
 /**
- * Notification Centre — Sprint 6.
+ * Notification Centre — Sprint 6 + Feature 4.
  * Lists user notifications with read/unread filter and mark-as-read.
- * Admin users also see a Broadcast form to send announcements.
+ * Admin users also see a Broadcast form.
+ * All authenticated users can send messages to building members.
  */
 import { useEffect, useState, useCallback } from "react";
 import {
@@ -45,7 +46,7 @@ const TYPE_COLORS = {
 };
 
 export default function NotificationCenterPage() {
-  const { user, isAdmin } = useAuth();
+  const { isAdmin } = useAuth();
   const [notifications, setNotifications] = useState([]);
   const [filter, setFilter] = useState("all"); // "all" | "unread"
   const [loading, setLoading] = useState(false);
@@ -58,6 +59,19 @@ export default function NotificationCenterPage() {
   const [broadcastMessage, setBroadcastMessage] = useState("");
   const [broadcastStatus, setBroadcastStatus] = useState("");
   const [broadcastOpen, setBroadcastOpen] = useState(false);
+
+  // Send message form (all users)
+  const [sendOpen, setSendOpen] = useState(false);
+  const [sendBuilding, setSendBuilding] = useState("");
+  const [sendTitle, setSendTitle] = useState("");
+  const [sendMessage, setSendMessage] = useState("");
+  const [sendRecipientType, setSendRecipientType] = useState("all");
+  const [sendRecipientIds, setSendRecipientIds] = useState("");
+  const [sendingMsg, setSendingMsg] = useState(false);
+  const [sendStatus, setSendStatus] = useState("");
+  // Building members for individual send
+  const [buildingMembers, setBuildingMembers] = useState([]);
+  const [selectedMembers, setSelectedMembers] = useState([]);
 
   const fetchNotifications = useCallback(() => {
     setLoading(true);
@@ -77,15 +91,26 @@ export default function NotificationCenterPage() {
     fetchNotifications();
   }, [fetchNotifications]);
 
-  // Fetch building list for broadcast (admin only)
+  // Fetch building list for all users (broadcast + send)
   useEffect(() => {
-    if (isAdmin) {
-      axiosClient
-        .get("/buildings/")
-        .then((r) => setBuildings(r.data.results ?? r.data))
-        .catch(() => {});
+    axiosClient
+      .get("/buildings/")
+      .then((r) => setBuildings(r.data.results ?? r.data))
+      .catch(() => {});
+  }, []);
+
+  // Load building members when sendBuilding changes and recipient type is "individual"
+  useEffect(() => {
+    if (!sendBuilding || sendRecipientType !== "individual") {
+      setBuildingMembers([]);
+      setSelectedMembers([]);
+      return;
     }
-  }, [isAdmin]);
+    axiosClient
+      .get("/users/", { params: { building_id: sendBuilding, page_size: 200 } })
+      .then((r) => setBuildingMembers(r.data.results ?? r.data))
+      .catch(() => setBuildingMembers([]));
+  }, [sendBuilding, sendRecipientType]);
 
   const handleMarkRead = (id) => {
     axiosClient
@@ -111,6 +136,34 @@ export default function NotificationCenterPage() {
       .catch(() => setBroadcastStatus("Broadcast failed."));
   };
 
+  const handleSendMessage = async () => {
+    if (!sendBuilding || !sendTitle || !sendMessage) return;
+    setSendingMsg(true);
+    setSendStatus("");
+    try {
+      const payload = {
+        building_id: sendBuilding,
+        title: sendTitle,
+        message: sendMessage,
+        recipient_type: sendRecipientType,
+      };
+      if (sendRecipientType === "individual") {
+        payload.recipient_ids = selectedMembers;
+      }
+      const r = await axiosClient.post("/notifications/send/", payload);
+      setSendStatus(`Message sent to ${r.data.created} recipient(s).`);
+      setSendTitle("");
+      setSendMessage("");
+      setSendBuilding("");
+      setSendRecipientType("all");
+      setSelectedMembers([]);
+    } catch {
+      setSendStatus("Failed to send message.");
+    } finally {
+      setSendingMsg(false);
+    }
+  };
+
   const unreadCount = notifications.filter((n) => !n.is_read).length;
 
   return (
@@ -129,7 +182,7 @@ export default function NotificationCenterPage() {
         )}
       </Box>
 
-      {/* ── Filter chips ── */}
+      {/* Filter chips */}
       <Stack direction="row" spacing={1} sx={{ mb: 3 }}>
         <Chip
           label="All"
@@ -195,9 +248,16 @@ export default function NotificationCenterPage() {
                   <Typography variant="body2" color="text.secondary">
                     {n.body}
                   </Typography>
-                  <Typography variant="caption" color="text.disabled">
-                    {new Date(n.created_at).toLocaleString()}
-                  </Typography>
+                  <Stack direction="row" spacing={1} alignItems="center" mt={0.5}>
+                    <Typography variant="caption" color="text.disabled">
+                      {new Date(n.created_at).toLocaleString()}
+                    </Typography>
+                    {n.sender_name && (
+                      <Typography variant="caption" color="text.disabled">
+                        · From: {n.sender_name}
+                      </Typography>
+                    )}
+                  </Stack>
                 </Box>
                 {!n.is_read && (
                   <Button
@@ -214,6 +274,109 @@ export default function NotificationCenterPage() {
           ))}
         </Stack>
       )}
+
+      {/* ── Send Message (all users) ── */}
+      <Box sx={{ mt: 4 }}>
+        <Divider sx={{ mb: 2 }} />
+        <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 2 }}>
+          <Typography variant="h6">Send Message</Typography>
+          <Button
+            size="small"
+            variant="outlined"
+            onClick={() => setSendOpen((p) => !p)}
+          >
+            {sendOpen ? "Hide" : "Show"}
+          </Button>
+        </Box>
+
+        {sendOpen && (
+          <Card variant="outlined">
+            <CardContent>
+              <Stack spacing={2}>
+                <FormControl size="small" fullWidth>
+                  <InputLabel>Building</InputLabel>
+                  <Select
+                    value={sendBuilding}
+                    label="Building"
+                    onChange={(e) => { setSendBuilding(e.target.value); setSelectedMembers([]); }}
+                  >
+                    {buildings.map((b) => (
+                      <MenuItem key={b.id} value={b.id}>{b.name}</MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+
+                <FormControl size="small" fullWidth>
+                  <InputLabel>Recipients</InputLabel>
+                  <Select
+                    value={sendRecipientType}
+                    label="Recipients"
+                    onChange={(e) => { setSendRecipientType(e.target.value); setSelectedMembers([]); }}
+                  >
+                    <MenuItem value="all">All members</MenuItem>
+                    <MenuItem value="admins">Admins only</MenuItem>
+                    <MenuItem value="owners">Owners only</MenuItem>
+                    <MenuItem value="individual">Specific person</MenuItem>
+                  </Select>
+                </FormControl>
+
+                {sendRecipientType === "individual" && buildingMembers.length > 0 && (
+                  <FormControl size="small" fullWidth>
+                    <InputLabel>Select recipient(s)</InputLabel>
+                    <Select
+                      multiple
+                      value={selectedMembers}
+                      label="Select recipient(s)"
+                      onChange={(e) => setSelectedMembers(e.target.value)}
+                      renderValue={(selected) =>
+                        buildingMembers
+                          .filter((m) => selected.includes(m.id))
+                          .map((m) => `${m.first_name} ${m.last_name}`.trim() || m.email)
+                          .join(", ")
+                      }
+                    >
+                      {buildingMembers.map((m) => (
+                        <MenuItem key={m.id} value={m.id}>
+                          {m.first_name} {m.last_name} — {m.email}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                )}
+
+                <TextField
+                  size="small"
+                  label="Subject"
+                  value={sendTitle}
+                  onChange={(e) => setSendTitle(e.target.value)}
+                  fullWidth
+                />
+                <TextField
+                  size="small"
+                  label="Message"
+                  value={sendMessage}
+                  onChange={(e) => setSendMessage(e.target.value)}
+                  multiline
+                  rows={3}
+                  fullWidth
+                />
+                <Button
+                  variant="contained"
+                  onClick={handleSendMessage}
+                  disabled={sendingMsg || !sendBuilding || !sendTitle || !sendMessage || (sendRecipientType === "individual" && selectedMembers.length === 0)}
+                >
+                  {sendingMsg ? <CircularProgress size={20} color="inherit" /> : "Send Message"}
+                </Button>
+                {sendStatus && (
+                  <Alert severity={sendStatus.includes("Failed") ? "error" : "success"}>
+                    {sendStatus}
+                  </Alert>
+                )}
+              </Stack>
+            </CardContent>
+          </Card>
+        )}
+      </Box>
 
       {/* ── Admin broadcast ── */}
       {isAdmin && (

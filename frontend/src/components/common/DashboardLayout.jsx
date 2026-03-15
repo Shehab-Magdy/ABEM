@@ -24,6 +24,7 @@ import {
   Typography,
 } from "@mui/material";
 import {
+  AccountBalance,
   AccountCircle,
   Apartment,
   Assessment,
@@ -104,6 +105,7 @@ export default function DashboardLayout() {
     { to: "/users", icon: <People />, label: "Users", show: isAdmin },
     { to: "/notifications", icon: <Notifications />, label: "Notifications", show: true },
     { to: "/expense-categories", icon: <Category />, label: "Expense Categories", show: isAdmin },
+    { to: "/assets", icon: <AccountBalance />, label: "Assets", show: isAdmin },
     { to: "/audit", icon: <History />, label: "Audit Log", show: isAdmin },
   ].filter((item) => item.show);
 

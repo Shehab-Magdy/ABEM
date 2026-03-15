@@ -2,12 +2,14 @@
  * Expense Categories management page – admin only.
  *
  * Allows admins to view, add, and remove expense categories per building.
+ * Supports icons, colors, and optional parent (subcategory) assignment.
  */
 import { useEffect, useState, useCallback } from "react";
 import {
   Alert,
   Box,
   Button,
+  Chip,
   CircularProgress,
   Dialog,
   DialogActions,
@@ -20,6 +22,7 @@ import {
   Paper,
   Select,
   Snackbar,
+  Stack,
   Table,
   TableBody,
   TableCell,
@@ -34,7 +37,7 @@ import { Add as AddIcon, Delete as DeleteIcon } from "@mui/icons-material";
 import { expensesApi } from "../../api/expensesApi";
 import { buildingsApi } from "../../api/buildingsApi";
 
-const EMPTY_FORM = { name: "", description: "" };
+const EMPTY_FORM = { name: "", description: "", icon: "", color: "#2563EB", parent_id: "" };
 
 export default function ExpenseCategoriesPage() {
   const [buildings, setBuildings] = useState([]);
@@ -81,6 +84,9 @@ export default function ExpenseCategoriesPage() {
   useEffect(() => { loadBuildings(); }, [loadBuildings]);
   useEffect(() => { loadCategories(); }, [loadCategories]);
 
+  // Top-level categories (no parent) available for subcategory assignment
+  const topLevelCategories = categories.filter((c) => !c.parent_id);
+
   // ── Add category ─────────────────────────────────────────────────────────────
 
   const openAdd = () => {
@@ -101,11 +107,15 @@ export default function ExpenseCategoriesPage() {
     setSaving(true);
     setFormError("");
     try {
-      await expensesApi.createCategory({
+      const payload = {
         name: form.name.trim(),
         description: form.description.trim(),
         building_id: selectedBuilding,
-      });
+      };
+      if (form.icon.trim()) payload.icon = form.icon.trim();
+      if (form.color.trim()) payload.color = form.color.trim();
+      if (form.parent_id) payload.parent_id = form.parent_id;
+      await expensesApi.createCategory(payload);
       setFormOpen(false);
       setSnack({ open: true, msg: "Category added.", severity: "success" });
       loadCategories();
@@ -186,38 +196,68 @@ export default function ExpenseCategoriesPage() {
           <Table size="small">
             <TableHead>
               <TableRow>
+                <TableCell><strong>Icon / Color</strong></TableCell>
                 <TableCell><strong>Name</strong></TableCell>
                 <TableCell><strong>Description</strong></TableCell>
+                <TableCell><strong>Subcategory of</strong></TableCell>
                 <TableCell align="right"><strong>Actions</strong></TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {categories.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={3} align="center" sx={{ py: 4, color: "text.secondary" }}>
+                  <TableCell colSpan={5} align="center" sx={{ py: 4, color: "text.secondary" }}>
                     No categories found for this building.
                   </TableCell>
                 </TableRow>
               ) : (
-                categories.map((cat) => (
-                  <TableRow key={cat.id} hover>
-                    <TableCell>{cat.name}</TableCell>
-                    <TableCell sx={{ color: "text.secondary" }}>
-                      {cat.description || "—"}
-                    </TableCell>
-                    <TableCell align="right">
-                      <Tooltip title="Remove category">
-                        <IconButton
-                          size="small"
-                          color="error"
-                          onClick={() => setDeleteTarget(cat)}
-                        >
-                          <DeleteIcon fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
-                    </TableCell>
-                  </TableRow>
-                ))
+                categories.map((cat) => {
+                  const parentCat = cat.parent_id
+                    ? categories.find((c) => c.id === cat.parent_id)
+                    : null;
+                  return (
+                    <TableRow key={cat.id} hover>
+                      <TableCell>
+                        <Stack direction="row" spacing={1} alignItems="center">
+                          <Box
+                            sx={{
+                              width: 20,
+                              height: 20,
+                              borderRadius: "50%",
+                              bgcolor: cat.color || "#2563EB",
+                              flexShrink: 0,
+                            }}
+                          />
+                          <Typography variant="caption" color="text.secondary">
+                            {cat.icon || "—"}
+                          </Typography>
+                        </Stack>
+                      </TableCell>
+                      <TableCell>{cat.name}</TableCell>
+                      <TableCell sx={{ color: "text.secondary" }}>
+                        {cat.description || "—"}
+                      </TableCell>
+                      <TableCell>
+                        {parentCat ? (
+                          <Chip label={parentCat.name} size="small" variant="outlined" />
+                        ) : (
+                          <Typography variant="caption" color="text.disabled">—</Typography>
+                        )}
+                      </TableCell>
+                      <TableCell align="right">
+                        <Tooltip title="Remove category">
+                          <IconButton
+                            size="small"
+                            color="error"
+                            onClick={() => setDeleteTarget(cat)}
+                          >
+                            <DeleteIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
               )}
             </TableBody>
           </Table>
@@ -252,7 +292,58 @@ export default function ExpenseCategoriesPage() {
             multiline
             rows={2}
             placeholder="Optional"
+            sx={{ mb: 2 }}
           />
+          <Stack direction="row" spacing={2} sx={{ mb: 2 }}>
+            <TextField
+              label="Icon name"
+              name="icon"
+              value={form.icon}
+              onChange={handleFormChange}
+              fullWidth
+              placeholder="e.g. build"
+              size="small"
+            />
+            <TextField
+              label="Color"
+              name="color"
+              value={form.color}
+              onChange={handleFormChange}
+              fullWidth
+              placeholder="#2563EB"
+              size="small"
+              InputProps={{
+                startAdornment: (
+                  <Box
+                    sx={{
+                      width: 16,
+                      height: 16,
+                      borderRadius: "50%",
+                      bgcolor: form.color || "#2563EB",
+                      mr: 0.5,
+                      flexShrink: 0,
+                    }}
+                  />
+                ),
+              }}
+            />
+          </Stack>
+          <FormControl fullWidth size="small">
+            <InputLabel>Subcategory of (optional)</InputLabel>
+            <Select
+              name="parent_id"
+              value={form.parent_id}
+              label="Subcategory of (optional)"
+              onChange={handleFormChange}
+            >
+              <MenuItem value="">— None (top-level) —</MenuItem>
+              {topLevelCategories.map((c) => (
+                <MenuItem key={c.id} value={c.id}>
+                  {c.name}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setFormOpen(false)} disabled={saving}>

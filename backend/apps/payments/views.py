@@ -13,8 +13,8 @@ from apps.apartments.models import Apartment
 from apps.audit.mixins import log_action
 from apps.authentication.permissions import IsAdminRole
 
-from .models import Payment
-from .serializers import PaymentSerializer
+from .models import AssetSale, BuildingAsset, Payment
+from .serializers import BuildingAssetSerializer, PaymentSerializer
 
 
 class PaymentViewSet(ModelViewSet):
@@ -102,7 +102,7 @@ class PaymentViewSet(ModelViewSet):
         except Exception:
             pass
 
-    # ── PDF Receipt ─────────────────────────────────────────────────────────────
+    # ── PDF Receipt ──────────────────────────────────────────────────────────────
 
     @action(
         detail=True,
@@ -142,3 +142,59 @@ class PaymentViewSet(ModelViewSet):
         resp = HttpResponse(buf.read(), content_type="application/pdf")
         resp["Content-Disposition"] = f'inline; filename="receipt_{pk}.pdf"'
         return resp
+
+
+class BuildingAssetViewSet(ModelViewSet):
+    """
+    CRUD for building assets + sell action.
+
+    GET    /payments/assets/?building_id=  – list
+    POST   /payments/assets/               – create
+    PATCH  /payments/assets/{id}/          – update
+    POST   /payments/assets/{id}/sell/     – record a sale
+    """
+
+    serializer_class = BuildingAssetSerializer
+    http_method_names = ["get", "post", "patch", "options", "head"]
+    permission_classes = [IsAuthenticated, IsAdminRole]
+
+    def get_queryset(self):
+        qs = BuildingAsset.objects.select_related("building", "sale")
+        building_id = self.request.query_params.get("building_id")
+        if building_id:
+            qs = qs.filter(building_id=building_id)
+        return qs
+
+    def perform_create(self, serializer):
+        serializer.save(created_by=self.request.user)
+
+    @action(detail=True, methods=["post"], url_path="sell")
+    def sell(self, request, pk=None):
+        """
+        POST /api/v1/payments/assets/{id}/sell/
+        Body: {sale_date, sale_price, buyer_name, buyer_contact, notes}
+        Marks the asset as sold and records the sale.
+        """
+        asset = self.get_object()
+        if asset.is_sold:
+            return Response({"detail": "This asset has already been sold."}, status=400)
+
+        sale_date = request.data.get("sale_date")
+        sale_price = request.data.get("sale_price")
+        if not sale_date or sale_price is None:
+            return Response({"detail": "sale_date and sale_price are required."}, status=400)
+
+        with transaction.atomic():
+            AssetSale.objects.create(
+                asset=asset,
+                sale_date=sale_date,
+                sale_price=sale_price,
+                buyer_name=request.data.get("buyer_name", ""),
+                buyer_contact=request.data.get("buyer_contact", ""),
+                notes=request.data.get("notes", ""),
+                recorded_by=request.user,
+            )
+            asset.is_sold = True
+            asset.save(update_fields=["is_sold"])
+
+        return Response(BuildingAssetSerializer(asset).data, status=201)

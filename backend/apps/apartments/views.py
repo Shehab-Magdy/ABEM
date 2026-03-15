@@ -204,6 +204,7 @@ class ApartmentViewSet(ModelViewSet):
         )
         return Response({
             "token": str(invite.token),
+            "registration_code": invite.registration_code,
             "invited_email": invite.invited_email,
             "expires_at": invite.expires_at,
         }, status=201)
@@ -213,17 +214,24 @@ class ApartmentViewSet(ModelViewSet):
     def invite_validate(self, request):
         """
         GET /api/v1/apartments/invite/validate/?token={token}
-        Public endpoint — validates an invite token and returns unit/building info.
+        GET /api/v1/apartments/invite/validate/?code={code}
+        Public endpoint — validates an invite token or registration code and returns unit/building info.
         """
         token = request.query_params.get("token")
-        if not token:
-            return Response({"detail": "token is required."}, status=400)
+        code = request.query_params.get("code")
+        if not token and not code:
+            return Response({"detail": "token or code is required."}, status=400)
         try:
-            invite = UnitInvitation.objects.select_related(
-                "apartment__building"
-            ).get(token=token)
+            if token:
+                invite = UnitInvitation.objects.select_related(
+                    "apartment__building"
+                ).get(token=token)
+            else:
+                invite = UnitInvitation.objects.select_related(
+                    "apartment__building"
+                ).get(registration_code=code.upper())
         except UnitInvitation.DoesNotExist:
-            return Response({"detail": "Invalid invite link."}, status=404)
+            return Response({"detail": "Invalid invite link or code."}, status=404)
 
         if not invite.is_valid:
             return Response({"detail": "This invite link has expired or already been used."}, status=410)
@@ -244,18 +252,24 @@ class ApartmentViewSet(ModelViewSet):
     def invite_use(self, request):
         """
         POST /api/v1/apartments/invite/use/
-        Authenticated user redeems an invite token to claim the unit.
-        Body: {"token": "..."}
+        Authenticated user redeems an invite token or registration code to claim the unit.
+        Body: {"token": "..."} or {"code": "..."}
         """
         token = request.data.get("token", "").strip()
-        if not token:
-            return Response({"detail": "token is required."}, status=400)
+        code = request.data.get("code", "").strip().upper()
+        if not token and not code:
+            return Response({"detail": "token or code is required."}, status=400)
         try:
-            invite = UnitInvitation.objects.select_related(
-                "apartment__building"
-            ).get(token=token)
+            if token:
+                invite = UnitInvitation.objects.select_related(
+                    "apartment__building"
+                ).get(token=token)
+            else:
+                invite = UnitInvitation.objects.select_related(
+                    "apartment__building"
+                ).get(registration_code=code)
         except UnitInvitation.DoesNotExist:
-            return Response({"detail": "Invalid invite link."}, status=404)
+            return Response({"detail": "Invalid invite."}, status=404)
 
         if not invite.is_valid:
             return Response({"detail": "This invite link has expired or already been used."}, status=410)

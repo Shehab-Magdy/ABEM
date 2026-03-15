@@ -1,6 +1,7 @@
 """Payment / ledger models."""
 import uuid
 from decimal import Decimal
+from django.conf import settings
 from django.db import models
 from apps.apartments.models import Apartment
 from apps.expenses.models import Expense
@@ -48,3 +49,56 @@ class Payment(models.Model):
 
     def __str__(self):
         return f"{self.apartment} | {self.amount_paid} on {self.payment_date}"
+
+
+class AssetType(models.TextChoices):
+    VEHICLE = "vehicle", "Vehicle"
+    EQUIPMENT = "equipment", "Equipment"
+    FURNITURE = "furniture", "Furniture"
+    ELECTRONICS = "electronics", "Electronics"
+    PROPERTY = "property", "Property"
+    OTHER = "other", "Other"
+
+
+class BuildingAsset(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    building = models.ForeignKey(
+        "buildings.Building", on_delete=models.CASCADE, related_name="assets"
+    )
+    name = models.CharField(max_length=255)
+    description = models.TextField(blank=True)
+    asset_type = models.CharField(max_length=20, choices=AssetType.choices, default=AssetType.OTHER)
+    acquisition_date = models.DateField(null=True, blank=True)
+    acquisition_value = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    current_value = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    is_sold = models.BooleanField(default=False)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name="created_assets"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.building.name} – {self.name}"
+
+
+class AssetSale(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    asset = models.OneToOneField(BuildingAsset, on_delete=models.CASCADE, related_name="sale")
+    sale_date = models.DateField()
+    sale_price = models.DecimalField(max_digits=12, decimal_places=2)
+    buyer_name = models.CharField(max_length=255, blank=True)
+    buyer_contact = models.CharField(max_length=255, blank=True)
+    notes = models.TextField(blank=True)
+    recorded_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name="recorded_sales"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-sale_date"]
+
+    def __str__(self):
+        return f"Sale of {self.asset.name} – {self.sale_price}"

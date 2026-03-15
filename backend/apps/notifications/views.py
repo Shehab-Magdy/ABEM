@@ -9,7 +9,7 @@ from rest_framework.viewsets import ReadOnlyModelViewSet
 
 from apps.authentication.models import User
 from apps.authentication.permissions import IsAdminRole
-from apps.buildings.models import Building
+from apps.buildings.models import Building, UserBuilding
 
 from .models import Notification, NotificationType
 from .serializers import BroadcastSerializer, NotificationSerializer
@@ -34,7 +34,7 @@ class NotificationViewSet(ReadOnlyModelViewSet):
     # ── Queryset ────────────────────────────────────────────────────────────────
 
     def get_queryset(self):
-        qs = Notification.objects.filter(user=self.request.user)
+        qs = Notification.objects.filter(user=self.request.user).select_related("sender")
         is_read = self.request.query_params.get("is_read")
         if is_read is not None:
             qs = qs.filter(is_read=is_read.lower() == "true")
@@ -91,3 +91,77 @@ class NotificationViewSet(ReadOnlyModelViewSet):
             {"created": created, "building_id": str(building.id)},
             status=201,
         )
+
+    @action(
+        detail=False,
+        methods=["post"],
+        url_path="send",
+        permission_classes=[IsAuthenticated],
+    )
+    def send(self, request):
+        """
+        POST /api/v1/notifications/send/
+        Any authenticated user can send a message to building members.
+        Body: {building_id, title, message,
+               recipient_type: "all"|"admins"|"owners"|"individual",
+               recipient_ids: []}
+        """
+        building_id = request.data.get("building_id")
+        title = request.data.get("title", "").strip()
+        message = request.data.get("message", "").strip()
+        recipient_type = request.data.get("recipient_type", "all")
+        recipient_ids = request.data.get("recipient_ids", [])
+
+        if not building_id:
+            return Response({"detail": "building_id is required."}, status=400)
+        if not title or not message:
+            return Response({"detail": "title and message are required."}, status=400)
+
+        # Verify the sender is a member or admin of this building
+        is_member = UserBuilding.objects.filter(
+            user=request.user, building_id=building_id
+        ).exists()
+        if not is_member:
+            return Response(
+                {"detail": "You are not a member of this building."}, status=403
+            )
+
+        building = get_object_or_404(Building, pk=building_id, deleted_at__isnull=True)
+
+        if recipient_type == "all":
+            recipients = User.objects.filter(
+                userbuilding__building=building
+            ).distinct()
+        elif recipient_type == "admins":
+            recipients = User.objects.filter(
+                userbuilding__building=building, role="admin"
+            ).distinct()
+        elif recipient_type == "owners":
+            recipients = User.objects.filter(
+                userbuilding__building=building, role="owner"
+            ).distinct()
+        elif recipient_type == "individual":
+            if not recipient_ids:
+                return Response({"detail": "recipient_ids is required for individual send."}, status=400)
+            recipients = User.objects.filter(
+                pk__in=recipient_ids,
+                userbuilding__building=building,
+            ).distinct()
+        else:
+            return Response({"detail": "Invalid recipient_type."}, status=400)
+
+        created = 0
+        for recipient in recipients:
+            if recipient == request.user:
+                continue  # don't send to yourself
+            notify_user(
+                user=recipient,
+                notification_type=NotificationType.ANNOUNCEMENT,
+                title=title,
+                body=message,
+                metadata={"building_id": str(building.id), "sender_id": str(request.user.pk)},
+                sender=request.user,
+            )
+            created += 1
+
+        return Response({"created": created, "building_id": str(building.id)}, status=201)

@@ -113,6 +113,7 @@ export default function ExpensesPage() {
 
   const [form, setForm] = useState(EMPTY_FORM);
   const [formError, setFormError] = useState("");
+  const [subcategoryId, setSubcategoryId] = useState("");
 
   // ── Data fetching ──────────────────────────────────────────────────────────
 
@@ -169,11 +170,13 @@ export default function ExpensesPage() {
     setEditTarget(null);
     setForm({ ...EMPTY_FORM, building_id: selectedBuilding });
     setFormError("");
+    setSubcategoryId("");
     setFormOpen(true);
   };
 
   const openEdit = (expense) => {
     setEditTarget(expense);
+    setSubcategoryId("");
     setForm({
       title: expense.title || "",
       description: expense.description || "",
@@ -201,6 +204,9 @@ export default function ExpensesPage() {
     if (!form.expense_date) return setFormError("Date is required");
     if (!form.category_id) return setFormError("Category is required");
 
+    // Use subcategory if selected, otherwise use the parent category
+    const effectiveCategoryId = subcategoryId || form.category_id;
+
     const payload = {
       title: form.title,
       description: form.description,
@@ -208,7 +214,7 @@ export default function ExpensesPage() {
       expense_date: form.expense_date,
       split_type: form.split_type,
       is_recurring: form.is_recurring,
-      category_id: form.category_id,
+      category_id: effectiveCategoryId,
       building_id: form.building_id || selectedBuilding,
     };
     if (form.due_date) payload.due_date = form.due_date;
@@ -515,15 +521,39 @@ export default function ExpensesPage() {
               <Select
                 label="Category *"
                 value={form.category_id}
-                onChange={handleFormChange("category_id")}
+                onChange={(e) => {
+                  handleFormChange("category_id")(e);
+                  setSubcategoryId("");
+                }}
               >
-                {categories.map((c) => (
+                {categories.filter((c) => !c.parent_id).map((c) => (
                   <MenuItem key={c.id} value={c.id}>
                     {c.name}
                   </MenuItem>
                 ))}
               </Select>
             </FormControl>
+
+            {/* Show subcategory dropdown if the selected category has subcategories */}
+            {form.category_id && categories.some((c) => c.parent_id === form.category_id) && (
+              <FormControl size="small" fullWidth>
+                <InputLabel>Subcategory (optional)</InputLabel>
+                <Select
+                  label="Subcategory (optional)"
+                  value={subcategoryId}
+                  onChange={(e) => setSubcategoryId(e.target.value)}
+                >
+                  <MenuItem value="">— None —</MenuItem>
+                  {categories
+                    .filter((c) => c.parent_id === form.category_id)
+                    .map((c) => (
+                      <MenuItem key={c.id} value={c.id}>
+                        {c.name}
+                      </MenuItem>
+                    ))}
+                </Select>
+              </FormControl>
+            )}
 
             <FormControl size="small" fullWidth>
               <InputLabel>Split Type</InputLabel>

@@ -15,10 +15,12 @@ def notify_user(
     body: str,
     channel: str = "in_app",
     metadata: dict | None = None,
+    sender=None,
 ) -> Notification:
     """Create a single in-app notification for *user*."""
     return Notification.objects.create(
         user=user,
+        sender=sender,
         notification_type=notification_type,
         channel=channel,
         title=title,

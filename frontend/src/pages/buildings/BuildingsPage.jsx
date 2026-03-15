@@ -70,6 +70,7 @@ export default function BuildingsPage() {
   const [unitsError, setUnitsError] = useState(null);
   const [inviteEmails, setInviteEmails] = useState({});
   const [inviteLinks, setInviteLinks] = useState({});
+  const [inviteCodes, setInviteCodes] = useState({});
   const [invitingUnit, setInvitingUnit] = useState(null);
   const [copiedUnit, setCopiedUnit] = useState(null);
 
@@ -175,6 +176,7 @@ export default function BuildingsPage() {
       const res = await apartmentsApi.inviteUnit(unit.id, email);
       const link = `${window.location.origin}/register?invite=${res.data.token}`;
       setInviteLinks((prev) => ({ ...prev, [unit.id]: link }));
+      setInviteCodes((prev) => ({ ...prev, [unit.id]: res.data.registration_code }));
     } catch (err) {
       setUnitsError(err.response?.data?.detail || "Failed to generate invite link.");
     } finally {
@@ -193,6 +195,7 @@ export default function BuildingsPage() {
     setFloorEdits({});
     setInviteEmails({});
     setInviteLinks({});
+    setInviteCodes({});
     setUnitsError(null);
     setUnitsLoading(true);
     try {
@@ -470,15 +473,23 @@ export default function BuildingsPage() {
                       {u.owner_id ? (
                         <Typography variant="caption" color="text.disabled">Claimed</Typography>
                       ) : inviteLinks[u.id] ? (
-                        <Stack direction="row" spacing={0.5} alignItems="center">
-                          <Typography variant="caption" sx={{ maxWidth: 180, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                            {inviteLinks[u.id]}
-                          </Typography>
-                          <Tooltip title={copiedUnit === u.id ? "Copied!" : "Copy link"}>
-                            <IconButton size="small" onClick={() => copyLink(u.id)}>
-                              {copiedUnit === u.id ? <Check fontSize="small" color="success" /> : <ContentCopy fontSize="small" />}
-                            </IconButton>
-                          </Tooltip>
+                        <Stack spacing={0.5}>
+                          <Stack direction="row" spacing={0.5} alignItems="center">
+                            <Typography variant="caption" sx={{ maxWidth: 180, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                              {inviteLinks[u.id]}
+                            </Typography>
+                            <Tooltip title={copiedUnit === u.id ? "Copied!" : "Copy link"}>
+                              <IconButton size="small" onClick={() => copyLink(u.id)}>
+                                {copiedUnit === u.id ? <Check fontSize="small" color="success" /> : <ContentCopy fontSize="small" />}
+                              </IconButton>
+                            </Tooltip>
+                          </Stack>
+                          {inviteCodes[u.id] && (
+                            <Stack direction="row" spacing={0.5} alignItems="center">
+                              <Typography variant="caption" color="text.secondary">Code:</Typography>
+                              <Chip label={inviteCodes[u.id]} size="small" variant="outlined" color="secondary" />
+                            </Stack>
+                          )}
                         </Stack>
                       ) : (
                         <Stack direction="row" spacing={0.5} alignItems="center">

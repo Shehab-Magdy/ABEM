@@ -4,6 +4,13 @@ from .models import Notification
 
 
 class NotificationSerializer(serializers.ModelSerializer):
+    sender_name = serializers.SerializerMethodField()
+
+    def get_sender_name(self, obj):
+        if obj.sender:
+            return f"{obj.sender.first_name} {obj.sender.last_name}".strip() or obj.sender.email
+        return None
+
     class Meta:
         model = Notification
         fields = [
@@ -14,6 +21,7 @@ class NotificationSerializer(serializers.ModelSerializer):
             "body",
             "is_read",
             "metadata",
+            "sender_name",
             "created_at",
         ]
         read_only_fields = [
@@ -23,6 +31,7 @@ class NotificationSerializer(serializers.ModelSerializer):
             "title",
             "body",
             "metadata",
+            "sender_name",
             "created_at",
         ]
 

@@ -6,9 +6,34 @@ from decimal import Decimal
 from rest_framework import serializers
 
 from apps.apartments.models import Apartment
+from apps.buildings.models import Building
 from apps.expenses.models import ApartmentExpense, Expense
 
-from .models import Payment
+from .models import AssetSale, BuildingAsset, Payment
+
+
+class AssetSaleSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AssetSale
+        fields = ["id", "sale_date", "sale_price", "buyer_name", "buyer_contact", "notes", "created_at"]
+        read_only_fields = ["id", "created_at"]
+
+
+class BuildingAssetSerializer(serializers.ModelSerializer):
+    building_id = serializers.PrimaryKeyRelatedField(
+        source="building",
+        queryset=Building.objects.filter(is_active=True, deleted_at__isnull=True),
+    )
+    sale = AssetSaleSerializer(read_only=True)
+
+    class Meta:
+        model = BuildingAsset
+        fields = [
+            "id", "building_id", "name", "description", "asset_type",
+            "acquisition_date", "acquisition_value", "current_value",
+            "is_sold", "sale", "created_at",
+        ]
+        read_only_fields = ["id", "is_sold", "created_at"]
 
 
 class PaymentSerializer(serializers.ModelSerializer):

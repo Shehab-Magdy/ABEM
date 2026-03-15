@@ -1,4 +1,6 @@
 """Apartment / unit models."""
+import random
+import string
 import uuid
 from decimal import Decimal
 from django.db import models
@@ -59,6 +61,7 @@ class UnitInvitation(models.Model):
     token = models.UUIDField(unique=True, default=uuid.uuid4, editable=False)
     apartment = models.ForeignKey(Apartment, on_delete=models.CASCADE, related_name="invitations")
     invited_email = models.EmailField()
+    registration_code = models.CharField(max_length=8, unique=True, editable=False)
     invited_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
@@ -75,6 +78,15 @@ class UnitInvitation(models.Model):
 
     def __str__(self):
         return f"Invite {self.invited_email} → {self.apartment}"
+
+    def save(self, *args, **kwargs):
+        if not self.registration_code:
+            while True:
+                code = ''.join(random.choices(string.ascii_uppercase + string.digits, k=8))
+                if not UnitInvitation.objects.filter(registration_code=code).exists():
+                    self.registration_code = code
+                    break
+        super().save(*args, **kwargs)
 
     @property
     def is_valid(self):

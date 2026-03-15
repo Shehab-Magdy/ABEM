@@ -16,6 +16,13 @@ class ExpenseCategory(models.Model):
                             help_text="Material icon name (used by web and mobile)")
     color = models.CharField(max_length=7, blank=True, default="#2563EB",
                              help_text="Hex color for the category badge")
+    parent = models.ForeignKey(
+        "self",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="subcategories",
+    )
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
 

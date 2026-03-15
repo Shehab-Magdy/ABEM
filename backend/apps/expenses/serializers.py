@@ -23,10 +23,16 @@ class ExpenseCategorySerializer(serializers.ModelSerializer):
         source="building",
         queryset=Building.objects.filter(is_active=True, deleted_at__isnull=True),
     )
+    parent_id = serializers.PrimaryKeyRelatedField(
+        source="parent",
+        queryset=ExpenseCategory.objects.filter(is_active=True),
+        required=False,
+        allow_null=True,
+    )
 
     class Meta:
         model = ExpenseCategory
-        fields = ["id", "building_id", "name", "description", "icon", "color", "is_active", "created_at"]
+        fields = ["id", "building_id", "name", "description", "icon", "color", "parent_id", "is_active", "created_at"]
         read_only_fields = ["id", "is_active", "created_at"]
 
 
