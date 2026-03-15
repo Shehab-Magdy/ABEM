@@ -90,12 +90,21 @@ class ExpenseSerializer(serializers.ModelSerializer):
         default=None,
     )
 
-    # Write-only: apartment UUIDs for CUSTOM split type
+    # Write-only: apartment UUIDs for CUSTOM split type (equal shares within subset)
     custom_split_apartments = serializers.ListField(
         child=serializers.UUIDField(),
         write_only=True,
         required=False,
         default=list,
+    )
+
+    # Write-only: {apartment_id: weight} for weighted CUSTOM split
+    # weight 1.0 = full share, 0.5 = half share, etc.
+    custom_split_weights = serializers.DictField(
+        child=serializers.DecimalField(max_digits=6, decimal_places=4, min_value=0),
+        write_only=True,
+        required=False,
+        default=dict,
     )
 
     class Meta:
@@ -113,6 +122,7 @@ class ExpenseSerializer(serializers.ModelSerializer):
             "is_recurring",
             "frequency",
             "custom_split_apartments",
+            "custom_split_weights",
             "apartment_shares",
             "recurring_config",
             "attachments",
@@ -152,13 +162,14 @@ class ExpenseSerializer(serializers.ModelSerializer):
 
         frequency = validated_data.pop("frequency", None)
         custom_apartment_ids = validated_data.pop("custom_split_apartments", [])
+        custom_weights = validated_data.pop("custom_split_weights", {})
 
         expense = super().create(validated_data)
 
         if expense.is_recurring and frequency:
             _create_recurring_config(expense, frequency)
 
-        run_split_engine(expense, custom_apartment_ids)
+        run_split_engine(expense, custom_apartment_ids, custom_weights or None)
         return expense
 
     def update(self, instance, validated_data):
@@ -166,12 +177,13 @@ class ExpenseSerializer(serializers.ModelSerializer):
 
         frequency = validated_data.pop("frequency", None)
         custom_apartment_ids = validated_data.pop("custom_split_apartments", [])
+        custom_weights = validated_data.pop("custom_split_weights", {})
 
         expense = super().update(instance, validated_data)
 
         # Re-calculate shares after any field change
         expense.apartment_expenses.all().delete()
-        run_split_engine(expense, custom_apartment_ids)
+        run_split_engine(expense, custom_apartment_ids, custom_weights or None)
 
         # Update or create recurring config if frequency is provided
         if frequency:

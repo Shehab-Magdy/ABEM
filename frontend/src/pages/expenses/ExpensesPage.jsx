@@ -116,6 +116,10 @@ export default function ExpensesPage() {
   const [formError, setFormError] = useState("");
   const [subcategoryId, setSubcategoryId] = useState("");
 
+  // Custom split — building apartments + per-unit weights
+  const [buildingApartments, setBuildingApartments] = useState([]);
+  const [customWeights, setCustomWeights] = useState({});
+
   // ── Data fetching ──────────────────────────────────────────────────────────
 
   const loadBuildings = useCallback(async () => {
@@ -167,17 +171,34 @@ export default function ExpensesPage() {
 
   // ── Form helpers ───────────────────────────────────────────────────────────
 
+  const loadBuildingApartments = useCallback(async (buildingId) => {
+    if (!buildingId) return;
+    try {
+      const res = await buildingsApi.apartments(buildingId);
+      setBuildingApartments(res.data?.results ?? res.data);
+    } catch {
+      setBuildingApartments([]);
+    }
+  }, []);
+
   const openCreate = () => {
     setEditTarget(null);
     setForm({ ...EMPTY_FORM, building_id: selectedBuilding });
     setFormError("");
     setSubcategoryId("");
+    setCustomWeights({});
+    setBuildingApartments([]);
+    if (selectedBuilding) loadBuildingApartments(selectedBuilding);
     setFormOpen(true);
   };
 
   const openEdit = (expense) => {
     setEditTarget(expense);
     setSubcategoryId("");
+    setCustomWeights({});
+    setBuildingApartments([]);
+    const bid = expense.building_id || selectedBuilding;
+    if (bid) loadBuildingApartments(bid);
     setForm({
       title: expense.title || "",
       description: expense.description || "",
@@ -220,6 +241,9 @@ export default function ExpensesPage() {
     };
     if (form.due_date) payload.due_date = form.due_date;
     if (form.is_recurring && form.frequency) payload.frequency = form.frequency;
+    if (form.split_type === "custom" && Object.keys(customWeights).length > 0) {
+      payload.custom_split_weights = customWeights;
+    }
 
     try {
       if (editTarget) {
@@ -570,6 +594,69 @@ export default function ExpensesPage() {
                 ))}
               </Select>
             </FormControl>
+
+            {/* Custom subset: per-unit weight inputs */}
+            {form.split_type === "custom" && (
+              <Box>
+                <Typography variant="caption" color="text.secondary" mb={0.5} display="block">
+                  Set weight per unit (1.0 = full share, 0.5 = half share). Uncheck to exclude.
+                </Typography>
+                <Table size="small">
+                  <TableHead>
+                    <TableRow>
+                      <TableCell padding="checkbox" />
+                      <TableCell>Unit</TableCell>
+                      <TableCell>Type</TableCell>
+                      <TableCell width={100}>Weight</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {buildingApartments.map((apt) => {
+                      const checked = apt.id in customWeights;
+                      return (
+                        <TableRow key={apt.id} hover>
+                          <TableCell padding="checkbox">
+                            <Checkbox
+                              size="small"
+                              checked={checked}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setCustomWeights((prev) => ({ ...prev, [apt.id]: 1 }));
+                                } else {
+                                  setCustomWeights((prev) => {
+                                    const next = { ...prev };
+                                    delete next[apt.id];
+                                    return next;
+                                  });
+                                }
+                              }}
+                            />
+                          </TableCell>
+                          <TableCell>{apt.unit_number}</TableCell>
+                          <TableCell>{apt.type}</TableCell>
+                          <TableCell>
+                            <TextField
+                              size="small"
+                              type="number"
+                              inputProps={{ min: 0, step: 0.1 }}
+                              value={customWeights[apt.id] ?? ""}
+                              disabled={!checked}
+                              onChange={(e) =>
+                                setCustomWeights((prev) => ({
+                                  ...prev,
+                                  [apt.id]: parseFloat(e.target.value) || 0,
+                                }))
+                              }
+                              sx={{ width: 80 }}
+                            />
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </Box>
+            )}
 
             <Stack direction="row" alignItems="center" spacing={1}>
               <input
