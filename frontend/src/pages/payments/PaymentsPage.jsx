@@ -213,7 +213,7 @@ export default function PaymentsPage() {
         <Typography variant="h5" fontWeight={600}>
           Payments
         </Typography>
-        {isAdmin && selectedApartment && (
+        {isAdmin && selectedBuilding && (
           <Button variant="contained" startIcon={<AddIcon />} onClick={openCreate}>
             Record Payment
           </Button>
@@ -376,6 +376,21 @@ export default function PaymentsPage() {
           <Stack spacing={2} sx={{ mt: 1 }}>
             {formError && <Alert severity="error">{formError}</Alert>}
 
+            <FormControl fullWidth size="small" required>
+              <InputLabel>Unit / Payer *</InputLabel>
+              <Select
+                label="Unit / Payer *"
+                value={form.apartment_id}
+                onChange={(e) => handleFormChange("apartment_id", e.target.value)}
+              >
+                {apartments.map((a) => (
+                  <MenuItem key={a.id} value={a.id}>
+                    Unit {a.unit_number}{a.type === "store" ? " (Store)" : ""}{a.owner_ids?.length > 0 ? ` — ${a.owner_ids.length} owner(s)` : ""}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+
             <TextField
               label="Amount Paid"
               type="number"
@@ -438,7 +453,7 @@ export default function PaymentsPage() {
           <Button
             variant="contained"
             onClick={handleSubmit}
-            disabled={saving || !form.amount_paid || !form.payment_date}
+            disabled={saving || !form.amount_paid || !form.payment_date || !form.apartment_id}
           >
             {saving ? <CircularProgress size={18} /> : "Record"}
           </Button>
