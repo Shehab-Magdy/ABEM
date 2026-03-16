@@ -36,7 +36,7 @@ class UserViewSet(AuditLogMixin, ModelViewSet):
     POST   /api/v1/users/{id}/reset-password/ – admin-initiated password reset
     """
 
-    queryset = User.objects.all().order_by("-created_at")
+    queryset = User.objects.filter(is_superuser=False).order_by("-created_at")
     permission_classes = [IsAdminRole]
     audit_entity = "user"
 
