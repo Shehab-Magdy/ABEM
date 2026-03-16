@@ -628,7 +628,22 @@ export default function ExpensesPage() {
                 <Table size="small">
                   <TableHead>
                     <TableRow>
-                      <TableCell padding="checkbox" />
+                      <TableCell padding="checkbox">
+                        <Checkbox
+                          size="small"
+                          checked={buildingApartments.length > 0 && buildingApartments.every((a) => a.id in customWeights)}
+                          indeterminate={buildingApartments.some((a) => a.id in customWeights) && !buildingApartments.every((a) => a.id in customWeights)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              const all = {};
+                              buildingApartments.forEach((a) => { all[a.id] = 1; });
+                              setCustomWeights(all);
+                            } else {
+                              setCustomWeights({});
+                            }
+                          }}
+                        />
+                      </TableCell>
                       <TableCell>Unit</TableCell>
                       <TableCell>Type</TableCell>
                       <TableCell width={100}>Weight</TableCell>
