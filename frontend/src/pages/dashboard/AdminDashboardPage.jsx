@@ -22,6 +22,7 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  TableSortLabel,
   TextField,
   Tooltip,
   Typography,
@@ -49,6 +50,7 @@ export default function AdminDashboardPage() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [balanceSort, setBalanceSort] = useState({ field: "balance", order: "desc" });
 
   // Redirect non-admins away
   useEffect(() => {
@@ -77,6 +79,30 @@ export default function AdminDashboardPage() {
   useEffect(() => {
     fetchDashboard();
   }, [fetchDashboard]);
+
+  const handleBalanceSort = (field) => {
+    setBalanceSort((prev) =>
+      prev.field === field
+        ? { field, order: prev.order === "asc" ? "desc" : "asc" }
+        : { field, order: "asc" }
+    );
+  };
+
+  const sortedUnpaidUnits = [...(data?.unpaid_units ?? [])].sort((a, b) => {
+    const { field, order } = balanceSort;
+    let aVal = a[field] ?? "";
+    let bVal = b[field] ?? "";
+    if (field === "balance") {
+      aVal = parseFloat(aVal);
+      bVal = parseFloat(bVal);
+    } else {
+      aVal = String(aVal).toLowerCase();
+      bVal = String(bVal).toLowerCase();
+    }
+    if (aVal < bVal) return order === "asc" ? -1 : 1;
+    if (aVal > bVal) return order === "asc" ? 1 : -1;
+    return 0;
+  });
 
   const incomeValues = data?.monthly_trend?.map((m) => parseFloat(m.income)) ?? [];
   const expenseValues = data?.monthly_trend?.map((m) => parseFloat(m.expenses)) ?? [];
@@ -278,15 +304,35 @@ export default function AdminDashboardPage() {
                   <Table size="small">
                     <TableHead>
                       <TableRow sx={{ bgcolor: "grey.100" }}>
-                        <TableCell><strong>Unit</strong></TableCell>
-                        <TableCell><strong>Building</strong></TableCell>
-                        <TableCell><strong>Owner</strong></TableCell>
-                        <TableCell><strong>Email</strong></TableCell>
-                        <TableCell align="right"><strong>Balance Due (EGP)</strong></TableCell>
+                        {[
+                          { label: "Unit", field: "unit_number" },
+                          { label: "Building", field: "building_name" },
+                          { label: "Owner", field: "owner_name" },
+                          { label: "Email", field: "owner_email" },
+                        ].map(({ label, field }) => (
+                          <TableCell key={field}>
+                            <TableSortLabel
+                              active={balanceSort.field === field}
+                              direction={balanceSort.field === field ? balanceSort.order : "asc"}
+                              onClick={() => handleBalanceSort(field)}
+                            >
+                              <strong>{label}</strong>
+                            </TableSortLabel>
+                          </TableCell>
+                        ))}
+                        <TableCell align="right">
+                          <TableSortLabel
+                            active={balanceSort.field === "balance"}
+                            direction={balanceSort.field === "balance" ? balanceSort.order : "asc"}
+                            onClick={() => handleBalanceSort("balance")}
+                          >
+                            <strong>Balance Due (EGP)</strong>
+                          </TableSortLabel>
+                        </TableCell>
                       </TableRow>
                     </TableHead>
                     <TableBody>
-                      {data.unpaid_units.map((row, i) => (
+                      {sortedUnpaidUnits.map((row, i) => (
                         <TableRow key={i} hover>
                           <TableCell>{row.unit_number}</TableCell>
                           <TableCell>{row.building_name}</TableCell>
