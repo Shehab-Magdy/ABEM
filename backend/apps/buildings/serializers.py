@@ -115,7 +115,7 @@ class BuildingSerializer(serializers.ModelSerializer):
         for i in range(1, building.num_apartments + 1):
             units.append(Apartment(
                 building=building,
-                unit_number=f"A{i}",
+                unit_number=f"A{i:02d}",
                 floor=self._apt_floor(i, building.num_apartments, num_floors),
                 unit_type="apartment",
                 status="vacant",
@@ -123,7 +123,7 @@ class BuildingSerializer(serializers.ModelSerializer):
         for i in range(1, building.num_stores + 1):
             units.append(Apartment(
                 building=building,
-                unit_number=f"S{i}",
+                unit_number=f"S{i:02d}",
                 floor=0,  # ground floor for commercial units
                 unit_type="store",
                 status="vacant",
@@ -155,9 +155,9 @@ class BuildingSerializer(serializers.ModelSerializer):
                 .values_list("unit_number", flat=True)
             )
             for i in range(1, building.num_apartments + 1):
-                if f"A{i}" not in existing:
+                if f"A{i:02d}" not in existing:
                     units.append(Apartment(
-                        building=building, unit_number=f"A{i}",
+                        building=building, unit_number=f"A{i:02d}",
                         floor=self._apt_floor(i, building.num_apartments, num_floors),
                         unit_type="apartment", status="vacant",
                     ))
@@ -167,9 +167,9 @@ class BuildingSerializer(serializers.ModelSerializer):
                 .values_list("unit_number", flat=True)
             )
             for i in range(1, building.num_stores + 1):
-                if f"S{i}" not in existing:
+                if f"S{i:02d}" not in existing:
                     units.append(Apartment(
-                        building=building, unit_number=f"S{i}",
+                        building=building, unit_number=f"S{i:02d}",
                         floor=0, unit_type="store", status="vacant",
                     ))
         if units:
