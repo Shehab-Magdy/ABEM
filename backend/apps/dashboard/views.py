@@ -106,12 +106,59 @@ class AdminDashboardView(APIView):
             "vacant": all_apts.filter(status="vacant").count(),
         }
 
+        # ── Payment collection progress ───────────────────────────────────────
+        from apps.expenses.models import ApartmentExpense
+        billed_apt_ids = list(
+            ApartmentExpense.objects.filter(
+                expense__building__in=buildings,
+                expense__deleted_at__isnull=True,
+            ).values_list("apartment_id", flat=True).distinct()
+        )
+        total_billed = len(billed_apt_ids)
+        paid_count = Apartment.objects.filter(
+            id__in=billed_apt_ids, balance__lte=0
+        ).count()
+        payment_coverage = {
+            "total_billed": total_billed,
+            "paid": paid_count,
+        }
+
+        # ── Unpaid units table ────────────────────────────────────────────────
+        unpaid_units = list(
+            Apartment.objects.filter(building__in=buildings, balance__gt=0)
+            .select_related("building")
+            .order_by("-balance")
+            .values(
+                "unit_number",
+                "balance",
+                "building__name",
+                "owner__first_name",
+                "owner__last_name",
+                "owner__email",
+            )[:50]
+        )
+        unpaid_rows = [
+            {
+                "unit_number": r["unit_number"],
+                "balance": str(r["balance"]),
+                "building_name": r["building__name"] or "",
+                "owner_name": (
+                    f"{r['owner__first_name'] or ''} {r['owner__last_name'] or ''}".strip()
+                    or r["owner__email"] or "—"
+                ),
+                "owner_email": r["owner__email"] or "",
+            }
+            for r in unpaid_units
+        ]
+
         return Response({
-            "total_income":     str(total_income),
-            "total_expenses":   str(total_expenses),
-            "overdue_count":    overdue_count,
-            "monthly_trend":    monthly_trend,
-            "building_summary": building_summary,
+            "total_income":      str(total_income),
+            "total_expenses":    str(total_expenses),
+            "overdue_count":     overdue_count,
+            "monthly_trend":     monthly_trend,
+            "building_summary":  building_summary,
+            "payment_coverage":  payment_coverage,
+            "unpaid_units":      unpaid_rows,
         })
 
 

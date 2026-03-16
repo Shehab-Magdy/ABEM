@@ -12,9 +12,18 @@ import {
   FormControl,
   Grid,
   InputLabel,
+  LinearProgress,
   MenuItem,
+  Paper,
   Select,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
   TextField,
+  Tooltip,
   Typography,
   Alert,
   Button,
@@ -214,6 +223,86 @@ export default function AdminDashboardPage() {
               </Box>
             </CardContent>
           </Card>
+
+          {/* ── Payment collection progress ── */}
+          {data?.payment_coverage && (
+            <Card sx={{ mb: 3 }}>
+              <CardContent>
+                <Typography variant="h6" gutterBottom>
+                  Payment Collection Progress
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                  Units that have settled their balance out of all billed units
+                </Typography>
+                {data.payment_coverage.total_billed === 0 ? (
+                  <Typography variant="body2" color="text.secondary">No billed units yet.</Typography>
+                ) : (
+                  <>
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 0.5 }}>
+                      <Box sx={{ flex: 1 }}>
+                        <Tooltip
+                          title={`${data.payment_coverage.paid} of ${data.payment_coverage.total_billed} units settled`}
+                        >
+                          <LinearProgress
+                            variant="determinate"
+                            value={(data.payment_coverage.paid / data.payment_coverage.total_billed) * 100}
+                            color={data.payment_coverage.paid === data.payment_coverage.total_billed ? "success" : "primary"}
+                            sx={{ height: 12, borderRadius: 6 }}
+                          />
+                        </Tooltip>
+                      </Box>
+                      <Typography variant="body2" fontWeight={600} sx={{ minWidth: 80 }}>
+                        {data.payment_coverage.paid} / {data.payment_coverage.total_billed}
+                      </Typography>
+                      {data.payment_coverage.paid === data.payment_coverage.total_billed && (
+                        <Chip label="All Paid" color="success" size="small" />
+                      )}
+                    </Box>
+                    <Typography variant="caption" color="text.secondary">
+                      {data.payment_coverage.total_billed - data.payment_coverage.paid} unit(s) still have an outstanding balance
+                    </Typography>
+                  </>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* ── Unpaid dues table ── */}
+          {data?.unpaid_units?.length > 0 && (
+            <Card sx={{ mb: 3 }}>
+              <CardContent>
+                <Typography variant="h6" gutterBottom>
+                  Outstanding Balances
+                </Typography>
+                <TableContainer component={Paper} variant="outlined">
+                  <Table size="small">
+                    <TableHead>
+                      <TableRow sx={{ bgcolor: "grey.100" }}>
+                        <TableCell><strong>Unit</strong></TableCell>
+                        <TableCell><strong>Building</strong></TableCell>
+                        <TableCell><strong>Owner</strong></TableCell>
+                        <TableCell><strong>Email</strong></TableCell>
+                        <TableCell align="right"><strong>Balance Due (EGP)</strong></TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {data.unpaid_units.map((row, i) => (
+                        <TableRow key={i} hover>
+                          <TableCell>{row.unit_number}</TableCell>
+                          <TableCell>{row.building_name}</TableCell>
+                          <TableCell>{row.owner_name}</TableCell>
+                          <TableCell>{row.owner_email}</TableCell>
+                          <TableCell align="right" sx={{ color: "error.main", fontWeight: 600 }}>
+                            {parseFloat(row.balance).toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              </CardContent>
+            </Card>
+          )}
 
           {/* ── Monthly trend chart ── */}
           <Card>
