@@ -38,7 +38,7 @@ class PaymentViewSet(ModelViewSet):
     # ── Scoping & filtering ─────────────────────────────────────────────────────
 
     def get_queryset(self):
-        qs = Payment.objects.select_related("apartment", "expense", "recorded_by")
+        qs = Payment.objects.select_related("apartment", "recorded_by").prefetch_related("expenses")
 
         if self.request.user.role != "admin":
             # Owners see only payments for their own apartments
@@ -133,6 +133,10 @@ class PaymentViewSet(ModelViewSet):
                 from rest_framework.exceptions import PermissionDenied
                 raise PermissionDenied("You do not have permission to view this receipt.")
 
+        def _safe(text: str) -> str:
+            """Encode to Latin-1, replacing any non-Latin-1 chars. Helvetica requires this."""
+            return text.encode("latin-1", errors="replace").decode("latin-1")
+
         buf = io.BytesIO()
         width, height = A4
         c = rl_canvas.Canvas(buf, pagesize=A4)
@@ -160,19 +164,26 @@ class PaymentViewSet(ModelViewSet):
         c.drawString(width / 2, y - 10 * mm, "UNIT")
         c.setFillColor(colors.black)
         c.setFont("Helvetica", 11)
-        c.drawString(20 * mm, y - 20 * mm, apt.building.name)
-        c.drawString(width / 2, y - 20 * mm, f"Unit {apt.unit_number}  |  {apt.get_unit_type_display()}")
+        c.drawString(20 * mm, y - 20 * mm, _safe(apt.building.name))
+        c.drawString(width / 2, y - 20 * mm, _safe(f"Unit {apt.unit_number}  |  {apt.get_unit_type_display()}"))
 
         # ── Payment details ─────────────────────────────────────────────────────
         y -= 45 * mm
+        linked_expenses = payment.expenses.all()
+        expense_str = (
+            ", ".join(_safe(e.title) for e in linked_expenses)
+            if linked_expenses
+            else "General payment"
+        )
         fields = [
             ("Amount Paid",    f"{payment.amount_paid:,.2f} EGP"),
             ("Payment Date",   str(payment.payment_date)),
             ("Payment Method", payment.payment_method.replace("_", " ").title()),
+            ("For Expenses",   expense_str),
             ("Balance Before", f"{payment.balance_before:,.2f} EGP"),
             ("Balance After",  f"{payment.balance_after:,.2f} EGP"),
-            ("Recorded By",    str(payment.recorded_by or "—")),
-            ("Notes",          payment.notes or "—"),
+            ("Recorded By",    _safe(str(payment.recorded_by or "-"))),
+            ("Notes",          _safe(payment.notes or "-")),
         ]
         row_h = 12 * mm
         for label, value in fields:
