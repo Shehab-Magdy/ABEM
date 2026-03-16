@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate, Link as RouterLink } from "react-router-dom";
+import { useNavigate, Link as RouterLink, useSearchParams } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import {
   Alert,
@@ -22,20 +22,24 @@ import { useAuthStore } from "../../contexts/authStore";
 export default function LoginPage() {
   const navigate = useNavigate();
   const { login } = useAuthStore();
+  const [searchParams] = useSearchParams();
 
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState(null);
+  const [errorCode, setErrorCode] = useState(null);
   const [lockoutUntil, setLockoutUntil] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
 
   const {
     register,
     handleSubmit,
+    getValues,
     formState: { errors },
-  } = useForm();
+  } = useForm({ defaultValues: { email: searchParams.get("email") || "" } });
 
   const onSubmit = async (data) => {
     setError(null);
+    setErrorCode(null);
     setLockoutUntil(null);
     setIsLoading(true);
     try {
@@ -44,18 +48,20 @@ export default function LoginPage() {
       login(user, access, refresh);
       navigate("/dashboard", { replace: true });
     } catch (err) {
-      const status = err.response?.status;
-      const data = err.response?.data;
+      const httpStatus = err.response?.status;
+      const resData = err.response?.data;
+      const code = resData?.code || null;
       const detail =
-        data?.detail ||
-        data?.non_field_errors?.[0] ||
-        data?.email?.[0] ||
-        data?.password?.[0] ||
-        (status === 401 ? "Invalid email or password." : "An unexpected error occurred.");
+        resData?.detail ||
+        resData?.non_field_errors?.[0] ||
+        resData?.email?.[0] ||
+        resData?.password?.[0] ||
+        (httpStatus === 401 ? "Invalid email or password." : "An unexpected error occurred.");
 
-      if (status === 423) {
+      if (httpStatus === 423) {
         setLockoutUntil(err.response.data.locked_until);
       } else {
+        setErrorCode(code);
         setError(detail);
       }
     } finally {
@@ -94,7 +100,22 @@ export default function LoginPage() {
 
           {/* Generic error */}
           {error && !lockoutUntil && (
-            <Alert severity="error" sx={{ mb: 2 }}>
+            <Alert
+              severity="error"
+              sx={{ mb: 2 }}
+              action={
+                errorCode === "email_not_found" ? (
+                  <Button
+                    color="inherit"
+                    size="small"
+                    component={RouterLink}
+                    to={`/register?email=${encodeURIComponent(getValues("email"))}`}
+                  >
+                    Create account
+                  </Button>
+                ) : undefined
+              }
+            >
               {error}
             </Alert>
           )}
