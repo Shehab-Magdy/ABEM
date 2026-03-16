@@ -179,6 +179,22 @@ class ExpenseViewSet(ModelViewSet):
         )
 
     def perform_destroy(self, instance):
+        from django.core.files.storage import default_storage
+
+        # Delete physical files and MediaFile records before soft-deleting
+        media_files = MediaFile.objects.filter(entity_type="expense", entity_id=instance.pk)
+        for mf in media_files:
+            try:
+                # url is typically "/media/expenses/<file>" — derive storage path
+                storage_name = mf.url.lstrip("/")
+                if storage_name.startswith("media/"):
+                    storage_name = storage_name[len("media/"):]
+                if default_storage.exists(storage_name):
+                    default_storage.delete(storage_name)
+            except Exception:
+                pass
+        media_files.delete()
+
         log_action(
             user=self.request.user,
             action="delete",
