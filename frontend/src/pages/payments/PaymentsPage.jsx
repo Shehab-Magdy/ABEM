@@ -385,10 +385,23 @@ export default function PaymentsPage() {
                       onClick={async () => {
                         try {
                           const res = await paymentsApi.receipt(p.id);
-                          const url = URL.createObjectURL(res.data);
-                          window.open(url, "_blank");
-                        } catch {
-                          alert("Could not load receipt.");
+                          const blob = new Blob([res.data], { type: "application/pdf" });
+                          const url = URL.createObjectURL(blob);
+                          const link = document.createElement("a");
+                          link.href = url;
+                          link.target = "_blank";
+                          link.rel = "noopener noreferrer";
+                          document.body.appendChild(link);
+                          link.click();
+                          document.body.removeChild(link);
+                          setTimeout(() => URL.revokeObjectURL(url), 10000);
+                        } catch (err) {
+                          if (err?.response?.status === 401) {
+                            alert("Session expired. Please log in again.");
+                            window.location.replace("/login");
+                          } else {
+                            alert("Could not load receipt. Please try again.");
+                          }
                         }
                       }}
                     >
