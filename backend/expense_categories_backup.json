@@ -2,550 +2,145 @@
   {
     "name": "Cleaning",
     "description": "Cleaning and janitorial services",
-    "icon": "category",
+    "icon": "cleaning_services",
+    "color": "#10B981",
+    "building__name": "Home",
+    "parent__name": null,
+    "is_active": true
+  },
+  {
+    "name": "Elevator",
+    "description": "Elevator servicing, repairs, and inspection",
+    "icon": "elevator",
+    "color": "#EA580C",
+    "building__name": "Home",
+    "parent__name": null,
+    "is_active": true
+  },
+  {
+    "name": "Fire Safety",
+    "description": "Fire extinguishers, alarms, and inspections",
+    "icon": "fire_extinguisher",
+    "color": "#EF4444",
+    "building__name": "Home",
+    "parent__name": null,
+    "is_active": true
+  },
+  {
+    "name": "Insurance",
+    "description": "Building and common area insurance premiums",
+    "icon": "shield",
+    "color": "#0369A1",
+    "building__name": "Home",
+    "parent__name": null,
+    "is_active": true
+  },
+  {
+    "name": "Internet & Cable",
+    "description": "Shared internet, satellite, and cable TV",
+    "icon": "wifi",
+    "color": "#6366F1",
+    "building__name": "Home",
+    "parent__name": null,
+    "is_active": true
+  },
+  {
+    "name": "Landscaping",
+    "description": "Gardens, green areas, and outdoor spaces",
+    "icon": "yard",
+    "color": "#16A34A",
+    "building__name": "Home",
+    "parent__name": null,
+    "is_active": true
+  },
+  {
+    "name": "Maintenance",
+    "description": "General repairs and structural upkeep",
+    "icon": "build",
     "color": "#2563EB",
-    "building__name": "betna",
+    "building__name": "Home",
     "parent__name": null,
     "is_active": true
   },
   {
-    "name": "Cleaning",
-    "description": "Cleaning and janitorial services",
-    "icon": "cleaning_services",
-    "color": "#10B981",
-    "building__name": "ss",
+    "name": "Management",
+    "description": "Administrative and property management fees",
+    "icon": "admin_panel_settings",
+    "color": "#1F2937",
+    "building__name": "Home",
     "parent__name": null,
     "is_active": true
   },
   {
-    "name": "Cleaning",
-    "description": "Cleaning and janitorial services",
-    "icon": "cleaning_services",
-    "color": "#10B981",
-    "building__name": "home",
+    "name": "Other",
+    "description": "Miscellaneous and one-off expenses",
+    "icon": "category",
+    "color": "#6B7280",
+    "building__name": "Home",
     "parent__name": null,
     "is_active": true
   },
   {
-    "name": "Cleaning",
-    "description": "Cleaning and janitorial services",
-    "icon": "cleaning_services",
-    "color": "#10B981",
-    "building__name": "beyot",
+    "name": "Parking",
+    "description": "Parking area maintenance and management",
+    "icon": "local_parking",
+    "color": "#64748B",
+    "building__name": "Home",
     "parent__name": null,
     "is_active": true
   },
   {
-    "name": "Electricity bill",
-    "description": "monthly building electricity bill",
-    "icon": "Electricity",
-    "color": "#2f63ff",
-    "building__name": "betna",
+    "name": "Pest Control",
+    "description": "Pest and rodent extermination services",
+    "icon": "pest_control",
+    "color": "#DC2626",
+    "building__name": "Home",
+    "parent__name": null,
+    "is_active": true
+  },
+  {
+    "name": "Plumbing",
+    "description": "Plumbing repairs and water system maintenance",
+    "icon": "plumbing",
+    "color": "#0EA5E9",
+    "building__name": "Home",
+    "parent__name": null,
+    "is_active": true
+  },
+  {
+    "name": "Security",
+    "description": "Guards, cameras, and access control systems",
+    "icon": "security",
+    "color": "#7C3AED",
+    "building__name": "Home",
+    "parent__name": null,
+    "is_active": true
+  },
+  {
+    "name": "Utilities",
+    "description": "Electricity, water, gas, and fuel",
+    "icon": "bolt",
+    "color": "#F59E0B",
+    "building__name": "Home",
+    "parent__name": null,
+    "is_active": true
+  },
+  {
+    "name": "Waste Management",
+    "description": "Waste collection and recycling services",
+    "icon": "delete_sweep",
+    "color": "#78716C",
+    "building__name": "Home",
+    "parent__name": null,
+    "is_active": true
+  },
+  {
+    "name": "Water Bill",
+    "description": "Water Bill",
+    "icon": "Water",
+    "color": "#2563EB",
+    "building__name": "Home",
     "parent__name": "Management",
-    "is_active": true
-  },
-  {
-    "name": "Elevator",
-    "description": "Elevator servicing, repairs, and inspection",
-    "icon": "elevator",
-    "color": "#EA580C",
-    "building__name": "beyot",
-    "parent__name": null,
-    "is_active": true
-  },
-  {
-    "name": "Elevator",
-    "description": "Elevator servicing, repairs, and inspection",
-    "icon": "elevator",
-    "color": "#EA580C",
-    "building__name": "home",
-    "parent__name": null,
-    "is_active": true
-  },
-  {
-    "name": "Elevator",
-    "description": "Elevator servicing, repairs, and inspection",
-    "icon": "elevator",
-    "color": "#EA580C",
-    "building__name": "ss",
-    "parent__name": null,
-    "is_active": true
-  },
-  {
-    "name": "Elevator",
-    "description": "Elevator servicing, repairs, and inspection",
-    "icon": "elevator",
-    "color": "#EA580C",
-    "building__name": "betna",
-    "parent__name": null,
-    "is_active": true
-  },
-  {
-    "name": "Fire Safety",
-    "description": "Fire extinguishers, alarms, and inspections",
-    "icon": "fire_extinguisher",
-    "color": "#EF4444",
-    "building__name": "home",
-    "parent__name": null,
-    "is_active": true
-  },
-  {
-    "name": "Fire Safety",
-    "description": "Fire extinguishers, alarms, and inspections",
-    "icon": "fire_extinguisher",
-    "color": "#EF4444",
-    "building__name": "beyot",
-    "parent__name": null,
-    "is_active": true
-  },
-  {
-    "name": "Fire Safety",
-    "description": "Fire extinguishers, alarms, and inspections",
-    "icon": "fire_extinguisher",
-    "color": "#EF4444",
-    "building__name": "betna",
-    "parent__name": null,
-    "is_active": true
-  },
-  {
-    "name": "Fire Safety",
-    "description": "Fire extinguishers, alarms, and inspections",
-    "icon": "fire_extinguisher",
-    "color": "#EF4444",
-    "building__name": "ss",
-    "parent__name": null,
-    "is_active": true
-  },
-  {
-    "name": "Insurance",
-    "description": "Building and common area insurance premiums",
-    "icon": "shield",
-    "color": "#0369A1",
-    "building__name": "beyot",
-    "parent__name": null,
-    "is_active": true
-  },
-  {
-    "name": "Insurance",
-    "description": "Building and common area insurance premiums",
-    "icon": "shield",
-    "color": "#0369A1",
-    "building__name": "ss",
-    "parent__name": null,
-    "is_active": true
-  },
-  {
-    "name": "Insurance",
-    "description": "Building and common area insurance premiums",
-    "icon": "shield",
-    "color": "#0369A1",
-    "building__name": "betna",
-    "parent__name": null,
-    "is_active": true
-  },
-  {
-    "name": "Insurance",
-    "description": "Building and common area insurance premiums",
-    "icon": "shield",
-    "color": "#0369A1",
-    "building__name": "home",
-    "parent__name": null,
-    "is_active": true
-  },
-  {
-    "name": "Internet & Cable",
-    "description": "Shared internet, satellite, and cable TV",
-    "icon": "wifi",
-    "color": "#6366F1",
-    "building__name": "ss",
-    "parent__name": null,
-    "is_active": true
-  },
-  {
-    "name": "Internet & Cable",
-    "description": "Shared internet, satellite, and cable TV",
-    "icon": "wifi",
-    "color": "#6366F1",
-    "building__name": "home",
-    "parent__name": null,
-    "is_active": true
-  },
-  {
-    "name": "Internet & Cable",
-    "description": "Shared internet, satellite, and cable TV",
-    "icon": "wifi",
-    "color": "#6366F1",
-    "building__name": "beyot",
-    "parent__name": null,
-    "is_active": true
-  },
-  {
-    "name": "Internet & Cable",
-    "description": "Shared internet, satellite, and cable TV",
-    "icon": "wifi",
-    "color": "#6366F1",
-    "building__name": "betna",
-    "parent__name": null,
-    "is_active": true
-  },
-  {
-    "name": "Landscaping",
-    "description": "Gardens, green areas, and outdoor spaces",
-    "icon": "yard",
-    "color": "#16A34A",
-    "building__name": "home",
-    "parent__name": null,
-    "is_active": true
-  },
-  {
-    "name": "Landscaping",
-    "description": "Gardens, green areas, and outdoor spaces",
-    "icon": "yard",
-    "color": "#16A34A",
-    "building__name": "ss",
-    "parent__name": null,
-    "is_active": true
-  },
-  {
-    "name": "Landscaping",
-    "description": "Gardens, green areas, and outdoor spaces",
-    "icon": "yard",
-    "color": "#16A34A",
-    "building__name": "beyot",
-    "parent__name": null,
-    "is_active": true
-  },
-  {
-    "name": "Landscaping",
-    "description": "Gardens, green areas, and outdoor spaces",
-    "icon": "yard",
-    "color": "#16A34A",
-    "building__name": "betna",
-    "parent__name": null,
-    "is_active": true
-  },
-  {
-    "name": "Maintenance",
-    "description": "General repairs and structural upkeep",
-    "icon": "build",
-    "color": "#2563EB",
-    "building__name": "ss",
-    "parent__name": null,
-    "is_active": true
-  },
-  {
-    "name": "Maintenance",
-    "description": "Repairs and upkeep",
-    "icon": "category",
-    "color": "#2563EB",
-    "building__name": "betna",
-    "parent__name": null,
-    "is_active": true
-  },
-  {
-    "name": "Maintenance",
-    "description": "General repairs and structural upkeep",
-    "icon": "build",
-    "color": "#2563EB",
-    "building__name": "home",
-    "parent__name": null,
-    "is_active": true
-  },
-  {
-    "name": "Maintenance",
-    "description": "General repairs and structural upkeep",
-    "icon": "build",
-    "color": "#2563EB",
-    "building__name": "beyot",
-    "parent__name": null,
-    "is_active": true
-  },
-  {
-    "name": "Management",
-    "description": "Administrative and property management fees",
-    "icon": "admin_panel_settings",
-    "color": "#1F2937",
-    "building__name": "beyot",
-    "parent__name": null,
-    "is_active": true
-  },
-  {
-    "name": "Management",
-    "description": "Administrative and property management fees",
-    "icon": "admin_panel_settings",
-    "color": "#1F2937",
-    "building__name": "home",
-    "parent__name": null,
-    "is_active": true
-  },
-  {
-    "name": "Management",
-    "description": "Administrative and management fees",
-    "icon": "category",
-    "color": "#2563EB",
-    "building__name": "betna",
-    "parent__name": null,
-    "is_active": true
-  },
-  {
-    "name": "Management",
-    "description": "Administrative and property management fees",
-    "icon": "admin_panel_settings",
-    "color": "#1F2937",
-    "building__name": "ss",
-    "parent__name": null,
-    "is_active": true
-  },
-  {
-    "name": "Other",
-    "description": "Miscellaneous and one-off expenses",
-    "icon": "category",
-    "color": "#6B7280",
-    "building__name": "home",
-    "parent__name": null,
-    "is_active": true
-  },
-  {
-    "name": "Other",
-    "description": "Miscellaneous and one-off expenses",
-    "icon": "category",
-    "color": "#6B7280",
-    "building__name": "beyot",
-    "parent__name": null,
-    "is_active": true
-  },
-  {
-    "name": "Other",
-    "description": "Miscellaneous expenses",
-    "icon": "category",
-    "color": "#2563EB",
-    "building__name": "betna",
-    "parent__name": null,
-    "is_active": false
-  },
-  {
-    "name": "Other",
-    "description": "Miscellaneous and one-off expenses",
-    "icon": "category",
-    "color": "#6B7280",
-    "building__name": "ss",
-    "parent__name": null,
-    "is_active": true
-  },
-  {
-    "name": "Parking",
-    "description": "Parking area maintenance and management",
-    "icon": "local_parking",
-    "color": "#64748B",
-    "building__name": "ss",
-    "parent__name": null,
-    "is_active": true
-  },
-  {
-    "name": "Parking",
-    "description": "Parking area maintenance and management",
-    "icon": "local_parking",
-    "color": "#64748B",
-    "building__name": "betna",
-    "parent__name": null,
-    "is_active": true
-  },
-  {
-    "name": "Parking",
-    "description": "Parking area maintenance and management",
-    "icon": "local_parking",
-    "color": "#64748B",
-    "building__name": "beyot",
-    "parent__name": null,
-    "is_active": true
-  },
-  {
-    "name": "Parking",
-    "description": "Parking area maintenance and management",
-    "icon": "local_parking",
-    "color": "#64748B",
-    "building__name": "home",
-    "parent__name": null,
-    "is_active": true
-  },
-  {
-    "name": "Pest Control",
-    "description": "Pest and rodent extermination services",
-    "icon": "pest_control",
-    "color": "#DC2626",
-    "building__name": "beyot",
-    "parent__name": null,
-    "is_active": true
-  },
-  {
-    "name": "Pest Control",
-    "description": "Pest and rodent extermination services",
-    "icon": "pest_control",
-    "color": "#DC2626",
-    "building__name": "home",
-    "parent__name": null,
-    "is_active": true
-  },
-  {
-    "name": "Pest Control",
-    "description": "Pest and rodent extermination services",
-    "icon": "pest_control",
-    "color": "#DC2626",
-    "building__name": "ss",
-    "parent__name": null,
-    "is_active": true
-  },
-  {
-    "name": "Pest Control",
-    "description": "Pest and rodent extermination services",
-    "icon": "pest_control",
-    "color": "#DC2626",
-    "building__name": "betna",
-    "parent__name": null,
-    "is_active": true
-  },
-  {
-    "name": "Plumbing",
-    "description": "Plumbing repairs and water system maintenance",
-    "icon": "plumbing",
-    "color": "#0EA5E9",
-    "building__name": "beyot",
-    "parent__name": null,
-    "is_active": true
-  },
-  {
-    "name": "Plumbing",
-    "description": "Plumbing repairs and water system maintenance",
-    "icon": "plumbing",
-    "color": "#0EA5E9",
-    "building__name": "betna",
-    "parent__name": null,
-    "is_active": true
-  },
-  {
-    "name": "Plumbing",
-    "description": "Plumbing repairs and water system maintenance",
-    "icon": "plumbing",
-    "color": "#0EA5E9",
-    "building__name": "home",
-    "parent__name": null,
-    "is_active": true
-  },
-  {
-    "name": "Plumbing",
-    "description": "Plumbing repairs and water system maintenance",
-    "icon": "plumbing",
-    "color": "#0EA5E9",
-    "building__name": "ss",
-    "parent__name": null,
-    "is_active": true
-  },
-  {
-    "name": "Security",
-    "description": "Guards, cameras, and access control systems",
-    "icon": "security",
-    "color": "#7C3AED",
-    "building__name": "ss",
-    "parent__name": null,
-    "is_active": true
-  },
-  {
-    "name": "Security",
-    "description": "Guards, cameras, and access control systems",
-    "icon": "security",
-    "color": "#7C3AED",
-    "building__name": "home",
-    "parent__name": null,
-    "is_active": true
-  },
-  {
-    "name": "Security",
-    "description": "Security personnel and systems",
-    "icon": "category",
-    "color": "#2563EB",
-    "building__name": "betna",
-    "parent__name": null,
-    "is_active": true
-  },
-  {
-    "name": "Security",
-    "description": "Guards, cameras, and access control systems",
-    "icon": "security",
-    "color": "#7C3AED",
-    "building__name": "beyot",
-    "parent__name": null,
-    "is_active": true
-  },
-  {
-    "name": "Utilities",
-    "description": "Electricity, water, gas, and fuel",
-    "icon": "bolt",
-    "color": "#F59E0B",
-    "building__name": "beyot",
-    "parent__name": null,
-    "is_active": true
-  },
-  {
-    "name": "Utilities",
-    "description": "Electricity, water, and gas",
-    "icon": "category",
-    "color": "#2563EB",
-    "building__name": "betna",
-    "parent__name": null,
-    "is_active": true
-  },
-  {
-    "name": "Utilities",
-    "description": "Electricity, water, gas, and fuel",
-    "icon": "bolt",
-    "color": "#F59E0B",
-    "building__name": "ss",
-    "parent__name": null,
-    "is_active": true
-  },
-  {
-    "name": "Utilities",
-    "description": "Electricity, water, gas, and fuel",
-    "icon": "bolt",
-    "color": "#F59E0B",
-    "building__name": "home",
-    "parent__name": null,
-    "is_active": true
-  },
-  {
-    "name": "Waste Management",
-    "description": "Waste collection and recycling services",
-    "icon": "delete_sweep",
-    "color": "#78716C",
-    "building__name": "ss",
-    "parent__name": null,
-    "is_active": true
-  },
-  {
-    "name": "Waste Management",
-    "description": "Waste collection and recycling services",
-    "icon": "delete_sweep",
-    "color": "#78716C",
-    "building__name": "beyot",
-    "parent__name": null,
-    "is_active": true
-  },
-  {
-    "name": "Waste Management",
-    "description": "Waste collection and recycling services",
-    "icon": "delete_sweep",
-    "color": "#78716C",
-    "building__name": "betna",
-    "parent__name": null,
-    "is_active": true
-  },
-  {
-    "name": "Waste Management",
-    "description": "Waste collection and recycling services",
-    "icon": "delete_sweep",
-    "color": "#78716C",
-    "building__name": "home",
-    "parent__name": null,
     "is_active": true
   }
 ]
