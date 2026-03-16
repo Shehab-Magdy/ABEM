@@ -109,6 +109,13 @@ class NotificationViewSet(ReadOnlyModelViewSet):
                recipient_type: "all"|"admins"|"owners"|"individual",
                recipient_ids: []}
         """
+        # Enforce messaging restrictions
+        if request.user.messaging_blocked:
+            return Response(
+                {"detail": "You have been blocked from sending messages."},
+                status=403,
+            )
+
         building_id = request.data.get("building_id")
         title = request.data.get("title", "").strip()
         message = request.data.get("message", "").strip()
@@ -144,6 +151,11 @@ class NotificationViewSet(ReadOnlyModelViewSet):
                 userbuilding__building=building, role="owner"
             ).distinct()
         elif recipient_type == "individual":
+            if request.user.individual_messaging_blocked:
+                return Response(
+                    {"detail": "You have been blocked from sending individual messages."},
+                    status=403,
+                )
             if not recipient_ids:
                 return Response({"detail": "recipient_ids is required for individual send."}, status=400)
             recipients = User.objects.filter(

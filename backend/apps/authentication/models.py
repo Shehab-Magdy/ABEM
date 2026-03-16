@@ -42,6 +42,10 @@ class User(AbstractBaseUser, PermissionsMixin):
     failed_login_attempts = models.PositiveSmallIntegerField(default=0)
     locked_until = models.DateTimeField(null=True, blank=True)
 
+    # Messaging restrictions (set by admins)
+    messaging_blocked = models.BooleanField(default=False)
+    individual_messaging_blocked = models.BooleanField(default=False)
+
     # Notification preferences (JSON flags)
     notification_preferences = models.JSONField(default=dict, blank=True)
 

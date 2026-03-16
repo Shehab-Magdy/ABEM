@@ -9,4 +9,5 @@ export const usersApi = {
   deactivate: (id) => axiosClient.post(`/users/${id}/deactivate/`),
   activate: (id) => axiosClient.post(`/users/${id}/activate/`),
   resetPassword: (id, data) => axiosClient.post(`/users/${id}/reset-password/`, data),
+  setMessagingBlock: (id, data) => axiosClient.post(`/users/${id}/set-messaging-block/`, data),
 };

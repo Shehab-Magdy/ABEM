@@ -8,9 +8,11 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  FormControlLabel,
   IconButton,
   MenuItem,
   Stack,
+  Switch,
   TextField,
   Tooltip,
   Typography,
@@ -21,6 +23,7 @@ import {
   Block,
   CheckCircleOutline,
   LockReset,
+  SpeakerNotesOff,
 } from "@mui/icons-material";
 import { useForm } from "react-hook-form";
 import { usersApi } from "../../api/usersApi";
@@ -61,6 +64,13 @@ export default function UsersPage() {
   const [resetError, setResetError] = useState(null);
   const [resetting, setResetting] = useState(false);
   const resetForm = useForm();
+
+  // Messaging restrictions dialog
+  const [msgTarget, setMsgTarget] = useState(null);
+  const [msgBlocked, setMsgBlocked] = useState(false);
+  const [msgIndividualBlocked, setMsgIndividualBlocked] = useState(false);
+  const [msgSaving, setMsgSaving] = useState(false);
+  const [msgError, setMsgError] = useState(null);
 
   // ── Fetch users ─────────────────────────────────────────────────────────────
   const fetchUsers = useCallback(async () => {
@@ -126,6 +136,31 @@ export default function UsersPage() {
     }
   };
 
+  // ── Messaging restrictions ──────────────────────────────────────────────────
+  const openMsgDialog = (user) => {
+    setMsgTarget(user);
+    setMsgBlocked(user.messaging_blocked);
+    setMsgIndividualBlocked(user.individual_messaging_blocked);
+    setMsgError(null);
+  };
+
+  const saveMsgRestrictions = async () => {
+    setMsgSaving(true);
+    setMsgError(null);
+    try {
+      await usersApi.setMessagingBlock(msgTarget.id, {
+        messaging_blocked: msgBlocked,
+        individual_messaging_blocked: msgIndividualBlocked,
+      });
+      setMsgTarget(null);
+      fetchUsers();
+    } catch (err) {
+      setMsgError(err.response?.data?.detail || "Failed to update messaging restrictions.");
+    } finally {
+      setMsgSaving(false);
+    }
+  };
+
   // ── DataGrid columns ────────────────────────────────────────────────────────
   const columns = [
     { field: "email", headerName: "Email", flex: 1.5, minWidth: 200 },
@@ -169,7 +204,7 @@ export default function UsersPage() {
     {
       field: "actions",
       headerName: "Actions",
-      width: 130,
+      width: 160,
       sortable: false,
       renderCell: ({ row }) => (
         <Stack direction="row" spacing={0.5}>
@@ -185,6 +220,15 @@ export default function UsersPage() {
           <Tooltip title="Reset password">
             <IconButton size="small" onClick={() => { setResetTarget(row); setResetError(null); }}>
               <LockReset fontSize="small" color="warning" />
+            </IconButton>
+          </Tooltip>
+          <Tooltip title="Messaging restrictions">
+            <IconButton
+              size="small"
+              onClick={() => openMsgDialog(row)}
+              color={row.messaging_blocked || row.individual_messaging_blocked ? "error" : "default"}
+            >
+              <SpeakerNotesOff fontSize="small" />
             </IconButton>
           </Tooltip>
         </Stack>
@@ -267,6 +311,46 @@ export default function UsersPage() {
             </Button>
           </DialogActions>
         </Box>
+      </Dialog>
+
+      {/* Messaging Restrictions Dialog */}
+      <Dialog open={!!msgTarget} onClose={() => setMsgTarget(null)} maxWidth="xs" fullWidth>
+        <DialogTitle>Messaging Restrictions — {msgTarget?.email}</DialogTitle>
+        <DialogContent>
+          {msgError && <Alert severity="error" sx={{ mb: 2 }}>{msgError}</Alert>}
+          <Stack spacing={1} sx={{ mt: 1 }}>
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={msgBlocked}
+                  onChange={(e) => {
+                    setMsgBlocked(e.target.checked);
+                    if (e.target.checked) setMsgIndividualBlocked(false);
+                  }}
+                  color="error"
+                />
+              }
+              label="Block all messaging"
+            />
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={msgIndividualBlocked}
+                  onChange={(e) => setMsgIndividualBlocked(e.target.checked)}
+                  disabled={msgBlocked}
+                  color="warning"
+                />
+              }
+              label="Block individual (direct) messages only"
+            />
+          </Stack>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button onClick={() => setMsgTarget(null)}>Cancel</Button>
+          <Button variant="contained" color="error" disabled={msgSaving} onClick={saveMsgRestrictions}>
+            {msgSaving ? "Saving…" : "Save"}
+          </Button>
+        </DialogActions>
       </Dialog>
     </Box>
   );

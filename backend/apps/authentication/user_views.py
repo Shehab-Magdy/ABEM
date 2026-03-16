@@ -91,6 +91,42 @@ class UserViewSet(AuditLogMixin, ModelViewSet):
         )
         return Response({"detail": f"User {user.email} activated."})
 
+    @action(detail=True, methods=["post"], url_path="set-messaging-block")
+    def set_messaging_block(self, request, pk=None):
+        """
+        POST /api/v1/users/{id}/set-messaging-block/
+        Body: {"messaging_blocked": bool, "individual_messaging_blocked": bool}
+        """
+        user = self.get_object()
+        data = request.data
+        update_fields = []
+
+        if "messaging_blocked" in data:
+            user.messaging_blocked = bool(data["messaging_blocked"])
+            update_fields.append("messaging_blocked")
+        if "individual_messaging_blocked" in data:
+            user.individual_messaging_blocked = bool(data["individual_messaging_blocked"])
+            update_fields.append("individual_messaging_blocked")
+
+        if not update_fields:
+            return Response(
+                {"detail": "Provide messaging_blocked or individual_messaging_blocked."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        user.save(update_fields=update_fields)
+        log_action(
+            user=request.user,
+            action="set_messaging_block",
+            entity="user",
+            entity_id=user.id,
+            request=request,
+        )
+        return Response({
+            "messaging_blocked": user.messaging_blocked,
+            "individual_messaging_blocked": user.individual_messaging_blocked,
+        })
+
     @action(detail=True, methods=["post"], url_path="reset-password")
     def reset_password(self, request, pk=None):
         user = self.get_object()
