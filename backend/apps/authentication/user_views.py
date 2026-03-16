@@ -3,6 +3,7 @@ Admin-only user management viewset.
 Mounted at /api/v1/users/ via config/urls.py.
 """
 from django.contrib.auth import get_user_model
+from django.db.models import Q
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.filters import SearchFilter, OrderingFilter
@@ -36,7 +37,6 @@ class UserViewSet(AuditLogMixin, ModelViewSet):
     POST   /api/v1/users/{id}/reset-password/ – admin-initiated password reset
     """
 
-    queryset = User.objects.filter(is_superuser=False).order_by("-created_at")
     permission_classes = [IsAdminRole]
     audit_entity = "user"
 
@@ -44,6 +44,28 @@ class UserViewSet(AuditLogMixin, ModelViewSet):
     filterset_fields = ["role", "is_active"]
     search_fields = ["email", "first_name", "last_name"]
     ordering_fields = ["created_at", "email", "role"]
+
+    def get_queryset(self):
+        from apps.buildings.models import Building
+
+        requesting_admin = self.request.user
+        building_id = self.request.query_params.get("building_id")
+        base = User.objects.filter(is_superuser=False)
+
+        if building_id:
+            # Scoped to members of one specific building (used by invite-owner autocomplete)
+            return base.filter(buildings__id=building_id).distinct().order_by("-created_at")
+
+        # Default: scope to users in buildings this admin manages (as primary admin or co-admin)
+        managed_ids = Building.objects.filter(
+            Q(admin=requesting_admin) | Q(co_admins=requesting_admin)
+        ).values_list("id", flat=True)
+
+        return base.filter(
+            Q(buildings__id__in=managed_ids)
+            | Q(administered_buildings__id__in=managed_ids)
+            | Q(co_administered_buildings__id__in=managed_ids)
+        ).distinct().order_by("-created_at")
 
     def get_serializer_class(self):
         if self.action == "create":
