@@ -2,7 +2,8 @@
  * Axios client with JWT interceptors.
  * - Attaches access token to every request.
  * - Automatically refreshes expired tokens (401) using the refresh token.
- * - On refresh failure, logs the user out.
+ * - On refresh failure, redirects to /401.
+ * - On 500, redirects to /500.
  */
 import axios from "axios";
 import { useAuthStore } from "../contexts/authStore";
@@ -68,10 +69,16 @@ axiosClient.interceptors.response.use(
       } catch (err) {
         processQueue(err, null);
         useAuthStore.getState().logout();
+        window.location.replace("/401");
         return Promise.reject(err);
       } finally {
         isRefreshing = false;
       }
+    }
+
+    // 500-range errors → server error page
+    if (error.response?.status >= 500) {
+      window.location.replace("/500");
     }
 
     return Promise.reject(error);

@@ -16,7 +16,7 @@ import OwnerDashboardPage from "../pages/dashboard/OwnerDashboardPage";
 import UsersPage from "../pages/users/UsersPage";
 import ProfilePage from "../pages/profile/ProfilePage";
 
-// Future sprints (stubs)
+// Feature pages
 import BuildingsPage from "../pages/buildings/BuildingsPage";
 import ExpensesPage from "../pages/expenses/ExpensesPage";
 import PaymentsPage from "../pages/payments/PaymentsPage";
@@ -25,17 +25,23 @@ import AuditLogPage from "../pages/audit/AuditLogPage";
 import ExpenseCategoriesPage from "../pages/expenses/ExpenseCategoriesPage";
 import AssetsPage from "../pages/assets/AssetsPage";
 
+// Error pages
+import NotFoundPage from "../pages/errors/NotFoundPage";
+import ForbiddenPage from "../pages/errors/ForbiddenPage";
+import UnauthorizedPage from "../pages/errors/UnauthorizedPage";
+import ServerErrorPage from "../pages/errors/ServerErrorPage";
+
 // ── Route guards ──────────────────────────────────────────────────────────────
 
 function RequireAuth({ children }) {
   const { accessToken } = useAuthStore();
-  return accessToken ? children : <Navigate to="/login" replace />;
+  return accessToken ? children : <UnauthorizedPage />;
 }
 
 function RequireAdmin({ children }) {
   const { user } = useAuthStore();
-  if (!user) return <Navigate to="/login" replace />;
-  if (user.role !== "admin") return <Navigate to="/dashboard" replace />;
+  if (!user) return <UnauthorizedPage />;
+  if (user.role !== "admin") return <ForbiddenPage />;
   return children;
 }
 
@@ -81,8 +87,13 @@ export default function AppRouter() {
         <Route path="assets" element={<RequireAdmin><AssetsPage /></RequireAdmin>} />
       </Route>
 
-      {/* Fallback */}
-      <Route path="*" element={<Navigate to="/" replace />} />
+      {/* Standalone error pages (navigable directly) */}
+      <Route path="/401" element={<UnauthorizedPage />} />
+      <Route path="/403" element={<ForbiddenPage />} />
+      <Route path="/500" element={<ServerErrorPage />} />
+
+      {/* 404 – catch-all */}
+      <Route path="*" element={<NotFoundPage />} />
     </Routes>
   );
 }
