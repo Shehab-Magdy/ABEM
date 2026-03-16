@@ -6,4 +6,6 @@ export const paymentsApi = {
   create: (data) => axiosClient.post("/payments/", data),
   getApartmentBalance: (apartmentId) =>
     axiosClient.get(`/apartments/${apartmentId}/balance/`),
+  receipt: (id) =>
+    axiosClient.get(`/payments/${id}/receipt/`, { responseType: "blob" }),
 };

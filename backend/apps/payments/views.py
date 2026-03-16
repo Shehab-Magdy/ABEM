@@ -108,39 +108,100 @@ class PaymentViewSet(ModelViewSet):
         detail=True,
         methods=["get"],
         url_path="receipt",
-        permission_classes=[IsAuthenticated, IsAdminRole],
+        permission_classes=[IsAuthenticated],
     )
     def receipt(self, request, pk=None):
         """
         GET /api/v1/payments/{id}/receipt/
 
-        Returns a single-page PDF receipt for the given payment.
+        Returns a formatted PDF receipt. Admin sees any payment; owners see
+        only payments for their own apartments.
         """
+        from reportlab.lib import colors
+        from reportlab.lib.pagesizes import A4
+        from reportlab.lib.units import mm
         from reportlab.pdfgen import canvas as rl_canvas
 
         payment = self.get_object()
 
+        # Owners may only view receipts for their own apartments
+        apt = payment.apartment
+        if request.user.role != "admin":
+            is_owner = (apt.owner == request.user) or apt.owners.filter(pk=request.user.pk).exists()
+            if not is_owner:
+                from rest_framework.exceptions import PermissionDenied
+                raise PermissionDenied("You do not have permission to view this receipt.")
+
         buf = io.BytesIO()
-        c = rl_canvas.Canvas(buf)
-        c.setFont("Helvetica-Bold", 16)
-        c.drawString(180, 800, "ABEM — Payment Receipt")
-        c.setFont("Helvetica", 12)
-        lines = [
-            f"Apartment: {payment.apartment.unit_number}",
-            f"Owner:     {payment.apartment.owner}",
-            f"Amount Paid:      {payment.amount_paid} EGP",
-            f"Payment Date:     {payment.payment_date}",
-            f"Method:           {payment.payment_method}",
-            f"Balance Before:   {payment.balance_before} EGP",
-            f"Balance After:    {payment.balance_after} EGP",
+        width, height = A4
+        c = rl_canvas.Canvas(buf, pagesize=A4)
+
+        # ── Header bar ─────────────────────────────────────────────────────────
+        c.setFillColor(colors.HexColor("#1E3A5F"))
+        c.rect(0, height - 60 * mm, width, 60 * mm, fill=1, stroke=0)
+        c.setFillColor(colors.white)
+        c.setFont("Helvetica-Bold", 24)
+        c.drawString(20 * mm, height - 28 * mm, "ABEM")
+        c.setFont("Helvetica", 11)
+        c.drawString(20 * mm, height - 40 * mm, "Apartment & Building Expense Management")
+        c.setFont("Helvetica-Bold", 14)
+        c.drawRightString(width - 20 * mm, height - 28 * mm, "PAYMENT RECEIPT")
+        c.setFont("Helvetica", 10)
+        c.drawRightString(width - 20 * mm, height - 40 * mm, f"Receipt No: {str(payment.id)[:8].upper()}")
+
+        # ── Building & Unit info ────────────────────────────────────────────────
+        y = height - 80 * mm
+        c.setFillColor(colors.HexColor("#F0F4F8"))
+        c.rect(15 * mm, y - 30 * mm, width - 30 * mm, 30 * mm, fill=1, stroke=0)
+        c.setFillColor(colors.HexColor("#1E3A5F"))
+        c.setFont("Helvetica-Bold", 10)
+        c.drawString(20 * mm, y - 10 * mm, "BUILDING")
+        c.drawString(width / 2, y - 10 * mm, "UNIT")
+        c.setFillColor(colors.black)
+        c.setFont("Helvetica", 11)
+        c.drawString(20 * mm, y - 20 * mm, apt.building.name)
+        c.drawString(width / 2, y - 20 * mm, f"Unit {apt.unit_number}  ·  {apt.get_unit_type_display()}")
+
+        # ── Payment details ─────────────────────────────────────────────────────
+        y -= 45 * mm
+        fields = [
+            ("Amount Paid",    f"{payment.amount_paid:,.2f} EGP"),
+            ("Payment Date",   str(payment.payment_date)),
+            ("Payment Method", payment.payment_method.replace("_", " ").title()),
+            ("Balance Before", f"{payment.balance_before:,.2f} EGP"),
+            ("Balance After",  f"{payment.balance_after:,.2f} EGP"),
+            ("Recorded By",    str(payment.recorded_by or "—")),
+            ("Notes",          payment.notes or "—"),
         ]
-        for i, line in enumerate(lines):
-            c.drawString(50, 750 - i * 25, line)
+        row_h = 12 * mm
+        for label, value in fields:
+            c.setFillColor(colors.HexColor("#F0F4F8"))
+            c.rect(15 * mm, y - row_h + 3 * mm, width - 30 * mm, row_h, fill=1, stroke=0)
+            c.setFillColor(colors.HexColor("#555555"))
+            c.setFont("Helvetica-Bold", 9)
+            c.drawString(20 * mm, y, label)
+            c.setFillColor(colors.black)
+            c.setFont("Helvetica", 10)
+            c.drawRightString(width - 20 * mm, y, value)
+            y -= row_h + 1 * mm
+
+        # ── Highlight amount ───────────────────────────────────────────────────
+        c.setFillColor(colors.HexColor("#E8F5E9"))
+        c.roundRect(15 * mm, y - 16 * mm, width - 30 * mm, 14 * mm, 3 * mm, fill=1, stroke=0)
+        c.setFillColor(colors.HexColor("#2E7D32"))
+        c.setFont("Helvetica-Bold", 13)
+        c.drawCentredString(width / 2, y - 8 * mm, f"✓  {payment.amount_paid:,.2f} EGP  RECEIVED")
+
+        # ── Footer ─────────────────────────────────────────────────────────────
+        c.setFillColor(colors.HexColor("#888888"))
+        c.setFont("Helvetica", 8)
+        c.drawCentredString(width / 2, 15 * mm, "This is an automatically generated receipt. ABEM — abem.app")
+
         c.save()
         buf.seek(0)
 
         resp = HttpResponse(buf.read(), content_type="application/pdf")
-        resp["Content-Disposition"] = f'inline; filename="receipt_{pk}.pdf"'
+        resp["Content-Disposition"] = f'inline; filename="receipt_{str(payment.id)[:8]}.pdf"'
         return resp
 
 

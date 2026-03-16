@@ -302,7 +302,7 @@ export default function PaymentsPage() {
         <Table size="small">
           <TableHead>
             <TableRow sx={{ backgroundColor: "primary.main" }}>
-              {["Date", "Amount", "Method", "Notes", "Balance After", ...(isAdmin ? ["Receipt"] : [])].map((h) => (
+              {["Date", "Amount", "Method", "Notes", "Balance After", "Receipt"].map((h) => (
                 <TableCell key={h} sx={{ color: "white", fontWeight: 600 }}>
                   {h}
                 </TableCell>
@@ -312,7 +312,7 @@ export default function PaymentsPage() {
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={isAdmin ? 6 : 5} align="center" sx={{ py: 4 }}>
+                <TableCell colSpan={6} align="center" sx={{ py: 4 }}>
                   <CircularProgress size={28} />
                 </TableCell>
               </TableRow>
@@ -347,20 +347,25 @@ export default function PaymentsPage() {
                       size="small"
                     />
                   </TableCell>
-                  {isAdmin && (
-                    <TableCell>
-                      <Button
-                        size="small"
-                        variant="outlined"
-                        startIcon={<PictureAsPdf fontSize="small" />}
-                        data-testid="print-receipt"
-                        href={`/api/v1/payments/${p.id}/receipt/`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        Receipt
-                      </Button>
-                    </TableCell>
+                  <TableCell>
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      startIcon={<PictureAsPdf fontSize="small" />}
+                      data-testid="print-receipt"
+                      onClick={async () => {
+                        try {
+                          const res = await paymentsApi.receipt(p.id);
+                          const url = URL.createObjectURL(new Blob([res.data], { type: "application/pdf" }));
+                          window.open(url, "_blank");
+                        } catch {
+                          alert("Could not load receipt.");
+                        }
+                      }}
+                    >
+                      Receipt
+                    </Button>
+                  </TableCell>
                   )}
                 </TableRow>
               ))
