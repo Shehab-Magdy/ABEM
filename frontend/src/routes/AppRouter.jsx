@@ -54,7 +54,9 @@ export default function AppRouter() {
     <Routes>
       {/* Public – redirect to dashboard if already authenticated */}
       <Route path="/login" element={user ? <Navigate to="/dashboard" replace /> : <LoginPage />} />
-      <Route path="/register" element={user ? <Navigate to="/dashboard" replace /> : <RegisterPage />} />
+      {/* /register has no guard here: the wizard calls login() mid-flow (after AccountStep),
+          which would otherwise cause an immediate redirect away before the user finishes the wizard. */}
+      <Route path="/register" element={<RegisterPage />} />
 
       {/* Protected – all routes share the DashboardLayout shell */}
       <Route

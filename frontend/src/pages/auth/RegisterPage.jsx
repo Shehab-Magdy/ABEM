@@ -548,6 +548,14 @@ export default function RegisterPage() {
   const [searchParams] = useSearchParams();
   const [step, setStep] = useState(0);
   const [role, setRole] = useState("owner");
+  const { user: existingUser } = useAuthStore();
+
+  // If a user was already logged in before arriving at /register, redirect them away.
+  // We only run this on mount ([] deps) so the check does NOT fire when AccountStep
+  // calls login() mid-wizard — that would incorrectly redirect mid-flow.
+  useEffect(() => {
+    if (existingUser) navigate("/dashboard", { replace: true });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Invite flow state
   const inviteToken = searchParams.get("invite");
