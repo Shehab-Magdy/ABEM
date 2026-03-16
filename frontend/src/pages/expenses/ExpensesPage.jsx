@@ -186,7 +186,7 @@ export default function ExpensesPage() {
   const loadBuildingApartments = useCallback(async (buildingId) => {
     if (!buildingId) return;
     try {
-      const res = await buildingsApi.apartments(buildingId);
+      const res = await buildingsApi.apartments(buildingId, { page_size: 200 });
       setBuildingApartments(res.data?.results ?? res.data);
     } catch {
       setBuildingApartments([]);

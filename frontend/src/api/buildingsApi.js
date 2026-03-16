@@ -8,7 +8,7 @@ export const buildingsApi = {
   remove: (id) => axiosClient.delete(`/buildings/${id}/`),
   assignUser: (id, userId) =>
     axiosClient.post(`/buildings/${id}/assign-user/`, { user_id: userId }),
-  apartments: (id) => axiosClient.get(`/buildings/${id}/apartments/`),
+  apartments: (id, params) => axiosClient.get(`/buildings/${id}/apartments/`, { params }),
   deactivate: (id) => axiosClient.post(`/buildings/${id}/deactivate/`),
   activate: (id) => axiosClient.post(`/buildings/${id}/activate/`),
 };
