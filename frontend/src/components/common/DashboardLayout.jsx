@@ -87,7 +87,7 @@ export default function DashboardLayout() {
         setUnreadCount(count);
       })
       .catch(() => {});
-  }, []);
+  }, [location.pathname]);
 
   const handleLogout = async () => {
     try {
