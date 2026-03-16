@@ -39,8 +39,10 @@ class BuildingViewSet(ModelViewSet):
     # ── Scoping ────────────────────────────────────────────────────────────────
 
     def get_queryset(self):
-        qs = Building.objects.filter(deleted_at__isnull=True, is_active=True)
-        # Both admins and owners see only buildings they are associated with
+        qs = Building.objects.filter(deleted_at__isnull=True)
+        # Owners only see active buildings; admins see active + inactive (so they can reactivate)
+        if not self.request.user.role == "admin":
+            qs = qs.filter(is_active=True)
         return qs.filter(
             models.Q(admin=self.request.user)
             | models.Q(co_admins=self.request.user)
@@ -50,7 +52,7 @@ class BuildingViewSet(ModelViewSet):
     # ── Permissions ────────────────────────────────────────────────────────────
 
     def get_permissions(self):
-        write_actions = ("create", "partial_update", "update", "destroy", "assign_user")
+        write_actions = ("create", "partial_update", "update", "destroy", "assign_user", "deactivate", "activate")
         if self.action in write_actions:
             return [IsAuthenticated(), IsAdminRole()]
         return [IsAuthenticated()]
@@ -145,6 +147,44 @@ class BuildingViewSet(ModelViewSet):
             {"detail": f"User '{user.email}' assigned to building '{building.name}'."},
             status=http_status,
         )
+
+    @action(
+        detail=True,
+        methods=["post"],
+        url_path="deactivate",
+        permission_classes=[IsAuthenticated, IsAdminRole],
+    )
+    def deactivate(self, request, pk=None):
+        building = self.get_object()
+        building.is_active = False
+        building.save(update_fields=["is_active"])
+        log_action(
+            user=request.user,
+            action="deactivate",
+            entity="building",
+            entity_id=building.pk,
+            request=request,
+        )
+        return Response({"detail": f"Building '{building.name}' deactivated."})
+
+    @action(
+        detail=True,
+        methods=["post"],
+        url_path="activate",
+        permission_classes=[IsAuthenticated, IsAdminRole],
+    )
+    def activate(self, request, pk=None):
+        building = self.get_object()
+        building.is_active = True
+        building.save(update_fields=["is_active"])
+        log_action(
+            user=request.user,
+            action="activate",
+            entity="building",
+            entity_id=building.pk,
+            request=request,
+        )
+        return Response({"detail": f"Building '{building.name}' activated."})
 
     @action(
         detail=False,
