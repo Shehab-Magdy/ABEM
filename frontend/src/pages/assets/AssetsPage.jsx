@@ -57,7 +57,6 @@ const EMPTY_ASSET_FORM = {
   other_type_label: "",
   acquisition_date: "",
   acquisition_value: "",
-  current_value: "",
 };
 
 const EMPTY_SALE_FORM = {
@@ -117,10 +116,6 @@ export default function AssetsPage() {
 
   // ── Summary stats ───────────────────────────────────────────────────────────
 
-  const totalCurrentValue = assets
-    .filter((a) => !a.is_sold && a.current_value != null)
-    .reduce((sum, a) => sum + parseFloat(a.current_value), 0);
-
   const totalSaleProceeds = assets
     .filter((a) => a.is_sold && a.sale?.sale_price != null)
     .reduce((sum, a) => sum + parseFloat(a.sale.sale_price), 0);
@@ -151,7 +146,6 @@ export default function AssetsPage() {
       };
       if (assetForm.acquisition_date) payload.acquisition_date = assetForm.acquisition_date;
       if (assetForm.acquisition_value) payload.acquisition_value = assetForm.acquisition_value;
-      if (assetForm.current_value) payload.current_value = assetForm.current_value;
       await assetsApi.create(payload);
       setAssetFormOpen(false);
       setSnack({ open: true, msg: "Asset added.", severity: "success" });
@@ -236,15 +230,7 @@ export default function AssetsPage() {
       {/* Summary stats */}
       {assets.length > 0 && (
         <Grid container spacing={2} sx={{ mb: 3 }}>
-          <Grid item xs={12} sm={6} md={4}>
-            <Paper variant="outlined" sx={{ p: 2 }}>
-              <Typography variant="caption" color="text.secondary">Total Active Value</Typography>
-              <Typography variant="h6" fontWeight={600}>
-                {totalCurrentValue.toLocaleString("en-US", { minimumFractionDigits: 2 })}
-              </Typography>
-            </Paper>
-          </Grid>
-          <Grid item xs={12} sm={6} md={4}>
+          <Grid item xs={12} sm={6}>
             <Paper variant="outlined" sx={{ p: 2 }}>
               <Typography variant="caption" color="text.secondary">Total Sale Proceeds</Typography>
               <Typography variant="h6" fontWeight={600} color="success.main">
@@ -252,7 +238,7 @@ export default function AssetsPage() {
               </Typography>
             </Paper>
           </Grid>
-          <Grid item xs={12} sm={6} md={4}>
+          <Grid item xs={12} sm={6}>
             <Paper variant="outlined" sx={{ p: 2 }}>
               <Typography variant="caption" color="text.secondary">Total Assets</Typography>
               <Typography variant="h6" fontWeight={600}>{assets.length}</Typography>
@@ -275,7 +261,6 @@ export default function AssetsPage() {
                 <TableCell><strong>Type</strong></TableCell>
                 <TableCell><strong>Acquired</strong></TableCell>
                 <TableCell><strong>Acquisition Value</strong></TableCell>
-                <TableCell><strong>Current Value</strong></TableCell>
                 <TableCell><strong>Status</strong></TableCell>
                 <TableCell align="right"><strong>Actions</strong></TableCell>
               </TableRow>
@@ -308,15 +293,6 @@ export default function AssetsPage() {
                       {asset.acquisition_value != null
                         ? parseFloat(asset.acquisition_value).toLocaleString("en-US", { minimumFractionDigits: 2 })
                         : "—"}
-                    </TableCell>
-                    <TableCell>
-                      {asset.is_sold
-                        ? <Typography variant="body2" color="text.secondary">
-                            Sold: {parseFloat(asset.sale?.sale_price ?? 0).toLocaleString("en-US", { minimumFractionDigits: 2 })}
-                          </Typography>
-                        : asset.current_value != null
-                          ? parseFloat(asset.current_value).toLocaleString("en-US", { minimumFractionDigits: 2 })
-                          : "—"}
                     </TableCell>
                     <TableCell>
                       <Chip
@@ -418,16 +394,6 @@ export default function AssetsPage() {
                 />
               </Grid>
             </Grid>
-            <TextField
-              label="Current Value"
-              name="current_value"
-              type="number"
-              value={assetForm.current_value}
-              onChange={handleAssetFormChange}
-              fullWidth
-              size="small"
-              inputProps={{ min: 0, step: 0.01 }}
-            />
           </Stack>
         </DialogContent>
         <DialogActions>
@@ -470,22 +436,28 @@ export default function AssetsPage() {
                 />
               </Grid>
             </Grid>
-            <TextField
-              label="Buyer Name"
-              name="buyer_name"
-              value={saleForm.buyer_name}
-              onChange={handleSaleFormChange}
-              fullWidth
-              size="small"
-            />
-            <TextField
-              label="Buyer Contact"
-              name="buyer_contact"
-              value={saleForm.buyer_contact}
-              onChange={handleSaleFormChange}
-              fullWidth
-              size="small"
-            />
+            <Grid container spacing={2}>
+              <Grid item xs={6}>
+                <TextField
+                  label="Buyer Name"
+                  name="buyer_name"
+                  value={saleForm.buyer_name}
+                  onChange={handleSaleFormChange}
+                  fullWidth
+                  size="small"
+                />
+              </Grid>
+              <Grid item xs={6}>
+                <TextField
+                  label="Buyer Contact"
+                  name="buyer_contact"
+                  value={saleForm.buyer_contact}
+                  onChange={handleSaleFormChange}
+                  fullWidth
+                  size="small"
+                />
+              </Grid>
+            </Grid>
             <TextField
               label="Notes"
               name="notes"
