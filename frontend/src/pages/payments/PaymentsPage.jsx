@@ -41,6 +41,7 @@ import {
 import { Add as AddIcon, AccountBalance as BalanceIcon, PictureAsPdf } from "@mui/icons-material";
 import { paymentsApi } from "../../api/paymentsApi";
 import { buildingsApi } from "../../api/buildingsApi";
+import { expensesApi } from "../../api/expensesApi";
 import axiosClient from "../../api/axiosClient";
 import { useAuth } from "../../hooks/useAuth";
 
@@ -102,6 +103,7 @@ export default function PaymentsPage() {
   const [formError, setFormError] = useState("");
   const [saving, setSaving] = useState(false);
   const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
+  const [dialogExpenses, setDialogExpenses] = useState([]);
 
   // ── Data fetching ────────────────────────────────────────────────────────────
 
@@ -167,7 +169,7 @@ export default function PaymentsPage() {
 
   // ── Dialog helpers ───────────────────────────────────────────────────────────
 
-  const openCreate = () => {
+  const openCreate = async () => {
     const currentBalance = parseFloat(balance?.current_balance) || 0;
     setForm({
       ...EMPTY_FORM,
@@ -176,6 +178,18 @@ export default function PaymentsPage() {
     });
     setFormError("");
     setDialogOpen(true);
+    // Load expenses for the building of the selected apartment
+    const apt = apartments.find((a) => a.id === selectedApartment);
+    if (apt?.building_id) {
+      try {
+        const res = await expensesApi.list({ building_id: apt.building_id, page_size: 200 });
+        setDialogExpenses(res.data?.results ?? res.data ?? []);
+      } catch {
+        setDialogExpenses([]);
+      }
+    } else {
+      setDialogExpenses([]);
+    }
   };
 
   const handleFormChange = (field, value) => {
@@ -460,14 +474,21 @@ export default function PaymentsPage() {
               />
             )}
 
-            <TextField
-              label="Expense ID (optional)"
-              placeholder="Leave blank for general payment"
-              value={form.expense_id}
-              onChange={(e) => handleFormChange("expense_id", e.target.value)}
-              fullWidth
-              size="small"
-            />
+            <FormControl fullWidth size="small">
+              <InputLabel>Expense (optional)</InputLabel>
+              <Select
+                label="Expense (optional)"
+                value={form.expense_id}
+                onChange={(e) => handleFormChange("expense_id", e.target.value)}
+              >
+                <MenuItem value=""><em>General payment (no specific expense)</em></MenuItem>
+                {dialogExpenses.map((exp) => (
+                  <MenuItem key={exp.id} value={exp.id}>
+                    {exp.title} — {parseFloat(exp.amount).toFixed(2)} ({exp.expense_date})
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
 
             <TextField
               label="Notes"
