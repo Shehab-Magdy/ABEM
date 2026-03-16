@@ -168,7 +168,12 @@ export default function PaymentsPage() {
   // ── Dialog helpers ───────────────────────────────────────────────────────────
 
   const openCreate = () => {
-    setForm({ ...EMPTY_FORM, apartment_id: selectedApartment });
+    const currentBalance = parseFloat(balance?.current_balance) || 0;
+    setForm({
+      ...EMPTY_FORM,
+      apartment_id: selectedApartment,
+      amount_paid: currentBalance > 0 ? currentBalance.toFixed(2) : "",
+    });
     setFormError("");
     setDialogOpen(true);
   };
@@ -412,6 +417,11 @@ export default function PaymentsPage() {
               required
               fullWidth
               size="small"
+              helperText={
+                balance && parseFloat(balance.current_balance) > 0
+                  ? `Current balance: ${parseFloat(balance.current_balance).toFixed(2)} — adjust if paying a different amount`
+                  : undefined
+              }
             />
 
             <TextField
