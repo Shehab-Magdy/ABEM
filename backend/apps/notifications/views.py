@@ -67,12 +67,15 @@ class NotificationViewSet(ReadOnlyModelViewSet):
         building = get_object_or_404(
             Building,
             pk=serializer.validated_data["building_id"],
-            admin=request.user,
             deleted_at__isnull=True,
         )
 
+        # All owner-role members of this building
         owners = (
-            User.objects.filter(owned_apartments__building=building)
+            User.objects.filter(
+                userbuilding__building=building,
+                role="owner",
+            )
             .distinct()
         )
 
