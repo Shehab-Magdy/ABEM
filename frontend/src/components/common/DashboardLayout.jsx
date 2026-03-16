@@ -102,10 +102,10 @@ export default function DashboardLayout() {
     { to: "/buildings", icon: <Business />, label: "Buildings", show: isAdmin },
     { to: "/expenses", icon: <Apartment />, label: "Expenses", show: true },
     { to: "/payments", icon: <Payment />, label: "Payments", show: true },
-    { to: "/users", icon: <People />, label: "Users", show: isAdmin },
     { to: "/notifications", icon: <Notifications />, label: "Notifications", show: true },
     { to: "/expense-categories", icon: <Category />, label: "Expense Categories", show: isAdmin },
     { to: "/assets", icon: <AccountBalance />, label: "Assets", show: isAdmin },
+    { to: "/users", icon: <People />, label: "Users", show: isAdmin },
     { to: "/audit", icon: <History />, label: "Audit Log", show: isAdmin },
   ].filter((item) => item.show);
 
