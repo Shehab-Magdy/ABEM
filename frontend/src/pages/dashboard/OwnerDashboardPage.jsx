@@ -9,6 +9,7 @@ import {
   CardContent,
   Chip,
   CircularProgress,
+  Collapse,
   Grid,
   TextField,
   Typography,
@@ -20,9 +21,12 @@ import {
   TableRow,
   Paper,
   Button,
+  Stack,
 } from "@mui/material";
+import { VpnKey } from "@mui/icons-material";
 import { PieChart } from "@mui/x-charts/PieChart";
 import axiosClient from "../../api/axiosClient";
+import { apartmentsApi } from "../../api/apartmentsApi";
 
 export default function OwnerDashboardPage() {
   const [dateFrom, setDateFrom] = useState("");
@@ -48,6 +52,53 @@ export default function OwnerDashboardPage() {
     fetchDashboard();
   }, [fetchDashboard]);
 
+  // ── Claim unit by code ────────────────────────────────────────────────────
+  const [claimOpen, setClaimOpen] = useState(false);
+  const [regCode, setRegCode] = useState("");
+  const [codeInfo, setCodeInfo] = useState(null);
+  const [codeError, setCodeError] = useState(null);
+  const [validating, setValidating] = useState(false);
+  const [claiming, setClaiming] = useState(false);
+  const [claimSuccess, setClaimSuccess] = useState(null);
+
+  const handleValidateCode = async () => {
+    setCodeError(null);
+    setCodeInfo(null);
+    setValidating(true);
+    try {
+      const res = await apartmentsApi.validateInvite(undefined, regCode.trim().toUpperCase());
+      setCodeInfo(res.data);
+    } catch (err) {
+      setCodeError(err.response?.data?.detail || "Invalid or expired code.");
+    } finally {
+      setValidating(false);
+    }
+  };
+
+  const handleClaimCode = async () => {
+    setClaiming(true);
+    setCodeError(null);
+    try {
+      await apartmentsApi.useInviteCode(regCode.trim().toUpperCase());
+      setClaimSuccess(`Unit ${codeInfo.unit_number} in ${codeInfo.building_name} claimed successfully!`);
+      setCodeInfo(null);
+      setRegCode("");
+      fetchDashboard();
+    } catch (err) {
+      const status = err.response?.status;
+      const detail = err.response?.data?.detail;
+      if (status === 409) {
+        setCodeError("This unit has already been claimed by another owner.");
+      } else if (status === 410) {
+        setCodeError("This code has already been used or has expired.");
+      } else {
+        setCodeError(detail || "Could not claim unit.");
+      }
+    } finally {
+      setClaiming(false);
+    }
+  };
+
   const balance = parseFloat(data?.balance_summary?.current_balance ?? 0);
   const isCredit = balance < 0;
   const isSettled = balance === 0;
@@ -68,6 +119,61 @@ export default function OwnerDashboardPage() {
       <Typography variant="h4" fontWeight={700} gutterBottom>
         Owner Dashboard
       </Typography>
+
+      {/* ── Claim unit by code ── */}
+      <Card variant="outlined" sx={{ mb: 3 }}>
+        <CardContent sx={{ pb: claimOpen ? undefined : "16px !important" }}>
+          <Stack direction="row" alignItems="center" justifyContent="space-between">
+            <Stack direction="row" alignItems="center" spacing={1}>
+              <VpnKey fontSize="small" color="primary" />
+              <Typography variant="subtitle1" fontWeight={600}>Claim a Unit</Typography>
+            </Stack>
+            <Button size="small" variant="outlined" onClick={() => { setClaimOpen((p) => !p); setCodeError(null); setCodeInfo(null); setClaimSuccess(null); }}>
+              {claimOpen ? "Hide" : "Enter Code"}
+            </Button>
+          </Stack>
+          <Collapse in={claimOpen}>
+            <Stack spacing={1.5} sx={{ mt: 2 }}>
+              {claimSuccess && (
+                <Alert severity="success" onClose={() => setClaimSuccess(null)}>{claimSuccess}</Alert>
+              )}
+              {codeError && (
+                <Alert severity="error" onClose={() => setCodeError(null)}>{codeError}</Alert>
+              )}
+              {codeInfo && (
+                <Alert severity="success">
+                  Found: <strong>Unit {codeInfo.unit_number}</strong> in <strong>{codeInfo.building_name}</strong> — {codeInfo.building_city}
+                </Alert>
+              )}
+              <Stack direction="row" spacing={1} alignItems="flex-start">
+                <TextField
+                  label="Registration Code"
+                  value={regCode}
+                  onChange={(e) => { setRegCode(e.target.value.toUpperCase()); setCodeInfo(null); setCodeError(null); }}
+                  size="small"
+                  inputProps={{ maxLength: 8, style: { fontFamily: "monospace", letterSpacing: 2 } }}
+                  placeholder="e.g. AB12CD34"
+                  sx={{ flex: 1 }}
+                />
+                <Button
+                  variant="outlined"
+                  size="small"
+                  disabled={regCode.length < 8 || validating}
+                  onClick={handleValidateCode}
+                  sx={{ mt: 0.5 }}
+                >
+                  {validating ? <CircularProgress size={18} /> : "Validate"}
+                </Button>
+              </Stack>
+              {codeInfo && (
+                <Button variant="contained" disabled={claiming} onClick={handleClaimCode}>
+                  {claiming ? <CircularProgress size={20} color="inherit" /> : `Claim Unit ${codeInfo.unit_number}`}
+                </Button>
+              )}
+            </Stack>
+          </Collapse>
+        </CardContent>
+      </Card>
 
       {/* ── Filters ── */}
       <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap", mb: 3 }}>
