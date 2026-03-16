@@ -81,6 +81,9 @@ class ExpenseSerializer(serializers.ModelSerializer):
     recurring_config = RecurringConfigSerializer(read_only=True)
     attachments = serializers.SerializerMethodField()
 
+    # The requesting user's per-unit share; None when the user is admin
+    my_share_amount = serializers.SerializerMethodField()
+
     # Write-only: frequency for creating the recurring config
     frequency = serializers.ChoiceField(
         choices=RecurringFrequency.choices,
@@ -126,6 +129,7 @@ class ExpenseSerializer(serializers.ModelSerializer):
             "apartment_shares",
             "recurring_config",
             "attachments",
+            "my_share_amount",
             "created_at",
             "updated_at",
         ]
@@ -155,6 +159,19 @@ class ExpenseSerializer(serializers.ModelSerializer):
         files = MediaFile.objects.filter(entity_type="expense", entity_id=obj.pk)
         return MediaFileSerializer(files, many=True).data
 
+    def get_my_share_amount(self, obj):
+        request = self.context.get("request")
+        if not request or request.user.role == "admin":
+            return None
+        share = obj.apartment_expenses.filter(
+            apartment__owners=request.user
+        ).first()
+        if share is None:
+            share = obj.apartment_expenses.filter(
+                apartment__owner=request.user
+            ).first()
+        return str(share.share_amount) if share else None
+
     # ── Write ──────────────────────────────────────────────────────────────────
 
     def create(self, validated_data):
@@ -174,15 +191,23 @@ class ExpenseSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         from .utils import run_split_engine
+        from apps.apartments.models import Apartment
+        from django.db.models import F
 
         frequency = validated_data.pop("frequency", None)
         custom_apartment_ids = validated_data.pop("custom_split_apartments", [])
         custom_weights = validated_data.pop("custom_split_weights", {})
 
+        # Reverse the balance increments from the previous split before recalculating
+        for ae in instance.apartment_expenses.all():
+            Apartment.objects.filter(pk=ae.apartment_id).update(
+                balance=F("balance") - ae.share_amount
+            )
+        instance.apartment_expenses.all().delete()
+
         expense = super().update(instance, validated_data)
 
         # Re-calculate shares after any field change
-        expense.apartment_expenses.all().delete()
         run_split_engine(expense, custom_apartment_ids, custom_weights or None)
 
         # Update or create recurring config if frequency is provided
