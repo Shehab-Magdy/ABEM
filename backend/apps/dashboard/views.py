@@ -31,14 +31,18 @@ class AdminDashboardView(APIView):
     permission_classes = [IsAuthenticated, IsAdminRole]
 
     def get(self, request):
-        # Buildings administered by this admin
-        buildings = Building.objects.filter(admin=request.user, deleted_at__isnull=True)
+        from django.db.models import Q as DQ
+        # Buildings this admin created, is co-admin of, or is a member of
+        buildings = Building.objects.filter(
+            DQ(admin=request.user) | DQ(co_admins=request.user) | DQ(members=request.user),
+            deleted_at__isnull=True,
+        ).distinct()
 
         building_id = request.query_params.get("building_id")
         if building_id:
             if not buildings.filter(pk=building_id).exists():
                 return Response(
-                    {"detail": "Building not found or not administered by you."},
+                    {"detail": "Building not found or not accessible by you."},
                     status=403,
                 )
             buildings = buildings.filter(pk=building_id)

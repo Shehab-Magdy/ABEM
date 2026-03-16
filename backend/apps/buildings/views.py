@@ -40,10 +40,12 @@ class BuildingViewSet(ModelViewSet):
 
     def get_queryset(self):
         qs = Building.objects.filter(deleted_at__isnull=True, is_active=True)
-        if self.request.user.role == "admin":
-            return qs
-        # Owners see only buildings where a UserBuilding record exists for them
-        return qs.filter(members=self.request.user)
+        # Both admins and owners see only buildings they are associated with
+        return qs.filter(
+            models.Q(admin=self.request.user)
+            | models.Q(co_admins=self.request.user)
+            | models.Q(members=self.request.user)
+        ).distinct()
 
     # ── Permissions ────────────────────────────────────────────────────────────
 
