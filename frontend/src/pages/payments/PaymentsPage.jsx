@@ -14,6 +14,7 @@ import {
   Button,
   Card,
   CardContent,
+  Checkbox,
   Chip,
   CircularProgress,
   Dialog,
@@ -24,7 +25,9 @@ import {
   FormControl,
   Grid,
   InputLabel,
+  ListItemText,
   MenuItem,
+  OutlinedInput,
   Paper,
   Select,
   Snackbar,
@@ -56,7 +59,7 @@ const PAYMENT_METHODS = [
 
 const EMPTY_FORM = {
   apartment_id: "",
-  expense_id: "",
+  expense_ids: [],
   amount_paid: "",
   payment_date: new Date().toISOString().slice(0, 10),
   payment_method: "cash",
@@ -209,7 +212,7 @@ export default function PaymentsPage() {
       payment_method: form.payment_method,
       notes: notesWithMethod,
     };
-    if (form.expense_id) payload.expense_id = form.expense_id;
+    if (form.expense_ids.length) payload.expense_ids = form.expense_ids;
 
     setSaving(true);
     try {
@@ -475,19 +478,40 @@ export default function PaymentsPage() {
             )}
 
             <FormControl fullWidth size="small">
-              <InputLabel>Expense (optional)</InputLabel>
+              <InputLabel>Expenses (optional)</InputLabel>
               <Select
-                label="Expense (optional)"
-                value={form.expense_id}
-                onChange={(e) => handleFormChange("expense_id", e.target.value)}
+                label="Expenses (optional)"
+                multiple
+                value={form.expense_ids}
+                onChange={(e) => handleFormChange("expense_ids", e.target.value)}
+                input={<OutlinedInput label="Expenses (optional)" />}
+                renderValue={(selected) =>
+                  selected.length === 0
+                    ? <em>General payment</em>
+                    : selected.map((id) => {
+                        const exp = dialogExpenses.find((e) => e.id === id);
+                        return exp ? exp.title : id;
+                      }).join(", ")
+                }
               >
-                <MenuItem value=""><em>General payment (no specific expense)</em></MenuItem>
                 {dialogExpenses.map((exp) => (
                   <MenuItem key={exp.id} value={exp.id}>
-                    {exp.title} — {parseFloat(exp.amount).toFixed(2)} ({exp.expense_date})
+                    <Checkbox checked={form.expense_ids.includes(exp.id)} />
+                    <ListItemText
+                      primary={exp.title}
+                      secondary={`${parseFloat(exp.amount).toFixed(2)} EGP · ${exp.expense_date}`}
+                    />
                   </MenuItem>
                 ))}
+                {dialogExpenses.length === 0 && (
+                  <MenuItem disabled><em>No expenses for this building</em></MenuItem>
+                )}
               </Select>
+              {form.expense_ids.length === 0 && (
+                <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, ml: 1.5 }}>
+                  No selection = general payment
+                </Typography>
+              )}
             </FormControl>
 
             <TextField

@@ -30,7 +30,7 @@ class BuildingAssetSerializer(serializers.ModelSerializer):
         model = BuildingAsset
         fields = [
             "id", "building_id", "name", "description", "asset_type",
-            "acquisition_date", "acquisition_value", "current_value",
+            "acquisition_date", "acquisition_value",
             "is_sold", "sale", "created_at",
         ]
         read_only_fields = ["id", "is_sold", "created_at"]
@@ -40,7 +40,7 @@ class PaymentSerializer(serializers.ModelSerializer):
     """
     Serializer for recording and listing payments.
 
-    Write fields:  apartment_id, expense_id (optional), amount_paid,
+    Write fields:  apartment_id, expense_ids (optional list), amount_paid,
                    payment_method, payment_date, notes.
     Read-only:     id, balance_before, balance_after, remaining_balance,
                    recorded_by, created_at.
@@ -50,10 +50,10 @@ class PaymentSerializer(serializers.ModelSerializer):
         source="apartment",
         queryset=Apartment.objects.all(),
     )
-    expense_id = serializers.PrimaryKeyRelatedField(
-        source="expense",
+    expense_ids = serializers.PrimaryKeyRelatedField(
+        source="expenses",
         queryset=Expense.objects.filter(deleted_at__isnull=True),
-        allow_null=True,
+        many=True,
         required=False,
     )
 
@@ -72,7 +72,7 @@ class PaymentSerializer(serializers.ModelSerializer):
         fields = [
             "id",
             "apartment_id",
-            "expense_id",
+            "expense_ids",
             "amount_paid",
             "payment_method",
             "payment_date",
@@ -102,16 +102,17 @@ class PaymentSerializer(serializers.ModelSerializer):
     # ── Cross-field validation ──────────────────────────────────────────────────
 
     def validate(self, data: dict) -> dict:
-        expense = data.get("expense")
+        expenses = data.get("expenses", [])
         apartment = data.get("apartment")
 
-        if expense and apartment:
-            assigned = ApartmentExpense.objects.filter(
-                expense=expense, apartment=apartment
-            ).exists()
-            if not assigned:
-                raise serializers.ValidationError(
-                    "This expense has not been assigned to the specified apartment."
-                )
+        if expenses and apartment:
+            for expense in expenses:
+                assigned = ApartmentExpense.objects.filter(
+                    expense=expense, apartment=apartment
+                ).exists()
+                if not assigned:
+                    raise serializers.ValidationError(
+                        f"Expense '{expense.title}' has not been assigned to the specified apartment."
+                    )
 
         return data

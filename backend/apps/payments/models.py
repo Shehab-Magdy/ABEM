@@ -17,9 +17,7 @@ class PaymentMethod(models.TextChoices):
 class Payment(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     apartment = models.ForeignKey(Apartment, on_delete=models.CASCADE, related_name="payments")
-    expense = models.ForeignKey(
-        Expense, on_delete=models.CASCADE, related_name="payments", null=True, blank=True
-    )
+    expenses = models.ManyToManyField(Expense, blank=True, related_name="payments")
 
     amount_paid = models.DecimalField(max_digits=10, decimal_places=2)
     payment_method = models.CharField(max_length=20, choices=PaymentMethod.choices, default=PaymentMethod.CASH)
@@ -43,7 +41,6 @@ class Payment(models.Model):
         ordering = ["-payment_date", "-created_at"]
         indexes = [
             models.Index(fields=["apartment"]),
-            models.Index(fields=["expense"]),
             models.Index(fields=["payment_date"]),
         ]
 
@@ -70,7 +67,6 @@ class BuildingAsset(models.Model):
     asset_type = models.CharField(max_length=20, choices=AssetType.choices, default=AssetType.OTHER)
     acquisition_date = models.DateField(null=True, blank=True)
     acquisition_value = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
-    current_value = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
     is_sold = models.BooleanField(default=False)
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name="created_assets"
