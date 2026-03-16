@@ -157,8 +157,13 @@ export default function NotificationCenterPage() {
       setSendBuilding("");
       setSendRecipientType("all");
       setSelectedMembers([]);
-    } catch {
-      setSendStatus("Failed to send message.");
+    } catch (err) {
+      const detail = err.response?.data?.detail;
+      if (err.response?.status === 403 && detail) {
+        setSendStatus(`${detail} Please contact your building admin.`);
+      } else {
+        setSendStatus("Failed to send message.");
+      }
     } finally {
       setSendingMsg(false);
     }
@@ -368,7 +373,7 @@ export default function NotificationCenterPage() {
                   {sendingMsg ? <CircularProgress size={20} color="inherit" /> : "Send Message"}
                 </Button>
                 {sendStatus && (
-                  <Alert severity={sendStatus.includes("Failed") ? "error" : "success"}>
+                  <Alert severity={sendStatus.startsWith("Message sent") ? "success" : "error"}>
                     {sendStatus}
                   </Alert>
                 )}
