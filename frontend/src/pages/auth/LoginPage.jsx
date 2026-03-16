@@ -45,7 +45,13 @@ export default function LoginPage() {
       navigate("/dashboard", { replace: true });
     } catch (err) {
       const status = err.response?.status;
-      const detail = err.response?.data?.detail || "An unexpected error occurred.";
+      const data = err.response?.data;
+      const detail =
+        data?.detail ||
+        data?.non_field_errors?.[0] ||
+        data?.email?.[0] ||
+        data?.password?.[0] ||
+        (status === 401 ? "Invalid email or password." : "An unexpected error occurred.");
 
       if (status === 423) {
         setLockoutUntil(err.response.data.locked_until);
