@@ -629,7 +629,10 @@ export default function RegisterPage() {
           {!inviteToken && (
             <>
               {step === 0 && (
-                <AccountStep onDone={(r) => { setRole(r); setStep(1); }} />
+                <AccountStep
+                  prefillEmail={searchParams.get("email") || ""}
+                  onDone={(r) => { setRole(r); setStep(1); }}
+                />
               )}
 
               {/* Admin path: Buildings → Unit → Done */}
