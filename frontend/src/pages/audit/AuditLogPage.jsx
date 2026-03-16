@@ -165,17 +165,6 @@ export default function AuditLogPage() {
                 Payments CSV
               </Button>
             </Tooltip>
-            <Tooltip title="Export Payments XLSX">
-              <Button
-                variant="outlined"
-                size="small"
-                startIcon={<CloudDownload />}
-                data-testid="export-xlsx"
-                onClick={() => handleExport("/exports/payments/?file_format=xlsx", "payments.xlsx")}
-              >
-                Payments XLSX
-              </Button>
-            </Tooltip>
             <Tooltip title="Export Expenses CSV">
               <Button
                 variant="outlined"

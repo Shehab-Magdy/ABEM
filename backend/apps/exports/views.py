@@ -41,10 +41,6 @@ class ExportPaymentsView(APIView):
         if d_to := p.get("date_to"):
             qs = qs.filter(payment_date__lte=d_to)
 
-        fmt = (p.get("file_format") or "csv").lower()
-
-        if fmt == "xlsx":
-            return self._xlsx_response(qs)
         return self._csv_response(qs)
 
     def _rows(self, qs):
@@ -66,27 +62,6 @@ class ExportPaymentsView(APIView):
         writer.writerow(self._HEADERS)
         for row in self._rows(qs):
             writer.writerow(row)
-        return response
-
-    def _xlsx_response(self, qs):
-        import openpyxl
-
-        wb = openpyxl.Workbook()
-        ws = wb.active
-        ws.title = "Payments"
-        ws.append(self._HEADERS)
-        for row in self._rows(qs):
-            ws.append(row)
-
-        buf = io.BytesIO()
-        wb.save(buf)
-        buf.seek(0)
-
-        response = HttpResponse(
-            buf.read(),
-            content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        )
-        response["Content-Disposition"] = 'attachment; filename="payments.xlsx"'
         return response
 
 
