@@ -161,7 +161,7 @@ class PaymentViewSet(ModelViewSet):
         c.setFillColor(colors.black)
         c.setFont("Helvetica", 11)
         c.drawString(20 * mm, y - 20 * mm, apt.building.name)
-        c.drawString(width / 2, y - 20 * mm, f"Unit {apt.unit_number}  ·  {apt.get_unit_type_display()}")
+        c.drawString(width / 2, y - 20 * mm, f"Unit {apt.unit_number}  |  {apt.get_unit_type_display()}")
 
         # ── Payment details ─────────────────────────────────────────────────────
         y -= 45 * mm
@@ -191,12 +191,12 @@ class PaymentViewSet(ModelViewSet):
         c.roundRect(15 * mm, y - 16 * mm, width - 30 * mm, 14 * mm, 3 * mm, fill=1, stroke=0)
         c.setFillColor(colors.HexColor("#2E7D32"))
         c.setFont("Helvetica-Bold", 13)
-        c.drawCentredString(width / 2, y - 8 * mm, f"✓  {payment.amount_paid:,.2f} EGP  RECEIVED")
+        c.drawCentredString(width / 2, y - 8 * mm, f"[PAID]  {payment.amount_paid:,.2f} EGP  RECEIVED")
 
         # ── Footer ─────────────────────────────────────────────────────────────
         c.setFillColor(colors.HexColor("#888888"))
         c.setFont("Helvetica", 8)
-        c.drawCentredString(width / 2, 15 * mm, "This is an automatically generated receipt. ABEM — abem.app")
+        c.drawCentredString(width / 2, 15 * mm, "This is an automatically generated receipt. ABEM - abem.app")
 
         c.save()
         buf.seek(0)
