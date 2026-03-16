@@ -35,12 +35,12 @@ import ServerErrorPage from "../pages/errors/ServerErrorPage";
 
 function RequireAuth({ children }) {
   const { accessToken } = useAuthStore();
-  return accessToken ? children : <UnauthorizedPage />;
+  return accessToken ? children : <Navigate to="/login" replace />;
 }
 
 function RequireAdmin({ children }) {
   const { user } = useAuthStore();
-  if (!user) return <UnauthorizedPage />;
+  if (!user) return <Navigate to="/login" replace />;
   if (user.role !== "admin") return <ForbiddenPage />;
   return children;
 }
@@ -52,9 +52,9 @@ export default function AppRouter() {
 
   return (
     <Routes>
-      {/* Public */}
-      <Route path="/login" element={<LoginPage />} />
-      <Route path="/register" element={<RegisterPage />} />
+      {/* Public – redirect to dashboard if already authenticated */}
+      <Route path="/login" element={user ? <Navigate to="/dashboard" replace /> : <LoginPage />} />
+      <Route path="/register" element={user ? <Navigate to="/dashboard" replace /> : <RegisterPage />} />
 
       {/* Protected – all routes share the DashboardLayout shell */}
       <Route
