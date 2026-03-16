@@ -59,6 +59,7 @@ const EMPTY_FORM = {
   amount_paid: "",
   payment_date: new Date().toISOString().slice(0, 10),
   payment_method: "cash",
+  other_method_detail: "",
   notes: "",
 };
 
@@ -178,12 +179,16 @@ export default function PaymentsPage() {
 
   const handleSubmit = async () => {
     setFormError("");
+    const notesWithMethod =
+      form.payment_method === "other" && form.other_method_detail
+        ? `[Method: ${form.other_method_detail}]${form.notes ? " " + form.notes : ""}`
+        : form.notes;
     const payload = {
       apartment_id: form.apartment_id || selectedApartment,
       amount_paid: parseFloat(form.amount_paid),
       payment_date: form.payment_date,
       payment_method: form.payment_method,
-      notes: form.notes,
+      notes: notesWithMethod,
     };
     if (form.expense_id) payload.expense_id = form.expense_id;
 
@@ -430,6 +435,18 @@ export default function PaymentsPage() {
               </Select>
             </FormControl>
 
+            {form.payment_method === "other" && (
+              <TextField
+                label="Specify payment method *"
+                placeholder="e.g. Mobile Wallet, Instalment…"
+                value={form.other_method_detail}
+                onChange={(e) => handleFormChange("other_method_detail", e.target.value)}
+                required
+                fullWidth
+                size="small"
+              />
+            )}
+
             <TextField
               label="Expense ID (optional)"
               placeholder="Leave blank for general payment"
@@ -457,7 +474,7 @@ export default function PaymentsPage() {
           <Button
             variant="contained"
             onClick={handleSubmit}
-            disabled={saving || !form.amount_paid || !form.payment_date || !form.apartment_id}
+            disabled={saving || !form.amount_paid || !form.payment_date || !form.apartment_id || (form.payment_method === "other" && !form.other_method_detail)}
           >
             {saving ? <CircularProgress size={18} /> : "Record"}
           </Button>

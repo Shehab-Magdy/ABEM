@@ -54,6 +54,7 @@ const EMPTY_ASSET_FORM = {
   name: "",
   description: "",
   asset_type: "other",
+  other_type_label: "",
   acquisition_date: "",
   acquisition_value: "",
   current_value: "",
@@ -138,9 +139,13 @@ export default function AssetsPage() {
     setSavingAsset(true);
     setAssetFormError("");
     try {
+      const descriptionWithType =
+        assetForm.asset_type === "other" && assetForm.other_type_label.trim()
+          ? `[Type: ${assetForm.other_type_label.trim()}]${assetForm.description.trim() ? " " + assetForm.description.trim() : ""}`
+          : assetForm.description.trim();
       const payload = {
         name: assetForm.name.trim(),
-        description: assetForm.description.trim(),
+        description: descriptionWithType,
         asset_type: assetForm.asset_type,
         building_id: selectedBuilding,
       };
@@ -375,6 +380,18 @@ export default function AssetsPage() {
                 ))}
               </Select>
             </FormControl>
+            {assetForm.asset_type === "other" && (
+              <TextField
+                label="Specify asset type *"
+                name="other_type_label"
+                placeholder="e.g. Generator, Garden Equipment…"
+                value={assetForm.other_type_label}
+                onChange={handleAssetFormChange}
+                required
+                fullWidth
+                size="small"
+              />
+            )}
             <Grid container spacing={2}>
               <Grid item xs={6}>
                 <TextField
