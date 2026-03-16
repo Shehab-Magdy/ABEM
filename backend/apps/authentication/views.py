@@ -44,7 +44,7 @@ class LoginView(APIView):
             user = User.objects.get(email=email)
         except User.DoesNotExist:
             return Response(
-                {"detail": "Invalid email or password."},
+                {"detail": "No account found with this email address.", "code": "email_not_found"},
                 status=status.HTTP_401_UNAUTHORIZED,
             )
 
@@ -77,7 +77,7 @@ class LoginView(APIView):
                 )
             user.save(update_fields=["failed_login_attempts", "locked_until"])
             return Response(
-                {"detail": "Invalid email or password."},
+                {"detail": "Incorrect password.", "code": "wrong_password"},
                 status=status.HTTP_401_UNAUTHORIZED,
             )
 
