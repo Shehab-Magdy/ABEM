@@ -27,6 +27,22 @@ import { usersApi } from "../../api/usersApi";
 
 const ROLES = ["admin", "owner"];
 
+function formatApiError(data) {
+  if (!data) return "An error occurred.";
+  if (typeof data === "string") return data;
+  if (data.detail) return data.detail;
+  if (typeof data === "object") {
+    return Object.entries(data)
+      .map(([field, msgs]) => {
+        const label = field.charAt(0).toUpperCase() + field.slice(1).replace(/_/g, " ");
+        const text = Array.isArray(msgs) ? msgs.join(", ") : String(msgs);
+        return `${label}: ${text}`;
+      })
+      .join("\n");
+  }
+  return "An error occurred.";
+}
+
 export default function UsersPage() {
   const [rows, setRows] = useState([]);
   const [rowCount, setRowCount] = useState(0);
@@ -89,8 +105,7 @@ export default function UsersPage() {
       createForm.reset();
       fetchUsers();
     } catch (err) {
-      const detail = err.response?.data;
-      setCreateError(typeof detail === "string" ? detail : JSON.stringify(detail));
+      setCreateError(formatApiError(err.response?.data));
     } finally {
       setCreating(false);
     }
@@ -207,7 +222,11 @@ export default function UsersPage() {
         <DialogTitle>Create New User</DialogTitle>
         <Box component="form" onSubmit={createForm.handleSubmit(onCreateUser)}>
           <DialogContent>
-            {createError && <Alert severity="error" sx={{ mb: 2 }}>{createError}</Alert>}
+            {createError && (
+              <Alert severity="error" sx={{ mb: 2, whiteSpace: "pre-line" }}>
+                {createError}
+              </Alert>
+            )}
             <Stack spacing={2}>
               <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
                 <TextField label="First name" fullWidth required {...createForm.register("first_name", { required: true })} />
