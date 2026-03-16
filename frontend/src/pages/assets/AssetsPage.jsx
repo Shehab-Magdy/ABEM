@@ -332,6 +332,8 @@ export default function AssetsPage() {
               fullWidth
               size="small"
               autoFocus
+              InputLabelProps={{ shrink: true }}
+              placeholder="Asset name"
             />
             <TextField
               label="Description"
@@ -342,9 +344,11 @@ export default function AssetsPage() {
               size="small"
               multiline
               rows={2}
+              InputLabelProps={{ shrink: true }}
+              placeholder="Optional description"
             />
             <FormControl size="small" fullWidth>
-              <InputLabel>Asset Type</InputLabel>
+              <InputLabel shrink>Asset Type</InputLabel>
               <Select
                 name="asset_type"
                 value={assetForm.asset_type}
@@ -366,6 +370,7 @@ export default function AssetsPage() {
                 required
                 fullWidth
                 size="small"
+                InputLabelProps={{ shrink: true }}
               />
             )}
             <Grid container spacing={2}>
@@ -391,6 +396,8 @@ export default function AssetsPage() {
                   fullWidth
                   size="small"
                   inputProps={{ min: 0, step: 0.01 }}
+                  InputLabelProps={{ shrink: true }}
+                  placeholder="0.00"
                 />
               </Grid>
             </Grid>
@@ -433,6 +440,8 @@ export default function AssetsPage() {
                   fullWidth
                   size="small"
                   inputProps={{ min: 0.01, step: 0.01 }}
+                  InputLabelProps={{ shrink: true }}
+                  placeholder="0.00"
                 />
               </Grid>
             </Grid>
@@ -445,6 +454,8 @@ export default function AssetsPage() {
                   onChange={handleSaleFormChange}
                   fullWidth
                   size="small"
+                  InputLabelProps={{ shrink: true }}
+                  placeholder="Optional"
                 />
               </Grid>
               <Grid item xs={6}>
@@ -455,6 +466,8 @@ export default function AssetsPage() {
                   onChange={handleSaleFormChange}
                   fullWidth
                   size="small"
+                  InputLabelProps={{ shrink: true }}
+                  placeholder="Phone or email"
                 />
               </Grid>
             </Grid>
@@ -467,6 +480,8 @@ export default function AssetsPage() {
               size="small"
               multiline
               rows={2}
+              InputLabelProps={{ shrink: true }}
+              placeholder="Optional notes"
             />
           </Stack>
         </DialogContent>
