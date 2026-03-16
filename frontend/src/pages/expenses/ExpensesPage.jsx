@@ -385,13 +385,14 @@ export default function ExpensesPage() {
                 <TableCell>Split</TableCell>
                 <TableCell>Status</TableCell>
                 <TableCell>Recurring</TableCell>
+                <TableCell align="center">Bill</TableCell>
                 <TableCell align="right">Actions</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {expenses.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} align="center" sx={{ py: 4, color: "text.secondary" }}>
+                  <TableCell colSpan={8} align="center" sx={{ py: 4, color: "text.secondary" }}>
                     No expenses found.{" "}
                     {isAdmin && "Click 'Add Expense' to create one."}
                   </TableCell>
@@ -442,6 +443,21 @@ export default function ExpensesPage() {
                           color="info"
                           variant="outlined"
                         />
+                      )}
+                    </TableCell>
+                    <TableCell align="center">
+                      {exp.attachments?.length > 0 && (
+                        <Tooltip title={`${exp.attachments.length} attachment(s)`}>
+                          <IconButton
+                            size="small"
+                            component="a"
+                            href={exp.attachments[0].url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            <AttachFileIcon fontSize="small" color="action" />
+                          </IconButton>
+                        </Tooltip>
                       )}
                     </TableCell>
                     <TableCell align="right">
