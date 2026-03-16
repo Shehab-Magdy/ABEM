@@ -356,7 +356,7 @@ export default function PaymentsPage() {
                       onClick={async () => {
                         try {
                           const res = await paymentsApi.receipt(p.id);
-                          const url = URL.createObjectURL(new Blob([res.data], { type: "application/pdf" }));
+                          const url = URL.createObjectURL(res.data);
                           window.open(url, "_blank");
                         } catch {
                           alert("Could not load receipt.");

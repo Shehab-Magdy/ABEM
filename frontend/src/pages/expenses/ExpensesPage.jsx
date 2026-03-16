@@ -54,6 +54,18 @@ import { expensesApi } from "../../api/expensesApi";
 import { buildingsApi } from "../../api/buildingsApi";
 import { useAuth } from "../../hooks/useAuth";
 
+// Resolve relative media paths to absolute backend URLs so the browser
+// doesn't route them through React Router.
+const mediaUrl = (url) => {
+  if (!url || url.startsWith("http")) return url;
+  const apiBase = import.meta.env.VITE_API_BASE_URL || "/api/v1";
+  if (apiBase.startsWith("http")) {
+    const origin = new URL(apiBase).origin;
+    return origin + url;
+  }
+  return window.location.origin + url;
+};
+
 // ── Constants ──────────────────────────────────────────────────────────────────
 
 const SPLIT_TYPES = [
@@ -451,7 +463,7 @@ export default function ExpensesPage() {
                           <IconButton
                             size="small"
                             component="a"
-                            href={exp.attachments[0].url}
+                            href={mediaUrl(exp.attachments[0].url)}
                             target="_blank"
                             rel="noopener noreferrer"
                           >
@@ -826,7 +838,7 @@ export default function ExpensesPage() {
                         <Typography
                           variant="body2"
                           component="a"
-                          href={att.url}
+                          href={mediaUrl(att.url)}
                           target="_blank"
                           rel="noopener noreferrer"
                         >
