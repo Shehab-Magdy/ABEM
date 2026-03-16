@@ -366,7 +366,6 @@ export default function PaymentsPage() {
                       Receipt
                     </Button>
                   </TableCell>
-                  )}
                 </TableRow>
               ))
             )}
