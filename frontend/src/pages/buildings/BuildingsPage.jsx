@@ -37,7 +37,7 @@ import {
   Typography,
 } from "@mui/material";
 import { DataGrid } from "@mui/x-data-grid";
-import { Add, Apartment, Check, ContentCopy, Delete, Edit, PersonAdd, Send } from "@mui/icons-material";
+import { Add, Apartment, Check, ContentCopy, Delete, Edit, PersonAdd, Send, PersonPin } from "@mui/icons-material";
 import { useForm } from "react-hook-form";
 import { buildingsApi } from "../../api/buildingsApi";
 import { apartmentsApi } from "../../api/apartmentsApi";
@@ -76,6 +76,7 @@ export default function BuildingsPage() {
   const [inviteCodes, setInviteCodes] = useState({});
   const [invitingUnit, setInvitingUnit] = useState(null);
   const [copiedUnit, setCopiedUnit] = useState(null);
+  const [claimingUnit, setClaimingUnit] = useState(null);
 
   // Admin selector for create/edit dialog
   const [adminUsers, setAdminUsers] = useState([]);
@@ -208,6 +209,20 @@ export default function BuildingsPage() {
       setUnitsError(err.response?.data?.detail || "Failed to generate invite link.");
     } finally {
       setInvitingUnit(null);
+    }
+  };
+
+  const claimUnit = async (unit) => {
+    setClaimingUnit(unit.id);
+    setUnitsError(null);
+    try {
+      await apartmentsApi.claim(unit.id);
+      const res = await buildingsApi.apartments(unitsTarget.id);
+      setUnits(res.data?.results ?? res.data);
+    } catch (err) {
+      setUnitsError(err.response?.data?.detail || "Failed to claim unit.");
+    } finally {
+      setClaimingUnit(null);
     }
   };
 
@@ -559,6 +574,8 @@ export default function BuildingsPage() {
                         <Typography variant="caption" color="text.disabled">
                           Claimed ({u.owner_ids?.length ?? 1} owner{(u.owner_ids?.length ?? 1) !== 1 ? "s" : ""})
                         </Typography>
+                      ) : claimingUnit === u.id ? (
+                        <CircularProgress size={16} />
                       ) : inviteLinks[u.id] ? (
                         <Stack spacing={0.5}>
                           <Stack direction="row" spacing={0.5} alignItems="center">
@@ -579,26 +596,39 @@ export default function BuildingsPage() {
                           )}
                         </Stack>
                       ) : (
-                        <Stack direction="row" spacing={0.5} alignItems="center">
-                          <TextField
-                            size="small"
-                            placeholder="owner@email.com"
-                            type="email"
-                            value={inviteEmails[u.id] ?? ""}
-                            onChange={(e) => setInviteEmails((prev) => ({ ...prev, [u.id]: e.target.value }))}
-                            sx={{ width: 180 }}
-                          />
-                          <Tooltip title="Generate invite link">
-                            <span>
-                              <IconButton
-                                size="small"
-                                color="primary"
-                                disabled={!inviteEmails[u.id]?.trim() || invitingUnit === u.id}
-                                onClick={() => generateInvite(u)}
-                              >
-                                {invitingUnit === u.id ? <CircularProgress size={16} /> : <Send fontSize="small" />}
-                              </IconButton>
-                            </span>
+                        <Stack spacing={0.5}>
+                          <Stack direction="row" spacing={0.5} alignItems="center">
+                            <TextField
+                              size="small"
+                              placeholder="owner@email.com"
+                              type="email"
+                              value={inviteEmails[u.id] ?? ""}
+                              onChange={(e) => setInviteEmails((prev) => ({ ...prev, [u.id]: e.target.value }))}
+                              sx={{ width: 160 }}
+                            />
+                            <Tooltip title="Generate invite link">
+                              <span>
+                                <IconButton
+                                  size="small"
+                                  color="primary"
+                                  disabled={!inviteEmails[u.id]?.trim() || invitingUnit === u.id}
+                                  onClick={() => generateInvite(u)}
+                                >
+                                  {invitingUnit === u.id ? <CircularProgress size={16} /> : <Send fontSize="small" />}
+                                </IconButton>
+                              </span>
+                            </Tooltip>
+                          </Stack>
+                          <Tooltip title="Claim this unit for yourself">
+                            <Button
+                              size="small"
+                              variant="outlined"
+                              startIcon={<PersonPin fontSize="small" />}
+                              onClick={() => claimUnit(u)}
+                              sx={{ alignSelf: "flex-start" }}
+                            >
+                              Claim for self
+                            </Button>
                           </Tooltip>
                         </Stack>
                       )}
