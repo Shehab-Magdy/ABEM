@@ -250,7 +250,9 @@ export default function PaymentsPage() {
               disabled={apartments.length === 0}
             >
               {apartments.map((a) => (
-                <MenuItem key={a.id} value={a.id}>Unit {a.unit_number}</MenuItem>
+                <MenuItem key={a.id} value={a.id}>
+                  Unit {a.unit_number}{a.owner_names?.length > 0 ? ` — ${a.owner_names.join(", ")}` : ""}
+                </MenuItem>
               ))}
             </Select>
           </FormControl>
@@ -394,7 +396,8 @@ export default function PaymentsPage() {
               >
                 {apartments.map((a) => (
                   <MenuItem key={a.id} value={a.id}>
-                    Unit {a.unit_number}{a.type === "store" ? " (Store)" : ""}{a.owner_ids?.length > 0 ? ` — ${a.owner_ids.length} owner(s)` : ""}
+                    Unit {a.unit_number}{a.type === "store" ? " (Store)" : ""}
+                    {a.owner_names?.length > 0 ? ` — ${a.owner_names.join(", ")}` : " — (Unoccupied)"}
                   </MenuItem>
                 ))}
               </Select>

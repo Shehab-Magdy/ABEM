@@ -37,6 +37,7 @@ class ApartmentSerializer(serializers.ModelSerializer):
         many=True,
         required=False,
     )
+    owner_names = serializers.SerializerMethodField(read_only=True)
 
     # Map `type` in the API to `unit_type` in the model
     type = serializers.ChoiceField(
@@ -51,6 +52,7 @@ class ApartmentSerializer(serializers.ModelSerializer):
             "building_id",
             "owner_id",
             "owner_ids",
+            "owner_names",
             "unit_number",
             "floor",
             "type",
@@ -59,6 +61,9 @@ class ApartmentSerializer(serializers.ModelSerializer):
             "balance",
         ]
         read_only_fields = ["id", "balance"]
+
+    def get_owner_names(self, obj):
+        return [o.get_full_name() or o.email for o in obj.owners.all()]
 
     def validate(self, data):
         """Cross-field: floor must not exceed the building's num_floors."""
