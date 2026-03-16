@@ -37,7 +37,7 @@ import {
   Typography,
 } from "@mui/material";
 import { DataGrid } from "@mui/x-data-grid";
-import { Add, Apartment, Check, ContentCopy, Delete, Edit, PersonAdd, Send, PersonPin } from "@mui/icons-material";
+import { Add, Apartment, Check, ContentCopy, Delete, Edit, PersonAdd, Send, PersonPin, PowerSettingsNew } from "@mui/icons-material";
 import { useForm } from "react-hook-form";
 import { buildingsApi } from "../../api/buildingsApi";
 import { apartmentsApi } from "../../api/apartmentsApi";
@@ -194,6 +194,20 @@ export default function BuildingsPage() {
     }
   };
 
+  // ── Deactivate / Activate ────────────────────────────────────────────────────
+  const handleToggleActive = async (building) => {
+    try {
+      if (building.is_active) {
+        await buildingsApi.deactivate(building.id);
+      } else {
+        await buildingsApi.activate(building.id);
+      }
+      fetchBuildings();
+    } catch (err) {
+      setError(err.response?.data?.detail || "Failed to update building status.");
+    }
+  };
+
   // ── Units ────────────────────────────────────────────────────────────────────
   const generateInvite = async (unit) => {
     const email = inviteEmails[unit.id]?.trim();
@@ -328,7 +342,7 @@ export default function BuildingsPage() {
           {
             field: "actions",
             headerName: "Actions",
-            width: 140,
+            width: 170,
             sortable: false,
             renderCell: ({ row }) => (
               <Stack direction="row" spacing={0.5}>
@@ -345,6 +359,15 @@ export default function BuildingsPage() {
                 <Tooltip title="Assign owner">
                   <IconButton size="small" onClick={() => openAssign(row)}>
                     <PersonAdd fontSize="small" color="primary" />
+                  </IconButton>
+                </Tooltip>
+                <Tooltip title={row.is_active ? "Deactivate" : "Activate"}>
+                  <IconButton
+                    size="small"
+                    color={row.is_active ? "warning" : "success"}
+                    onClick={() => handleToggleActive(row)}
+                  >
+                    <PowerSettingsNew fontSize="small" />
                   </IconButton>
                 </Tooltip>
                 <Tooltip title="Delete">

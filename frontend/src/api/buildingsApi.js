@@ -9,4 +9,6 @@ export const buildingsApi = {
   assignUser: (id, userId) =>
     axiosClient.post(`/buildings/${id}/assign-user/`, { user_id: userId }),
   apartments: (id) => axiosClient.get(`/buildings/${id}/apartments/`),
+  deactivate: (id) => axiosClient.post(`/buildings/${id}/deactivate/`),
+  activate: (id) => axiosClient.post(`/buildings/${id}/activate/`),
 };
