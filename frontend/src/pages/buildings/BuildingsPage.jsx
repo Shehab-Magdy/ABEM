@@ -10,6 +10,7 @@
 import { useCallback, useEffect, useState } from "react";
 import {
   Alert,
+  Autocomplete,
   Box,
   Button,
   Checkbox,
@@ -77,6 +78,7 @@ export default function BuildingsPage() {
   const [invitingUnit, setInvitingUnit] = useState(null);
   const [copiedUnit, setCopiedUnit] = useState(null);
   const [claimingUnit, setClaimingUnit] = useState(null);
+  const [buildingMembers, setBuildingMembers] = useState([]);
 
   // Admin selector for create/edit dialog
   const [adminUsers, setAdminUsers] = useState([]);
@@ -253,10 +255,15 @@ export default function BuildingsPage() {
     setInviteLinks({});
     setInviteCodes({});
     setUnitsError(null);
+    setBuildingMembers([]);
     setUnitsLoading(true);
     try {
-      const res = await buildingsApi.apartments(building.id);
-      setUnits(res.data?.results ?? res.data);
+      const [unitsRes, membersRes] = await Promise.all([
+        buildingsApi.apartments(building.id),
+        usersApi.list({ building_id: building.id, page_size: 200 }),
+      ]);
+      setUnits(unitsRes.data?.results ?? unitsRes.data);
+      setBuildingMembers(membersRes.data?.results ?? membersRes.data ?? []);
     } catch {
       setUnitsError("Failed to load units.");
     } finally {
@@ -621,13 +628,20 @@ export default function BuildingsPage() {
                       ) : (
                         <Stack spacing={0.5}>
                           <Stack direction="row" spacing={0.5} alignItems="center">
-                            <TextField
+                            <Autocomplete
+                              freeSolo
                               size="small"
-                              placeholder="owner@email.com"
-                              type="email"
-                              value={inviteEmails[u.id] ?? ""}
-                              onChange={(e) => setInviteEmails((prev) => ({ ...prev, [u.id]: e.target.value }))}
-                              sx={{ width: 160 }}
+                              options={buildingMembers.map((m) => m.email)}
+                              inputValue={inviteEmails[u.id] ?? ""}
+                              onInputChange={(_, val) => setInviteEmails((prev) => ({ ...prev, [u.id]: val }))}
+                              sx={{ width: 200 }}
+                              renderInput={(params) => (
+                                <TextField
+                                  {...params}
+                                  placeholder="owner@email.com"
+                                  type="email"
+                                />
+                              )}
                             />
                             <Tooltip title="Generate invite link">
                               <span>
