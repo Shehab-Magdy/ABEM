@@ -14,6 +14,7 @@ import {
   Alert,
   Box,
   Button,
+  Checkbox,
   Chip,
   CircularProgress,
   Dialog,
@@ -22,7 +23,6 @@ import {
   DialogTitle,
   Divider,
   FormControl,
-  Grid,
   IconButton,
   InputLabel,
   MenuItem,
@@ -507,30 +507,26 @@ export default function ExpensesPage() {
               multiline
               rows={2}
             />
-            <Grid container spacing={2}>
-              <Grid item xs={6}>
-                <TextField
-                  label="Amount *"
-                  type="number"
-                  inputProps={{ min: 0.01, step: 0.01 }}
-                  value={form.amount}
-                  onChange={handleFormChange("amount")}
-                  size="small"
-                  fullWidth
-                />
-              </Grid>
-              <Grid item xs={6}>
-                <TextField
-                  label="Expense Date *"
-                  type="date"
-                  value={form.expense_date}
-                  onChange={handleFormChange("expense_date")}
-                  size="small"
-                  fullWidth
-                  InputLabelProps={{ shrink: true }}
-                />
-              </Grid>
-            </Grid>
+            <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+              <TextField
+                label="Amount *"
+                type="number"
+                inputProps={{ min: 0.01, step: 0.01 }}
+                value={form.amount}
+                onChange={handleFormChange("amount")}
+                size="small"
+                fullWidth
+              />
+              <TextField
+                label="Expense Date *"
+                type="date"
+                value={form.expense_date}
+                onChange={handleFormChange("expense_date")}
+                size="small"
+                fullWidth
+                InputLabelProps={{ shrink: true }}
+              />
+            </Stack>
             <TextField
               label="Due Date"
               type="date"
