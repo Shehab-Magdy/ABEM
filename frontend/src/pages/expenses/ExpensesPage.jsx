@@ -429,10 +429,17 @@ export default function ExpensesPage() {
                     </TableCell>
                     <TableCell>
                       <Typography variant="body2" fontWeight={500}>
-                        {parseFloat(exp.amount).toLocaleString("en-US", {
-                          minimumFractionDigits: 2,
-                        })}
+                        {parseFloat(
+                          !isAdmin && exp.my_share_amount != null
+                            ? exp.my_share_amount
+                            : exp.amount
+                        ).toLocaleString("en-US", { minimumFractionDigits: 2 })}
                       </Typography>
+                      {!isAdmin && exp.my_share_amount != null && (
+                        <Typography variant="caption" color="text.secondary" display="block">
+                          your share
+                        </Typography>
+                      )}
                     </TableCell>
                     <TableCell>{exp.expense_date}</TableCell>
                     <TableCell>
