@@ -16,9 +16,8 @@
  *      TUTORIAL_ANCHORS.md.  Search the codebase for those ids before removing
  *      or renaming elements.
  *
- *   4. To trigger the tutorial programmatically from anywhere:
- *        import { useTutorialStore } from '../tutorial/TutorialOverlay';
- *        useTutorialStore.getState().openRolePicker();
+ *   4. The tour role is auto-detected from the logged-in user's role.
+ *      Admin users get the Admin tour; all other users get the Owner tour.
  */
 
 import { useEffect, useRef, useCallback, useState } from "react";
@@ -28,15 +27,13 @@ import { create } from "zustand";
 import {
   Box,
   Button,
-  Dialog,
-  DialogContent,
-  DialogTitle,
   IconButton,
   Stack,
   Tooltip,
   Typography,
 } from "@mui/material";
 import { Close, NavigateBefore, NavigateNext, School } from "@mui/icons-material";
+import { useAuth } from "../hooks/useAuth";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Step definitions
@@ -136,7 +133,7 @@ export const TUTORIAL_STEPS = {
       anchor: "notifications-list",
       title: "Notifications centre",
       description:
-        "You receive alerts when the admin records a payment for your unit, when a new expense is posted, and for broadcast announcements. Mark individual notifications as read from this list.",
+        "Your alerts appear in this list below the compose panels. You receive notifications when a payment is recorded, a new expense is posted, or an admin broadcasts an announcement. Mark each one as read individually, or filter to show only unread.",
     },
     {
       page: "/profile",
@@ -154,15 +151,11 @@ export const TUTORIAL_STEPS = {
 
 export const useTutorialStore = create((set, get) => ({
   isActive: false,
-  isRolePicking: false,
   role: null,          // 'admin' | 'owner'
   currentStep: 0,
 
-  openRolePicker: () => set({ isRolePicking: true }),
-  closeRolePicker: () => set({ isRolePicking: false }),
-
   startTutorial: (role) =>
-    set({ isActive: true, isRolePicking: false, role, currentStep: 0 }),
+    set({ isActive: true, role, currentStep: 0 }),
 
   nextStep: () => {
     const { currentStep, role } = get();
@@ -248,8 +241,12 @@ function waitForElement(anchorId, maxWaitMs = 2000) {
 
 /** The green "Tutorial" button placed in the app header. */
 export function TutorialButton() {
-  const openRolePicker = useTutorialStore((s) => s.openRolePicker);
-  const isActive = useTutorialStore((s) => s.isActive);
+  const { isAdmin } = useAuth();
+  const { isActive, startTutorial } = useTutorialStore();
+
+  const handleClick = () => {
+    startTutorial(isAdmin ? "admin" : "owner");
+  };
 
   return (
     <Tooltip title="Start tour">
@@ -258,7 +255,7 @@ export function TutorialButton() {
         size="small"
         variant="contained"
         startIcon={<School sx={{ fontSize: 16 }} />}
-        onClick={openRolePicker}
+        onClick={handleClick}
         disabled={isActive}
         sx={{
           bgcolor: "#10B981",
@@ -277,66 +274,6 @@ export function TutorialButton() {
         Tour
       </Button>
     </Tooltip>
-  );
-}
-
-/** Role-picker modal — shown before the tour starts. */
-function RolePickerModal() {
-  const { isRolePicking, closeRolePicker, startTutorial } = useTutorialStore();
-
-  return (
-    <Dialog
-      open={isRolePicking}
-      onClose={closeRolePicker}
-      maxWidth="xs"
-      fullWidth
-      PaperProps={{ sx: { borderRadius: 3, p: 1 } }}
-    >
-      <DialogTitle sx={{ fontWeight: 700, fontSize: 18, pb: 0.5 }}>
-        Choose a tour
-      </DialogTitle>
-      <DialogContent>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 2.5 }}>
-          Select the role you want to explore. The tour will navigate the app
-          step by step and highlight key features.
-        </Typography>
-        <Stack spacing={1.5}>
-          <Button
-            fullWidth
-            variant="contained"
-            size="large"
-            onClick={() => startTutorial("admin")}
-            sx={{
-              bgcolor: "#2563EB",
-              fontWeight: 600,
-              textTransform: "none",
-              borderRadius: 2,
-              py: 1.5,
-              "&:hover": { bgcolor: "#1D4ED8" },
-            }}
-          >
-            Admin tour — 9 steps
-          </Button>
-          <Button
-            fullWidth
-            variant="outlined"
-            size="large"
-            onClick={() => startTutorial("owner")}
-            sx={{
-              borderColor: "#2563EB",
-              color: "#2563EB",
-              fontWeight: 600,
-              textTransform: "none",
-              borderRadius: 2,
-              py: 1.5,
-              "&:hover": { bgcolor: "#EFF6FF", borderColor: "#1D4ED8" },
-            }}
-          >
-            Owner tour — 5 steps
-          </Button>
-        </Stack>
-      </DialogContent>
-    </Dialog>
   );
 }
 
@@ -620,13 +557,8 @@ export function TutorialOverlay() {
 
 /**
  * Mount <TutorialSystem /> once inside your router to activate the full
- * tutorial system (role picker modal + spotlight overlay).
+ * tutorial system (spotlight overlay). Role is auto-detected from useAuth().
  */
 export default function TutorialSystem() {
-  return (
-    <>
-      <RolePickerModal />
-      <TutorialOverlay />
-    </>
-  );
+  return <TutorialOverlay />;
 }
