@@ -56,7 +56,12 @@ export default function ProfilePage() {
     setProfileError(null);
     setProfileSuccess(false);
     try {
-      const res = await authApi.updateProfile(data);
+      const res = await authApi.updateProfile({
+        ...data,
+        first_name: data.first_name?.trim(),
+        last_name: data.last_name?.trim(),
+        phone: data.phone?.trim(),
+      });
       setUser(res.data);
       setProfileSuccess(true);
     } catch {

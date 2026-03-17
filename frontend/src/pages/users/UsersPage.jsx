@@ -110,7 +110,13 @@ export default function UsersPage() {
     setCreating(true);
     setCreateError(null);
     try {
-      await usersApi.create(data);
+      await usersApi.create({
+        ...data,
+        first_name: data.first_name?.trim(),
+        last_name: data.last_name?.trim(),
+        email: data.email?.trim(),
+        phone: data.phone?.trim(),
+      });
       setCreateOpen(false);
       createForm.reset();
       fetchUsers();

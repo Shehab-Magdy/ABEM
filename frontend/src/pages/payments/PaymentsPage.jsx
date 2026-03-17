@@ -202,9 +202,9 @@ export default function PaymentsPage() {
   const handleSubmit = async () => {
     setFormError("");
     const notesWithMethod =
-      form.payment_method === "other" && form.other_method_detail
-        ? `[Method: ${form.other_method_detail}]${form.notes ? " " + form.notes : ""}`
-        : form.notes;
+      form.payment_method === "other" && form.other_method_detail.trim()
+        ? `[Method: ${form.other_method_detail.trim()}]${form.notes.trim() ? " " + form.notes.trim() : ""}`
+        : form.notes.trim();
     const payload = {
       apartment_id: form.apartment_id || selectedApartment,
       amount_paid: parseFloat(form.amount_paid),

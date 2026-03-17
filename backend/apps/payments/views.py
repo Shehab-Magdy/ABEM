@@ -1,7 +1,7 @@
 """Payment views – Sprint 4 + Sprint 8 (PDF receipt)."""
 from __future__ import annotations
 
-import io
+import html as html_lib
 
 from django.http import HttpResponse
 from rest_framework.decorators import action
@@ -117,11 +117,9 @@ class PaymentViewSet(ModelViewSet):
 
         Returns a formatted PDF receipt. Admin sees any payment; owners see
         only payments for their own apartments.
+        Uses WeasyPrint (HTML → PDF) so Arabic and all Unicode text renders correctly.
         """
-        from reportlab.lib import colors
-        from reportlab.lib.pagesizes import A4
-        from reportlab.lib.units import mm
-        from reportlab.pdfgen import canvas as rl_canvas
+        from weasyprint import HTML
 
         payment = self.get_object()
 
@@ -133,48 +131,17 @@ class PaymentViewSet(ModelViewSet):
                 from rest_framework.exceptions import PermissionDenied
                 raise PermissionDenied("You do not have permission to view this receipt.")
 
-        def _safe(text: str) -> str:
-            """Encode to Latin-1, replacing any non-Latin-1 chars. Helvetica requires this."""
-            return text.encode("latin-1", errors="replace").decode("latin-1")
+        def esc(value) -> str:
+            """HTML-escape any user-provided value to prevent injection in the PDF."""
+            return html_lib.escape(str(value))
 
-        buf = io.BytesIO()
-        width, height = A4
-        c = rl_canvas.Canvas(buf, pagesize=A4)
-
-        # ── Header bar ─────────────────────────────────────────────────────────
-        c.setFillColor(colors.HexColor("#1E3A5F"))
-        c.rect(0, height - 60 * mm, width, 60 * mm, fill=1, stroke=0)
-        c.setFillColor(colors.white)
-        c.setFont("Helvetica-Bold", 24)
-        c.drawString(20 * mm, height - 28 * mm, "ABEM")
-        c.setFont("Helvetica", 11)
-        c.drawString(20 * mm, height - 40 * mm, "Apartment & Building Expense Management")
-        c.setFont("Helvetica-Bold", 14)
-        c.drawRightString(width - 20 * mm, height - 28 * mm, "PAYMENT RECEIPT")
-        c.setFont("Helvetica", 10)
-        c.drawRightString(width - 20 * mm, height - 40 * mm, f"Receipt No: {str(payment.id)[:8].upper()}")
-
-        # ── Building & Unit info ────────────────────────────────────────────────
-        y = height - 80 * mm
-        c.setFillColor(colors.HexColor("#F0F4F8"))
-        c.rect(15 * mm, y - 30 * mm, width - 30 * mm, 30 * mm, fill=1, stroke=0)
-        c.setFillColor(colors.HexColor("#1E3A5F"))
-        c.setFont("Helvetica-Bold", 10)
-        c.drawString(20 * mm, y - 10 * mm, "BUILDING")
-        c.drawString(width / 2, y - 10 * mm, "UNIT")
-        c.setFillColor(colors.black)
-        c.setFont("Helvetica", 11)
-        c.drawString(20 * mm, y - 20 * mm, _safe(apt.building.name))
-        c.drawString(width / 2, y - 20 * mm, _safe(f"Unit {apt.unit_number}  |  {apt.get_unit_type_display()}"))
-
-        # ── Payment details ─────────────────────────────────────────────────────
-        y -= 45 * mm
         linked_expenses = payment.expenses.all()
         expense_str = (
-            ", ".join(_safe(e.title) for e in linked_expenses)
+            ", ".join(esc(e.title) for e in linked_expenses)
             if linked_expenses
             else "General payment"
         )
+
         fields = [
             ("Amount Paid",    f"{payment.amount_paid:,.2f} EGP"),
             ("Payment Date",   str(payment.payment_date)),
@@ -182,37 +149,114 @@ class PaymentViewSet(ModelViewSet):
             ("For Expenses",   expense_str),
             ("Balance Before", f"{payment.balance_before:,.2f} EGP"),
             ("Balance After",  f"{payment.balance_after:,.2f} EGP"),
-            ("Recorded By",    _safe(str(payment.recorded_by or "-"))),
-            ("Notes",          _safe(payment.notes or "-")),
+            ("Recorded By",    esc(payment.recorded_by or "—")),
+            ("Notes",          esc(payment.notes or "—")),
         ]
-        row_h = 12 * mm
-        for label, value in fields:
-            c.setFillColor(colors.HexColor("#F0F4F8"))
-            c.rect(15 * mm, y - row_h + 3 * mm, width - 30 * mm, row_h, fill=1, stroke=0)
-            c.setFillColor(colors.HexColor("#555555"))
-            c.setFont("Helvetica-Bold", 9)
-            c.drawString(20 * mm, y, label)
-            c.setFillColor(colors.black)
-            c.setFont("Helvetica", 10)
-            c.drawRightString(width - 20 * mm, y, value)
-            y -= row_h + 1 * mm
+        rows_html = "".join(
+            f'<tr><td class="lbl">{label}</td><td class="val">{value}</td></tr>'
+            for label, value in fields
+        )
 
-        # ── Highlight amount ───────────────────────────────────────────────────
-        c.setFillColor(colors.HexColor("#E8F5E9"))
-        c.roundRect(15 * mm, y - 16 * mm, width - 30 * mm, 14 * mm, 3 * mm, fill=1, stroke=0)
-        c.setFillColor(colors.HexColor("#2E7D32"))
-        c.setFont("Helvetica-Bold", 13)
-        c.drawCentredString(width / 2, y - 8 * mm, f"[PAID]  {payment.amount_paid:,.2f} EGP  RECEIVED")
+        html_content = f"""<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+  @page {{ size: A4; margin: 0; }}
+  * {{ box-sizing: border-box; margin: 0; padding: 0; }}
+  body {{
+    font-family: "Noto Sans Arabic", "Noto Sans", Arial, sans-serif;
+    font-size: 11pt;
+    color: #222;
+    position: relative;
+    min-height: 297mm;
+  }}
+  .header {{
+    background: #1E3A5F;
+    color: white;
+    padding: 10mm 20mm;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }}
+  .logo {{ font-size: 22pt; font-weight: bold; }}
+  .subtitle {{ font-size: 10pt; margin-top: 3px; }}
+  .receipt-title {{ font-size: 14pt; font-weight: bold; text-align: right; }}
+  .receipt-no {{ font-size: 9pt; text-align: right; margin-top: 4px; }}
+  .info-section {{
+    background: #F0F4F8;
+    margin: 8mm 15mm 0;
+    padding: 5mm 8mm;
+    display: flex;
+    justify-content: space-between;
+  }}
+  .info-label {{ color: #1E3A5F; font-size: 9pt; font-weight: bold; margin-bottom: 3px; }}
+  .info-value {{ font-size: 11pt; unicode-bidi: plaintext; }}
+  .details-table {{
+    width: calc(100% - 30mm);
+    margin: 6mm 15mm 0;
+    border-collapse: collapse;
+  }}
+  .details-table tr {{ height: 12mm; }}
+  .details-table tr:nth-child(odd) td {{ background: #F0F4F8; }}
+  .details-table td {{ padding: 3mm 5mm; vertical-align: middle; }}
+  .details-table td.lbl {{ color: #555; font-size: 9pt; font-weight: bold; width: 38%; }}
+  .details-table td.val {{ text-align: right; font-size: 10pt; unicode-bidi: plaintext; }}
+  .paid-box {{
+    background: #E8F5E9;
+    color: #2E7D32;
+    font-size: 13pt;
+    font-weight: bold;
+    text-align: center;
+    margin: 6mm 15mm 0;
+    padding: 4mm;
+    border-radius: 3mm;
+  }}
+  .footer {{
+    position: absolute;
+    bottom: 10mm;
+    width: 100%;
+    text-align: center;
+    color: #888;
+    font-size: 8pt;
+  }}
+</style>
+</head>
+<body>
+  <div class="header">
+    <div>
+      <div class="logo">ABEM</div>
+      <div class="subtitle">Apartment &amp; Building Expense Management</div>
+    </div>
+    <div>
+      <div class="receipt-title">PAYMENT RECEIPT</div>
+      <div class="receipt-no">Receipt No: {str(payment.id)[:8].upper()}</div>
+    </div>
+  </div>
 
-        # ── Footer ─────────────────────────────────────────────────────────────
-        c.setFillColor(colors.HexColor("#888888"))
-        c.setFont("Helvetica", 8)
-        c.drawCentredString(width / 2, 15 * mm, "This is an automatically generated receipt. ABEM - abem.app")
+  <div class="info-section">
+    <div>
+      <div class="info-label">BUILDING</div>
+      <div class="info-value">{esc(apt.building.name)}</div>
+    </div>
+    <div>
+      <div class="info-label">UNIT</div>
+      <div class="info-value">Unit {esc(apt.unit_number)} &nbsp;|&nbsp; {esc(apt.get_unit_type_display())}</div>
+    </div>
+  </div>
 
-        c.save()
-        buf.seek(0)
+  <table class="details-table">
+    {rows_html}
+  </table>
 
-        resp = HttpResponse(buf.read(), content_type="application/pdf")
+  <div class="paid-box">&#10003; PAID &nbsp;&nbsp; {payment.amount_paid:,.2f} EGP &nbsp;&nbsp; RECEIVED</div>
+
+  <div class="footer">This is an automatically generated receipt. ABEM - abem.app</div>
+</body>
+</html>"""
+
+        pdf_bytes = HTML(string=html_content).write_pdf()
+        resp = HttpResponse(pdf_bytes, content_type="application/pdf")
         resp["Content-Disposition"] = f'inline; filename="receipt_{str(payment.id)[:8]}.pdf"'
         return resp
 

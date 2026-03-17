@@ -31,7 +31,6 @@ import {
   Business,
   Category,
   ExitToApp,
-  History,
   Menu as MenuIcon,
   Notifications,
   Payment,
@@ -106,7 +105,6 @@ export default function DashboardLayout() {
     { to: "/users", icon: <People />, label: "Users", show: isAdmin },
     { to: "/notifications", icon: <Notifications />, label: "Notifications", show: true },
     { to: "/expense-categories", icon: <Category />, label: "Expense Categories", show: isAdmin },
-    { to: "/audit", icon: <History />, label: "Audit Log", show: isAdmin },
   ].filter((item) => item.show);
 
   const drawer = (

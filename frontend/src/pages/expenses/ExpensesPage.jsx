@@ -242,8 +242,8 @@ export default function ExpensesPage() {
     const effectiveCategoryId = subcategoryId || form.category_id;
 
     const payload = {
-      title: form.title,
-      description: form.description,
+      title: form.title.trim(),
+      description: form.description.trim(),
       amount: form.amount,
       expense_date: form.expense_date,
       split_type: form.split_type,

@@ -155,10 +155,10 @@ export default function BuildingsPage() {
     setDialogError(null);
     try {
       const payload = {
-        name: data.name,
-        address: data.address,
-        city: data.city,
-        country: data.country,
+        name: data.name?.trim(),
+        address: data.address?.trim(),
+        city: data.city?.trim(),
+        country: data.country?.trim(),
         num_floors: parseInt(data.num_floors, 10),
         num_apartments: parseInt(data.num_apartments, 10) || 0,
         num_stores: parseInt(data.num_stores, 10) || 0,

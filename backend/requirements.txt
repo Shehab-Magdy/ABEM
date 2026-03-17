@@ -43,7 +43,7 @@ python-decouple==3.8
 PyYAML==6.0.3
 redis==5.0.8
 referencing==0.37.0
-reportlab==4.4.10
+weasyprint==68.1
 requests==2.32.5
 rpds-py==0.30.0
 six==1.17.0
