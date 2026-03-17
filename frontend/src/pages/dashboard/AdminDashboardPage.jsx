@@ -29,6 +29,7 @@ import {
   Alert,
   Button,
 } from "@mui/material";
+import { TrendingUp, TrendingDown } from "@mui/icons-material";
 import { BarChart } from "@mui/x-charts/BarChart";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
@@ -38,6 +39,23 @@ const MONTH_LABELS = [
   "Jan", "Feb", "Mar", "Apr", "May", "Jun",
   "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
 ];
+
+function TrendBadge({ pct, invertColors }) {
+  if (pct === null || pct === undefined) return null;
+  const up = pct >= 0;
+  // invertColors=true for expenses: rising expenses = bad (red)
+  const isGood = invertColors ? !up : up;
+  const color = isGood ? "success.main" : "error.main";
+  const Icon = up ? TrendingUp : TrendingDown;
+  return (
+    <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, mt: 0.5 }}>
+      <Icon sx={{ fontSize: 14, color }} />
+      <Typography variant="caption" sx={{ color, fontWeight: 600 }}>
+        {up ? "+" : ""}{pct}% vs last month
+      </Typography>
+    </Box>
+  );
+}
 
 export default function AdminDashboardPage() {
   const { isAdmin } = useAuth();
@@ -106,7 +124,6 @@ export default function AdminDashboardPage() {
 
   const incomeValues = data?.monthly_trend?.map((m) => parseFloat(m.income)) ?? [];
   const expenseValues = data?.monthly_trend?.map((m) => parseFloat(m.expenses)) ?? [];
-  // Show content sections whenever data is loaded (even with zero values)
   const hasData = data !== null;
 
   return (
@@ -167,88 +184,88 @@ export default function AdminDashboardPage() {
         </Alert>
       ) : (
         <>
-          {/* ── Summary cards ── */}
+          {/* ── Top KPI cards (4 columns) ── */}
           <Grid container spacing={3} sx={{ mb: 3 }}>
-            <Grid item xs={12} sm={4}>
+
+            {/* Total Income */}
+            <Grid item xs={12} sm={6} md={3}>
               <Card>
                 <CardContent>
-                  <Typography variant="overline" color="text.secondary">
-                    Total Income
-                  </Typography>
+                  <Typography variant="overline" color="text.secondary">Total Income</Typography>
                   <Typography variant="h5" fontWeight={700} color="success.main" data-testid="total-income">
                     {parseFloat(data?.total_income ?? 0).toLocaleString()} EGP
                   </Typography>
+                  <TrendBadge pct={data?.income_change_pct} invertColors={false} />
                 </CardContent>
               </Card>
             </Grid>
 
-            <Grid item xs={12} sm={4}>
+            {/* Total Expenses */}
+            <Grid item xs={12} sm={6} md={3}>
               <Card>
                 <CardContent>
-                  <Typography variant="overline" color="text.secondary">
-                    Total Expenses
-                  </Typography>
+                  <Typography variant="overline" color="text.secondary">Total Expenses</Typography>
                   <Typography variant="h5" fontWeight={700} color="warning.main" data-testid="total-expenses">
                     {parseFloat(data?.total_expenses ?? 0).toLocaleString()} EGP
                   </Typography>
+                  <TrendBadge pct={data?.expense_change_pct} invertColors={true} />
                 </CardContent>
               </Card>
             </Grid>
 
-            <Grid item xs={12} sm={4}>
+            {/* Overdue Units */}
+            <Grid item xs={12} sm={6} md={3}>
               <Card
                 sx={{
-                  cursor: data?.overdue_count > 0 ? "pointer" : "default",
-                  border: data?.overdue_count > 0 ? "2px solid" : undefined,
-                  borderColor: data?.overdue_count > 0 ? "error.main" : undefined,
+                  cursor: data?.overdue_units_count > 0 ? "pointer" : "default",
+                  border: data?.overdue_units_count > 0 ? "2px solid" : undefined,
+                  borderColor: data?.overdue_units_count > 0 ? "error.main" : undefined,
                 }}
-                onClick={() => data?.overdue_count > 0 && navigate("/buildings")}
-                data-testid="overdue-card"
+                onClick={() => data?.overdue_units_count > 0 && navigate("/payments")}
+                data-testid="overdue-units-card"
               >
                 <CardContent>
-                  <Typography variant="overline" color="text.secondary">
-                    Overdue Accounts
-                  </Typography>
+                  <Typography variant="overline" color="text.secondary">Overdue Units</Typography>
                   <Typography
                     variant="h5"
                     fontWeight={700}
-                    color={data?.overdue_count > 0 ? "error.main" : "success.main"}
-                    data-testid="overdue-count"
+                    color={data?.overdue_units_count > 0 ? "error.main" : "success.main"}
+                    data-testid="overdue-units-count"
                   >
-                    {data?.overdue_count ?? 0}
+                    {data?.overdue_units_count ?? 0}
                   </Typography>
-                  {data?.overdue_count > 0 && (
-                    <Chip label="Click to view" size="small" color="error" sx={{ mt: 1 }} />
+                  <Typography variant="caption" color="text.secondary">
+                    Units with past-due expenses
+                  </Typography>
+                  {data?.overdue_units_count > 0 && (
+                    <Box sx={{ mt: 0.5 }}>
+                      <Chip label="View payments" size="small" color="error" />
+                    </Box>
                   )}
                 </CardContent>
               </Card>
             </Grid>
-          </Grid>
 
-          {/* ── Building summary ── */}
-          <Card sx={{ mb: 3 }}>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>Building Summary</Typography>
-              <Box sx={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
-                <Box>
+            {/* Buildings */}
+            <Grid item xs={12} sm={6} md={3}>
+              <Card
+                sx={{ cursor: "pointer" }}
+                onClick={() => navigate("/buildings")}
+                data-testid="buildings-card"
+              >
+                <CardContent>
                   <Typography variant="overline" color="text.secondary">Buildings</Typography>
-                  <Typography variant="h6">{data?.building_summary?.total_buildings ?? 0}</Typography>
-                </Box>
-                <Box>
-                  <Typography variant="overline" color="text.secondary">Apartments</Typography>
-                  <Typography variant="h6">{data?.building_summary?.total_apartments ?? 0}</Typography>
-                </Box>
-                <Box>
-                  <Typography variant="overline" color="text.secondary">Occupied</Typography>
-                  <Typography variant="h6" color="success.main">{data?.building_summary?.occupied ?? 0}</Typography>
-                </Box>
-                <Box>
-                  <Typography variant="overline" color="text.secondary">Vacant</Typography>
-                  <Typography variant="h6" color="text.secondary">{data?.building_summary?.vacant ?? 0}</Typography>
-                </Box>
-              </Box>
-            </CardContent>
-          </Card>
+                  <Typography variant="h5" fontWeight={700} color="primary.main">
+                    {data?.building_summary?.total_buildings ?? 0}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    {data?.building_summary?.total_units ?? 0} total units &nbsp;·&nbsp;{" "}
+                    {data?.building_summary?.occupied ?? 0} occupied
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+          </Grid>
 
           {/* ── Payment collection progress ── */}
           {data?.payment_coverage && (
@@ -292,6 +309,47 @@ export default function AdminDashboardPage() {
               </CardContent>
             </Card>
           )}
+
+          {/* ── Recent Expenses (last 30 days) ── */}
+          <Card sx={{ mb: 3 }}>
+            <CardContent>
+              <Typography variant="h6" gutterBottom>Recent Expenses (Last 30 Days)</Typography>
+              {(data?.recent_expenses ?? []).length === 0 ? (
+                <Typography variant="body2" color="text.secondary">No expenses in the last 30 days.</Typography>
+              ) : (
+                <TableContainer component={Paper} variant="outlined">
+                  <Table size="small">
+                    <TableHead>
+                      <TableRow sx={{ bgcolor: "grey.100" }}>
+                        <TableCell><strong>Expense</strong></TableCell>
+                        <TableCell><strong>Category</strong></TableCell>
+                        <TableCell align="right"><strong>Amount (EGP)</strong></TableCell>
+                        <TableCell align="center"><strong>Status</strong></TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {(data?.recent_expenses ?? []).map((row, i) => (
+                        <TableRow key={i} hover>
+                          <TableCell>{row.title}</TableCell>
+                          <TableCell>{row.category}</TableCell>
+                          <TableCell align="right">
+                            {parseFloat(row.amount).toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                          </TableCell>
+                          <TableCell align="center">
+                            <Chip
+                              label={row.status}
+                              size="small"
+                              color={row.status === "Overdue" ? "error" : "success"}
+                            />
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              )}
+            </CardContent>
+          </Card>
 
           {/* ── Unpaid dues table ── */}
           {data?.unpaid_units?.length > 0 && (

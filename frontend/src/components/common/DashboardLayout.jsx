@@ -1,6 +1,6 @@
 /**
  * Main app shell: sidebar navigation + top bar + content outlet.
- * Navigation items are role-aware (admin vs owner).
+ * Navigation items are role-aware (admin vs owner), split into sections.
  */
 import { useState, useEffect } from "react";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
@@ -66,6 +66,27 @@ function NavItem({ to, icon, label, currentPath }) {
   );
 }
 
+function NavSection({ title, items, currentPath }) {
+  if (items.length === 0) return null;
+  return (
+    <>
+      <Box sx={{ px: 2, pt: 1.5, pb: 0.25 }}>
+        <Typography
+          variant="overline"
+          sx={{ color: "rgba(255,255,255,0.38)", fontSize: 10, letterSpacing: 1.5, lineHeight: 1 }}
+        >
+          {title}
+        </Typography>
+      </Box>
+      <List sx={{ pt: 0, pb: 0.5 }}>
+        {items.map((item) => (
+          <NavItem key={item.to} {...item} currentPath={currentPath} />
+        ))}
+      </List>
+    </>
+  );
+}
+
 export default function DashboardLayout() {
   const { user, isAdmin } = useAuth();
   const { logout, refreshToken } = useAuthStore();
@@ -96,16 +117,23 @@ export default function DashboardLayout() {
     navigate("/login", { replace: true });
   };
 
-  const navItems = [
+  const mainItems = [
     { to: "/dashboard", icon: <Assessment />, label: "Dashboard", show: true },
     { to: "/buildings", icon: <Business />, label: "Buildings", show: isAdmin },
     { to: "/expenses", icon: <Apartment />, label: "Expenses", show: true },
     { to: "/payments", icon: <Payment />, label: "Payments", show: true },
-    { to: "/assets", icon: <AccountBalance />, label: "Assets", show: isAdmin },
-    { to: "/users", icon: <People />, label: "Users", show: isAdmin },
     { to: "/notifications", icon: <Notifications />, label: "Notifications", show: true },
-    { to: "/expense-categories", icon: <Category />, label: "Expense Categories", show: isAdmin },
-  ].filter((item) => item.show);
+  ].filter((i) => i.show);
+
+  const adminItems = [
+    { to: "/users", icon: <People />, label: "Users", show: isAdmin },
+    { to: "/expense-categories", icon: <Category />, label: "Categories", show: isAdmin },
+    { to: "/assets", icon: <AccountBalance />, label: "Assets", show: isAdmin },
+  ].filter((i) => i.show);
+
+  const accountItems = [
+    { to: "/profile", icon: <AccountCircle />, label: "Profile", show: true },
+  ];
 
   const drawer = (
     <Box sx={{ height: "100%", bgcolor: "primary.dark", display: "flex", flexDirection: "column" }}>
@@ -116,11 +144,20 @@ export default function DashboardLayout() {
         </Typography>
       </Box>
       <Divider sx={{ borderColor: "rgba(255,255,255,0.12)" }} />
-      <List sx={{ flex: 1, pt: 1 }}>
-        {navItems.map((item) => (
-          <NavItem key={item.to} {...item} currentPath={location.pathname} />
-        ))}
-      </List>
+
+      <Box sx={{ flex: 1, overflowY: "auto", pt: 0.5 }}>
+        <NavSection title="Main" items={mainItems} currentPath={location.pathname} />
+
+        {adminItems.length > 0 && (
+          <>
+            <Divider sx={{ borderColor: "rgba(255,255,255,0.08)", mx: 2, my: 0.5 }} />
+            <NavSection title="Admin" items={adminItems} currentPath={location.pathname} />
+          </>
+        )}
+
+        <Divider sx={{ borderColor: "rgba(255,255,255,0.08)", mx: 2, my: 0.5 }} />
+        <NavSection title="Account" items={accountItems} currentPath={location.pathname} />
+      </Box>
     </Box>
   );
 

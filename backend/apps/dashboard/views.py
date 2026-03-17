@@ -1,5 +1,5 @@
 """Dashboard aggregation views — Sprint 5."""
-from datetime import date
+from datetime import date, timedelta
 from decimal import Decimal
 
 from django.db.models import Sum
@@ -49,6 +49,7 @@ class AdminDashboardView(APIView):
 
         date_from = request.query_params.get("date_from")
         date_to = request.query_params.get("date_to")
+        today = date.today()
 
         # ── Totals ────────────────────────────────────────────────────────────
         payment_qs = Payment.objects.filter(apartment__building__in=buildings)
@@ -65,19 +66,74 @@ class AdminDashboardView(APIView):
             expense_qs = expense_qs.filter(expense_date__lte=date_to)
         total_expenses = expense_qs.aggregate(s=Sum("amount"))["s"] or Decimal("0.00")
 
-        # ── Overdue count ─────────────────────────────────────────────────────
+        # ── Month-over-month % change (always current vs previous month) ──────
+        first_of_this_month = today.replace(day=1)
+        prev_month_date = first_of_this_month - timedelta(days=1)
+        prev_year, prev_month = prev_month_date.year, prev_month_date.month
+
+        curr_month_income = (
+            Payment.objects.filter(
+                apartment__building__in=buildings,
+                payment_date__year=today.year,
+                payment_date__month=today.month,
+            ).aggregate(s=Sum("amount_paid"))["s"] or Decimal("0.00")
+        )
+        prev_month_income = (
+            Payment.objects.filter(
+                apartment__building__in=buildings,
+                payment_date__year=prev_year,
+                payment_date__month=prev_month,
+            ).aggregate(s=Sum("amount_paid"))["s"] or Decimal("0.00")
+        )
+        income_change_pct = (
+            round(float((curr_month_income - prev_month_income) / prev_month_income * 100), 1)
+            if prev_month_income > 0 else None
+        )
+
+        curr_month_expense = (
+            Expense.objects.filter(
+                building__in=buildings,
+                expense_date__year=today.year,
+                expense_date__month=today.month,
+                deleted_at__isnull=True,
+            ).aggregate(s=Sum("amount"))["s"] or Decimal("0.00")
+        )
+        prev_month_expense = (
+            Expense.objects.filter(
+                building__in=buildings,
+                expense_date__year=prev_year,
+                expense_date__month=prev_month,
+                deleted_at__isnull=True,
+            ).aggregate(s=Sum("amount"))["s"] or Decimal("0.00")
+        )
+        expense_change_pct = (
+            round(float((curr_month_expense - prev_month_expense) / prev_month_expense * 100), 1)
+            if prev_month_expense > 0 else None
+        )
+
+        # ── Overdue count (balance > 0) ───────────────────────────────────────
         overdue_count = (
             Apartment.objects.filter(building__in=buildings, balance__gt=0).count()
         )
 
+        # ── Overdue units (balance > 0 AND has a past-due expense) ───────────
+        from apps.expenses.models import ApartmentExpense
+        overdue_units_count = (
+            Apartment.objects.filter(
+                building__in=buildings,
+                balance__gt=0,
+                apartment_expenses__expense__due_date__lt=today,
+                apartment_expenses__expense__deleted_at__isnull=True,
+            ).distinct().count()
+        )
+
         # ── Monthly trend (12 months of current year) ─────────────────────────
-        current_year = date.today().year
         monthly_trend = []
         for month_num in range(1, 13):
             m_income = (
                 Payment.objects.filter(
                     apartment__building__in=buildings,
-                    payment_date__year=current_year,
+                    payment_date__year=today.year,
                     payment_date__month=month_num,
                 ).aggregate(s=Sum("amount_paid"))["s"]
                 or Decimal("0.00")
@@ -85,14 +141,14 @@ class AdminDashboardView(APIView):
             m_expenses = (
                 Expense.objects.filter(
                     building__in=buildings,
-                    expense_date__year=current_year,
+                    expense_date__year=today.year,
                     expense_date__month=month_num,
                     deleted_at__isnull=True,
                 ).aggregate(s=Sum("amount"))["s"]
                 or Decimal("0.00")
             )
             monthly_trend.append({
-                "month": f"{current_year}-{month_num:02d}",
+                "month": f"{today.year}-{month_num:02d}",
                 "income": str(m_income),
                 "expenses": str(m_expenses),
             })
@@ -101,13 +157,12 @@ class AdminDashboardView(APIView):
         all_apts = Apartment.objects.filter(building__in=buildings)
         building_summary = {
             "total_buildings": buildings.count(),
-            "total_apartments": all_apts.count(),
+            "total_units": all_apts.count(),
             "occupied": all_apts.filter(status="occupied").count(),
             "vacant": all_apts.filter(status="vacant").count(),
         }
 
         # ── Payment collection progress ───────────────────────────────────────
-        from apps.expenses.models import ApartmentExpense
         billed_apt_ids = list(
             ApartmentExpense.objects.filter(
                 expense__building__in=buildings,
@@ -151,14 +206,39 @@ class AdminDashboardView(APIView):
             for r in unpaid_units
         ]
 
+        # ── Recent expenses (last 30 days) ────────────────────────────────────
+        thirty_days_ago = today - timedelta(days=30)
+        recent_exp_qs = (
+            Expense.objects.filter(
+                building__in=buildings,
+                deleted_at__isnull=True,
+                expense_date__gte=thirty_days_ago,
+            )
+            .select_related("category")
+            .order_by("-expense_date")[:20]
+        )
+        recent_expenses = [
+            {
+                "title": e.title,
+                "category": e.category.name if e.category else "Uncategorized",
+                "amount": str(e.amount),
+                "status": "Overdue" if (e.due_date and e.due_date < today) else "Active",
+            }
+            for e in recent_exp_qs
+        ]
+
         return Response({
-            "total_income":      str(total_income),
-            "total_expenses":    str(total_expenses),
-            "overdue_count":     overdue_count,
-            "monthly_trend":     monthly_trend,
-            "building_summary":  building_summary,
-            "payment_coverage":  payment_coverage,
-            "unpaid_units":      unpaid_rows,
+            "total_income":        str(total_income),
+            "income_change_pct":   income_change_pct,
+            "total_expenses":      str(total_expenses),
+            "expense_change_pct":  expense_change_pct,
+            "overdue_count":       overdue_count,
+            "overdue_units_count": overdue_units_count,
+            "monthly_trend":       monthly_trend,
+            "building_summary":    building_summary,
+            "payment_coverage":    payment_coverage,
+            "unpaid_units":        unpaid_rows,
+            "recent_expenses":     recent_expenses,
         })
 
 
