@@ -257,7 +257,10 @@ class OwnerDashboardView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        apartments = Apartment.objects.filter(owner=request.user)
+        from django.db.models import Q
+        apartments = Apartment.objects.filter(
+            Q(owner=request.user) | Q(owners=request.user)
+        ).distinct()
 
         date_from = request.query_params.get("date_from")
         date_to = request.query_params.get("date_to")

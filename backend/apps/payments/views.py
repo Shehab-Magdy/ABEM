@@ -41,8 +41,11 @@ class PaymentViewSet(ModelViewSet):
         qs = Payment.objects.select_related("apartment", "recorded_by").prefetch_related("expenses")
 
         if self.request.user.role != "admin":
-            # Owners see only payments for their own apartments
-            qs = qs.filter(apartment__owner=self.request.user)
+            # Owners see payments for any apartment they are primary or co-owner of
+            from django.db.models import Q
+            qs = qs.filter(
+                Q(apartment__owner=self.request.user) | Q(apartment__owners=self.request.user)
+            ).distinct()
 
         params = self.request.query_params
         apt_id     = params.get("apartment_id")
