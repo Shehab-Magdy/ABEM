@@ -142,6 +142,11 @@ class PaymentViewSet(ModelViewSet):
             else "General payment"
         )
 
+        recorded_by_name = (
+            esc(payment.recorded_by.get_full_name() or payment.recorded_by.email)
+            if payment.recorded_by else "—"
+        )
+
         fields = [
             ("Amount Paid",    f"{payment.amount_paid:,.2f} EGP"),
             ("Payment Date",   str(payment.payment_date)),
@@ -149,7 +154,7 @@ class PaymentViewSet(ModelViewSet):
             ("For Expenses",   expense_str),
             ("Balance Before", f"{payment.balance_before:,.2f} EGP"),
             ("Balance After",  f"{payment.balance_after:,.2f} EGP"),
-            ("Recorded By",    esc(payment.recorded_by or "—")),
+            ("Recorded By",    recorded_by_name),
             ("Notes",          esc(payment.notes or "—")),
         ]
         rows_html = "".join(
@@ -157,19 +162,26 @@ class PaymentViewSet(ModelViewSet):
             for label, value in fields
         )
 
+        # Owner display — prefer primary owner, fall back to first M2M owner
+        if apt.owner:
+            owner_display = esc(apt.owner.get_full_name() or apt.owner.email)
+        else:
+            first_owner = apt.owners.first()
+            owner_display = esc(first_owner.get_full_name() or first_owner.email) if first_owner else "—"
+
         html_content = f"""<!DOCTYPE html>
 <html>
 <head>
 <meta charset="UTF-8">
 <style>
-  @page {{ size: A4; margin: 0; }}
+  @page {{ size: B5; margin: 0; }}
   * {{ box-sizing: border-box; margin: 0; padding: 0; }}
   body {{
     font-family: "Noto Sans Arabic", "Noto Sans", Arial, sans-serif;
     font-size: 11pt;
     color: #222;
     position: relative;
-    min-height: 297mm;
+    min-height: 250mm;
   }}
   .header {{
     background: #1E3A5F;
@@ -242,6 +254,10 @@ class PaymentViewSet(ModelViewSet):
     <div>
       <div class="info-label">UNIT</div>
       <div class="info-value">Unit {esc(apt.unit_number)} &nbsp;|&nbsp; {esc(apt.get_unit_type_display())}</div>
+    </div>
+    <div>
+      <div class="info-label">OWNER</div>
+      <div class="info-value">{owner_display}</div>
     </div>
   </div>
 

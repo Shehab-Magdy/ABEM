@@ -600,75 +600,89 @@ export default function BuildingsPage() {
                       />
                     </TableCell>
                     <TableCell>
-                      {(u.owner_ids?.length > 0 || u.owner_id) ? (
-                        <Typography variant="caption" color="text.disabled">
-                          Claimed ({u.owner_ids?.length ?? 1} owner{(u.owner_ids?.length ?? 1) !== 1 ? "s" : ""})
-                        </Typography>
-                      ) : claimingUnit === u.id ? (
-                        <CircularProgress size={16} />
-                      ) : inviteLinks[u.id] ? (
-                        <Stack spacing={0.5}>
-                          <Stack direction="row" spacing={0.5} alignItems="center">
-                            <Typography variant="caption" sx={{ maxWidth: 180, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                              {inviteLinks[u.id]}
-                            </Typography>
-                            <Tooltip title={copiedUnit === u.id ? "Copied!" : "Copy link"}>
-                              <IconButton size="small" onClick={() => copyLink(u.id)}>
-                                {copiedUnit === u.id ? <Check fontSize="small" color="success" /> : <ContentCopy fontSize="small" />}
-                              </IconButton>
-                            </Tooltip>
-                          </Stack>
-                          {inviteCodes[u.id] && (
+                      <Stack spacing={0.5}>
+                        {/* Current owners */}
+                        {u.owner_names?.length > 0 && (
+                          <Typography variant="caption" color="text.secondary">
+                            {u.owner_names.join(", ")}
+                          </Typography>
+                        )}
+                        {/* Invite form */}
+                        {claimingUnit === u.id ? (
+                          <CircularProgress size={16} />
+                        ) : inviteLinks[u.id] ? (
+                          <Stack spacing={0.5}>
                             <Stack direction="row" spacing={0.5} alignItems="center">
-                              <Typography variant="caption" color="text.secondary">Code:</Typography>
-                              <Chip label={inviteCodes[u.id]} size="small" variant="outlined" color="secondary" />
-                            </Stack>
-                          )}
-                        </Stack>
-                      ) : (
-                        <Stack spacing={0.5}>
-                          <Stack direction="row" spacing={0.5} alignItems="center">
-                            <Autocomplete
-                              freeSolo
-                              size="small"
-                              options={buildingMembers.map((m) => m.email)}
-                              inputValue={inviteEmails[u.id] ?? ""}
-                              onInputChange={(_, val) => setInviteEmails((prev) => ({ ...prev, [u.id]: val }))}
-                              sx={{ width: 200 }}
-                              renderInput={(params) => (
-                                <TextField
-                                  {...params}
-                                  placeholder="owner@email.com"
-                                  type="email"
-                                />
-                              )}
-                            />
-                            <Tooltip title="Generate invite link">
-                              <span>
-                                <IconButton
-                                  size="small"
-                                  color="primary"
-                                  disabled={!inviteEmails[u.id]?.trim() || invitingUnit === u.id}
-                                  onClick={() => generateInvite(u)}
-                                >
-                                  {invitingUnit === u.id ? <CircularProgress size={16} /> : <Send fontSize="small" />}
+                              <Typography variant="caption" sx={{ maxWidth: 180, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                {inviteLinks[u.id]}
+                              </Typography>
+                              <Tooltip title={copiedUnit === u.id ? "Copied!" : "Copy link"}>
+                                <IconButton size="small" onClick={() => copyLink(u.id)}>
+                                  {copiedUnit === u.id ? <Check fontSize="small" color="success" /> : <ContentCopy fontSize="small" />}
                                 </IconButton>
-                              </span>
-                            </Tooltip>
-                          </Stack>
-                          <Tooltip title="Claim this unit for yourself">
+                              </Tooltip>
+                            </Stack>
+                            {inviteCodes[u.id] && (
+                              <Stack direction="row" spacing={0.5} alignItems="center">
+                                <Typography variant="caption" color="text.secondary">Code:</Typography>
+                                <Chip label={inviteCodes[u.id]} size="small" variant="outlined" color="secondary" />
+                              </Stack>
+                            )}
                             <Button
                               size="small"
-                              variant="outlined"
-                              startIcon={<PersonPin fontSize="small" />}
-                              onClick={() => claimUnit(u)}
-                              sx={{ alignSelf: "flex-start" }}
+                              onClick={() => setInviteLinks((prev) => ({ ...prev, [u.id]: null }))}
+                              sx={{ alignSelf: "flex-start", textTransform: "none", p: 0, minWidth: 0 }}
                             >
-                              Claim for self
+                              Invite another
                             </Button>
-                          </Tooltip>
-                        </Stack>
-                      )}
+                          </Stack>
+                        ) : (
+                          <Stack spacing={0.5}>
+                            <Stack direction="row" spacing={0.5} alignItems="center">
+                              <Autocomplete
+                                freeSolo
+                                size="small"
+                                options={buildingMembers.map((m) => m.email)}
+                                inputValue={inviteEmails[u.id] ?? ""}
+                                onInputChange={(_, val) => setInviteEmails((prev) => ({ ...prev, [u.id]: val }))}
+                                sx={{ width: 200 }}
+                                renderInput={(params) => (
+                                  <TextField
+                                    {...params}
+                                    placeholder="owner@email.com"
+                                    type="email"
+                                  />
+                                )}
+                              />
+                              <Tooltip title="Generate invite link">
+                                <span>
+                                  <IconButton
+                                    size="small"
+                                    color="primary"
+                                    disabled={!inviteEmails[u.id]?.trim() || invitingUnit === u.id}
+                                    onClick={() => generateInvite(u)}
+                                  >
+                                    {invitingUnit === u.id ? <CircularProgress size={16} /> : <Send fontSize="small" />}
+                                  </IconButton>
+                                </span>
+                              </Tooltip>
+                            </Stack>
+                            {!(u.owner_ids?.length > 0 || u.owner_id) && (
+                              <Tooltip title="Claim this unit for yourself">
+                                <Button
+                                  size="small"
+                                  variant="outlined"
+                                  startIcon={<PersonPin fontSize="small" />}
+                                  onClick={() => claimUnit(u)}
+                                  sx={{ alignSelf: "flex-start" }}
+                                >
+                                  Claim for self
+                                </Button>
+                              </Tooltip>
+                            )}
+                          </Stack>
+                        )}
+                      </Stack>
                     </TableCell>
                   </TableRow>
                 ))}

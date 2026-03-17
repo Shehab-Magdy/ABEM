@@ -279,12 +279,14 @@ class ApartmentViewSet(ModelViewSet):
             return Response({"detail": "This invite link has expired or already been used."}, status=410)
 
         apt = invite.apartment
-        if apt.owner is not None and apt.owner != request.user:
-            return Response({"detail": "This unit is already claimed."}, status=409)
+        if apt.owners.filter(pk=request.user.pk).exists():
+            return Response({"detail": "You are already an owner of this unit."}, status=409)
 
-        apt.owner = request.user
-        apt.status = "occupied"
-        apt.save(update_fields=["owner", "status", "updated_at"])
+        # Only set primary owner if not yet assigned; otherwise just add to M2M
+        if apt.owner is None:
+            apt.owner = request.user
+            apt.status = "occupied"
+            apt.save(update_fields=["owner", "status", "updated_at"])
         apt.owners.add(request.user)
 
         invite.used_at = timezone.now()
