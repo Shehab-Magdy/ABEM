@@ -6,12 +6,12 @@ Apartment & Building Expense Management
 
 *Web Application — Implemented Edition*
 
-Version 3.0 | March 2026
+Version 3.1 | March 2026
 
 | Document Info | Details |
 |---|---|
 | Status | Implemented — Web Application |
-| Version | 3.0 |
+| Version | 3.1 |
 | Audience | Dev / QA / Stakeholders |
 | Platform | Web (React + Django REST Framework) |
 | Note | This document describes the web application as fully built. The Flutter mobile application is planned for a future phase and is out of scope for this version. |
@@ -217,7 +217,7 @@ Manual payment recording by admins with full balance lifecycle management.
 
 **Payment Methods:** Cash, Bank Transfer, Cheque, Other (requires custom detail text if "Other" is selected).
 
-**PDF Receipts:** Each payment generates a downloadable PDF receipt (via ReportLab) containing: Building & unit info, receipt ID (first 8 chars of UUID), amount paid, payment method, linked expense titles, balance before/after, recorder name, date, and ABEM branding. The PDF is streamed as a blob and opened in a new browser tab.
+**PDF Receipts:** Each payment generates a downloadable PDF receipt (via ReportLab) in B5 page format containing: Building info, unit number + first owner's full name, receipt ID (first 8 chars of UUID), amount paid, payment method, linked expense titles, balance before/after, recorder's full name (no email), date, and ABEM branding. The PDF is streamed as a blob and opened in a new browser tab.
 
 **Balance Summary Card (per unit):** Shows Total Owed (cumulative expenses), Total Paid (cumulative payments), Current Balance with a color-coded chip (Settled = green, Credit = blue, Outstanding = red).
 
@@ -257,14 +257,20 @@ Manual payment recording by admins with full balance lifecycle management.
 
 **Units (Apartments/Stores):**
 - Fields: Unit Number, Floor, Unit Type (Apartment / Store), Size (sqm, optional), Status (Occupied / Vacant / Under Maintenance).
-- Multiple owners per unit: primary `owner` FK (for backward compatibility) + `owners` M2M set.
+- Multiple owners per unit: primary `owner` FK (for backward compatibility) + `owners` M2M set. Up to any number of co-owners may be assigned.
 - Admin can edit floor numbers in the Manage Units dialog.
+- The Manage Units dialog displays all current owner names above the invite form, and includes an "Invite another" button to generate additional invitations for already-occupied units.
 
 **Owner Invitation System:**
 - Admin generates an invitation for a unit: enters owner's email → system creates a `UnitInvitation` with a unique link token + 8-character alphanumeric `registration_code`.
 - Owner can register via the invitation link (email pre-populated) or by entering the registration code manually in the Owner Dashboard.
 - Invitations have an expiry date (typically 30 days) and are single-use (`used_at` set on redemption).
-- Admin can also "Claim for self" to assign themselves to a unit directly.
+- **Multiple owners:** inviting a new owner to an already-occupied unit does not replace the existing owner. The new user is added to the `owners` M2M set; the primary `owner` FK is set only on the first claim and never overwritten. A user already in the `owners` set cannot claim the same unit again (HTTP 409).
+- Admin can also "Claim for self" to assign themselves to a unit directly (only shown when the unit has no owner yet).
+
+**Shared Unit Data Visibility:**
+
+- All owners of the same unit (whether primary or co-owner) see identical data: the same payment history, balance summary, and owner dashboard figures. Payment and dashboard queries use `Q(apartment__owner=user) | Q(apartment__owners=user)` to include all co-owned units.
 
 ### 3.6 Building Asset Management
 
@@ -294,11 +300,20 @@ Admins track physical assets belonging to a building and record their sale.
 
 **Email & Push (Production):** The notification model includes `channel` (in_app, email, push) and metadata. Actual email delivery requires SMTP credentials; push (FCM) requires Firebase configuration. Both are infrastructure-ready.
 
+**Notification Center Page Layout:**
+
+- The page is organized into three independently collapsible accordion panels, each with a colored accent header (icon, title, unread badge, expand/collapse chevron):
+  1. **Send Message** (indigo) — compose panel, collapsed by default.
+  2. **Broadcast Announcement** (amber, admin only) — compose panel, collapsed by default.
+  3. **Your Notifications** (green) — notifications list with filter chips, expanded by default.
+- The two compose panels sit side by side at the top (two-column grid for admins; single column for owners). The notifications list is positioned below.
+
 ### 3.8 Communication & Messaging
 
 **Broadcast Announcements (Admin only):**
 - Admin selects a building and composes a subject + message body.
 - Message is delivered as an in-app notification to all owner-role members of the building.
+- Accessible from the Broadcast Announcement panel at the top of the Notification Center page.
 
 **Direct Messaging (All Users):**
 - Any user can send a message to building members by selecting:
@@ -306,6 +321,7 @@ Admins track physical assets belonging to a building and record their sale.
   - Admins only
   - Owners only
   - Specific person(s) (multi-select from building member list)
+- Accessible from the Send Message panel at the top of the Notification Center page.
 - Messaging restrictions are enforced: users with `messaging_blocked = True` cannot send any messages; users with `individual_messaging_blocked = True` cannot send to "Specific person" recipients.
 
 ### 3.9 Audit & Compliance
@@ -318,6 +334,33 @@ Admins track physical assets belonging to a building and record their sale.
 **Data Exports:**
 - **Payments CSV:** Date, Unit, Amount, Method, Balance Before, Balance After — filterable by apartment and date range.
 - **Expenses CSV / XLSX:** ID, Building, Category, Title, Amount, Date, Split Type — filterable by building and date range. XLSX format generated via openpyxl.
+
+### 3.10 Interactive Tutorial System
+
+A guided in-app walkthrough system that introduces new users to key features. Implemented in React for web and Flutter for mobile.
+
+**Role-Based Tours:**
+
+- **Admin tour** — 9 steps covering: Dashboard → Create Building → Building Actions → Add Expense → Expense Actions → Manage Users → Expense Categories → Building Assets → Audit Log.
+- **Owner tour** — 5 steps covering: Dashboard → Shared Expenses → Payment History → Notifications Centre → Profile.
+- The tour role is auto-detected from the authenticated user's role — no manual role selection required.
+
+**Web (React) Implementation:**
+
+- A green "Tour" button in the application header starts the tour immediately based on the user's role.
+- The overlay renders via a React portal above all content (z-index 9999+).
+- Each step navigates to the target page, then waits for the anchor element to appear in the DOM (up to 2 s via `requestAnimationFrame` retry).
+- An SVG mask creates a spotlight cutout over the highlighted element; a blue ring outlines it.
+- A floating card shows step badge, title, description, progress dots, and Back / Next / Finish navigation.
+- Clicking outside the card closes the tour.
+- Anchor IDs are documented in `TUTORIAL_ANCHORS.md` — these DOM `id` attributes must not be removed or renamed without updating the tutorial system.
+
+**Flutter (Mobile) Implementation:**
+
+- `WalkthroughOverlay` widget wraps each screen; `WalkthroughController` singleton drives navigation.
+- `GlobalKey` anchors are declared in `walkthrough_overlay.dart` and attached to target widgets.
+- A `CustomPainter` with an even-odd path renders the spotlight cutout and blue highlight ring.
+- A bottom modal sheet (`RolePickerSheet`) allows mobile users to start a tour.
 
 ---
 
@@ -456,6 +499,17 @@ As an Admin, I want to export payment records to CSV for accounting purposes.
 **US-9.3: Export Expense Data**
 As an Admin, I want to export expense records to CSV or Excel (XLSX) for accounting purposes.
 
+### Epic 10: Interactive Tutorial
+
+**US-10.1: Role-Appropriate Tour**
+As a new user, I want to start a guided tour that automatically shows me the features relevant to my role (Admin or Owner) without having to choose manually.
+
+**US-10.2: Step-by-Step Navigation**
+As a user, I want the tour to navigate to each relevant page and highlight the key element with a spotlight so I know exactly where to look.
+
+**US-10.3: Dismissible at Any Point**
+As a user, I want to be able to exit the tutorial at any step by clicking outside or pressing Finish.
+
 ---
 
 ## 5. Technical Stories
@@ -502,6 +556,9 @@ Database indexes on: building_id, owner_id, expense_id, apartment_id, token (inv
 
 **TS-13: CI/CD & Containerization**
 Docker Compose for local development: PostgreSQL 16, Redis 7, Django backend, Celery worker, Celery Beat, React frontend (via Vite dev server). GitHub Actions workflows for linting and test automation (planned).
+
+**TS-14: Interactive Tutorial System**
+React: Zustand store (`useTutorialStore`) holds `isActive`, `role`, `currentStep`. `TutorialButton` reads `useAuth()` and calls `startTutorial('admin' | 'owner')` directly — no role-picker modal. `waitForElement(anchorId)` uses `requestAnimationFrame` retry (max 2 s) to resolve anchor elements after React Router navigation. SVG mask with `<mask>` element creates a spotlight cutout; a positioned `<Box>` renders the blue highlight ring. `calcCardPos()` tries 6 candidate positions before clamping. All anchor IDs are documented in `TUTORIAL_ANCHORS.md`. Flutter: `WalkthroughController` (ChangeNotifier singleton) with `GlobalKey` anchors; `_SpotlightPainter` uses even-odd `Path` fill; anchor resolution uses `addPostFrameCallback` + 180 ms retry.
 
 ---
 
@@ -761,11 +818,11 @@ Redis is deployed as the Celery broker. Direct Redis caching for dashboard aggre
 | 20 | Payment method tracking (Cash/BankTransfer/Cheque/Other) | ✅ Implemented | |
 | 21 | Link payment to specific expenses (M2M) | ✅ Implemented | |
 | 22 | Payment immutability (no edit/delete) | ✅ Implemented | |
-| 23 | PDF payment receipt (ReportLab, browser download) | ✅ Implemented | |
+| 23 | PDF payment receipt (ReportLab, B5, name-only recorder, owner name) | ✅ Implemented | |
 | 24 | Running balance per unit (carry-forward credit) | ✅ Implemented | |
 | 25 | Admin dashboard (income, expenses, overdue, chart) | ✅ Implemented | |
 | 26 | Owner dashboard (balance card, pie chart, recent payments) | ✅ Implemented | |
-| 27 | In-app notification center with unread badge | ✅ Implemented | |
+| 27 | In-app notification center with unread badge (redesigned: compose top, list below, accordion) | ✅ Implemented | |
 | 28 | Broadcast announcement to building owners | ✅ Implemented | |
 | 29 | Direct messaging between users with recipient type selector | ✅ Implemented | |
 | 30 | Building asset management (track + record sale) | ✅ Implemented | |
@@ -785,6 +842,8 @@ Redis is deployed as the Celery broker. Direct Redis caching for dashboard aggre
 | 44 | Flutter mobile application | 🔲 Pending | Future phase (Sprint 12+) |
 | 45 | Building photo upload | 🔲 Pending | Model field exists; UI not built |
 | 46 | Bulk apartment import via CSV | 🔲 Pending | |
+| 47 | Interactive guided tutorial (Admin 9-step + Owner 5-step tours, auto-role) | ✅ Implemented | React + Flutter; anchor IDs in TUTORIAL_ANCHORS.md |
+| 48 | Multiple owners per unit with shared payment/dashboard visibility | ✅ Implemented | M2M owners; Q-filter on all owner queries |
 
 ---
 
