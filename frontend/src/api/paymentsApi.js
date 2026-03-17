@@ -7,5 +7,9 @@ export const paymentsApi = {
   getApartmentBalance: (apartmentId) =>
     axiosClient.get(`/apartments/${apartmentId}/balance/`),
   receipt: (id) =>
-    axiosClient.get(`/payments/${id}/receipt/`, { responseType: "blob" }),
+    axiosClient.get(`/payments/${id}/receipt/`, {
+      responseType: "blob",
+      timeout: 90000,
+      _skipGlobalError: true,
+    }),
 };

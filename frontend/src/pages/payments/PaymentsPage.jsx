@@ -107,6 +107,7 @@ export default function PaymentsPage() {
   const [saving, setSaving] = useState(false);
   const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
   const [dialogExpenses, setDialogExpenses] = useState([]);
+  const [loadingReceipt, setLoadingReceipt] = useState(null); // payment id currently generating
 
   // ── Data fetching ────────────────────────────────────────────────────────────
 
@@ -380,9 +381,11 @@ export default function PaymentsPage() {
                     <Button
                       size="small"
                       variant="outlined"
-                      startIcon={<PictureAsPdf fontSize="small" />}
+                      startIcon={loadingReceipt === p.id ? <CircularProgress size={14} /> : <PictureAsPdf fontSize="small" />}
+                      disabled={loadingReceipt === p.id}
                       data-testid="print-receipt"
                       onClick={async () => {
+                        setLoadingReceipt(p.id);
                         try {
                           const res = await paymentsApi.receipt(p.id);
                           const blob = new Blob([res.data], { type: "application/pdf" });
@@ -396,16 +399,24 @@ export default function PaymentsPage() {
                           document.body.removeChild(link);
                           setTimeout(() => URL.revokeObjectURL(url), 10000);
                         } catch (err) {
-                          if (err?.response?.status === 401) {
-                            alert("Session expired. Please log in again.");
-                            window.location.replace("/login");
-                          } else {
-                            alert("Could not load receipt. Please try again.");
+                          const isTimeout = err?.code === "ECONNABORTED" || err?.message?.includes("timeout");
+                          let msg = "Could not load receipt. Please try again.";
+                          if (isTimeout) {
+                            msg = "Receipt generation is taking too long — try again in a moment.";
+                          } else if (err?.response?.data instanceof Blob) {
+                            try {
+                              const text = await err.response.data.text();
+                              const json = JSON.parse(text);
+                              if (json.detail) msg = json.detail;
+                            } catch { /* keep default msg */ }
                           }
+                          setSnackbar({ open: true, message: msg, severity: "error" });
+                        } finally {
+                          setLoadingReceipt(null);
                         }
                       }}
                     >
-                      Receipt
+                      {loadingReceipt === p.id ? "Generating…" : "Receipt"}
                     </Button>
                   </TableCell>
                 </TableRow>

@@ -79,8 +79,8 @@ axiosClient.interceptors.response.use(
       }
     }
 
-    // 500-range errors → server error page
-    if (error.response?.status >= 500) {
+    // 500-range errors → server error page (skip if caller opted out)
+    if (error.response?.status >= 500 && !originalRequest?._skipGlobalError) {
       window.location.replace("/500");
     }
 

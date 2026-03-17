@@ -135,7 +135,7 @@ class PaymentViewSet(ModelViewSet):
             """HTML-escape any user-provided value to prevent injection in the PDF."""
             return html_lib.escape(str(value))
 
-        linked_expenses = payment.expenses.all()
+        linked_expenses = list(payment.expenses.all())
         expense_str = (
             ", ".join(esc(e.title) for e in linked_expenses)
             if linked_expenses
@@ -255,7 +255,16 @@ class PaymentViewSet(ModelViewSet):
 </body>
 </html>"""
 
-        pdf_bytes = HTML(string=html_content).write_pdf()
+        try:
+            pdf_bytes = HTML(string=html_content).write_pdf()
+        except Exception as exc:
+            import logging
+            logging.getLogger(__name__).error("WeasyPrint PDF generation failed: %s", exc, exc_info=True)
+            return Response(
+                {"detail": f"PDF generation failed: {exc}. Ensure WeasyPrint and its system libraries are installed (rebuild the Docker container if needed)."},
+                status=503,
+            )
+
         resp = HttpResponse(pdf_bytes, content_type="application/pdf")
         resp["Content-Disposition"] = f'inline; filename="receipt_{str(payment.id)[:8]}.pdf"'
         return resp
