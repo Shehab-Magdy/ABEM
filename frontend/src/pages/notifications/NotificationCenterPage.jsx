@@ -1,6 +1,7 @@
 /**
  * Notification Centre — Sprint 6 + Feature 4.
- * Lists user notifications with read/unread filter and mark-as-read.
+ * Layout: compose panels (Send Message + Broadcast) at the top, side by side.
+ *         Notifications list below. All three sections are independently collapsible.
  * Admin users also see a Broadcast form.
  * All authenticated users can send messages to building members.
  */
@@ -13,6 +14,7 @@ import {
   CardContent,
   Chip,
   CircularProgress,
+  Collapse,
   Divider,
   FormControl,
   InputLabel,
@@ -22,6 +24,13 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
+import {
+  Send,
+  Campaign,
+  Notifications as NotificationsIcon,
+  ExpandMore,
+  ExpandLess,
+} from "@mui/icons-material";
 import axiosClient from "../../api/axiosClient";
 import { useAuth } from "../../hooks/useAuth";
 
@@ -45,12 +54,67 @@ const TYPE_COLORS = {
   announcement: "primary",
 };
 
+// ── Collapsible section header ─────────────────────────────────────────────
+
+function SectionHeader({ icon, title, badge, open, onToggle, accent }) {
+  return (
+    <Box
+      onClick={onToggle}
+      sx={{
+        display: "flex",
+        alignItems: "center",
+        gap: 1.5,
+        px: 2,
+        py: 1.5,
+        cursor: "pointer",
+        borderRadius: open ? "10px 10px 0 0" : "10px",
+        bgcolor: open ? `${accent}14` : "transparent",
+        transition: "background-color 0.2s",
+        "&:hover": { bgcolor: `${accent}1a` },
+        userSelect: "none",
+      }}
+    >
+      <Box
+        sx={{
+          width: 34,
+          height: 34,
+          borderRadius: "8px",
+          bgcolor: `${accent}1a`,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          color: accent,
+          flexShrink: 0,
+        }}
+      >
+        {icon}
+      </Box>
+      <Typography variant="subtitle1" fontWeight={700} sx={{ flex: 1, color: "#1F2937" }}>
+        {title}
+      </Typography>
+      {badge !== undefined && badge > 0 && (
+        <Chip label={badge} size="small" color="error" sx={{ height: 20, fontSize: 11 }} />
+      )}
+      <Box sx={{ color: "#6B7280" }}>
+        {open ? <ExpandLess fontSize="small" /> : <ExpandMore fontSize="small" />}
+      </Box>
+    </Box>
+  );
+}
+
+// ── Main component ─────────────────────────────────────────────────────────
+
 export default function NotificationCenterPage() {
   const { isAdmin } = useAuth();
   const [notifications, setNotifications] = useState([]);
-  const [filter, setFilter] = useState("all"); // "all" | "unread"
+  const [filter, setFilter] = useState("all");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  // Section open/closed state
+  const [sendOpen, setSendOpen] = useState(false);
+  const [broadcastOpen, setBroadcastOpen] = useState(false);
+  const [notifOpen, setNotifOpen] = useState(true);
 
   // Broadcast form state (admin only)
   const [buildings, setBuildings] = useState([]);
@@ -58,18 +122,14 @@ export default function NotificationCenterPage() {
   const [broadcastSubject, setBroadcastSubject] = useState("");
   const [broadcastMessage, setBroadcastMessage] = useState("");
   const [broadcastStatus, setBroadcastStatus] = useState("");
-  const [broadcastOpen, setBroadcastOpen] = useState(false);
 
   // Send message form (all users)
-  const [sendOpen, setSendOpen] = useState(false);
   const [sendBuilding, setSendBuilding] = useState("");
   const [sendTitle, setSendTitle] = useState("");
   const [sendMessage, setSendMessage] = useState("");
   const [sendRecipientType, setSendRecipientType] = useState("all");
-  const [sendRecipientIds, setSendRecipientIds] = useState("");
   const [sendingMsg, setSendingMsg] = useState(false);
   const [sendStatus, setSendStatus] = useState("");
-  // Building members for individual send
   const [buildingMembers, setBuildingMembers] = useState([]);
   const [selectedMembers, setSelectedMembers] = useState([]);
 
@@ -91,7 +151,6 @@ export default function NotificationCenterPage() {
     fetchNotifications();
   }, [fetchNotifications]);
 
-  // Fetch building list for all users (broadcast + send)
   useEffect(() => {
     axiosClient
       .get("/buildings/")
@@ -99,7 +158,6 @@ export default function NotificationCenterPage() {
       .catch(() => {});
   }, []);
 
-  // Load building members when sendBuilding changes and recipient type is "individual"
   useEffect(() => {
     if (!sendBuilding || sendRecipientType !== "individual") {
       setBuildingMembers([]);
@@ -172,138 +230,50 @@ export default function NotificationCenterPage() {
   const unreadCount = notifications.filter((n) => !n.is_read).length;
 
   return (
-    <Box sx={{ p: 3 }}>
-      <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 3 }}>
-        <Typography variant="h4" fontWeight={700}>
-          Notifications
-        </Typography>
-        {unreadCount > 0 && (
-          <Chip
-            label={`${unreadCount} unread`}
-            color="error"
-            size="small"
-            data-testid="unread-count-chip"
+    <Box sx={{ p: 3, maxWidth: 1200 }}>
+      <Typography variant="h4" fontWeight={700} sx={{ mb: 3 }}>
+        Notifications
+      </Typography>
+
+      {/* ── Top compose row ── */}
+      <Box
+        sx={{
+          display: "grid",
+          gridTemplateColumns: isAdmin ? "1fr 1fr" : "1fr",
+          gap: 2,
+          mb: 3,
+        }}
+      >
+        {/* Send Message panel */}
+        <Card
+          variant="outlined"
+          sx={{
+            borderRadius: "12px",
+            borderColor: sendOpen ? "#6366F1" : "#E5E7EB",
+            transition: "border-color 0.2s",
+          }}
+        >
+          <SectionHeader
+            icon={<Send fontSize="small" />}
+            title="Send Message"
+            open={sendOpen}
+            onToggle={() => setSendOpen((p) => !p)}
+            accent="#6366F1"
           />
-        )}
-      </Box>
 
-      {/* Filter chips */}
-      <Stack direction="row" spacing={1} sx={{ mb: 3 }}>
-        <Chip
-          label="All"
-          onClick={() => setFilter("all")}
-          color={filter === "all" ? "primary" : "default"}
-          variant={filter === "all" ? "filled" : "outlined"}
-          clickable
-          data-testid="filter-all"
-        />
-        <Chip
-          label="Unread"
-          onClick={() => setFilter("unread")}
-          color={filter === "unread" ? "primary" : "default"}
-          variant={filter === "unread" ? "filled" : "outlined"}
-          clickable
-          data-testid="filter-unread"
-        />
-      </Stack>
-
-      {error && (
-        <Alert severity="error" sx={{ mb: 2 }}>
-          {error}
-        </Alert>
-      )}
-
-      {loading ? (
-        <Box sx={{ display: "flex", justifyContent: "center", mt: 6 }}>
-          <CircularProgress />
-        </Box>
-      ) : notifications.length === 0 ? (
-        <Alert severity="info" data-testid="empty-notifications">
-          No notifications yet.
-        </Alert>
-      ) : (
-        <Stack id="notifications-list" spacing={1.5} data-testid="notification-list">
-          {notifications.map((n) => (
-            <Card
-              key={n.id}
-              variant="outlined"
-              data-testid="notification-item"
-              sx={{
-                opacity: n.is_read ? 0.7 : 1,
-                borderLeft: n.is_read ? undefined : "4px solid",
-                borderLeftColor: n.is_read ? undefined : "primary.main",
-              }}
-            >
-              <CardContent sx={{ display: "flex", alignItems: "flex-start", gap: 2, py: 1.5, "&:last-child": { pb: 1.5 } }}>
-                <Box sx={{ flex: 1 }}>
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 0.5 }}>
-                    <Chip
-                      label={TYPE_LABELS[n.notification_type] ?? n.notification_type}
-                      color={TYPE_COLORS[n.notification_type] ?? "default"}
-                      size="small"
-                      data-testid="notification-type-chip"
-                    />
-                    {!n.is_read && (
-                      <Chip label="New" size="small" color="primary" variant="outlined" />
-                    )}
-                  </Box>
-                  <Typography variant="subtitle2" fontWeight={600}>
-                    {n.title}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    {n.body}
-                  </Typography>
-                  <Stack direction="row" spacing={1} alignItems="center" mt={0.5}>
-                    <Typography variant="caption" color="text.disabled">
-                      {new Date(n.created_at).toLocaleString()}
-                    </Typography>
-                    {n.sender_name && (
-                      <Typography variant="caption" color="text.disabled">
-                        · From: {n.sender_name}
-                      </Typography>
-                    )}
-                  </Stack>
-                </Box>
-                {!n.is_read && (
-                  <Button
-                    size="small"
-                    variant="outlined"
-                    onClick={() => handleMarkRead(n.id)}
-                    data-testid="mark-read-btn"
-                  >
-                    Mark as Read
-                  </Button>
-                )}
-              </CardContent>
-            </Card>
-          ))}
-        </Stack>
-      )}
-
-      {/* ── Send Message (all users) ── */}
-      <Box sx={{ mt: 4 }}>
-        <Divider sx={{ mb: 2 }} />
-        <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 2 }}>
-          <Typography variant="h6">Send Message</Typography>
-          <Button
-            size="small"
-            variant="outlined"
-            onClick={() => setSendOpen((p) => !p)}
-          >
-            {sendOpen ? "Hide" : "Show"}
-          </Button>
-        </Box>
-
-        {sendOpen && (
-          <Card variant="outlined">
-            <CardContent>
+          <Collapse in={sendOpen}>
+            <Divider />
+            <CardContent sx={{ pt: 2 }}>
               <Stack spacing={2}>
                 <FormControl size="small" fullWidth>
                   <InputLabel>Building</InputLabel>
                   <Select
                     value={sendBuilding}
                     label="Building"
-                    onChange={(e) => { setSendBuilding(e.target.value); setSelectedMembers([]); }}
+                    onChange={(e) => {
+                      setSendBuilding(e.target.value);
+                      setSelectedMembers([]);
+                    }}
                   >
                     {buildings.map((b) => (
                       <MenuItem key={b.id} value={b.id}>{b.name}</MenuItem>
@@ -316,7 +286,10 @@ export default function NotificationCenterPage() {
                   <Select
                     value={sendRecipientType}
                     label="Recipients"
-                    onChange={(e) => { setSendRecipientType(e.target.value); setSelectedMembers([]); }}
+                    onChange={(e) => {
+                      setSendRecipientType(e.target.value);
+                      setSelectedMembers([]);
+                    }}
                   >
                     <MenuItem value="all">All members</MenuItem>
                     <MenuItem value="admins">Admins only</MenuItem>
@@ -368,7 +341,19 @@ export default function NotificationCenterPage() {
                 <Button
                   variant="contained"
                   onClick={handleSendMessage}
-                  disabled={sendingMsg || !sendBuilding || !sendTitle || !sendMessage || (sendRecipientType === "individual" && selectedMembers.length === 0)}
+                  disabled={
+                    sendingMsg ||
+                    !sendBuilding ||
+                    !sendTitle ||
+                    !sendMessage ||
+                    (sendRecipientType === "individual" && selectedMembers.length === 0)
+                  }
+                  sx={{
+                    bgcolor: "#6366F1",
+                    "&:hover": { bgcolor: "#4F46E5" },
+                    textTransform: "none",
+                    fontWeight: 600,
+                  }}
                 >
                   {sendingMsg ? <CircularProgress size={20} color="inherit" /> : "Send Message"}
                 </Button>
@@ -379,29 +364,31 @@ export default function NotificationCenterPage() {
                 )}
               </Stack>
             </CardContent>
-          </Card>
-        )}
-      </Box>
+          </Collapse>
+        </Card>
 
-      {/* ── Admin broadcast ── */}
-      {isAdmin && (
-        <Box sx={{ mt: 4 }}>
-          <Divider sx={{ mb: 2 }} />
-          <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 2 }}>
-            <Typography variant="h6">Broadcast Announcement</Typography>
-            <Button
-              size="small"
-              variant="outlined"
-              onClick={() => setBroadcastOpen((p) => !p)}
+        {/* Broadcast panel (admin only) */}
+        {isAdmin && (
+          <Card
+            variant="outlined"
+            sx={{
+              borderRadius: "12px",
+              borderColor: broadcastOpen ? "#F59E0B" : "#E5E7EB",
+              transition: "border-color 0.2s",
+            }}
+          >
+            <SectionHeader
+              icon={<Campaign fontSize="small" />}
+              title="Broadcast Announcement"
+              open={broadcastOpen}
+              onToggle={() => setBroadcastOpen((p) => !p)}
+              accent="#F59E0B"
               data-testid="broadcast-toggle"
-            >
-              {broadcastOpen ? "Hide" : "Show"}
-            </Button>
-          </Box>
+            />
 
-          {broadcastOpen && (
-            <Card variant="outlined" data-testid="broadcast-form">
-              <CardContent>
+            <Collapse in={broadcastOpen}>
+              <Divider />
+              <CardContent sx={{ pt: 2 }} data-testid="broadcast-form">
                 <Stack spacing={2}>
                   <FormControl size="small" fullWidth>
                     <InputLabel>Building</InputLabel>
@@ -441,6 +428,13 @@ export default function NotificationCenterPage() {
                     onClick={handleBroadcast}
                     data-testid="broadcast-send"
                     disabled={!broadcastBuilding || !broadcastSubject || !broadcastMessage}
+                    sx={{
+                      bgcolor: "#F59E0B",
+                      color: "white",
+                      "&:hover": { bgcolor: "#D97706" },
+                      textTransform: "none",
+                      fontWeight: 600,
+                    }}
                   >
                     Send Broadcast
                   </Button>
@@ -454,10 +448,135 @@ export default function NotificationCenterPage() {
                   )}
                 </Stack>
               </CardContent>
-            </Card>
-          )}
-        </Box>
-      )}
+            </Collapse>
+          </Card>
+        )}
+      </Box>
+
+      {/* ── Notifications list ── */}
+      <Card
+        variant="outlined"
+        sx={{
+          borderRadius: "12px",
+          borderColor: notifOpen ? "#10B981" : "#E5E7EB",
+          transition: "border-color 0.2s",
+        }}
+      >
+        <SectionHeader
+          icon={<NotificationsIcon fontSize="small" />}
+          title="Your Notifications"
+          badge={unreadCount}
+          open={notifOpen}
+          onToggle={() => setNotifOpen((p) => !p)}
+          accent="#10B981"
+        />
+
+        <Collapse in={notifOpen}>
+          <Divider />
+          <CardContent sx={{ pt: 2 }}>
+            {/* Filter chips */}
+            <Stack direction="row" spacing={1} sx={{ mb: 2 }}>
+              <Chip
+                label="All"
+                onClick={() => setFilter("all")}
+                color={filter === "all" ? "primary" : "default"}
+                variant={filter === "all" ? "filled" : "outlined"}
+                clickable
+                data-testid="filter-all"
+              />
+              <Chip
+                label="Unread"
+                onClick={() => setFilter("unread")}
+                color={filter === "unread" ? "primary" : "default"}
+                variant={filter === "unread" ? "filled" : "outlined"}
+                clickable
+                data-testid="filter-unread"
+              />
+            </Stack>
+
+            {error && (
+              <Alert severity="error" sx={{ mb: 2 }}>
+                {error}
+              </Alert>
+            )}
+
+            {loading ? (
+              <Box sx={{ display: "flex", justifyContent: "center", mt: 4, mb: 2 }}>
+                <CircularProgress />
+              </Box>
+            ) : notifications.length === 0 ? (
+              <Alert severity="info" data-testid="empty-notifications">
+                No notifications yet.
+              </Alert>
+            ) : (
+              <Stack id="notifications-list" spacing={1.5} data-testid="notification-list">
+                {notifications.map((n) => (
+                  <Card
+                    key={n.id}
+                    variant="outlined"
+                    data-testid="notification-item"
+                    sx={{
+                      opacity: n.is_read ? 0.7 : 1,
+                      borderLeft: n.is_read ? undefined : "4px solid",
+                      borderLeftColor: n.is_read ? undefined : "primary.main",
+                    }}
+                  >
+                    <CardContent
+                      sx={{
+                        display: "flex",
+                        alignItems: "flex-start",
+                        gap: 2,
+                        py: 1.5,
+                        "&:last-child": { pb: 1.5 },
+                      }}
+                    >
+                      <Box sx={{ flex: 1 }}>
+                        <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 0.5 }}>
+                          <Chip
+                            label={TYPE_LABELS[n.notification_type] ?? n.notification_type}
+                            color={TYPE_COLORS[n.notification_type] ?? "default"}
+                            size="small"
+                            data-testid="notification-type-chip"
+                          />
+                          {!n.is_read && (
+                            <Chip label="New" size="small" color="primary" variant="outlined" />
+                          )}
+                        </Box>
+                        <Typography variant="subtitle2" fontWeight={600}>
+                          {n.title}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          {n.body}
+                        </Typography>
+                        <Stack direction="row" spacing={1} alignItems="center" mt={0.5}>
+                          <Typography variant="caption" color="text.disabled">
+                            {new Date(n.created_at).toLocaleString()}
+                          </Typography>
+                          {n.sender_name && (
+                            <Typography variant="caption" color="text.disabled">
+                              · From: {n.sender_name}
+                            </Typography>
+                          )}
+                        </Stack>
+                      </Box>
+                      {!n.is_read && (
+                        <Button
+                          size="small"
+                          variant="outlined"
+                          onClick={() => handleMarkRead(n.id)}
+                          data-testid="mark-read-btn"
+                        >
+                          Mark as Read
+                        </Button>
+                      )}
+                    </CardContent>
+                  </Card>
+                ))}
+              </Stack>
+            )}
+          </CardContent>
+        </Collapse>
+      </Card>
     </Box>
   );
 }
