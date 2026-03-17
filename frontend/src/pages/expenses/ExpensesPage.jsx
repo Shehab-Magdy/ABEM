@@ -318,7 +318,7 @@ export default function ExpensesPage() {
           Expenses
         </Typography>
         {isAdmin && (
-          <Button variant="contained" startIcon={<AddIcon />} onClick={openCreate}>
+          <Button id="add-expense-btn" variant="contained" startIcon={<AddIcon />} onClick={openCreate}>
             Add Expense
           </Button>
         )}
@@ -387,7 +387,7 @@ export default function ExpensesPage() {
           <CircularProgress />
         </Box>
       ) : (
-        <TableContainer component={Paper}>
+        <TableContainer id="expenses-table" component={Paper}>
           <Table size="small">
             <TableHead>
               <TableRow sx={{ bgcolor: "grey.100" }}>
@@ -480,7 +480,7 @@ export default function ExpensesPage() {
                       )}
                     </TableCell>
                     <TableCell align="right">
-                      <Stack direction="row" spacing={0.5} justifyContent="flex-end">
+                      <Stack id="expense-actions-btn" direction="row" spacing={0.5} justifyContent="flex-end">
                         <Tooltip title="View details">
                           <IconButton size="small" onClick={() => setDetailExpense(exp)}>
                             <ViewIcon fontSize="small" />

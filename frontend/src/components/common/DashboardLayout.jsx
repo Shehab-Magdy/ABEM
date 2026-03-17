@@ -40,6 +40,7 @@ import { useAuth } from "../../hooks/useAuth";
 import { authApi } from "../../api/authApi";
 import { useAuthStore } from "../../contexts/authStore";
 import axiosClient from "../../api/axiosClient";
+import { TutorialButton } from "../../tutorial/TutorialOverlay";
 
 const DRAWER_WIDTH = 240;
 
@@ -192,6 +193,7 @@ export default function DashboardLayout() {
               <MenuIcon />
             </IconButton>
             <Box flex={1} />
+            <TutorialButton />
             <Tooltip title="Notifications">
               <IconButton
                 color="inherit"

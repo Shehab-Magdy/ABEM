@@ -192,7 +192,7 @@ export default function ExpenseCategoriesPage() {
           <CircularProgress />
         </Box>
       ) : (
-        <TableContainer component={Paper} variant="outlined">
+        <TableContainer id="categories-table" component={Paper} variant="outlined">
           <Table size="small">
             <TableHead>
               <TableRow>

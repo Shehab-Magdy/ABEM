@@ -328,7 +328,7 @@ export default function PaymentsPage() {
       )}
 
       {/* Payment history table */}
-      <TableContainer component={Paper}>
+      <TableContainer id="payments-table" component={Paper}>
         <Table size="small">
           <TableHead>
             <TableRow sx={{ backgroundColor: "primary.main" }}>

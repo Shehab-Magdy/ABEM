@@ -89,7 +89,7 @@ export default function ProfilePage() {
   };
 
   return (
-    <Box maxWidth={640}>
+    <Box id="profile-card" maxWidth={640}>
       <Typography variant="h5" mb={3}>My Profile</Typography>
 
       {/* Profile picture */}

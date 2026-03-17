@@ -264,7 +264,7 @@ export default function AuditLogPage() {
 
       {/* Table */}
       {!loading && logs.length > 0 && (
-        <TableContainer component={Paper} variant="outlined">
+        <TableContainer id="audit-table" component={Paper} variant="outlined">
           <Table size="small" data-testid="audit-table">
             <TableHead>
               <TableRow>

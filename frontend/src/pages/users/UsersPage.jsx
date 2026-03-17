@@ -246,7 +246,7 @@ export default function UsersPage() {
     <Box>
       <Stack direction="row" justifyContent="space-between" alignItems="center" mb={3}>
         <Typography variant="h5">User Management</Typography>
-        <Button variant="contained" startIcon={<Add />} onClick={() => { setCreateOpen(true); setCreateError(null); }}>
+        <Button id="add-user-btn" variant="contained" startIcon={<Add />} onClick={() => { setCreateOpen(true); setCreateError(null); }}>
           New User
         </Button>
       </Stack>

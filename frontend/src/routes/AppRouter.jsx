@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import { useAuthStore } from "../contexts/authStore";
+import TutorialSystem from "../tutorial/TutorialOverlay";
 
 // Layout
 import DashboardLayout from "../components/common/DashboardLayout";
@@ -51,6 +52,8 @@ export default function AppRouter() {
   const { user } = useAuthStore();
 
   return (
+    <>
+    <TutorialSystem />
     <Routes>
       {/* Public – redirect to dashboard if already authenticated */}
       <Route path="/login" element={user ? <Navigate to="/dashboard" replace /> : <LoginPage />} />
@@ -97,5 +100,6 @@ export default function AppRouter() {
       {/* 404 – catch-all */}
       <Route path="*" element={<NotFoundPage />} />
     </Routes>
+    </>
   );
 }

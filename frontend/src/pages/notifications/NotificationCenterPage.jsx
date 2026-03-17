@@ -222,7 +222,7 @@ export default function NotificationCenterPage() {
           No notifications yet.
         </Alert>
       ) : (
-        <Stack spacing={1.5} data-testid="notification-list">
+        <Stack id="notifications-list" spacing={1.5} data-testid="notification-list">
           {notifications.map((n) => (
             <Card
               key={n.id}

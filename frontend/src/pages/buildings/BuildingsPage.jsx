@@ -352,7 +352,7 @@ export default function BuildingsPage() {
             width: 170,
             sortable: false,
             renderCell: ({ row }) => (
-              <Stack direction="row" spacing={0.5}>
+              <Stack id="building-actions-row" direction="row" spacing={0.5}>
                 <Tooltip title="Edit">
                   <IconButton size="small" onClick={() => openEdit(row)}>
                     <Edit fontSize="small" />
@@ -397,7 +397,7 @@ export default function BuildingsPage() {
           Buildings
         </Typography>
         {isAdmin && (
-          <Button variant="contained" startIcon={<Add />} onClick={openCreate}>
+          <Button id="add-building-btn" variant="contained" startIcon={<Add />} onClick={openCreate}>
             New Building
           </Button>
         )}

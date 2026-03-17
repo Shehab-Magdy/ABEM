@@ -253,7 +253,7 @@ export default function AssetsPage() {
           <CircularProgress />
         </Box>
       ) : (
-        <TableContainer component={Paper} variant="outlined">
+        <TableContainer id="assets-table" component={Paper} variant="outlined">
           <Table size="small">
             <TableHead>
               <TableRow>
