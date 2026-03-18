@@ -1,0 +1,17 @@
+User-agent: *
+Allow: /
+Allow: /login
+Allow: /register
+Allow: /forgot-password
+
+Disallow: /dashboard
+Disallow: /buildings
+Disallow: /expenses
+Disallow: /payments
+Disallow: /notifications
+Disallow: /audit
+Disallow: /users
+Disallow: /profile
+Disallow: /api/
+
+Sitemap: https://abem.app/sitemap.xml
