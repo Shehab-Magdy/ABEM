@@ -57,6 +57,7 @@ MIDDLEWARE = [
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "apps.core.middleware.StaticCacheControlMiddleware",
     "apps.core.middleware.APIRobotsMiddleware",
+    "apps.core.middleware.APILanguageMiddleware",
     "corsheaders.middleware.CorsMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.locale.LocaleMiddleware",
