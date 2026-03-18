@@ -1,0 +1,79 @@
+name: CI — Smoke + API Tests
+
+on:
+  push:
+    branches: [main, develop]
+    paths: ['abem-playwright/**']
+  pull_request:
+    branches: [main]
+    paths: ['abem-playwright/**']
+
+defaults:
+  run:
+    working-directory: abem-playwright
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: abem
+          POSTGRES_USER: abem
+          POSTGRES_PASSWORD: abem
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Install Playwright browsers
+        run: playwright install chromium --with-deps
+
+      - name: Run smoke and API tests
+        env:
+          BASE_URL: ${{ secrets.BASE_URL }}
+          API_BASE_URL: ${{ secrets.API_BASE_URL }}
+          ADMIN_EMAIL: ${{ secrets.ADMIN_EMAIL }}
+          ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
+          OWNER_EMAIL: ${{ secrets.OWNER_EMAIL }}
+          OWNER_PASSWORD: ${{ secrets.OWNER_PASSWORD }}
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_NAME: abem
+          DB_USER: abem
+          DB_PASSWORD: abem
+          HEADLESS: true
+        run: |
+          pytest tests/smoke/ tests/api/ \
+            -m "smoke or api" \
+            --html=reports/ci_report.html \
+            --self-contained-html \
+            -x \
+            --timeout=120
+
+      - name: Upload test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-test-reports
+          path: abem-playwright/reports/
+          retention-days: 14
