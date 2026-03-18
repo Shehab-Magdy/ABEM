@@ -2,6 +2,7 @@
 import math
 
 from rest_framework import serializers
+from django.utils.translation import gettext_lazy as _
 
 from apps.authentication.models import User
 from .models import Building
@@ -35,13 +36,13 @@ class BuildingSerializer(serializers.ModelSerializer):
         required=False,
         default=0,
         min_value=0,
-        help_text="Number of apartment units in the building.",
+        help_text=_("Number of apartment units in the building."),
     )
     num_stores = serializers.IntegerField(
         required=False,
         default=0,
         min_value=0,
-        help_text="Number of store/commercial units in the building.",
+        help_text=_("Number of store/commercial units in the building."),
     )
 
     class Meta:
@@ -67,7 +68,7 @@ class BuildingSerializer(serializers.ModelSerializer):
     def validate_num_floors(self, value):
         if value <= 0:
             raise serializers.ValidationError(
-                "num_floors must be a positive integer greater than 0."
+                _("num_floors must be a positive integer greater than 0.")
             )
         return value
 
@@ -184,5 +185,5 @@ class AssignUserSerializer(serializers.Serializer):
 
     def validate_user_id(self, value):
         if not User.objects.filter(pk=value, is_active=True).exists():
-            raise serializers.ValidationError("User not found.")
+            raise serializers.ValidationError(_("User not found."))
         return value

@@ -3,15 +3,16 @@ import uuid
 from decimal import Decimal
 from django.conf import settings
 from django.db import models
+from django.utils.translation import gettext_lazy as _
 from apps.apartments.models import Apartment
 from apps.expenses.models import Expense
 
 
 class PaymentMethod(models.TextChoices):
-    CASH = "cash", "Cash"
-    BANK_TRANSFER = "bank_transfer", "Bank Transfer"
-    CHEQUE = "cheque", "Cheque"
-    OTHER = "other", "Other"
+    CASH = "cash", _("Cash")
+    BANK_TRANSFER = "bank_transfer", _("Bank Transfer")
+    CHEQUE = "cheque", _("Cheque")
+    OTHER = "other", _("Other")
 
 
 class Payment(models.Model):
@@ -49,12 +50,12 @@ class Payment(models.Model):
 
 
 class AssetType(models.TextChoices):
-    VEHICLE = "vehicle", "Vehicle"
-    EQUIPMENT = "equipment", "Equipment"
-    FURNITURE = "furniture", "Furniture"
-    ELECTRONICS = "electronics", "Electronics"
-    PROPERTY = "property", "Property"
-    OTHER = "other", "Other"
+    VEHICLE = "vehicle", _("Vehicle")
+    EQUIPMENT = "equipment", _("Equipment")
+    FURNITURE = "furniture", _("Furniture")
+    ELECTRONICS = "electronics", _("Electronics")
+    PROPERTY = "property", _("Property")
+    OTHER = "other", _("Other")
 
 
 class BuildingAsset(models.Model):

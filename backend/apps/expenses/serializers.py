@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from rest_framework import serializers
+from django.utils.translation import gettext_lazy as _
 
 from apps.buildings.models import Building
 
@@ -139,7 +140,7 @@ class ExpenseSerializer(serializers.ModelSerializer):
 
     def validate_amount(self, value):
         if value <= 0:
-            raise serializers.ValidationError("amount must be greater than 0.")
+            raise serializers.ValidationError(_("amount must be greater than 0."))
         return value
 
     # ── Object-level validation ────────────────────────────────────────────────
@@ -149,7 +150,7 @@ class ExpenseSerializer(serializers.ModelSerializer):
         frequency = data.get("frequency")
         if is_recurring and not frequency:
             raise serializers.ValidationError(
-                {"frequency": "frequency is required when is_recurring is true."}
+                {"frequency": _("frequency is required when is_recurring is true.")}
             )
         return data
 

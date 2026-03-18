@@ -2,6 +2,7 @@
 import uuid
 from decimal import Decimal
 from django.db import models
+from django.utils.translation import gettext_lazy as _
 from apps.buildings.models import Building
 from apps.apartments.models import Apartment
 
@@ -13,9 +14,9 @@ class ExpenseCategory(models.Model):
     name = models.CharField(max_length=100)
     description = models.CharField(max_length=255, blank=True)
     icon = models.CharField(max_length=100, blank=True, default="category",
-                            help_text="Material icon name (used by web and mobile)")
+                            help_text=_("Material icon name (used by web and mobile)"))
     color = models.CharField(max_length=7, blank=True, default="#2563EB",
-                             help_text="Hex color for the category badge")
+                             help_text=_("Hex color for the category badge"))
     parent = models.ForeignKey(
         "self",
         on_delete=models.SET_NULL,
@@ -35,16 +36,16 @@ class ExpenseCategory(models.Model):
 
 
 class SplitType(models.TextChoices):
-    EQUAL_ALL = "equal_all", "Equal – All Units"
-    EQUAL_APARTMENTS = "equal_apartments", "Equal – Apartments Only"
-    EQUAL_STORES = "equal_stores", "Equal – Stores Only"
-    CUSTOM = "custom", "Custom Subset"
+    EQUAL_ALL = "equal_all", _("Equal – All Units")
+    EQUAL_APARTMENTS = "equal_apartments", _("Equal – Apartments Only")
+    EQUAL_STORES = "equal_stores", _("Equal – Stores Only")
+    CUSTOM = "custom", _("Custom Subset")
 
 
 class RecurringFrequency(models.TextChoices):
-    MONTHLY = "monthly", "Monthly"
-    QUARTERLY = "quarterly", "Quarterly"
-    ANNUAL = "annual", "Annual"
+    MONTHLY = "monthly", _("Monthly")
+    QUARTERLY = "quarterly", _("Quarterly")
+    ANNUAL = "annual", _("Annual")
 
 
 class Expense(models.Model):

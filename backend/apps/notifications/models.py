@@ -2,22 +2,23 @@
 import uuid
 from django.db import models
 from django.conf import settings
+from django.utils.translation import gettext_lazy as _
 
 
 class NotificationType(models.TextChoices):
-    PAYMENT_DUE = "payment_due", "Payment Due"
-    PAYMENT_OVERDUE = "payment_overdue", "Payment Overdue"
-    PAYMENT_CONFIRMED = "payment_confirmed", "Payment Confirmed"
-    EXPENSE_ADDED = "expense_added", "New Expense Added"
-    EXPENSE_UPDATED = "expense_updated", "Expense Updated"
-    USER_REGISTERED = "user_registered", "New User Registered"
-    ANNOUNCEMENT = "announcement", "Announcement"
+    PAYMENT_DUE = "payment_due", _("Payment Due")
+    PAYMENT_OVERDUE = "payment_overdue", _("Payment Overdue")
+    PAYMENT_CONFIRMED = "payment_confirmed", _("Payment Confirmed")
+    EXPENSE_ADDED = "expense_added", _("New Expense Added")
+    EXPENSE_UPDATED = "expense_updated", _("Expense Updated")
+    USER_REGISTERED = "user_registered", _("New User Registered")
+    ANNOUNCEMENT = "announcement", _("Announcement")
 
 
 class NotificationChannel(models.TextChoices):
-    EMAIL = "email", "Email"
-    PUSH = "push", "Push Notification"
-    IN_APP = "in_app", "In-App"
+    EMAIL = "email", _("Email")
+    PUSH = "push", _("Push Notification")
+    IN_APP = "in_app", _("In-App")
 
 
 class Notification(models.Model):

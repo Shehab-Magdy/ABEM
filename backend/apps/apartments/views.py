@@ -12,6 +12,7 @@ from rest_framework.viewsets import ModelViewSet
 
 from django_filters.rest_framework import DjangoFilterBackend
 
+from django.utils.translation import gettext_lazy as _
 from apps.audit.mixins import log_action
 from apps.authentication.permissions import IsAdminRole
 
@@ -131,7 +132,7 @@ class ApartmentViewSet(ModelViewSet):
         building_id = request.query_params.get("building_id")
         if not building_id:
             return Response(
-                {"detail": "building_id query parameter is required."},
+                {"detail": _("building_id query parameter is required.")},
                 status=400,
             )
         apartments = (
@@ -152,11 +153,11 @@ class ApartmentViewSet(ModelViewSet):
         try:
             apartment = Apartment.objects.select_related("building").get(pk=pk)
         except Apartment.DoesNotExist:
-            return Response({"detail": "Apartment not found."}, status=404)
+            return Response({"detail": _("Apartment not found.")}, status=404)
 
         if apartment.owner is not None:
             return Response(
-                {"detail": "This apartment is already assigned to an owner."},
+                {"detail": _("This apartment is already assigned to an owner.")},
                 status=409,
             )
 
@@ -193,7 +194,7 @@ class ApartmentViewSet(ModelViewSet):
         apartment = self.get_object()
         email = request.data.get("email", "").strip().lower()
         if not email:
-            return Response({"detail": "email is required."}, status=400)
+            return Response({"detail": _("email is required.")}, status=400)
 
         # Invalidate any existing unused invites for this unit+email
         UnitInvitation.objects.filter(
@@ -224,7 +225,7 @@ class ApartmentViewSet(ModelViewSet):
         token = request.query_params.get("token")
         code = request.query_params.get("code")
         if not token and not code:
-            return Response({"detail": "token or code is required."}, status=400)
+            return Response({"detail": _("token or code is required.")}, status=400)
         try:
             if token:
                 invite = UnitInvitation.objects.select_related(
@@ -235,10 +236,10 @@ class ApartmentViewSet(ModelViewSet):
                     "apartment__building"
                 ).get(registration_code=code.upper())
         except UnitInvitation.DoesNotExist:
-            return Response({"detail": "Invalid invite link or code."}, status=404)
+            return Response({"detail": _("Invalid invite link or code.")}, status=404)
 
         if not invite.is_valid:
-            return Response({"detail": "This invite link has expired or already been used."}, status=410)
+            return Response({"detail": _("This invite link has expired or already been used.")}, status=410)
 
         apt = invite.apartment
         return Response({
@@ -262,7 +263,7 @@ class ApartmentViewSet(ModelViewSet):
         token = request.data.get("token", "").strip()
         code = request.data.get("code", "").strip().upper()
         if not token and not code:
-            return Response({"detail": "token or code is required."}, status=400)
+            return Response({"detail": _("token or code is required.")}, status=400)
         try:
             if token:
                 invite = UnitInvitation.objects.select_related(
@@ -273,14 +274,14 @@ class ApartmentViewSet(ModelViewSet):
                     "apartment__building"
                 ).get(registration_code=code)
         except UnitInvitation.DoesNotExist:
-            return Response({"detail": "Invalid invite."}, status=404)
+            return Response({"detail": _("Invalid invite.")}, status=404)
 
         if not invite.is_valid:
-            return Response({"detail": "This invite link has expired or already been used."}, status=410)
+            return Response({"detail": _("This invite link has expired or already been used.")}, status=410)
 
         apt = invite.apartment
         if apt.owners.filter(pk=request.user.pk).exists():
-            return Response({"detail": "You are already an owner of this unit."}, status=409)
+            return Response({"detail": _("You are already an owner of this unit.")}, status=409)
 
         # Only set primary owner if not yet assigned; otherwise just add to M2M
         if apt.owner is None:
@@ -321,7 +322,7 @@ class ApartmentViewSet(ModelViewSet):
 
         if request.user.role != "admin" and apt.owner != request.user and not apt.owners.filter(pk=request.user.pk).exists():
             return Response(
-                {"detail": "You do not have permission to view this apartment's balance."},
+                {"detail": _("You do not have permission to view this apartment's balance.")},
                 status=403,
             )
 

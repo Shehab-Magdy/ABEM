@@ -11,6 +11,7 @@ from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 from django_filters.rest_framework import DjangoFilterBackend
 
+from django.utils.translation import gettext_lazy as _
 from apps.audit.mixins import AuditLogMixin, log_action
 from .permissions import IsAdminRole
 from .serializers import (
@@ -83,7 +84,7 @@ class UserViewSet(AuditLogMixin, ModelViewSet):
         user = self.get_object()
         if user == request.user:
             return Response(
-                {"detail": "You cannot deactivate your own account."},
+                {"detail": _("You cannot deactivate your own account.")},
                 status=status.HTTP_400_BAD_REQUEST,
             )
         user.is_active = False
@@ -95,7 +96,7 @@ class UserViewSet(AuditLogMixin, ModelViewSet):
             entity_id=user.id,
             request=request,
         )
-        return Response({"detail": f"User {user.email} deactivated."})
+        return Response({"detail": _("User %(email)s deactivated.") % {"email": user.email}})
 
     @action(detail=True, methods=["post"], url_path="activate")
     def activate(self, request, pk=None):
@@ -111,7 +112,7 @@ class UserViewSet(AuditLogMixin, ModelViewSet):
             entity_id=user.id,
             request=request,
         )
-        return Response({"detail": f"User {user.email} activated."})
+        return Response({"detail": _("User %(email)s activated.") % {"email": user.email}})
 
     @action(detail=True, methods=["post"], url_path="set-messaging-block")
     def set_messaging_block(self, request, pk=None):
@@ -132,7 +133,7 @@ class UserViewSet(AuditLogMixin, ModelViewSet):
 
         if not update_fields:
             return Response(
-                {"detail": "Provide messaging_blocked or individual_messaging_blocked."},
+                {"detail": _("Provide messaging_blocked or individual_messaging_blocked.")},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -164,4 +165,4 @@ class UserViewSet(AuditLogMixin, ModelViewSet):
             entity_id=user.id,
             request=request,
         )
-        return Response({"detail": f"Password reset for {user.email}."})
+        return Response({"detail": _("Password reset for %(email)s.") % {"email": user.email}})

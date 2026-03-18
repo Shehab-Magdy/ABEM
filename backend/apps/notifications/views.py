@@ -11,6 +11,7 @@ from apps.authentication.models import User
 from apps.authentication.permissions import IsAdminRole
 from apps.buildings.models import Building, UserBuilding
 
+from django.utils.translation import gettext_lazy as _
 from .models import Notification, NotificationType
 from .serializers import BroadcastSerializer, NotificationSerializer
 from .services import notify_user
@@ -112,7 +113,7 @@ class NotificationViewSet(ReadOnlyModelViewSet):
         # Enforce messaging restrictions
         if request.user.messaging_blocked:
             return Response(
-                {"detail": "You have been blocked from sending messages."},
+                {"detail": _("You have been blocked from sending messages.")},
                 status=403,
             )
 
@@ -123,9 +124,9 @@ class NotificationViewSet(ReadOnlyModelViewSet):
         recipient_ids = request.data.get("recipient_ids", [])
 
         if not building_id:
-            return Response({"detail": "building_id is required."}, status=400)
+            return Response({"detail": _("building_id is required.")}, status=400)
         if not title or not message:
-            return Response({"detail": "title and message are required."}, status=400)
+            return Response({"detail": _("title and message are required.")}, status=400)
 
         # Verify the sender is a member or admin of this building
         is_member = UserBuilding.objects.filter(
@@ -133,7 +134,7 @@ class NotificationViewSet(ReadOnlyModelViewSet):
         ).exists()
         if not is_member:
             return Response(
-                {"detail": "You are not a member of this building."}, status=403
+                {"detail": _("You are not a member of this building.")}, status=403
             )
 
         building = get_object_or_404(Building, pk=building_id, deleted_at__isnull=True)
@@ -153,17 +154,17 @@ class NotificationViewSet(ReadOnlyModelViewSet):
         elif recipient_type == "individual":
             if request.user.individual_messaging_blocked:
                 return Response(
-                    {"detail": "You have been blocked from sending individual messages."},
+                    {"detail": _("You have been blocked from sending individual messages.")},
                     status=403,
                 )
             if not recipient_ids:
-                return Response({"detail": "recipient_ids is required for individual send."}, status=400)
+                return Response({"detail": _("recipient_ids is required for individual send.")}, status=400)
             recipients = User.objects.filter(
                 pk__in=recipient_ids,
                 userbuilding__building=building,
             ).distinct()
         else:
-            return Response({"detail": "Invalid recipient_type."}, status=400)
+            return Response({"detail": _("Invalid recipient_type.")}, status=400)
 
         created = 0
         for recipient in recipients:

@@ -14,6 +14,7 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.tokens import RefreshToken
 
+from django.utils.translation import gettext_lazy as _
 from apps.audit.mixins import log_action
 from .models import User
 from .serializers import (
@@ -45,7 +46,7 @@ class LoginView(APIView):
             user = User.objects.get(email=email)
         except User.DoesNotExist:
             return Response(
-                {"detail": "No account found with this email address.", "code": "email_not_found"},
+                {"detail": _("No account found with this email address."), "code": "email_not_found"},
                 status=status.HTTP_401_UNAUTHORIZED,
             )
 
@@ -56,7 +57,7 @@ class LoginView(APIView):
             )
             return Response(
                 {
-                    "detail": f"Account locked. Try again in {remaining} minute(s).",
+                    "detail": _("Account locked. Try again in %(minutes)s minute(s).") % {"minutes": remaining},
                     "locked_until": user.locked_until,
                 },
                 status=status.HTTP_423_LOCKED,
@@ -78,14 +79,14 @@ class LoginView(APIView):
                 )
             user.save(update_fields=["failed_login_attempts", "locked_until"])
             return Response(
-                {"detail": "Incorrect password.", "code": "wrong_password"},
+                {"detail": _("Incorrect password."), "code": "wrong_password"},
                 status=status.HTTP_401_UNAUTHORIZED,
             )
 
         # Inactive account
         if not user.is_active:
             return Response(
-                {"detail": "This account has been deactivated."},
+                {"detail": _("This account has been deactivated.")},
                 status=status.HTTP_403_FORBIDDEN,
             )
 
@@ -122,7 +123,7 @@ class LogoutView(APIView):
         refresh_token = request.data.get("refresh")
         if not refresh_token:
             return Response(
-                {"detail": "Refresh token is required."},
+                {"detail": _("Refresh token is required.")},
                 status=status.HTTP_400_BAD_REQUEST,
             )
         try:
@@ -130,7 +131,7 @@ class LogoutView(APIView):
             token.blacklist()
         except TokenError:
             return Response(
-                {"detail": "Token is invalid or already blacklisted."},
+                {"detail": _("Token is invalid or already blacklisted.")},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -142,7 +143,7 @@ class LogoutView(APIView):
             request=request,
         )
 
-        return Response({"detail": "Successfully logged out."})
+        return Response({"detail": _("Successfully logged out.")})
 
 
 # ── Register (Admin only) ──────────────────────────────────────────────────────
@@ -212,7 +213,7 @@ class ChangePasswordView(APIView):
             request=request,
         )
 
-        return Response({"detail": "Password changed successfully."})
+        return Response({"detail": _("Password changed successfully.")})
 
 
 # ── Force Change Password (after admin reset) ────────────────────────────
@@ -223,7 +224,7 @@ class ForceChangePasswordView(APIView):
     def post(self, request):
         if not request.user.must_change_password:
             return Response(
-                {"detail": "Password change is not required."},
+                {"detail": _("Password change is not required.")},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -243,7 +244,7 @@ class ForceChangePasswordView(APIView):
         )
 
         return Response(
-            {"detail": "Password changed successfully.", "user": UserSerializer(request.user, context={"request": request}).data}
+            {"detail": _("Password changed successfully."), "user": UserSerializer(request.user, context={"request": request}).data}
         )
 
 

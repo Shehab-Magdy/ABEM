@@ -1,6 +1,7 @@
 """Authentication and user management serializers."""
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
+from django.utils.translation import gettext_lazy as _
 from .validators import validate_password_complexity
 
 User = get_user_model()
@@ -44,7 +45,7 @@ class RegisterUserSerializer(serializers.ModelSerializer):
 
     def validate_email(self, value):
         if User.objects.filter(email__iexact=value).exists():
-            raise serializers.ValidationError("A user with this email already exists.")
+            raise serializers.ValidationError(_("A user with this email already exists."))
         return value.lower()
 
     def create(self, validated_data):
@@ -82,13 +83,13 @@ class ChangePasswordSerializer(serializers.Serializer):
     def validate_current_password(self, value):
         user = self.context["request"].user
         if not user.check_password(value):
-            raise serializers.ValidationError("Current password is incorrect.")
+            raise serializers.ValidationError(_("Current password is incorrect."))
         return value
 
     def validate(self, data):
         if data["new_password"] != data["confirm_password"]:
             raise serializers.ValidationError(
-                {"confirm_password": "New passwords do not match."}
+                {"confirm_password": _("New passwords do not match.")}
             )
         return data
 
@@ -110,12 +111,12 @@ class SelfRegisterSerializer(serializers.ModelSerializer):
 
     def validate_email(self, value):
         if User.objects.filter(email__iexact=value).exists():
-            raise serializers.ValidationError("A user with this email already exists.")
+            raise serializers.ValidationError(_("A user with this email already exists."))
         return value.lower()
 
     def validate(self, data):
         if data["password"] != data.pop("confirm_password"):
-            raise serializers.ValidationError({"confirm_password": "Passwords do not match."})
+            raise serializers.ValidationError({"confirm_password": _("Passwords do not match.")})
         return data
 
     def create(self, validated_data):
@@ -138,7 +139,7 @@ class ForceChangePasswordSerializer(serializers.Serializer):
     def validate(self, data):
         if data["new_password"] != data["confirm_password"]:
             raise serializers.ValidationError(
-                {"confirm_password": "New passwords do not match."}
+                {"confirm_password": _("New passwords do not match.")}
             )
         return data
 
@@ -155,6 +156,6 @@ class AdminResetPasswordSerializer(serializers.Serializer):
     def validate(self, data):
         if data["new_password"] != data["confirm_password"]:
             raise serializers.ValidationError(
-                {"confirm_password": "Passwords do not match."}
+                {"confirm_password": _("Passwords do not match.")}
             )
         return data

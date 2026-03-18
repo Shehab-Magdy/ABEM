@@ -8,6 +8,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from django.utils.translation import gettext_lazy as _
 from apps.authentication.permissions import IsAdminRole
 from apps.apartments.models import Apartment
 from apps.buildings.models import Building
@@ -42,7 +43,7 @@ class AdminDashboardView(APIView):
         if building_id:
             if not buildings.filter(pk=building_id).exists():
                 return Response(
-                    {"detail": "Building not found or not accessible by you."},
+                    {"detail": _("Building not found or not accessible by you.")},
                     status=403,
                 )
             buildings = buildings.filter(pk=building_id)
@@ -222,7 +223,7 @@ class AdminDashboardView(APIView):
                 "title": e.title,
                 "category": e.category.name if e.category else "Uncategorized",
                 "amount": str(e.amount),
-                "status": "Overdue" if (e.due_date and e.due_date < today) else "Active",
+                "status": str(_("Overdue")) if (e.due_date and e.due_date < today) else str(_("Active")),
             }
             for e in recent_exp_qs
         ]

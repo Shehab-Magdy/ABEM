@@ -10,6 +10,7 @@ from rest_framework.viewsets import ModelViewSet
 
 from django_filters.rest_framework import DjangoFilterBackend
 
+from django.utils.translation import gettext_lazy as _
 from apps.audit.mixins import log_action
 from apps.authentication.models import User
 from apps.authentication.permissions import IsAdminRole
@@ -144,7 +145,7 @@ class BuildingViewSet(ModelViewSet):
 
         http_status = status.HTTP_201_CREATED if created else status.HTTP_200_OK
         return Response(
-            {"detail": f"User '{user.email}' assigned to building '{building.name}'."},
+            {"detail": _("User '%(email)s' assigned to building '%(name)s'.") % {"email": user.email, "name": building.name}},
             status=http_status,
         )
 
@@ -165,7 +166,7 @@ class BuildingViewSet(ModelViewSet):
             entity_id=building.pk,
             request=request,
         )
-        return Response({"detail": f"Building '{building.name}' deactivated."})
+        return Response({"detail": _("Building '%(name)s' deactivated.") % {"name": building.name}})
 
     @action(
         detail=True,
@@ -184,7 +185,7 @@ class BuildingViewSet(ModelViewSet):
             entity_id=building.pk,
             request=request,
         )
-        return Response({"detail": f"Building '{building.name}' activated."})
+        return Response({"detail": _("Building '%(name)s' activated.") % {"name": building.name}})
 
     @action(
         detail=False,

@@ -4,6 +4,7 @@ from __future__ import annotations
 from decimal import Decimal
 
 from rest_framework import serializers
+from django.utils.translation import gettext_lazy as _
 
 from apps.apartments.models import Apartment
 from apps.buildings.models import Building
@@ -96,7 +97,7 @@ class PaymentSerializer(serializers.ModelSerializer):
 
     def validate_amount_paid(self, value: Decimal) -> Decimal:
         if value <= Decimal("0.00"):
-            raise serializers.ValidationError("amount_paid must be greater than zero.")
+            raise serializers.ValidationError(_("amount_paid must be greater than zero."))
         return value
 
     # ── Cross-field validation ──────────────────────────────────────────────────
@@ -112,7 +113,7 @@ class PaymentSerializer(serializers.ModelSerializer):
                 ).exists()
                 if not assigned:
                     raise serializers.ValidationError(
-                        f"Expense '{expense.title}' has not been assigned to the specified apartment."
+                        _("Expense '%(title)s' has not been assigned to the specified apartment.") % {"title": expense.title}
                     )
 
         return data

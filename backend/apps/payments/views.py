@@ -10,6 +10,7 @@ from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 from django.db import transaction
 
+from django.utils.translation import gettext_lazy as _
 from apps.apartments.models import Apartment
 from apps.audit.mixins import log_action
 from apps.authentication.permissions import IsAdminRole
@@ -132,7 +133,7 @@ class PaymentViewSet(ModelViewSet):
             is_owner = (apt.owner == request.user) or apt.owners.filter(pk=request.user.pk).exists()
             if not is_owner:
                 from rest_framework.exceptions import PermissionDenied
-                raise PermissionDenied("You do not have permission to view this receipt.")
+                raise PermissionDenied(_("You do not have permission to view this receipt."))
 
         def esc(value) -> str:
             """HTML-escape any user-provided value to prevent injection in the PDF."""
@@ -151,14 +152,14 @@ class PaymentViewSet(ModelViewSet):
         )
 
         fields = [
-            ("Amount Paid",    f"{payment.amount_paid:,.2f} EGP"),
-            ("Payment Date",   str(payment.payment_date)),
-            ("Payment Method", payment.payment_method.replace("_", " ").title()),
-            ("For Expenses",   expense_str),
-            ("Balance Before", f"{payment.balance_before:,.2f} EGP"),
-            ("Balance After",  f"{payment.balance_after:,.2f} EGP"),
-            ("Recorded By",    recorded_by_name),
-            ("Notes",          esc(payment.notes or "—")),
+            (str(_("Amount Paid")),    f"{payment.amount_paid:,.2f} EGP"),
+            (str(_("Payment Date")),   str(payment.payment_date)),
+            (str(_("Payment Method")), payment.payment_method.replace("_", " ").title()),
+            (str(_("For Expenses")),   expense_str),
+            (str(_("Balance Before")), f"{payment.balance_before:,.2f} EGP"),
+            (str(_("Balance After")),  f"{payment.balance_after:,.2f} EGP"),
+            (str(_("Recorded By")),    recorded_by_name),
+            (str(_("Notes")),          esc(payment.notes or "—")),
         ]
         rows_html = "".join(
             f'<tr><td class="lbl">{label}</td><td class="val">{value}</td></tr>'
@@ -322,12 +323,12 @@ class BuildingAssetViewSet(ModelViewSet):
         """
         asset = self.get_object()
         if asset.is_sold:
-            return Response({"detail": "This asset has already been sold."}, status=400)
+            return Response({"detail": _("This asset has already been sold.")}, status=400)
 
         sale_date = request.data.get("sale_date")
         sale_price = request.data.get("sale_price")
         if not sale_date or sale_price is None:
-            return Response({"detail": "sale_date and sale_price are required."}, status=400)
+            return Response({"detail": _("sale_date and sale_price are required.")}, status=400)
 
         with transaction.atomic():
             AssetSale.objects.create(

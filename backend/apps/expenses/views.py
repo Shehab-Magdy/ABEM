@@ -15,6 +15,7 @@ from rest_framework.viewsets import ModelViewSet
 
 from django_filters.rest_framework import DjangoFilterBackend
 
+from django.utils.translation import gettext_lazy as _
 from apps.audit.mixins import log_action
 from apps.authentication.permissions import IsAdminRole
 
@@ -224,7 +225,7 @@ class ExpenseViewSet(ModelViewSet):
 
         if "file" not in request.FILES:
             return Response(
-                {"detail": "No file provided. Use multipart/form-data with key 'file'."},
+                {"detail": _("No file provided. Use multipart/form-data with key 'file'.")},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -239,10 +240,11 @@ class ExpenseViewSet(ModelViewSet):
         if mime_type not in allowed_types:
             return Response(
                 {
-                    "detail": (
-                        f"Unsupported file type '{mime_type}'. "
-                        f"Allowed types: {allowed_types}"
-                    )
+                    "detail": _("Unsupported file type '%(mime_type)s'. "
+                                "Allowed types: %(allowed_types)s") % {
+                        "mime_type": mime_type,
+                        "allowed_types": allowed_types,
+                    }
                 },
                 status=status.HTTP_400_BAD_REQUEST,
             )
@@ -250,10 +252,11 @@ class ExpenseViewSet(ModelViewSet):
         if uploaded.size > max_bytes:
             return Response(
                 {
-                    "detail": (
-                        f"File size {uploaded.size} bytes exceeds the "
-                        f"{settings.MAX_UPLOAD_SIZE_MB} MB limit."
-                    )
+                    "detail": _("File size %(size)s bytes exceeds the "
+                                "%(limit)s MB limit.") % {
+                        "size": uploaded.size,
+                        "limit": settings.MAX_UPLOAD_SIZE_MB,
+                    }
                 },
                 status=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
             )

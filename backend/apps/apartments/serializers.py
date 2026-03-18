@@ -1,5 +1,6 @@
 """Serializers for the apartments app — Sprint 2."""
 from rest_framework import serializers
+from django.utils.translation import gettext_lazy as _
 
 from apps.buildings.models import Building
 from apps.authentication.models import User
@@ -74,10 +75,11 @@ class ApartmentSerializer(serializers.ModelSerializer):
             if floor > building.num_floors:
                 raise serializers.ValidationError(
                     {
-                        "floor": (
-                            f"Floor {floor} exceeds the building's maximum "
-                            f"of {building.num_floors} floor(s)."
-                        )
+                        "floor": _("Floor %(floor)s exceeds the building's maximum "
+                                    "of %(num_floors)s floor(s).") % {
+                            "floor": floor,
+                            "num_floors": building.num_floors,
+                        }
                     }
                 )
         return data
