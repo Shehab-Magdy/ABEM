@@ -36,7 +36,7 @@ class TestExportDownloadCycle:
                 payments.append(p)
 
             # Download CSV export
-            csv_resp = admin_api.get("/api/v1/exports/payments/", params={"format": "csv"})
+            csv_resp = admin_api.get("/api/v1/exports/payments/")
             assert csv_resp.status == 200
             rows = parse_csv_bytes(csv_resp.body())
             assert len(rows) >= 2

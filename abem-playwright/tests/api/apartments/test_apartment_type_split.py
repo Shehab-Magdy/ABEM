@@ -64,7 +64,7 @@ class TestApartmentTypeSplit:
             })
             assert resp.status == 201
             shares = resp.json().get("apartment_shares", [])
-            share_apt_ids = {s["apartment"] for s in shares}
+            share_apt_ids = {s["apartment_id"] for s in shares}
             store_ids = {s["id"] for s in stores}
             assert share_apt_ids.isdisjoint(store_ids), "Stores should not have shares"
         finally:
@@ -86,7 +86,7 @@ class TestApartmentTypeSplit:
             })
             assert resp.status == 201
             shares = resp.json().get("apartment_shares", [])
-            share_apt_ids = {s["apartment"] for s in shares}
+            share_apt_ids = {s["apartment_id"] for s in shares}
             apt_ids = {a["id"] for a in apartments}
             assert share_apt_ids.isdisjoint(apt_ids), "Apartments should not have shares"
         finally:

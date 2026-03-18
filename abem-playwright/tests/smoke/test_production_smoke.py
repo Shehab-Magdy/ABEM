@@ -42,7 +42,7 @@ class TestProductionSmoke:
         assert admin_api.get("/api/v1/auth/profile/").status == 200
 
     def test_export_csv(self, admin_api):
-        resp = admin_api.get("/api/v1/exports/payments/", params={"format": "csv"})
+        resp = admin_api.get("/api/v1/exports/payments/")
         assert resp.status == 200
 
     def test_owner_cannot_access_admin_endpoints(self, owner_api):

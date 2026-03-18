@@ -35,17 +35,18 @@ class BuildingsPage(BasePage):
         num_stores: int = 1,
     ) -> None:
         """Fill the building create/edit dialog form."""
-        self._page.get_by_label("Name", exact=False).fill(name)
-        self._page.get_by_label("Address", exact=False).fill(address)
-        self._page.get_by_label("City", exact=False).fill(city)
-        self._page.get_by_label("Country", exact=False).fill(country)
-        floors = self._page.get_by_label("Floors", exact=False)
+        dialog = self._page.locator("[role='dialog']")
+        dialog.get_by_label("Name", exact=False).fill(name)
+        dialog.get_by_label("Address", exact=False).fill(address)
+        dialog.get_by_label("City", exact=False).fill(city)
+        dialog.get_by_label("Country", exact=False).fill(country)
+        floors = dialog.get_by_label("Floors", exact=False)
         floors.clear()
         floors.fill(str(num_floors))
-        apts = self._page.get_by_label("Apartments", exact=False)
+        apts = dialog.get_by_label("Apartments", exact=False)
         apts.clear()
         apts.fill(str(num_apartments))
-        stores = self._page.get_by_label("Stores", exact=False)
+        stores = dialog.get_by_label("Stores", exact=False)
         stores.clear()
         stores.fill(str(num_stores))
 

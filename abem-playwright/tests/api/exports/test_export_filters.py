@@ -12,7 +12,7 @@ class TestExportFilters:
 
     def test_export_date_range_filter(self, admin_api: APIRequestContext):
         resp = admin_api.get("/api/v1/exports/payments/", params={
-            "format": "csv", "date_from": "2026-01-01", "date_to": "2026-12-31",
+            "date_from": "2026-01-01", "date_to": "2026-12-31",
         })
         assert resp.status == 200
 
@@ -27,7 +27,7 @@ class TestExportFilters:
 
     def test_export_empty_date_range(self, admin_api: APIRequestContext):
         resp = admin_api.get("/api/v1/exports/payments/", params={
-            "format": "csv", "date_from": "2099-01-01", "date_to": "2099-12-31",
+            "date_from": "2099-01-01", "date_to": "2099-12-31",
         })
         rows = parse_csv_bytes(resp.body())
         assert len(rows) == 0

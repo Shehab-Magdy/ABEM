@@ -35,7 +35,7 @@ class TestExpenseSplitByType:
             ))
             assert resp.status == 201
             shares = resp.json().get("apartment_shares", [])
-            share_ids = {s["apartment"] for s in shares}
+            share_ids = {s["apartment_id"] for s in shares}
             store_ids = {s["id"] for s in stores}
             assert share_ids.isdisjoint(store_ids)
         finally:
@@ -49,7 +49,7 @@ class TestExpenseSplitByType:
             ))
             assert resp.status == 201
             shares = resp.json().get("apartment_shares", [])
-            share_ids = {s["apartment"] for s in shares}
+            share_ids = {s["apartment_id"] for s in shares}
             apt_ids = {a["id"] for a in apartments}
             assert share_ids.isdisjoint(apt_ids)
         finally:

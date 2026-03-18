@@ -2,14 +2,14 @@
 
 Registers all fixtures from the fixtures/ package and provides
 browser, page, API context, and data-seeding fixtures.
+
+Uses pytest-playwright's built-in `playwright` fixture as the foundation.
 """
 
 from __future__ import annotations
 
-import json
 import logging
 import os
-import tempfile
 from pathlib import Path
 from uuid import uuid4
 
@@ -26,12 +26,10 @@ from config.settings import settings
 from pw_config import (
     ADMIN_STORAGE_STATE,
     DEFAULT_TIMEOUT,
-    EXPECT_TIMEOUT,
     HEADLESS,
     LOCALE,
     NAVIGATION_TIMEOUT,
     OWNER_STORAGE_STATE,
-    SCREENSHOT_ON_FAILURE,
     SLOW_MO,
     TIMEZONE_ID,
     VIEWPORT_HEIGHT,
@@ -61,6 +59,8 @@ def pytest_configure(config):
 
 
 # ── Browser fixtures ──────────────────────────────────────────
+# pytest-playwright provides: playwright, browser_type, browser,
+# context, page. We build on top of `playwright` for custom fixtures.
 
 
 @pytest.fixture(scope="session")
@@ -131,7 +131,7 @@ def _ensure_admin_storage_state(playwright: Playwright, browser: Browser) -> str
     pg = context.new_page()
     pg.goto(f"{settings.BASE_URL}/login")
     pg.get_by_label("Email address").fill(settings.ADMIN_EMAIL)
-    pg.get_by_label("Password").fill(settings.ADMIN_PASSWORD)
+    pg.get_by_label("Password", exact=True).fill(settings.ADMIN_PASSWORD)
     pg.get_by_role("button", name="Sign in").click()
     pg.wait_for_url("**/dashboard**", timeout=15_000)
     context.storage_state(path=ADMIN_STORAGE_STATE)
@@ -156,7 +156,7 @@ def _ensure_owner_storage_state(playwright: Playwright, browser: Browser) -> str
     pg = context.new_page()
     pg.goto(f"{settings.BASE_URL}/login")
     pg.get_by_label("Email address").fill(settings.OWNER_EMAIL)
-    pg.get_by_label("Password").fill(settings.OWNER_PASSWORD)
+    pg.get_by_label("Password", exact=True).fill(settings.OWNER_PASSWORD)
     pg.get_by_role("button", name="Sign in").click()
     pg.wait_for_url("**/dashboard**", timeout=15_000)
     context.storage_state(path=OWNER_STORAGE_STATE)

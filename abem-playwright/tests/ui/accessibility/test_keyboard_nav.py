@@ -17,7 +17,7 @@ class TestKeyboardNav:
         page.goto(f"{settings.BASE_URL}/login")
         page.wait_for_load_state("networkidle")
         page.get_by_label("Email address").fill(settings.ADMIN_EMAIL)
-        page.get_by_label("Password").fill(settings.ADMIN_PASSWORD)
+        page.get_by_label("Password", exact=True).fill(settings.ADMIN_PASSWORD)
         page.keyboard.press("Enter")
         page.wait_for_timeout(3000)
 

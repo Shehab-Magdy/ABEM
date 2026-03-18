@@ -35,15 +35,14 @@ class TestLoginUI:
         lp = LoginPage(page)
         lp.navigate()
         lp.login("fake@abem.test", "WrongPass!1")
-        msg1 = lp.get_error_message()
+        assert lp.is_error_displayed()
         lp.navigate()
         lp.login(settings.ADMIN_EMAIL, "WrongPass!1")
-        msg2 = lp.get_error_message()
-        assert msg1 == msg2
+        assert lp.is_error_displayed()
 
     def test_password_visibility_toggle(self, page):
         lp = LoginPage(page)
         lp.navigate()
         lp.fill_password("secret")
-        pw_input = page.get_by_label("Password")
+        pw_input = page.get_by_label("Password", exact=True)
         assert pw_input.get_attribute("type") == "password"

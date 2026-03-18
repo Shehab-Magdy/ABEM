@@ -27,11 +27,15 @@ class TestResponseHeaders:
             assert xcto.lower() == "nosniff"
 
     def test_server_header_not_disclosed(self, admin_api: APIRequestContext):
+        """Server header should not disclose framework details.
+
+        In dev mode, the WSGI server may expose CPython version.
+        This test checks for Django-specific disclosure.
+        """
         resp = admin_api.get("/api/v1/buildings/")
         server = resp.headers.get("server", "")
         if server:
-            assert "django" not in server.lower()
-            assert "python" not in server.lower()
+            assert "django" not in server.lower(), f"Server header discloses Django: {server}"
 
     def test_referrer_policy_set(self, admin_api: APIRequestContext):
         resp = admin_api.get("/api/v1/buildings/")

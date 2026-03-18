@@ -13,7 +13,7 @@ class LoginPage(BasePage):
     def __init__(self, page: Page) -> None:
         super().__init__(page)
         self._email_input = page.get_by_label("Email address")
-        self._password_input = page.get_by_label("Password")
+        self._password_input = page.get_by_label("Password", exact=True)
         self._submit_btn = page.get_by_role("button", name="Sign in")
 
     # ── Navigation ────────────────────────────────────────────

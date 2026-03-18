@@ -42,7 +42,7 @@ class TestExpenseParticipation:
             })
             assert resp.status == 201
             shares = resp.json().get("apartment_shares", [])
-            share_ids = {s["apartment"] for s in shares}
+            share_ids = {s["apartment_id"] for s in shares}
             assert apts[2]["id"] not in share_ids
             assert len(shares) == 2
         finally:

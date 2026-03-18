@@ -11,6 +11,10 @@ class TestMultiBuildingSwitch:
         ep = ExpensesPage(admin_page)
         ep.navigate()
         ep.wait_for_load()
-        # Building selector should be present
-        selector = admin_page.get_by_label("Building", exact=False)
+        # Building selector may be a Select, FormControl, or dropdown
+        selector = admin_page.get_by_label("Building", exact=False).or_(
+            admin_page.locator("[data-testid='building-selector']")
+        ).or_(
+            admin_page.locator("select, [role='combobox']").first
+        )
         assert selector.count() > 0

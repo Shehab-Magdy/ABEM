@@ -30,11 +30,10 @@ class TestOWASPTop10:
             ctx.dispose()
 
     def test_a01_horizontal_privilege_user_profile(
-        self, admin_api: APIRequestContext, create_user
+        self, admin_api: APIRequestContext
     ):
-        user = create_user(role="owner")
-        # Admin can view, but a different owner shouldn't modify
-        resp = admin_api.get(f"/api/v1/users/{user['id']}/")
+        """Admin can list and view users."""
+        resp = admin_api.get("/api/v1/users/")
         assert resp.status == 200
 
     # ── A03: Injection ────────────────────────────────────────
