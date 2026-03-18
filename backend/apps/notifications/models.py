@@ -36,6 +36,7 @@ class Notification(models.Model):
     channel = models.CharField(max_length=10, choices=NotificationChannel.choices)
     title = models.CharField(max_length=255)
     body = models.TextField()
+    message_key = models.CharField(max_length=100, null=True, blank=True)
     is_read = models.BooleanField(default=False)
     metadata = models.JSONField(default=dict, blank=True)  # extra context (expense_id, amount, etc.)
     created_at = models.DateTimeField(auto_now_add=True)
