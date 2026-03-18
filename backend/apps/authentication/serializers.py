@@ -20,7 +20,7 @@ class UserSerializer(serializers.ModelSerializer):
         fields = [
             "id", "email", "first_name", "last_name", "full_name",
             "phone", "profile_picture", "role", "is_active",
-            "must_change_password",
+            "must_change_password", "preferred_language",
             "messaging_blocked", "individual_messaging_blocked",
             "created_at", "updated_at",
         ]
@@ -69,7 +69,7 @@ class ProfileUpdateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ["first_name", "last_name", "phone", "profile_picture"]
+        fields = ["first_name", "last_name", "phone", "profile_picture", "preferred_language"]
 
 
 class ChangePasswordSerializer(serializers.Serializer):
