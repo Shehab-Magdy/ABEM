@@ -1,0 +1,42 @@
+# Test runner
+pytest==8.3.5
+pytest-html==4.1.1
+pytest-rerunfailures==14.0
+pytest-xdist==3.5.0
+pytest-timeout==2.3.1
+
+# Browser automation
+playwright==1.49.1
+
+# Database
+psycopg2-binary==2.9.10
+
+# Assertions
+assertpy==1.1
+
+# Fake data
+Faker==25.9.1
+
+# Reporting
+allure-pytest==2.13.5
+allure-python-commons==2.13.5
+
+# Environment config
+python-dotenv==1.0.1
+pydantic==2.10.4
+pydantic-settings==2.7.1
+
+# JWT inspection
+PyJWT==2.10.1
+
+# CSV / XLSX parsing
+openpyxl==3.1.5
+
+# PDF parsing
+pypdf==5.1.0
+
+# Image generation for test files
+Pillow==11.1.0
+
+# Accessibility testing
+axe-playwright-python==0.1.5

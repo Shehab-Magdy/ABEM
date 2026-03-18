@@ -1,0 +1,44 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Virtual env
+.venv/
+venv/
+env/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Environment
+.env
+
+# Reports
+reports/
+allure-results/
+allure-report/
+test-results/
+
+# Playwright
+playwright-report/
+playwright/.cache/
+*.zip
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temp files
+tmp/
+*.tmp
+
+# Screenshots & videos
+screenshots/
+videos/
