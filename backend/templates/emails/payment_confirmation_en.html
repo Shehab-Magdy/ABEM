@@ -1,0 +1,12 @@
+{% extends "emails/base_en.html" %}
+{% block title %}Payment Confirmed — {{ building_name }}{% endblock %}
+{% block content %}
+<p style="font-size:16px;color:#1F2937;margin:0 0 16px;">Dear {{ owner_name }},</p>
+<p style="font-size:15px;color:#4B5563;line-height:1.6;margin:0 0 8px;">
+  Your payment of <strong>{{ amount }}</strong> on <strong>{{ date }}</strong> has been successfully recorded.
+</p>
+<p style="font-size:15px;color:#4B5563;line-height:1.6;margin:0 0 24px;">
+  Remaining balance: <strong>{{ remaining_balance }}</strong>.
+</p>
+<p style="margin:0;"><a href="{{ payments_url }}" style="display:inline-block;background:#2563EB;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;">View Payment History</a></p>
+{% endblock %}

@@ -1,0 +1,12 @@
+{% extends "emails/base_ar.html" %}
+{% block title %}تأكيد استلام الدفعة — {{ building_name }}{% endblock %}
+{% block content %}
+<p style="font-size:16px;color:#1F2937;margin:0 0 16px;text-align:right;">عزيزي {{ owner_name }}،</p>
+<p style="font-size:15px;color:#4B5563;line-height:1.6;margin:0 0 8px;text-align:right;">
+  تم تسجيل دفعتك بمبلغ <strong>{{ amount }}</strong> بتاريخ <strong>{{ date }}</strong> بنجاح.
+</p>
+<p style="font-size:15px;color:#4B5563;line-height:1.6;margin:0 0 24px;text-align:right;">
+  الرصيد المتبقي: <strong>{{ remaining_balance }}</strong>.
+</p>
+<p style="margin:0;text-align:right;"><a href="{{ payments_url }}" style="display:inline-block;background:#2563EB;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;">عرض سجل المدفوعات</a></p>
+{% endblock %}
