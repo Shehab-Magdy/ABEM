@@ -40,6 +40,7 @@ import {
 import { Add as AddIcon, Sell as SellIcon } from "@mui/icons-material";
 import { assetsApi } from "../../api/assetsApi";
 import { buildingsApi } from "../../api/buildingsApi";
+import { PrivateSEO } from "../../components/seo/SEO";
 
 const ASSET_TYPES = [
   { value: "vehicle", label: "Vehicle" },
@@ -197,7 +198,9 @@ export default function AssetsPage() {
   // ── Render ──────────────────────────────────────────────────────────────────
 
   return (
-    <Box>
+    <>
+      <PrivateSEO title="ABEM – Assets" />
+      <Box>
       {/* Header */}
       <Stack direction="row" justifyContent="space-between" alignItems="center" mb={3}>
         <Typography variant="h5" fontWeight={600}>
@@ -505,5 +508,6 @@ export default function AssetsPage() {
         </Alert>
       </Snackbar>
     </Box>
+    </>
   );
 }

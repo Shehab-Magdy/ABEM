@@ -17,6 +17,7 @@ import {
 import { CameraAlt } from "@mui/icons-material";
 import { authApi } from "../../api/authApi";
 import { useAuth } from "../../hooks/useAuth";
+import { PrivateSEO } from "../../components/seo/SEO";
 
 export default function ProfilePage() {
   const { user, setUser } = useAuth();
@@ -89,7 +90,9 @@ export default function ProfilePage() {
   };
 
   return (
-    <Box id="profile-card" maxWidth={640}>
+    <>
+      <PrivateSEO title="ABEM – Profile" />
+      <Box id="profile-card" maxWidth={640}>
       <Typography variant="h5" mb={3}>My Profile</Typography>
 
       {/* Profile picture */}
@@ -226,5 +229,6 @@ export default function ProfilePage() {
         </CardContent>
       </Card>
     </Box>
+    </>
   );
 }

@@ -36,6 +36,7 @@ import {
 import { Add as AddIcon, Delete as DeleteIcon } from "@mui/icons-material";
 import { expensesApi } from "../../api/expensesApi";
 import { buildingsApi } from "../../api/buildingsApi";
+import { PrivateSEO } from "../../components/seo/SEO";
 
 const EMPTY_FORM = { name: "", description: "", icon: "", color: "#2563EB", parent_id: "" };
 
@@ -154,7 +155,9 @@ export default function ExpenseCategoriesPage() {
   // ── Render ───────────────────────────────────────────────────────────────────
 
   return (
-    <Box>
+    <>
+      <PrivateSEO title="ABEM – Expense Categories" />
+      <Box>
       {/* Header */}
       <Box display="flex" alignItems="center" justifyContent="space-between" mb={3}>
         <Typography variant="h5" fontWeight={600}>
@@ -389,5 +392,6 @@ export default function ExpenseCategoriesPage() {
         </Alert>
       </Snackbar>
     </Box>
+    </>
   );
 }

@@ -34,6 +34,7 @@ import { BarChart } from "@mui/x-charts/BarChart";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
 import axiosClient from "../../api/axiosClient";
+import { PrivateSEO } from "../../components/seo/SEO";
 
 const MONTH_LABELS = [
   "Jan", "Feb", "Mar", "Apr", "May", "Jun",
@@ -127,6 +128,8 @@ export default function AdminDashboardPage() {
   const hasData = data !== null;
 
   return (
+    <>
+    <PrivateSEO title="ABEM – Dashboard" />
     <Box sx={{ p: 3 }}>
       <Typography variant="h4" fontWeight={700} gutterBottom>
         Admin Dashboard
@@ -438,5 +441,6 @@ export default function AdminDashboardPage() {
         </>
       )}
     </Box>
+    </>
   );
 }

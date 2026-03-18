@@ -47,6 +47,7 @@ import { buildingsApi } from "../../api/buildingsApi";
 import { expensesApi } from "../../api/expensesApi";
 import axiosClient from "../../api/axiosClient";
 import { useAuth } from "../../hooks/useAuth";
+import { PrivateSEO } from "../../components/seo/SEO";
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
@@ -235,7 +236,9 @@ export default function PaymentsPage() {
   // ── Render ───────────────────────────────────────────────────────────────────
 
   return (
-    <Box>
+    <>
+      <PrivateSEO title="ABEM – Payments" />
+      <Box>
       {/* Header */}
       <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
         <Typography variant="h5" fontWeight={600}>
@@ -574,5 +577,6 @@ export default function PaymentsPage() {
         </Alert>
       </Snackbar>
     </Box>
+    </>
   );
 }

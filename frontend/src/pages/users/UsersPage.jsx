@@ -27,6 +27,7 @@ import {
 } from "@mui/icons-material";
 import { useForm } from "react-hook-form";
 import { usersApi } from "../../api/usersApi";
+import { PrivateSEO } from "../../components/seo/SEO";
 
 const ROLES = ["admin", "owner"];
 
@@ -243,7 +244,9 @@ export default function UsersPage() {
   ];
 
   return (
-    <Box>
+    <>
+      <PrivateSEO title="ABEM – Users" />
+      <Box>
       <Stack direction="row" justifyContent="space-between" alignItems="center" mb={3}>
         <Typography variant="h5">User Management</Typography>
         <Button id="add-user-btn" variant="contained" startIcon={<Add />} onClick={() => { setCreateOpen(true); setCreateError(null); }}>
@@ -359,5 +362,6 @@ export default function UsersPage() {
         </DialogActions>
       </Dialog>
     </Box>
+    </>
   );
 }

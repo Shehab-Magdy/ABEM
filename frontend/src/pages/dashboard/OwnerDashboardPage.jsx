@@ -27,6 +27,7 @@ import { VpnKey } from "@mui/icons-material";
 import { PieChart } from "@mui/x-charts/PieChart";
 import axiosClient from "../../api/axiosClient";
 import { apartmentsApi } from "../../api/apartmentsApi";
+import { PrivateSEO } from "../../components/seo/SEO";
 
 export default function OwnerDashboardPage() {
   const [dateFrom, setDateFrom] = useState("");
@@ -115,6 +116,8 @@ export default function OwnerDashboardPage() {
   const dataLoaded = data !== null;
 
   return (
+    <>
+    <PrivateSEO title="ABEM – Dashboard" />
     <Box sx={{ p: 3 }}>
       <Typography variant="h4" fontWeight={700} gutterBottom>
         Owner Dashboard
@@ -313,5 +316,6 @@ export default function OwnerDashboardPage() {
         </>
       )}
     </Box>
+    </>
   );
 }

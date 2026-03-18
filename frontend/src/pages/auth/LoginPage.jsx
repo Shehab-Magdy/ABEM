@@ -18,6 +18,7 @@ import {
 import { Visibility, VisibilityOff } from "@mui/icons-material";
 import { authApi } from "../../api/authApi";
 import { useAuthStore } from "../../contexts/authStore";
+import { PublicSEO } from "../../components/seo/SEO";
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -70,6 +71,11 @@ export default function LoginPage() {
   };
 
   return (
+    <>
+    <PublicSEO
+      title="Login – ABEM"
+      description="Sign in to your ABEM account to manage your building's shared expenses and payments."
+    />
     <Box
       display="flex"
       alignItems="center"
@@ -186,5 +192,6 @@ export default function LoginPage() {
         </CardContent>
       </Card>
     </Box>
+    </>
   );
 }

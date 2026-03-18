@@ -34,6 +34,7 @@ import {
 } from "@mui/icons-material";
 import axiosClient from "../../api/axiosClient";
 import { useAuth } from "../../hooks/useAuth";
+import { PrivateSEO } from "../../components/seo/SEO";
 
 const ENTITY_OPTIONS = ["", "expense", "payment", "user", "building", "apartment"];
 const PAGE_SIZE = 20;
@@ -146,7 +147,9 @@ export default function AuditLogPage() {
   const totalPages = Math.max(1, Math.ceil(count / PAGE_SIZE));
 
   return (
-    <Box>
+    <>
+      <PrivateSEO title="ABEM – Audit Log" />
+      <Box>
       {/* Header */}
       <Stack direction="row" justifyContent="space-between" alignItems="center" mb={3}>
         <Typography variant="h5" fontWeight={700}>
@@ -316,5 +319,6 @@ export default function AuditLogPage() {
         </Stack>
       )}
     </Box>
+    </>
   );
 }

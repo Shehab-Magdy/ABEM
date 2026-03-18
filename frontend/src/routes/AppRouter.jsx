@@ -5,9 +5,11 @@ import TutorialSystem from "../tutorial/TutorialOverlay";
 // Layout
 import DashboardLayout from "../components/common/DashboardLayout";
 
-// Auth
+// Public pages
+import LandingPage from "../pages/landing/LandingPage";
 import LoginPage from "../pages/auth/LoginPage";
 import RegisterPage from "../pages/auth/RegisterPage";
+import ForgotPasswordPage from "../pages/auth/ForgotPasswordPage";
 
 // Dashboards
 import AdminDashboardPage from "../pages/dashboard/AdminDashboardPage";
@@ -55,11 +57,15 @@ export default function AppRouter() {
     <>
     <TutorialSystem />
     <Routes>
-      {/* Public – redirect to dashboard if already authenticated */}
+      {/* Public marketing page */}
+      <Route path="/landing" element={user ? <Navigate to="/dashboard" replace /> : <LandingPage />} />
+
+      {/* Public auth pages */}
       <Route path="/login" element={user ? <Navigate to="/dashboard" replace /> : <LoginPage />} />
       {/* /register has no guard here: the wizard calls login() mid-flow (after AccountStep),
           which would otherwise cause an immediate redirect away before the user finishes the wizard. */}
       <Route path="/register" element={<RegisterPage />} />
+      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
 
       {/* Protected – all routes share the DashboardLayout shell */}
       <Route

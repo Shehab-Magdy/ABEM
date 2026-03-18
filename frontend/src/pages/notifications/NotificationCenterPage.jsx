@@ -33,6 +33,7 @@ import {
 } from "@mui/icons-material";
 import axiosClient from "../../api/axiosClient";
 import { useAuth } from "../../hooks/useAuth";
+import { PrivateSEO } from "../../components/seo/SEO";
 
 const TYPE_LABELS = {
   payment_due: "Payment Due",
@@ -230,7 +231,9 @@ export default function NotificationCenterPage() {
   const unreadCount = notifications.filter((n) => !n.is_read).length;
 
   return (
-    <Box sx={{ p: 3, maxWidth: 1200 }}>
+    <>
+      <PrivateSEO title="ABEM – Notifications" />
+      <Box sx={{ p: 3, maxWidth: 1200 }}>
       <Typography variant="h4" fontWeight={700} sx={{ mb: 3 }}>
         Notifications
       </Typography>
@@ -578,5 +581,6 @@ export default function NotificationCenterPage() {
         </Collapse>
       </Card>
     </Box>
+    </>
   );
 }

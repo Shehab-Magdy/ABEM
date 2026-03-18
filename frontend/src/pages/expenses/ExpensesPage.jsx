@@ -53,6 +53,7 @@ import {
 import { expensesApi } from "../../api/expensesApi";
 import { buildingsApi } from "../../api/buildingsApi";
 import { useAuth } from "../../hooks/useAuth";
+import { PrivateSEO } from "../../components/seo/SEO";
 
 // Resolve relative media paths to absolute backend URLs so the browser
 // doesn't route them through React Router.
@@ -311,7 +312,9 @@ export default function ExpensesPage() {
   // ── Render ─────────────────────────────────────────────────────────────────
 
   return (
-    <Box>
+    <>
+      <PrivateSEO title="ABEM – Expenses" />
+      <Box>
       {/* Header */}
       <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
         <Typography variant="h5" fontWeight={600}>
@@ -934,5 +937,6 @@ export default function ExpensesPage() {
         </Alert>
       </Snackbar>
     </Box>
+    </>
   );
 }

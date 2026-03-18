@@ -44,6 +44,7 @@ import { buildingsApi } from "../../api/buildingsApi";
 import { apartmentsApi } from "../../api/apartmentsApi";
 import { usersApi } from "../../api/usersApi";
 import { useAuth } from "../../hooks/useAuth";
+import { PrivateSEO } from "../../components/seo/SEO";
 
 export default function BuildingsPage() {
   const { isAdmin } = useAuth();
@@ -390,7 +391,9 @@ export default function BuildingsPage() {
   ];
 
   return (
-    <Box>
+    <>
+      <PrivateSEO title="ABEM – Buildings" />
+      <Box>
       {/* Header */}
       <Stack direction="row" justifyContent="space-between" alignItems="center" mb={3}>
         <Typography variant="h5" fontWeight={600}>
@@ -734,5 +737,6 @@ export default function BuildingsPage() {
         </DialogActions>
       </Dialog>
     </Box>
+    </>
   );
 }
