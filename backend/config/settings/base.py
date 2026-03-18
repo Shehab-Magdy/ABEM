@@ -4,6 +4,7 @@ ABEM – Base Django settings shared across all environments.
 from pathlib import Path
 from datetime import timedelta
 from decouple import config, Csv
+from django.utils.translation import gettext_lazy as _
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
@@ -35,6 +36,7 @@ THIRD_PARTY_APPS = [
     "cloudinary",
     "cloudinary_storage",
     "django_celery_beat",
+    "rosetta",
 ]
 
 LOCAL_APPS = [
@@ -57,6 +59,7 @@ MIDDLEWARE = [
     "apps.core.middleware.APIRobotsMiddleware",
     "corsheaders.middleware.CorsMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
+    "django.middleware.locale.LocaleMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
@@ -121,10 +124,18 @@ AUTH_PASSWORD_VALIDATORS = [
 # ---------------------------------------------------------------------------
 # Internationalization
 # ---------------------------------------------------------------------------
-LANGUAGE_CODE = "en-us"
+LANGUAGES = [
+    ("en", _("English")),
+    ("ar", _("العربية")),
+]
+
+LANGUAGE_CODE = "en"
 TIME_ZONE = "UTC"
 USE_I18N = True
+USE_L10N = True
 USE_TZ = True
+
+LOCALE_PATHS = [BASE_DIR / "locale"]
 
 # ---------------------------------------------------------------------------
 # Static & Media files
@@ -293,3 +304,8 @@ LOGIN_LOCKOUT_DURATION_MINUTES = 15
 # ---------------------------------------------------------------------------
 MAX_UPLOAD_SIZE_MB = 10
 ALLOWED_UPLOAD_TYPES = ["image/jpeg", "image/png", "application/pdf"]
+
+# ---------------------------------------------------------------------------
+# Rosetta (translation management UI)
+# ---------------------------------------------------------------------------
+ROSETTA_REQUIRES_AUTH = True
