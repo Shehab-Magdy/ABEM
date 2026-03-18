@@ -19,6 +19,7 @@ class UserSerializer(serializers.ModelSerializer):
         fields = [
             "id", "email", "first_name", "last_name", "full_name",
             "phone", "profile_picture", "role", "is_active",
+            "must_change_password",
             "messaging_blocked", "individual_messaging_blocked",
             "created_at", "updated_at",
         ]
@@ -123,6 +124,23 @@ class SelfRegisterSerializer(serializers.ModelSerializer):
         user.set_password(password)
         user.save()
         return user
+
+
+class ForceChangePasswordSerializer(serializers.Serializer):
+    """Used when must_change_password is True — no current password required."""
+
+    new_password = serializers.CharField(
+        write_only=True,
+        validators=[validate_password_complexity],
+    )
+    confirm_password = serializers.CharField(write_only=True)
+
+    def validate(self, data):
+        if data["new_password"] != data["confirm_password"]:
+            raise serializers.ValidationError(
+                {"confirm_password": "New passwords do not match."}
+            )
+        return data
 
 
 class AdminResetPasswordSerializer(serializers.Serializer):

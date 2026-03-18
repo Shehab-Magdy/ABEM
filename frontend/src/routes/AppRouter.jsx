@@ -10,6 +10,7 @@ import LandingPage from "../pages/landing/LandingPage";
 import LoginPage from "../pages/auth/LoginPage";
 import RegisterPage from "../pages/auth/RegisterPage";
 import ForgotPasswordPage from "../pages/auth/ForgotPasswordPage";
+import ForceChangePasswordPage from "../pages/auth/ForceChangePasswordPage";
 
 // Dashboards
 import AdminDashboardPage from "../pages/dashboard/AdminDashboardPage";
@@ -37,8 +38,17 @@ import ServerErrorPage from "../pages/errors/ServerErrorPage";
 // ── Route guards ──────────────────────────────────────────────────────────────
 
 function RequireAuth({ children }) {
-  const { accessToken } = useAuthStore();
-  return accessToken ? children : <Navigate to="/login" replace />;
+  const { accessToken, user } = useAuthStore();
+  if (!accessToken) return <Navigate to="/login" replace />;
+  if (user?.must_change_password) return <Navigate to="/change-password-required" replace />;
+  return children;
+}
+
+function RequireForceChange({ children }) {
+  const { user } = useAuthStore();
+  if (!user) return <Navigate to="/login" replace />;
+  if (user.must_change_password) return children;
+  return <Navigate to="/dashboard" replace />;
 }
 
 function RequireAdmin({ children }) {
@@ -66,6 +76,16 @@ export default function AppRouter() {
           which would otherwise cause an immediate redirect away before the user finishes the wizard. */}
       <Route path="/register" element={<RegisterPage />} />
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+
+      {/* Forced password change — accessible only when must_change_password is true */}
+      <Route
+        path="/change-password-required"
+        element={
+          <RequireForceChange>
+            <ForceChangePasswordPage />
+          </RequireForceChange>
+        }
+      />
 
       {/* Protected – all routes share the DashboardLayout shell */}
       <Route

@@ -6,6 +6,7 @@ export const authApi = {
   refresh: (refreshToken) => axiosClient.post("/auth/refresh/", { refresh: refreshToken }),
   selfRegister: (data) => axiosClient.post("/auth/self-register/", data),
   changePassword: (data) => axiosClient.patch("/auth/change-password/", data),
+  forceChangePassword: (data) => axiosClient.post("/auth/force-change-password/", data),
   getProfile: () => axiosClient.get("/auth/profile/"),
   updateProfile: (data) => axiosClient.patch("/auth/profile/", data),
   uploadProfilePicture: (file) => {

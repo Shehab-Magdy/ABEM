@@ -155,7 +155,8 @@ class UserViewSet(AuditLogMixin, ModelViewSet):
         serializer = AdminResetPasswordSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user.set_password(serializer.validated_data["new_password"])
-        user.save(update_fields=["password"])
+        user.must_change_password = True
+        user.save(update_fields=["password", "must_change_password"])
         log_action(
             user=request.user,
             action="reset_password",

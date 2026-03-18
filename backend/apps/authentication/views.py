@@ -18,6 +18,7 @@ from apps.audit.mixins import log_action
 from .models import User
 from .serializers import (
     ChangePasswordSerializer,
+    ForceChangePasswordSerializer,
     LoginSerializer,
     ProfileUpdateSerializer,
     RegisterUserSerializer,
@@ -200,7 +201,8 @@ class ChangePasswordView(APIView):
         serializer.is_valid(raise_exception=True)
 
         request.user.set_password(serializer.validated_data["new_password"])
-        request.user.save(update_fields=["password"])
+        request.user.must_change_password = False
+        request.user.save(update_fields=["password", "must_change_password"])
 
         log_action(
             user=request.user,
@@ -211,6 +213,38 @@ class ChangePasswordView(APIView):
         )
 
         return Response({"detail": "Password changed successfully."})
+
+
+# ── Force Change Password (after admin reset) ────────────────────────────
+
+class ForceChangePasswordView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        if not request.user.must_change_password:
+            return Response(
+                {"detail": "Password change is not required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        serializer = ForceChangePasswordSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        request.user.set_password(serializer.validated_data["new_password"])
+        request.user.must_change_password = False
+        request.user.save(update_fields=["password", "must_change_password"])
+
+        log_action(
+            user=request.user,
+            action="force_change_password",
+            entity="user",
+            entity_id=request.user.id,
+            request=request,
+        )
+
+        return Response(
+            {"detail": "Password changed successfully.", "user": UserSerializer(request.user).data}
+        )
 
 
 # ── Profile ────────────────────────────────────────────────────────────────────
