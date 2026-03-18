@@ -209,7 +209,10 @@ export default function DashboardLayout() {
             </Tooltip>
             <Tooltip title="Account">
               <IconButton onClick={(e) => setAnchorEl(e.currentTarget)} size="small">
-                <Avatar sx={{ width: 32, height: 32, bgcolor: "primary.main", fontSize: 14 }}>
+                <Avatar
+                  src={user?.profile_picture || undefined}
+                  sx={{ width: 32, height: 32, bgcolor: "primary.main", fontSize: 14 }}
+                >
                   {user?.first_name?.[0]}{user?.last_name?.[0]}
                 </Avatar>
               </IconButton>
