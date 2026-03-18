@@ -108,7 +108,7 @@ class LoginView(APIView):
             {
                 "access": str(refresh.access_token),
                 "refresh": str(refresh),
-                "user": UserSerializer(user).data,
+                "user": UserSerializer(user, context={"request": request}).data,
             }
         )
 
@@ -164,7 +164,7 @@ class RegisterView(APIView):
             request=request,
         )
 
-        return Response(UserSerializer(user).data, status=status.HTTP_201_CREATED)
+        return Response(UserSerializer(user, context={"request": request}).data, status=status.HTTP_201_CREATED)
 
 
 # ── Self-Register (public, role forced to 'owner') ────────────────────────────
@@ -183,7 +183,7 @@ class SelfRegisterView(APIView):
             {
                 "access": str(refresh.access_token),
                 "refresh": str(refresh),
-                "user": UserSerializer(user).data,
+                "user": UserSerializer(user, context={"request": request}).data,
             },
             status=status.HTTP_201_CREATED,
         )
@@ -243,7 +243,7 @@ class ForceChangePasswordView(APIView):
         )
 
         return Response(
-            {"detail": "Password changed successfully.", "user": UserSerializer(request.user).data}
+            {"detail": "Password changed successfully.", "user": UserSerializer(request.user, context={"request": request}).data}
         )
 
 
@@ -254,7 +254,7 @@ class ProfileView(APIView):
     parser_classes = [MultiPartParser, FormParser, JSONParser]
 
     def get(self, request):
-        return Response(UserSerializer(request.user).data)
+        return Response(UserSerializer(request.user, context={"request": request}).data)
 
     def patch(self, request):
         serializer = ProfileUpdateSerializer(
@@ -283,4 +283,4 @@ class ProfileView(APIView):
             request=request,
         )
 
-        return Response(UserSerializer(request.user).data)
+        return Response(UserSerializer(request.user, context={"request": request}).data)
