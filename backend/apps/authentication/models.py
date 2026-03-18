@@ -45,6 +45,13 @@ class User(AbstractBaseUser, PermissionsMixin):
     # Forced password change (set after admin resets password)
     must_change_password = models.BooleanField(default=False)
 
+    # Language preference for i18n
+    preferred_language = models.CharField(
+        max_length=5,
+        choices=[("en", "English"), ("ar", "العربية")],
+        default="en",
+    )
+
     # Messaging restrictions (set by admins)
     messaging_blocked = models.BooleanField(default=False)
     individual_messaging_blocked = models.BooleanField(default=False)
