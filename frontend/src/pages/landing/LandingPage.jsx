@@ -10,6 +10,32 @@ import {
 } from "@mui/icons-material";
 import { PublicSEO } from "../../components/seo/SEO";
 
+const structuredData = {
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "ABEM",
+  "alternateName": "Apartment & Building Expense Management",
+  "applicationCategory": "BusinessApplication",
+  "operatingSystem": "Web",
+  "description":
+    "Multi-tenant platform for managing shared building expenses, payments, and balances for property managers and apartment owners.",
+  "url": "https://abem.app",
+  "inLanguage": ["ar", "en"],
+  "offers": {
+    "@type": "Offer",
+    "price": "0",
+    "priceCurrency": "EGP",
+    "description": "Free to get started",
+  },
+  "featureList": [
+    "Expense splitting across apartments and stores",
+    "Payment tracking with PDF receipts",
+    "Role-based access control",
+    "Multi-building management",
+    "Recurring expense automation",
+  ],
+};
+
 const features = [
   { icon: <AccountBalance fontSize="large" color="primary" />, title: "Multi-Building Management", text: "Manage multiple buildings, apartments, and stores from a single dashboard." },
   { icon: <Receipt fontSize="large" color="primary" />, title: "Expense Splitting", text: "Automatically split shared expenses across apartments and stores with configurable rules." },
@@ -25,7 +51,11 @@ export default function LandingPage() {
       <PublicSEO
         title="ABEM – Apartment & Building Expense Management"
         description="Manage shared building expenses, payments, and balances with ease. Built for property managers and apartment owners in Egypt."
-      />
+      >
+        <script type="application/ld+json">
+          {JSON.stringify(structuredData)}
+        </script>
+      </PublicSEO>
 
       {/* Hero */}
       <Box
