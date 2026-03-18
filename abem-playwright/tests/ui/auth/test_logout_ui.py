@@ -9,14 +9,8 @@ class TestLogoutUI:
     def test_logout_redirects_to_login(self, admin_page):
         admin_page.goto(f"{settings.BASE_URL}/dashboard")
         admin_page.wait_for_load_state("networkidle")
-        # Click the user avatar to open the menu
-        avatar = admin_page.locator(
-            "[aria-label*='avatar'],"
-            "[aria-label*='account'],"
-            "[data-testid='user-menu'],"
-            "header button:has(span.MuiAvatar-root)"
-        ).first
-        avatar.click()
+        # Click the Account icon button (Tooltip title="Account")
+        admin_page.get_by_role("button", name="Account").click()
         admin_page.wait_for_timeout(500)
         # Click Sign Out menu item
         admin_page.locator(
