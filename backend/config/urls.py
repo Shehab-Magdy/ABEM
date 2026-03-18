@@ -4,9 +4,14 @@ from django.contrib import admin
 from django.urls import path, include
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, SpectacularRedocView
 
+from apps.core.views import sitemap_xml
+
 urlpatterns = [
     # Admin
     path("admin/", admin.site.urls),
+
+    # SEO — sitemap fallback (served by web server in production)
+    path("sitemap.xml", sitemap_xml, name="sitemap"),
 
     # Health check
     path("api/health/", include("apps.core.urls")),
