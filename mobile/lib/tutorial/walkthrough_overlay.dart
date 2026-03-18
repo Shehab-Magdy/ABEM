@@ -71,7 +71,7 @@ class WalkthroughStep {
 // ─────────────────────────────────────────────────────────────────────────────
 
 final _adminSteps = <WalkthroughStep>[
-  WalkthroughStep(
+  const WalkthroughStep(
     route: '/home',
     title: 'Welcome to ABEM',
     description:
@@ -138,7 +138,7 @@ final _adminSteps = <WalkthroughStep>[
 ];
 
 final _ownerSteps = <WalkthroughStep>[
-  WalkthroughStep(
+  const WalkthroughStep(
     route: '/home',
     title: 'Your personal overview',
     description:
@@ -406,8 +406,8 @@ class _TutorialCard extends StatelessWidget {
                     ),
                     GestureDetector(
                       onTap: onEnd,
-                      child: const Icon(Icons.close,
-                          size: 18, color: _kBodyText),
+                      child:
+                          const Icon(Icons.close, size: 18, color: _kBodyText),
                     ),
                   ],
                 ),
@@ -442,8 +442,7 @@ class _TutorialCard extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    _ProgressDots(
-                        total: totalSteps, current: stepIndex),
+                    _ProgressDots(total: totalSteps, current: stepIndex),
                     Row(
                       children: [
                         if (stepIndex > 0)
@@ -471,8 +470,7 @@ class _TutorialCard extends StatelessWidget {
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 14, vertical: 8),
                             minimumSize: Size.zero,
-                            tapTargetSize:
-                                MaterialTapTargetSize.shrinkWrap,
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                             elevation: 0,
                           ),
                           child: Row(
@@ -637,8 +635,7 @@ class TutorialIconButton extends StatelessWidget {
                       context: context,
                       backgroundColor: Colors.transparent,
                       isScrollControlled: true,
-                      builder: (_) =>
-                          RolePickerSheet(controller: controller),
+                      builder: (_) => RolePickerSheet(controller: controller),
                     ),
             icon: const Icon(Icons.school_outlined,
                 size: 16, color: Colors.white),
@@ -654,8 +651,7 @@ class TutorialIconButton extends StatelessWidget {
               disabledBackgroundColor: _kGreen.withValues(alpha: 0.45),
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8)),
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               minimumSize: Size.zero,
               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
             ),
@@ -805,28 +801,24 @@ final GlobalKey kBuildingActionsKey =
     GlobalKey(debugLabel: 'tutorial:building-actions');
 
 /// Admin step 4 — "Add Expense" FAB / AppBar action
-final GlobalKey kAddExpenseKey =
-    GlobalKey(debugLabel: 'tutorial:add-expense');
+final GlobalKey kAddExpenseKey = GlobalKey(debugLabel: 'tutorial:add-expense');
 
 /// Admin step 5 — Expense row actions (PopupMenuButton / icons)
 final GlobalKey kExpenseActionsKey =
     GlobalKey(debugLabel: 'tutorial:expense-actions');
 
 /// Admin step 6 — "Add User" FAB
-final GlobalKey kAddUserKey =
-    GlobalKey(debugLabel: 'tutorial:add-user');
+final GlobalKey kAddUserKey = GlobalKey(debugLabel: 'tutorial:add-user');
 
 /// Admin step 7 — Categories list / table
 final GlobalKey kCategoriesListKey =
     GlobalKey(debugLabel: 'tutorial:categories-list');
 
 /// Admin step 8 — Assets list
-final GlobalKey kAssetsListKey =
-    GlobalKey(debugLabel: 'tutorial:assets-list');
+final GlobalKey kAssetsListKey = GlobalKey(debugLabel: 'tutorial:assets-list');
 
 /// Admin step 9 — Audit log list
-final GlobalKey kAuditListKey =
-    GlobalKey(debugLabel: 'tutorial:audit-list');
+final GlobalKey kAuditListKey = GlobalKey(debugLabel: 'tutorial:audit-list');
 
 /// Owner step 2 — Expenses list
 final GlobalKey kExpensesListKey =

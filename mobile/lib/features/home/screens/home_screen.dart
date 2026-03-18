@@ -33,8 +33,7 @@ class _HomeScreenState extends State<HomeScreen> {
     double fontSize = 14,
   }) {
     final pictureUrl = user['profile_picture'] as String?;
-    final initials =
-        ((user['first_name'] as String? ?? '?')[0]).toUpperCase();
+    final initials = ((user['first_name'] as String? ?? '?')[0]).toUpperCase();
     if (pictureUrl != null && pictureUrl.isNotEmpty) {
       return CircleAvatar(
         radius: radius,
@@ -46,7 +45,8 @@ class _HomeScreenState extends State<HomeScreen> {
       backgroundColor: theme.colorScheme.primary,
       child: Text(
         initials,
-        style: TextStyle(color: theme.colorScheme.onPrimary, fontSize: fontSize),
+        style:
+            TextStyle(color: theme.colorScheme.onPrimary, fontSize: fontSize),
       ),
     );
   }
@@ -87,15 +87,14 @@ class _HomeScreenState extends State<HomeScreen> {
             icon: const Icon(Icons.logout_outlined),
             tooltip: 'Sign out',
             onPressed: () =>
-                context.read<AuthBloc>().add(AuthLogoutRequested()),
+                context.read<AuthBloc>().add(const AuthLogoutRequested()),
           ),
         ],
       ),
       body: _screens[_currentIndex],
       bottomNavigationBar: NavigationBar(
         selectedIndex: _currentIndex,
-        onDestinationSelected: (index) =>
-            setState(() => _currentIndex = index),
+        onDestinationSelected: (index) => setState(() => _currentIndex = index),
         destinations: [
           const NavigationDestination(
             icon: Icon(Icons.apartment_outlined),
@@ -112,9 +111,9 @@ class _HomeScreenState extends State<HomeScreen> {
             selectedIcon: Icon(Icons.payment),
             label: 'Payments',
           ),
-          NavigationDestination(
-            icon: const Icon(Icons.notifications_outlined),
-            selectedIcon: const Icon(Icons.notifications),
+          const NavigationDestination(
+            icon: Icon(Icons.notifications_outlined),
+            selectedIcon: Icon(Icons.notifications),
             label: 'Notifications',
           ),
         ],

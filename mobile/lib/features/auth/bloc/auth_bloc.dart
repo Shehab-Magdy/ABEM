@@ -82,7 +82,7 @@ class AuthError extends AuthState {
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final AuthRepository authRepository;
 
-  AuthBloc({required this.authRepository}) : super(AuthInitial()) {
+  AuthBloc({required this.authRepository}) : super(const AuthInitial()) {
     on<AuthCheckRequested>(_onCheckRequested);
     on<AuthLoginRequested>(_onLoginRequested);
     on<AuthLogoutRequested>(_onLogoutRequested);
@@ -102,14 +102,14 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         return;
       }
     }
-    emit(AuthUnauthenticated());
+    emit(const AuthUnauthenticated());
   }
 
   Future<void> _onLoginRequested(
     AuthLoginRequested event,
     Emitter<AuthState> emit,
   ) async {
-    emit(AuthLoading());
+    emit(const AuthLoading());
     try {
       final result = await authRepository.login(event.email, event.password);
       emit(AuthAuthenticated(user: result['user'] as Map<String, dynamic>));
@@ -120,7 +120,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           (e.response?.data as Map<String, dynamic>?)?['detail'] as String?;
       emit(AuthError(message: detail ?? 'Invalid email or password.'));
     } catch (e) {
-      emit(AuthError(message: 'An unexpected error occurred.'));
+      emit(const AuthError(message: 'An unexpected error occurred.'));
     }
   }
 
@@ -129,7 +129,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     Emitter<AuthState> emit,
   ) async {
     await authRepository.logout();
-    emit(AuthUnauthenticated());
+    emit(const AuthUnauthenticated());
   }
 
   Future<void> _onProfileUpdateRequested(

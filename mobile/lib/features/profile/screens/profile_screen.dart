@@ -29,8 +29,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         TextEditingController(text: user?['first_name'] as String? ?? '');
     _lastNameCtrl =
         TextEditingController(text: user?['last_name'] as String? ?? '');
-    _phoneCtrl =
-        TextEditingController(text: user?['phone'] as String? ?? '');
+    _phoneCtrl = TextEditingController(text: user?['phone'] as String? ?? '');
   }
 
   @override
@@ -53,9 +52,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     if (picked == null || !mounted) return;
 
     setState(() => _uploadingPicture = true);
-    context
-        .read<AuthBloc>()
-        .add(AuthProfilePictureUpdateRequested(picked));
+    context.read<AuthBloc>().add(AuthProfilePictureUpdateRequested(picked));
   }
 
   Future<void> _saveProfile() async {
@@ -96,8 +93,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         }
       },
       builder: (context, state) {
-        final user =
-            state is AuthAuthenticated ? state.user : _currentUser;
+        final user = state is AuthAuthenticated ? state.user : _currentUser;
         final pictureUrl = user?['profile_picture'] as String?;
         final initials =
             ((user?['first_name'] as String? ?? '?')[0]).toUpperCase();
@@ -119,9 +115,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     CircleAvatar(
                       radius: 54,
                       backgroundColor: theme.colorScheme.primaryContainer,
-                      backgroundImage: pictureUrl != null && pictureUrl.isNotEmpty
-                          ? CachedNetworkImageProvider(pictureUrl)
-                          : null,
+                      backgroundImage:
+                          pictureUrl != null && pictureUrl.isNotEmpty
+                              ? CachedNetworkImageProvider(pictureUrl)
+                              : null,
                       child: (pictureUrl == null || pictureUrl.isEmpty)
                           ? Text(
                               initials,
@@ -133,11 +130,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           : null,
                     ),
                     if (_uploadingPicture)
-                      Positioned.fill(
+                      const Positioned.fill(
                         child: CircleAvatar(
                           radius: 54,
                           backgroundColor: Colors.black38,
-                          child: const CircularProgressIndicator(
+                          child: CircularProgressIndicator(
                             color: Colors.white,
                             strokeWidth: 2,
                           ),
@@ -197,12 +194,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           Expanded(
                             child: TextFormField(
                               controller: _firstNameCtrl,
-                              decoration:
-                                  const InputDecoration(labelText: 'First name'),
-                              validator: (v) =>
-                                  (v == null || v.trim().isEmpty)
-                                      ? 'Required'
-                                      : null,
+                              decoration: const InputDecoration(
+                                  labelText: 'First name'),
+                              validator: (v) => (v == null || v.trim().isEmpty)
+                                  ? 'Required'
+                                  : null,
                             ),
                           ),
                           const SizedBox(width: 12),
@@ -211,10 +207,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               controller: _lastNameCtrl,
                               decoration:
                                   const InputDecoration(labelText: 'Last name'),
-                              validator: (v) =>
-                                  (v == null || v.trim().isEmpty)
-                                      ? 'Required'
-                                      : null,
+                              validator: (v) => (v == null || v.trim().isEmpty)
+                                  ? 'Required'
+                                  : null,
                             ),
                           ),
                         ],
@@ -222,8 +217,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       const SizedBox(height: 16),
                       TextFormField(
                         controller: _phoneCtrl,
-                        decoration:
-                            const InputDecoration(labelText: 'Phone (optional)'),
+                        decoration: const InputDecoration(
+                            labelText: 'Phone (optional)'),
                         keyboardType: TextInputType.phone,
                       ),
                       const SizedBox(height: 24),

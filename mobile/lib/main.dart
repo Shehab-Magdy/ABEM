@@ -37,7 +37,7 @@ class AbemApp extends StatelessWidget {
           BlocProvider(
             create: (ctx) => AuthBloc(
               authRepository: ctx.read<AuthRepository>(),
-            )..add(AuthCheckRequested()),
+            )..add(const AuthCheckRequested()),
           ),
         ],
         child: MaterialApp.router(

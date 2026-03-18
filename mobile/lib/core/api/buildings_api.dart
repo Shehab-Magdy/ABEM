@@ -1,4 +1,3 @@
-import 'package:dio/dio.dart';
 import 'api_client.dart';
 
 class BuildingsApi {
@@ -14,14 +13,16 @@ class BuildingsApi {
     return List<Map<String, dynamic>>.from(data);
   }
 
-  Future<Map<String, dynamic>> createBuilding(Map<String, dynamic> payload) async {
+  Future<Map<String, dynamic>> createBuilding(
+      Map<String, dynamic> payload) async {
     final response = await apiClient.dio.post('/buildings/', data: payload);
     return response.data as Map<String, dynamic>;
   }
 
   Future<Map<String, dynamic>> updateBuilding(
       String id, Map<String, dynamic> payload) async {
-    final response = await apiClient.dio.patch('/buildings/$id/', data: payload);
+    final response =
+        await apiClient.dio.patch('/buildings/$id/', data: payload);
     return response.data as Map<String, dynamic>;
   }
 
