@@ -1,0 +1,18 @@
+{
+  "page_title": "My Profile",
+  "personal_info": "Personal Information",
+  "profile_picture": "Profile Picture",
+  "change_photo": "Change photo",
+  "photo_help": "Click the camera icon to upload a new photo.",
+  "photo_formats": "Accepted: JPG, PNG, WEBP (max 5 MB).",
+  "language": "Language",
+  "english": "English",
+  "arabic": "العربية",
+  "language_updated": "Language updated",
+  "save_changes": "Save Changes",
+  "changes_saved": "Changes saved successfully",
+  "profile_updated": "Profile updated successfully",
+  "password_changed": "Password changed successfully",
+  "language_region": "Language & Region",
+  "email_readonly": "Email (read-only)"
+}

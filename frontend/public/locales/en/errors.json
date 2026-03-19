@@ -1,0 +1,16 @@
+{
+  "required": "This field is required",
+  "invalid_email": "Enter a valid email address",
+  "invalid_phone": "Invalid phone number",
+  "negative_amount": "Amount must be greater than zero",
+  "amount_too_large": "Amount exceeds maximum allowed value",
+  "passwords_mismatch": "Passwords do not match",
+  "password_too_weak": "Password too weak. Use at least 8 characters with an uppercase letter, a digit, and a special character.",
+  "network_error": "Network error. Check your connection and try again.",
+  "session_expired": "Session expired. Please sign in again.",
+  "unauthorized": "You do not have permission to access this page",
+  "not_found": "The page you are looking for does not exist",
+  "server_error": "A server error occurred. Please try again.",
+  "file_type_error": "File type not supported. Accepted: JPEG, PNG, PDF",
+  "file_size_error": "File size exceeds the limit (10 MB)"
+}

@@ -1,0 +1,23 @@
+{
+  "page_title": "Notifications",
+  "mark_all_read": "Mark all as read",
+  "no_notifications": "No notifications",
+  "all_caught_up": "All caught up!",
+  "payment_due": "Payment due",
+  "new_expense": "New expense added",
+  "payment_confirmed": "Payment confirmed",
+  "payment_overdue": "Payment overdue",
+  "broadcast": "Building announcement",
+  "email_notifications": "Email notifications",
+  "push_notifications": "Push notifications",
+  "notification_preferences": "Notification Preferences",
+  "send_broadcast": "Send Broadcast",
+  "broadcast_subject": "Subject",
+  "broadcast_message": "Message",
+  "send_message": "Send Message",
+  "select_building": "Select building",
+  "select_recipients": "Select recipients",
+  "message_sent": "Message sent successfully",
+  "all_members": "All building members",
+  "specific_members": "Specific members"
+}
