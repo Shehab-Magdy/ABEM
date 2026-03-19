@@ -1,0 +1,23 @@
+{
+  "page_title": "الإشعارات",
+  "mark_all_read": "تحديد الكل كمقروء",
+  "no_notifications": "لا توجد إشعارات جديدة",
+  "all_caught_up": "أنت على اطلاع بكل شيء",
+  "payment_due": "موعد السداد اقترب",
+  "new_expense": "تم إضافة مصروف جديد",
+  "payment_confirmed": "تم تأكيد الدفعة",
+  "payment_overdue": "الدفعة متأخرة عن موعد السداد",
+  "broadcast": "إشعار من إدارة المبنى",
+  "email_notifications": "إشعارات البريد الإلكتروني",
+  "push_notifications": "إشعارات الجهاز",
+  "notification_preferences": "تفضيلات الإشعارات",
+  "send_broadcast": "إرسال إشعار للجميع",
+  "broadcast_subject": "موضوع الإشعار",
+  "broadcast_message": "نص الإشعار",
+  "send_message": "إرسال رسالة",
+  "select_building": "اختر المبنى",
+  "select_recipients": "اختر المستلمين",
+  "message_sent": "تم إرسال الرسالة بنجاح",
+  "all_members": "جميع أعضاء المبنى",
+  "specific_members": "أعضاء محددين"
+}

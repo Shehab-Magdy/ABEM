@@ -1,0 +1,18 @@
+{
+  "page_title": "ملفي الشخصي",
+  "personal_info": "المعلومات الشخصية",
+  "profile_picture": "صورة الملف الشخصي",
+  "change_photo": "تغيير الصورة",
+  "photo_help": "اضغط على أيقونة الكاميرا لرفع صورة جديدة.",
+  "photo_formats": "الأنواع المقبولة: JPG, PNG, WEBP (الحد الأقصى ٥ ميغابايت).",
+  "language": "اللغة",
+  "english": "English",
+  "arabic": "العربية",
+  "language_updated": "تم تحديث اللغة بنجاح",
+  "save_changes": "حفظ التغييرات",
+  "changes_saved": "تم حفظ التغييرات بنجاح",
+  "profile_updated": "تم تحديث الملف الشخصي بنجاح",
+  "password_changed": "تم تغيير كلمة المرور بنجاح",
+  "language_region": "اللغة والمنطقة",
+  "email_readonly": "البريد الإلكتروني (للقراءة فقط)"
+}
