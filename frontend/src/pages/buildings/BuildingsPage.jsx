@@ -107,7 +107,7 @@ export default function BuildingsPage() {
       setRows(data.results ?? data);
       setRowCount(data.count ?? (data.results ?? data).length);
     } catch {
-      setError("Failed to load buildings.");
+      setError(t("load_error", "Failed to load buildings."));
     } finally {
       setLoading(false);
     }
@@ -209,7 +209,7 @@ export default function BuildingsPage() {
       }
       fetchBuildings();
     } catch (err) {
-      setError(err.response?.data?.detail || "Failed to update building status.");
+      setError(err.response?.data?.detail || t("status_update_error", "Failed to update building status."));
     }
   };
 
@@ -225,7 +225,7 @@ export default function BuildingsPage() {
       setInviteLinks((prev) => ({ ...prev, [unit.id]: link }));
       setInviteCodes((prev) => ({ ...prev, [unit.id]: res.data.registration_code }));
     } catch (err) {
-      setUnitsError(err.response?.data?.detail || "Failed to generate invite link.");
+      setUnitsError(err.response?.data?.detail || t("invite_error", "Failed to generate invite link."));
     } finally {
       setInvitingUnit(null);
     }
@@ -239,7 +239,7 @@ export default function BuildingsPage() {
       const res = await buildingsApi.apartments(unitsTarget.id, { page_size: 200 });
       setUnits(res.data?.results ?? res.data);
     } catch (err) {
-      setUnitsError(err.response?.data?.detail || "Failed to claim unit.");
+      setUnitsError(err.response?.data?.detail || t("claim_error", "Failed to claim unit."));
     } finally {
       setClaimingUnit(null);
     }
@@ -268,7 +268,7 @@ export default function BuildingsPage() {
       setUnits(unitsRes.data?.results ?? unitsRes.data);
       setBuildingMembers(membersRes.data?.results ?? membersRes.data ?? []);
     } catch {
-      setUnitsError("Failed to load units.");
+      setUnitsError(t("units_load_error", "Failed to load units."));
     } finally {
       setUnitsLoading(false);
     }
@@ -289,7 +289,7 @@ export default function BuildingsPage() {
       const res = await buildingsApi.apartments(unitsTarget.id, { page_size: 200 });
       setUnits(res.data?.results ?? res.data);
     } catch (err) {
-      setUnitsError(err.response?.data?.detail || "Failed to save floor changes.");
+      setUnitsError(err.response?.data?.detail || t("floor_save_error", "Failed to save floor changes."));
     } finally {
       setSavingFloors(false);
     }
@@ -316,7 +316,7 @@ export default function BuildingsPage() {
       await buildingsApi.assignUser(assignTarget.id, selectedOwner);
       setAssignTarget(null);
     } catch (err) {
-      setAssignError(err.response?.data?.detail || "Assignment failed.");
+      setAssignError(err.response?.data?.detail || t("assign_error", "Assignment failed."));
     } finally {
       setAssigning(false);
     }
@@ -628,7 +628,7 @@ export default function BuildingsPage() {
                             </Stack>
                             {inviteCodes[u.id] && (
                               <Stack direction="row" spacing={0.5} alignItems="center">
-                                <Typography variant="caption" color="text.secondary">Code:</Typography>
+                                <Typography variant="caption" color="text.secondary">{t("code_label", "Code:")}</Typography>
                                 <Chip label={inviteCodes[u.id]} size="small" variant="outlined" color="secondary" />
                               </Stack>
                             )}

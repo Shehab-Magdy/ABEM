@@ -36,16 +36,6 @@ import axiosClient from "../../api/axiosClient";
 import { useAuth } from "../../hooks/useAuth";
 import { PrivateSEO } from "../../components/seo/SEO";
 
-const TYPE_LABELS = {
-  payment_due: "Payment Due",
-  payment_overdue: "Payment Overdue",
-  payment_confirmed: "Payment Confirmed",
-  expense_added: "Expense Added",
-  expense_updated: "Expense Updated",
-  user_registered: "User Registered",
-  announcement: "Announcement",
-};
-
 const TYPE_COLORS = {
   payment_due: "warning",
   payment_overdue: "error",
@@ -108,6 +98,15 @@ function SectionHeader({ icon, title, badge, open, onToggle, accent }) {
 
 export default function NotificationCenterPage() {
   const { t } = useTranslation("notifications");
+  const TYPE_LABELS = {
+    payment_due: t("type_payment_due", "Payment Due"),
+    payment_overdue: t("type_payment_overdue", "Payment Overdue"),
+    payment_confirmed: t("type_payment_confirmed", "Payment Confirmed"),
+    expense_added: t("type_expense_added", "Expense Added"),
+    expense_updated: t("type_expense_updated", "Expense Updated"),
+    user_registered: t("type_user_registered", "User Registered"),
+    announcement: t("type_announcement", "Announcement"),
+  };
   const { isAdmin } = useAuth();
   const [notifications, setNotifications] = useState([]);
   const [filter, setFilter] = useState("all");
@@ -146,7 +145,7 @@ export default function NotificationCenterPage() {
         const data = r.data;
         setNotifications(Array.isArray(data) ? data : (data.results ?? []));
       })
-      .catch(() => setError("Failed to load notifications."))
+      .catch(() => setError(t("load_error", "Failed to load notifications.")))
       .finally(() => setLoading(false));
   }, [filter]);
 
@@ -194,7 +193,7 @@ export default function NotificationCenterPage() {
         setBroadcastMessage("");
         setBroadcastBuilding("");
       })
-      .catch(() => setBroadcastStatus("Broadcast failed."));
+      .catch(() => setBroadcastStatus(t("broadcast_failed", "Broadcast failed.")));
   };
 
   const handleSendMessage = async () => {
@@ -223,7 +222,7 @@ export default function NotificationCenterPage() {
       if (err.response?.status === 403 && detail) {
         setSendStatus(`${detail} Please contact your building admin.`);
       } else {
-        setSendStatus("Failed to send message.");
+        setSendStatus(t("send_failed", "Failed to send message."));
       }
     } finally {
       setSendingMsg(false);

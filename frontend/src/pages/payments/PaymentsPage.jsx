@@ -413,9 +413,9 @@ export default function PaymentsPage() {
                           setTimeout(() => URL.revokeObjectURL(url), 10000);
                         } catch (err) {
                           const isTimeout = err?.code === "ECONNABORTED" || err?.message?.includes("timeout");
-                          let msg = "Could not load receipt. Please try again.";
+                          let msg = t("receipt_load_error", "Could not load receipt.");
                           if (isTimeout) {
-                            msg = "Receipt generation is taking too long — try again in a moment.";
+                            msg = t("receipt_timeout", "Receipt generation is taking too long.");
                           } else if (err?.response?.data instanceof Blob) {
                             try {
                               const text = await err.response.data.text();
@@ -505,7 +505,7 @@ export default function PaymentsPage() {
             {form.payment_method === "other" && (
               <TextField
                 label={`${t("specifyPaymentMethod")} *`}
-                placeholder="e.g. Mobile Wallet, Instalment…"
+                placeholder={t("method_placeholder", "e.g. Mobile Wallet, Instalment…")}
                 value={form.other_method_detail}
                 onChange={(e) => handleFormChange("other_method_detail", e.target.value)}
                 required

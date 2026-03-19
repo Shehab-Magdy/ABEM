@@ -81,7 +81,7 @@ export default function AuditLogPage() {
           setPrevUrl(data.previous ?? null);
         }
       } catch (err) {
-        setError(err.response?.data?.detail || "Failed to load audit logs.");
+        setError(err.response?.data?.detail || t("load_error", "Failed to load audit logs."));
       } finally {
         setLoading(false);
       }

@@ -12,5 +12,17 @@
   "not_found": "The page you are looking for does not exist",
   "server_error": "A server error occurred. Please try again.",
   "file_type_error": "File type not supported. Accepted: JPEG, PNG, PDF",
-  "file_size_error": "File size exceeds the limit (10 MB)"
+  "file_size_error": "File size exceeds the limit (10 MB)",
+  "page_not_found": "Page not found",
+  "page_not_found_desc": "The page you're looking for doesn't exist or has been moved. Double-check the URL or head back home.",
+  "go_to_dashboard": "Go to Dashboard",
+  "go_back": "Go Back",
+  "session_expired_title": "Session expired",
+  "session_expired_desc": "Your session has expired or you are not signed in. Please sign in again to continue.",
+  "sign_in": "Sign In",
+  "access_denied": "Access denied",
+  "access_denied_desc": "You don't have permission to view this page. Contact your building admin if you think this is a mistake.",
+  "something_went_wrong": "Something went wrong",
+  "server_error_desc": "The server encountered an unexpected error. Our team has been notified. Please try again in a few moments.",
+  "try_again": "Try Again"
 }

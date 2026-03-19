@@ -70,19 +70,6 @@ const mediaUrl = (url) => {
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
-const SPLIT_TYPES = [
-  { value: "equal_all", label: "Equal – All Units" },
-  { value: "equal_apartments", label: "Equal – Apartments Only" },
-  { value: "equal_stores", label: "Equal – Stores Only" },
-  { value: "custom", label: "Custom Subset" },
-];
-
-const FREQUENCIES = [
-  { value: "monthly", label: "Monthly" },
-  { value: "quarterly", label: "Quarterly" },
-  { value: "annual", label: "Annual" },
-];
-
 const EMPTY_FORM = {
   title: "",
   description: "",
@@ -98,16 +85,27 @@ const EMPTY_FORM = {
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
-function statusChip(expense) {
+function statusChip(expense, t) {
   const shares = expense.apartment_shares || [];
-  if (!shares.length) return <Chip label="No Split" size="small" color="default" />;
-  return <Chip label="Unpaid" size="small" color="error" />;
+  if (!shares.length) return <Chip label={t("no_split", "No Split")} size="small" color="default" />;
+  return <Chip label={t("unpaid", "Unpaid")} size="small" color="error" />;
 }
 
 // ── Main component ─────────────────────────────────────────────────────────────
 
 export default function ExpensesPage() {
   const { t } = useTranslation("expenses");
+  const SPLIT_TYPES = [
+    { value: "equal_all", label: t("split_equal_all", "Equal – All Units") },
+    { value: "equal_apartments", label: t("split_equal_apartments", "Equal – Apartments Only") },
+    { value: "equal_stores", label: t("split_equal_stores", "Equal – Stores Only") },
+    { value: "custom", label: t("split_custom", "Custom Subset") },
+  ];
+  const FREQUENCIES = [
+    { value: "monthly", label: t("freq_monthly", "Monthly") },
+    { value: "quarterly", label: t("freq_quarterly", "Quarterly") },
+    { value: "annual", label: t("freq_annual", "Annual") },
+  ];
   const { isAdmin } = useAuth();
 
   const [buildings, setBuildings] = useState([]);
@@ -159,7 +157,7 @@ export default function ExpensesPage() {
       const res = await expensesApi.list(params);
       setExpenses(res.data.results ?? res.data);
     } catch {
-      setSnack({ open: true, msg: "Failed to load expenses", severity: "error" });
+      setSnack({ open: true, msg: t("load_error", "Failed to load expenses"), severity: "error" });
     } finally {
       setLoading(false);
     }
@@ -236,10 +234,10 @@ export default function ExpensesPage() {
   };
 
   const handleFormSubmit = async () => {
-    if (!form.title.trim()) return setFormError("Title is required");
-    if (!form.amount || parseFloat(form.amount) <= 0) return setFormError("Amount must be > 0");
-    if (!form.expense_date) return setFormError("Date is required");
-    if (!form.category_id) return setFormError("Category is required");
+    if (!form.title.trim()) return setFormError(t("title_required", "Title is required"));
+    if (!form.amount || parseFloat(form.amount) <= 0) return setFormError(t("amount_required", "Amount must be > 0"));
+    if (!form.expense_date) return setFormError(t("date_required", "Date is required"));
+    if (!form.category_id) return setFormError(t("category_required", "Category is required"));
 
     // Use subcategory if selected, otherwise use the parent category
     const effectiveCategoryId = subcategoryId || form.category_id;
@@ -263,10 +261,10 @@ export default function ExpensesPage() {
     try {
       if (editTarget) {
         await expensesApi.update(editTarget.id, payload);
-        setSnack({ open: true, msg: "Expense updated", severity: "success" });
+        setSnack({ open: true, msg: t("expense_updated", "Expense updated"), severity: "success" });
       } else {
         await expensesApi.create(payload);
-        setSnack({ open: true, msg: "Expense created", severity: "success" });
+        setSnack({ open: true, msg: t("expense_created", "Expense created"), severity: "success" });
       }
       setFormOpen(false);
       loadExpenses();
@@ -274,7 +272,7 @@ export default function ExpensesPage() {
       const detail =
         err.response?.data?.detail ||
         JSON.stringify(err.response?.data) ||
-        "Error saving expense";
+        t("save_error", "Error saving expense");
       setFormError(detail);
     }
   };
@@ -285,11 +283,11 @@ export default function ExpensesPage() {
     if (!deleteTarget) return;
     try {
       await expensesApi.remove(deleteTarget.id);
-      setSnack({ open: true, msg: "Expense deleted", severity: "success" });
+      setSnack({ open: true, msg: t("expense_deleted", "Expense deleted"), severity: "success" });
       setDeleteTarget(null);
       loadExpenses();
     } catch {
-      setSnack({ open: true, msg: "Failed to delete expense", severity: "error" });
+      setSnack({ open: true, msg: t("delete_error", "Failed to delete expense"), severity: "error" });
     }
   };
 
@@ -302,11 +300,11 @@ export default function ExpensesPage() {
     fd.append("file", file);
     try {
       await expensesApi.uploadBill(uploadTarget.id, fd);
-      setSnack({ open: true, msg: "Bill uploaded successfully", severity: "success" });
+      setSnack({ open: true, msg: t("bill_uploaded", "Bill uploaded successfully"), severity: "success" });
       setUploadTarget(null);
       loadExpenses();
     } catch (err) {
-      const detail = err.response?.data?.detail || "Upload failed";
+      const detail = err.response?.data?.detail || t("upload_failed", "Upload failed");
       setSnack({ open: true, msg: detail, severity: "error" });
     }
   };
@@ -457,7 +455,7 @@ export default function ExpensesPage() {
                         variant="outlined"
                       />
                     </TableCell>
-                    <TableCell>{statusChip(exp)}</TableCell>
+                    <TableCell>{statusChip(exp, t)}</TableCell>
                     <TableCell>
                       {exp.is_recurring && (
                         <Chip

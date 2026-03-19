@@ -1,4 +1,6 @@
 import { createTheme } from "@mui/material/styles";
+import { arEG as coreArEG } from "@mui/material/locale";
+import { arSD as gridArSD } from "@mui/x-data-grid/locales";
 
 const sharedPalette = {
   mode: "light",
@@ -43,33 +45,47 @@ const sharedComponents = {
   },
 };
 
+const sharedShape = { borderRadius: 10 };
+
+const ltrTypography = {
+  fontFamily: "'Inter', sans-serif",
+  h4: { fontWeight: 700 },
+  h5: { fontWeight: 600 },
+  h6: { fontWeight: 600 },
+  subtitle1: { fontWeight: 500 },
+};
+
+const rtlTypography = {
+  fontFamily: "'Cairo', 'Segoe UI', Tahoma, Arial, sans-serif",
+  h4: { fontWeight: 700 },
+  h5: { fontWeight: 600 },
+  h6: { fontWeight: 600 },
+  subtitle1: { fontWeight: 500 },
+};
+
 export const ltrTheme = createTheme({
   direction: "ltr",
   palette: sharedPalette,
-  typography: {
-    fontFamily: "'Inter', sans-serif",
-    h4: { fontWeight: 700 },
-    h5: { fontWeight: 600 },
-    h6: { fontWeight: 600 },
-    subtitle1: { fontWeight: 500 },
-  },
-  shape: { borderRadius: 10 },
+  typography: ltrTypography,
+  shape: sharedShape,
   components: sharedComponents,
 });
 
-export const rtlTheme = createTheme({
-  direction: "rtl",
-  palette: sharedPalette,
-  typography: {
-    fontFamily: "'Cairo', 'Segoe UI', Tahoma, Arial, sans-serif",
-    h4: { fontWeight: 700 },
-    h5: { fontWeight: 600 },
-    h6: { fontWeight: 600 },
-    subtitle1: { fontWeight: 500 },
+// RTL theme merges MUI Arabic locale packs for:
+// - Core components (TablePagination "Rows per page", etc.)
+// - DataGrid (column menu, filter, pagination labels)
+// - DatePicker (month/day names)
+export const rtlTheme = createTheme(
+  {
+    direction: "rtl",
+    palette: sharedPalette,
+    typography: rtlTypography,
+    shape: sharedShape,
+    components: sharedComponents,
   },
-  shape: { borderRadius: 10 },
-  components: sharedComponents,
-});
+  coreArEG,
+  gridArSD,
+);
 
 // Default export for backward compatibility
 export default ltrTheme;

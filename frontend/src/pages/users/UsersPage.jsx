@@ -86,7 +86,7 @@ export default function UsersPage() {
       setRows(res.data.results);
       setRowCount(res.data.count);
     } catch {
-      setError("Failed to load users.");
+      setError(t("load_error", "Failed to load users."));
     } finally {
       setLoading(false);
     }
@@ -104,7 +104,7 @@ export default function UsersPage() {
       }
       fetchUsers();
     } catch (err) {
-      setError(err.response?.data?.detail || "Action failed.");
+      setError(err.response?.data?.detail || t("action_failed", "Action failed."));
     }
   };
 

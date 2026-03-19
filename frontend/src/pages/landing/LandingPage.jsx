@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { Link as RouterLink } from "react-router-dom";
 import { Box, Button, Container, Grid, Stack, Typography } from "@mui/material";
 import {
@@ -36,16 +37,18 @@ const structuredData = {
   ],
 };
 
-const features = [
-  { icon: <AccountBalance fontSize="large" color="primary" />, title: "Multi-Building Management", text: "Manage multiple buildings, apartments, and stores from a single dashboard." },
-  { icon: <Receipt fontSize="large" color="primary" />, title: "Expense Splitting", text: "Automatically split shared expenses across apartments and stores with configurable rules." },
-  { icon: <BarChart fontSize="large" color="primary" />, title: "Payment Tracking", text: "Record payments, generate PDF receipts, and track outstanding balances in real time." },
-  { icon: <Repeat fontSize="large" color="primary" />, title: "Recurring Expenses", text: "Set up recurring expenses that are automatically generated on schedule." },
-  { icon: <Security fontSize="large" color="primary" />, title: "Role-Based Access", text: "Admins manage everything. Owners see only their own data. Full audit trail included." },
-  { icon: <Groups fontSize="large" color="primary" />, title: "Built for Egypt", text: "Designed for Egyptian property managers and apartment owners, with local currency support." },
-];
-
 export default function LandingPage() {
+  const { t } = useTranslation("common");
+
+  const features = [
+    { icon: <AccountBalance fontSize="large" color="primary" />, title: t("feature_multi_building", "Multi-Building Management"), text: t("feature_multi_building_desc", "Manage multiple buildings, apartments, and stores from a single dashboard.") },
+    { icon: <Receipt fontSize="large" color="primary" />, title: t("feature_splitting", "Expense Splitting"), text: t("feature_splitting_desc", "Automatically split shared expenses across apartments and stores with configurable rules.") },
+    { icon: <BarChart fontSize="large" color="primary" />, title: t("feature_tracking", "Payment Tracking"), text: t("feature_tracking_desc", "Record payments, generate PDF receipts, and track outstanding balances in real time.") },
+    { icon: <Repeat fontSize="large" color="primary" />, title: t("feature_recurring", "Recurring Expenses"), text: t("feature_recurring_desc", "Set up recurring expenses that are automatically generated on schedule.") },
+    { icon: <Security fontSize="large" color="primary" />, title: t("feature_rbac", "Role-Based Access"), text: t("feature_rbac_desc", "Admins manage everything. Owners see only their own data. Full audit trail included.") },
+    { icon: <Groups fontSize="large" color="primary" />, title: t("feature_egypt", "Built for Egypt"), text: t("feature_egypt_desc", "Designed for Egyptian property managers and apartment owners, with local currency support.") },
+  ];
+
   return (
     <>
       <PublicSEO
@@ -77,11 +80,10 @@ export default function LandingPage() {
             sx={{ mb: 3 }}
           />
           <Typography variant="h3" fontWeight={700} gutterBottom>
-            Building Expense Management Made Simple
+            {t("hero_title", "Building Expense Management Made Simple")}
           </Typography>
           <Typography variant="h6" sx={{ opacity: 0.9, mb: 4 }}>
-            Track shared expenses, split costs fairly, record payments, and keep
-            every apartment owner in the loop — all from one platform.
+            {t("hero_subtitle", "Track shared expenses, split costs fairly, record payments, and keep every apartment owner in the loop — all from one platform.")}
           </Typography>
           <Stack direction={{ xs: "column", sm: "row" }} spacing={2} justifyContent="center">
             <Button
@@ -91,7 +93,7 @@ export default function LandingPage() {
               size="large"
               sx={{ bgcolor: "white", color: "primary.main", "&:hover": { bgcolor: "grey.100" } }}
             >
-              Get Started Free
+              {t("get_started_free", "Get Started Free")}
             </Button>
             <Button
               component={RouterLink}
@@ -100,7 +102,7 @@ export default function LandingPage() {
               size="large"
               sx={{ borderColor: "white", color: "white", "&:hover": { borderColor: "grey.200" } }}
             >
-              Sign In
+              {t("sign_in", "Sign In")}
             </Button>
           </Stack>
         </Container>
@@ -109,10 +111,10 @@ export default function LandingPage() {
       {/* Features */}
       <Container maxWidth="lg" sx={{ py: { xs: 6, md: 10 } }}>
         <Typography variant="h4" align="center" fontWeight={700} gutterBottom>
-          Everything You Need
+          {t("features_title", "Everything You Need")}
         </Typography>
         <Typography variant="body1" align="center" color="text.secondary" sx={{ mb: 6, maxWidth: 600, mx: "auto" }}>
-          ABEM gives property managers and apartment owners the tools to manage shared building expenses transparently.
+          {t("features_desc", "ABEM gives property managers and apartment owners the tools to manage shared building expenses transparently.")}
         </Typography>
 
         <Grid container spacing={4}>
@@ -132,10 +134,10 @@ export default function LandingPage() {
       <Box sx={{ bgcolor: "background.paper", py: 8, textAlign: "center" }}>
         <Container maxWidth="sm">
           <Typography variant="h5" fontWeight={700} gutterBottom>
-            Ready to simplify your building&apos;s finances?
+            {t("cta_title", "Ready to simplify your building's finances?")}
           </Typography>
           <Button component={RouterLink} to="/register" variant="contained" size="large" sx={{ mt: 2 }}>
-            Create Your Free Account
+            {t("create_free_account", "Create Your Free Account")}
           </Button>
         </Container>
       </Box>

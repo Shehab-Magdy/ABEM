@@ -60,7 +60,7 @@ export default function LoginPage() {
         resData?.non_field_errors?.[0] ||
         resData?.email?.[0] ||
         resData?.password?.[0] ||
-        (httpStatus === 401 ? "Invalid email or password." : "An unexpected error occurred.");
+        (httpStatus === 401 ? t("incorrect_credentials", "Invalid email or password.") : t("errors:server_error", "An unexpected error occurred."));
 
       if (httpStatus === 423) {
         setLockoutUntil(err.response.data.locked_until);
@@ -108,7 +108,7 @@ export default function LoginPage() {
             <Alert severity="error" sx={{ mb: 2 }}>
               {t("account_locked")}
               <br />
-              Try again after{" "}
+              {t("try_again_after", "Try again after")}{" "}
               <strong>{new Date(lockoutUntil).toLocaleTimeString()}</strong>.
             </Alert>
           )}

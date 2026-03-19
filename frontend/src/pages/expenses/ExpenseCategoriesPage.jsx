@@ -78,7 +78,7 @@ export default function ExpenseCategoriesPage() {
       const res = await expensesApi.listCategories(selectedBuilding);
       setCategories(res.data.results ?? res.data);
     } catch {
-      setSnack({ open: true, msg: "Failed to load categories", severity: "error" });
+      setSnack({ open: true, msg: t("load_error", "Failed to load categories"), severity: "error" });
     } finally {
       setLoading(false);
     }
@@ -104,7 +104,7 @@ export default function ExpenseCategoriesPage() {
 
   const handleSave = async () => {
     if (!form.name.trim()) {
-      setFormError("Name is required.");
+      setFormError(t("name_required", "Name is required."));
       return;
     }
     setSaving(true);
@@ -120,13 +120,13 @@ export default function ExpenseCategoriesPage() {
       if (form.parent_id) payload.parent_id = form.parent_id;
       await expensesApi.createCategory(payload);
       setFormOpen(false);
-      setSnack({ open: true, msg: "Category added.", severity: "success" });
+      setSnack({ open: true, msg: t("category_added", "Category added."), severity: "success" });
       loadCategories();
     } catch (err) {
       const detail =
         err.response?.data?.name?.[0] ||
         err.response?.data?.detail ||
-        "Failed to add category.";
+        t("add_error", "Failed to add category.");
       setFormError(detail);
     } finally {
       setSaving(false);
@@ -141,12 +141,12 @@ export default function ExpenseCategoriesPage() {
     try {
       await expensesApi.removeCategory(deleteTarget.id);
       setDeleteTarget(null);
-      setSnack({ open: true, msg: "Category removed.", severity: "success" });
+      setSnack({ open: true, msg: t("category_removed", "Category removed."), severity: "success" });
       loadCategories();
     } catch (err) {
       const detail =
         err.response?.data?.detail ||
-        "Cannot remove a category that has expenses assigned to it.";
+        t("cannot_remove_with_expenses", "Cannot remove a category that has expenses assigned to it.");
       setSnack({ open: true, msg: detail, severity: "error" });
       setDeleteTarget(null);
     } finally {
@@ -296,7 +296,7 @@ export default function ExpenseCategoriesPage() {
             fullWidth
             multiline
             rows={2}
-            placeholder="Optional"
+            placeholder={t("common:optional", "Optional")}
             sx={{ mb: 2 }}
           />
           <Stack direction="row" spacing={2} sx={{ mb: 2 }}>

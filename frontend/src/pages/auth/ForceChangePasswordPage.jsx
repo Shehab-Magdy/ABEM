@@ -52,7 +52,7 @@ export default function ForceChangePasswordPage() {
         resData?.detail ||
         resData?.new_password?.[0] ||
         resData?.confirm_password?.[0] ||
-        "Failed to change password. Please try again.";
+        t("errors:server_error", "Failed to change password.");
       setError(typeof detail === "string" ? detail : JSON.stringify(detail));
     } finally {
       setIsLoading(false);
@@ -121,7 +121,7 @@ export default function ForceChangePasswordPage() {
                   }}
                   {...register("new_password", {
                     required: t("password_required"),
-                    minLength: { value: 8, message: "Min 8 characters." },
+                    minLength: { value: 8, message: t("password_min_length") },
                   })}
                 />
 

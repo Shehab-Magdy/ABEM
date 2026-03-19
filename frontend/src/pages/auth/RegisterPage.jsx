@@ -45,6 +45,7 @@ import { authApi } from "../../api/authApi";
 import { buildingsApi } from "../../api/buildingsApi";
 import { apartmentsApi } from "../../api/apartmentsApi";
 import { useAuthStore } from "../../contexts/authStore";
+import PhoneInput from "../../components/PhoneInput";
 import { PublicSEO } from "../../components/seo/SEO";
 import LanguageSwitcher from "../../components/LanguageSwitcher";
 
@@ -111,18 +112,25 @@ function AccountStep({ onDone, prefillEmail }) {
             required: t("common:required"),
             pattern: { value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: t("errors:invalid_email") },
           })} />
-        <TextField
-          label={t("phone_optional")}
-          type="tel"
-          fullWidth
-          error={!!errors.phone}
-          helperText={errors.phone?.message || t("phone_helper")}
-          {...register("phone", {
+        <Controller
+          name="phone"
+          control={control}
+          defaultValue=""
+          rules={{
             validate: (v) => {
               if (!v || v.trim() === "") return true;
               return /^\+?[1-9][\d\s\-().]{6,19}$/.test(v.trim()) || t("errors:invalid_phone");
             },
-          })}
+          }}
+          render={({ field }) => (
+            <PhoneInput
+              label={t("phone_optional")}
+              value={field.value}
+              onChange={field.onChange}
+              error={!!errors.phone}
+              helperText={errors.phone?.message || t("phone_helper")}
+            />
+          )}
         />
         <TextField label={t("password")} type={showPw ? "text" : "password"} fullWidth
           error={!!errors.password}

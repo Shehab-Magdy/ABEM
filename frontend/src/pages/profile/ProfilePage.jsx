@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import {
   Alert,
   Avatar,
@@ -19,6 +19,7 @@ import { CameraAlt } from "@mui/icons-material";
 import { authApi } from "../../api/authApi";
 import { useAuth } from "../../hooks/useAuth";
 import { PrivateSEO } from "../../components/seo/SEO";
+import PhoneInput from "../../components/PhoneInput";
 
 export default function ProfilePage() {
   const { t } = useTranslation("profile");
@@ -46,7 +47,7 @@ export default function ProfilePage() {
       const res = await authApi.uploadProfilePicture(file);
       setUser(res.data);
     } catch {
-      setPicError("Could not upload photo. Please try again.");
+      setPicError(t("photo_upload_error", "Could not upload photo."));
     } finally {
       setUploadingPic(false);
       e.target.value = "";
@@ -68,7 +69,7 @@ export default function ProfilePage() {
       setUser(res.data);
       setProfileSuccess(true);
     } catch {
-      setProfileError("Failed to update profile. Please try again.");
+      setProfileError(t("profile_update_error", "Failed to update profile."));
     } finally {
       setSavingProfile(false);
     }
@@ -178,7 +179,18 @@ export default function ProfilePage() {
                   {...profileForm.register("last_name", { required: "Required." })}
                 />
               </Stack>
-              <TextField label={t("phoneNumber")} fullWidth {...profileForm.register("phone")} />
+              <Controller
+                name="phone"
+                control={profileForm.control}
+                render={({ field }) => (
+                  <PhoneInput
+                    label={t("phoneNumber")}
+                    value={field.value}
+                    onChange={field.onChange}
+                    fullWidth
+                  />
+                )}
+              />
               <TextField label={t("email")} fullWidth disabled value={user?.email || ""} />
               <Button type="submit" variant="contained" disabled={savingProfile} sx={{ alignSelf: "flex-start" }}>
                 {savingProfile ? <CircularProgress size={20} color="inherit" /> : t("saveChanges")}
@@ -210,7 +222,7 @@ export default function ProfilePage() {
                 fullWidth
                 error={!!pwForm.formState.errors.new_password}
                 helperText={pwForm.formState.errors.new_password?.message}
-                {...pwForm.register("new_password", { required: "Required.", minLength: { value: 8, message: "Min 8 characters." } })}
+                {...pwForm.register("new_password", { required: "Required.", minLength: { value: 8, message: t("min_8_chars", "Min 8 characters.") } })}
               />
               <TextField
                 label={t("confirmNewPassword")}
