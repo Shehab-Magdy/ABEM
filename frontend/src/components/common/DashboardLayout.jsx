@@ -36,11 +36,15 @@ import {
   Payment,
   People,
 } from "@mui/icons-material";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "../../hooks/useAuth";
 import { authApi } from "../../api/authApi";
 import { useAuthStore } from "../../contexts/authStore";
+import { usePreferredLanguage } from "../../hooks/usePreferredLanguage";
+import { useDirection } from "../../hooks/useDirection";
 import axiosClient from "../../api/axiosClient";
 import { TutorialButton } from "../../tutorial/TutorialOverlay";
+import LanguageSwitcher from "../LanguageSwitcher";
 
 const DRAWER_WIDTH = 240;
 
@@ -91,11 +95,16 @@ function NavSection({ title, items, currentPath }) {
 export default function DashboardLayout() {
   const { user, isAdmin } = useAuth();
   const { logout, refreshToken } = useAuthStore();
+  const { t } = useTranslation(["common"]);
+  const dir = useDirection();
   const location = useLocation();
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState(null);
   const [unreadCount, setUnreadCount] = useState(0);
+
+  // Sync language from user preference on mount
+  usePreferredLanguage();
 
   useEffect(() => {
     axiosClient
@@ -168,6 +177,7 @@ export default function DashboardLayout() {
       <Box component="nav" sx={{ width: { md: DRAWER_WIDTH }, flexShrink: 0 }}>
         <Drawer
           variant="temporary"
+          anchor={dir === "rtl" ? "right" : "left"}
           open={mobileOpen}
           onClose={() => setMobileOpen(false)}
           ModalProps={{ keepMounted: true }}
@@ -177,6 +187,7 @@ export default function DashboardLayout() {
         </Drawer>
         <Drawer
           variant="permanent"
+          anchor={dir === "rtl" ? "right" : "left"}
           sx={{ display: { xs: "none", md: "block" }, "& .MuiDrawer-paper": { width: DRAWER_WIDTH, boxSizing: "border-box", border: "none" } }}
           open
         >
@@ -194,7 +205,8 @@ export default function DashboardLayout() {
             </IconButton>
             <Box flex={1} />
             <TutorialButton />
-            <Tooltip title="Notifications">
+            <LanguageSwitcher />
+            <Tooltip title={t("common:filter") === "تصفية" ? "الإشعارات" : "Notifications"}>
               <IconButton
                 color="inherit"
                 onClick={() => navigate("/notifications")}
