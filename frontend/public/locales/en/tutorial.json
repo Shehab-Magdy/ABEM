@@ -30,5 +30,9 @@
   "step_o4_title": "Notification Center",
   "step_o4_desc": "You receive three types of notifications: a reminder 3 days before payment is due, a confirmation when your payment is recorded, and a notice when a new expense is added.",
   "step_o5_title": "Your Profile",
-  "step_o5_desc": "Change your name, phone number, or password here. Email and role are managed by the admin."
+  "step_o5_desc": "Change your name, phone number, or password here. Email and role are managed by the admin.",
+  "tour_button": "Tour",
+  "start_tour": "Start tour",
+  "step_8a_title": "Building assets",
+  "step_8a_desc": "Track physical equipment — elevators, generators, pumps, CCTV. Each asset carries a type, acquisition date, and value. When sold, record buyer details and sale price to maintain a complete asset ledger."
 }

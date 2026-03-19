@@ -23,6 +23,7 @@
 import { useEffect, useRef, useCallback, useState } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate, useLocation } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { create } from "zustand";
 import {
   Box,
@@ -45,6 +46,8 @@ export const TUTORIAL_STEPS = {
     {
       page: "/dashboard",
       anchor: null,
+      titleKey: "step_1_title",
+      descKey: "step_1_desc",
       title: "Welcome to ABEM",
       description:
         "The dashboard shows total income, total expenses, count of overdue units, and the number of buildings managed — all scoped to the currently selected building and refreshed in real time.",
@@ -52,6 +55,8 @@ export const TUTORIAL_STEPS = {
     {
       page: "/buildings",
       anchor: "add-building-btn",
+      titleKey: "step_2_title",
+      descKey: "step_2_desc",
       title: "Create your first building",
       description:
         "Every workflow starts here. Click \"+ New Building\" to enter the property address, number of floors, apartments, and stores. Each building is fully data-isolated — expenses and balances never mix between buildings.",
@@ -59,6 +64,8 @@ export const TUTORIAL_STEPS = {
     {
       page: "/buildings",
       anchor: "building-actions-row",
+      titleKey: "step_3_title",
+      descKey: "step_3_desc",
       title: "What you can do with a building",
       description:
         "Edit details, manage units (invite/claim), assign owners, activate/deactivate, or delete. Delete performs a soft-delete — records are preserved and visible in the audit log.",
@@ -66,6 +73,8 @@ export const TUTORIAL_STEPS = {
     {
       page: "/expenses",
       anchor: "add-expense-btn",
+      titleKey: "step_4_title",
+      descKey: "step_4_desc",
       title: "Add a shared expense",
       description:
         "Any cost shared across apartments lives here. Select a category, enter the amount, and choose the split method: equally across all units, apartments only, stores only, or a custom weighted subset. Every share is rounded up to the nearest 5 EGP.",
@@ -73,6 +82,8 @@ export const TUTORIAL_STEPS = {
     {
       page: "/expenses",
       anchor: "expense-actions-btn",
+      titleKey: "step_5_title",
+      descKey: "step_5_desc",
       title: "Expense actions explained",
       description:
         "Edit changes amount, category, or description. The detail panel shows a per-unit share breakdown before any notifications go out. Delete removes the expense and reverses outstanding balances — a full audit entry is written for compliance.",
@@ -80,6 +91,8 @@ export const TUTORIAL_STEPS = {
     {
       page: "/users",
       anchor: "add-user-btn",
+      titleKey: "step_6_title",
+      descKey: "step_6_desc",
       title: "Manage users",
       description:
         "Create Admin or Owner accounts here. Admins have full CRUD access. Owners see only their own apartment data. \"Deactivate\" blocks a user's login immediately without deleting payment or expense history — critical for compliance.",
@@ -87,6 +100,8 @@ export const TUTORIAL_STEPS = {
     {
       page: "/expense-categories",
       anchor: "categories-table",
+      titleKey: "step_7_title",
+      descKey: "step_7_desc",
       title: "Expense categories",
       description:
         "ABEM ships with 15 built-in categories. Each has a Material icon, hex color, and optional subcategory hierarchy. Custom categories can be added for building-specific needs.",
@@ -94,6 +109,8 @@ export const TUTORIAL_STEPS = {
     {
       page: "/assets",
       anchor: "assets-table",
+      titleKey: "step_8a_title",
+      descKey: "step_8a_desc",
       title: "Building assets",
       description:
         "Track physical equipment — elevators, generators, pumps, CCTV. Each asset carries a type, acquisition date, and value. When sold, record buyer details and sale price to maintain a complete asset ledger.",
@@ -101,6 +118,8 @@ export const TUTORIAL_STEPS = {
     {
       page: "/audit",
       anchor: "audit-table",
+      titleKey: "step_8_title",
+      descKey: "step_8_desc",
       title: "Audit log",
       description:
         "Every write action is logged automatically with the actor, action type, affected entity, and timestamp. Admins cannot edit or delete audit entries. Use this screen for financial compliance, dispute resolution, and accountability.",
@@ -110,6 +129,8 @@ export const TUTORIAL_STEPS = {
     {
       page: "/dashboard",
       anchor: null,
+      titleKey: "step_o1_title",
+      descKey: "step_o1_desc",
       title: "Your personal overview",
       description:
         "This dashboard is scoped to your unit only. You see your current outstanding balance, most recent payments, and any new expenses the admin has assigned to your unit.",
@@ -117,6 +138,8 @@ export const TUTORIAL_STEPS = {
     {
       page: "/expenses",
       anchor: "expenses-table",
+      titleKey: "step_o2_title",
+      descKey: "step_o2_desc",
       title: "Your shared expenses",
       description:
         "Every building expense that includes your unit in the split appears here. Each row shows the total building cost, your individual share, and the current payment status. Only the admin can add or modify expenses.",
@@ -124,6 +147,8 @@ export const TUTORIAL_STEPS = {
     {
       page: "/payments",
       anchor: "payments-table",
+      titleKey: "step_o3_title",
+      descKey: "step_o3_desc",
       title: "Your payment history",
       description:
         "Every payment the admin records for your unit is shown here in reverse-chronological order — amount, method, date, and running balance. Click Receipt to download a PDF for any transaction.",
@@ -131,6 +156,8 @@ export const TUTORIAL_STEPS = {
     {
       page: "/notifications",
       anchor: "notifications-list",
+      titleKey: "step_o4_title",
+      descKey: "step_o4_desc",
       title: "Notifications centre",
       description:
         "Your alerts appear in this list below the compose panels. You receive notifications when a payment is recorded, a new expense is posted, or an admin broadcasts an announcement. Mark each one as read individually, or filter to show only unread.",
@@ -138,6 +165,8 @@ export const TUTORIAL_STEPS = {
     {
       page: "/profile",
       anchor: "profile-card",
+      titleKey: "step_o5_title",
+      descKey: "step_o5_desc",
       title: "Your profile",
       description:
         "Update your display name, phone number, or password here. Your email address and role are set by the admin — contact them if either needs to change.",
@@ -243,13 +272,14 @@ function waitForElement(anchorId, maxWaitMs = 2000) {
 export function TutorialButton() {
   const { isAdmin } = useAuth();
   const { isActive, startTutorial } = useTutorialStore();
+  const { t } = useTranslation("tutorial");
 
   const handleClick = () => {
     startTutorial(isAdmin ? "admin" : "owner");
   };
 
   return (
-    <Tooltip title="Start tour">
+    <Tooltip title={t("start_tour", "Start tour")}>
       <Button
         id="tutorial-btn"
         size="small"
@@ -271,7 +301,7 @@ export function TutorialButton() {
           "&.Mui-disabled": { bgcolor: "#10B981", opacity: 0.45, color: "white" },
         }}
       >
-        Tour
+        {t("tour_button", "Tour")}
       </Button>
     </Tooltip>
   );
@@ -299,6 +329,7 @@ function ProgressDots({ total, current }) {
 
 /** The floating tooltip card. */
 function TutorialCard({ step, stepIndex, totalSteps, cardPos, onNext, onPrev, onEnd }) {
+  const { t } = useTranslation("tutorial");
   const isLast = stepIndex === totalSteps - 1;
 
   return (
@@ -332,7 +363,7 @@ function TutorialCard({ step, stepIndex, totalSteps, cardPos, onNext, onPrev, on
           <Typography
             sx={{ fontSize: 11, fontWeight: 700, color: "#1E40AF", letterSpacing: 0.5 }}
           >
-            STEP {stepIndex + 1} OF {totalSteps}
+            {t("common:step_counter", { current: stepIndex + 1, total: totalSteps })}
           </Typography>
         </Box>
         <IconButton size="small" onClick={onEnd} sx={{ mt: -0.5, mr: -0.75, color: "#6B7280" }}>
@@ -342,12 +373,12 @@ function TutorialCard({ step, stepIndex, totalSteps, cardPos, onNext, onPrev, on
 
       {/* Title */}
       <Typography variant="h6" sx={{ fontWeight: 700, fontSize: 15, color: "#1F2937", mb: 0.75 }}>
-        {step.title}
+        {t(step.titleKey, step.title)}
       </Typography>
 
       {/* Description */}
       <Typography variant="body2" sx={{ color: "#6B7280", lineHeight: 1.65, mb: 2 }}>
-        {step.description}
+        {t(step.descKey, step.description)}
       </Typography>
 
       {/* Footer: dots + navigation */}
@@ -361,7 +392,7 @@ function TutorialCard({ step, stepIndex, totalSteps, cardPos, onNext, onPrev, on
               onClick={onPrev}
               sx={{ textTransform: "none", color: "#6B7280", fontWeight: 500 }}
             >
-              Back
+              {t("common:back", "Back")}
             </Button>
           )}
           <Button
@@ -378,7 +409,7 @@ function TutorialCard({ step, stepIndex, totalSteps, cardPos, onNext, onPrev, on
               px: 2,
             }}
           >
-            {isLast ? "Finish" : "Next"}
+            {isLast ? t("common:finish", "Finish") : t("common:next", "Next")}
           </Button>
         </Stack>
       </Stack>
