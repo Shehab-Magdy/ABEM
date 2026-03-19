@@ -106,7 +106,7 @@ export default function DashboardLayout() {
   usePreferredLanguage();
 
   // Derive direction from current language — reactive on language change
-  const dir = i18n.language === "ar" ? "rtl" : "ltr";
+  const dir = (i18n.language || "en").startsWith("ar") ? "rtl" : "ltr";
 
   useEffect(() => {
     axiosClient

@@ -5,12 +5,16 @@
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 
+function langToDir(lng) {
+  return (lng || "en").startsWith("ar") ? "rtl" : "ltr";
+}
+
 export function useDirection() {
   const { i18n } = useTranslation();
-  const [dir, setDir] = useState(i18n.language === "ar" ? "rtl" : "ltr");
+  const [dir, setDir] = useState(langToDir(i18n.language));
 
   useEffect(() => {
-    const handleChange = (lng) => setDir(lng === "ar" ? "rtl" : "ltr");
+    const handleChange = (lng) => setDir(langToDir(lng));
     handleChange(i18n.language);
     i18n.on("languageChanged", handleChange);
     return () => i18n.off("languageChanged", handleChange);

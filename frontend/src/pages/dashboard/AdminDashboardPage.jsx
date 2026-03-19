@@ -336,7 +336,7 @@ export default function AdminDashboardPage() {
                       {(data?.recent_expenses ?? []).map((row, i) => (
                         <TableRow key={i} hover>
                           <TableCell>{row.title}</TableCell>
-                          <TableCell>{row.category}</TableCell>
+                          <TableCell>{t(`categories:${row.category}`, row.category)}</TableCell>
                           <TableCell align="right">
                             {parseFloat(row.amount).toLocaleString("en-US", { minimumFractionDigits: 2 })}
                           </TableCell>

@@ -1,17 +1,17 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { ThemeProvider, CssBaseline } from "@mui/material";
 import { CacheProvider } from "@emotion/react";
 import { useTranslation } from "react-i18next";
 import AppRouter from "./routes/AppRouter";
 import { ltrTheme, rtlTheme } from "./theme/theme";
-import { ltrCache, rtlCache } from "./theme/rtlCache";
+import { createDirectionCache } from "./theme/rtlCache";
 
 export default function App() {
   const { i18n } = useTranslation();
-  const [dir, setDir] = useState(i18n.language === "ar" ? "rtl" : "ltr");
+  const [dir, setDir] = useState((i18n.language || "en").startsWith("ar") ? "rtl" : "ltr");
 
   const updateDir = useCallback((lng) => {
-    const newDir = lng === "ar" ? "rtl" : "ltr";
+    const newDir = (lng || "en").startsWith("ar") ? "rtl" : "ltr";
     setDir(newDir);
     document.documentElement.dir = newDir;
     document.documentElement.lang = lng;
@@ -24,15 +24,17 @@ export default function App() {
   }, [i18n, updateDir]);
 
   const theme = dir === "rtl" ? rtlTheme : ltrTheme;
-  const cache = dir === "rtl" ? rtlCache : ltrCache;
 
-  // key={dir} forces React to remount the entire MUI tree when direction
-  // changes, ensuring Emotion re-injects all CSS with the correct stylis
-  // RTL plugin. Without this, components rendered before the switch keep
-  // their old LTR/RTL styles.
+  // Create a fresh Emotion cache every time direction changes.
+  // This is critical: Emotion caches are singletons that keep their
+  // injected <style> tags. Swapping CacheProvider value does NOT remove
+  // old styles. A new cache forces Emotion to re-process all CSS from
+  // scratch with the correct stylis RTL/LTR plugin.
+  const cache = useMemo(() => createDirectionCache(dir), [dir]);
+
   return (
-    <CacheProvider value={cache}>
-      <ThemeProvider theme={theme} key={dir}>
+    <CacheProvider value={cache} key={dir}>
+      <ThemeProvider theme={theme}>
         <CssBaseline />
         <AppRouter />
       </ThemeProvider>

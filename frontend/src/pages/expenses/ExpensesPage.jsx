@@ -372,7 +372,7 @@ export default function ExpensesPage() {
               <MenuItem value="">{t("all_categories")}</MenuItem>
               {categories.map((c) => (
                 <MenuItem key={c.id} value={c.id}>
-                  {c.name}
+                  {t(`categories:${c.name}`, c.name)}
                 </MenuItem>
               ))}
             </Select>
@@ -587,7 +587,7 @@ export default function ExpensesPage() {
               >
                 {categories.filter((c) => !c.parent_id).map((c) => (
                   <MenuItem key={c.id} value={c.id}>
-                    {c.name}
+                    {t(`categories:${c.name}`, c.name)}
                   </MenuItem>
                 ))}
               </Select>
@@ -607,7 +607,7 @@ export default function ExpensesPage() {
                     .filter((c) => c.parent_id === form.category_id)
                     .map((c) => (
                       <MenuItem key={c.id} value={c.id}>
-                        {c.name}
+                        {t(`categories:${c.name}`, c.name)}
                       </MenuItem>
                     ))}
                 </Select>

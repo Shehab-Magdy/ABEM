@@ -238,13 +238,13 @@ export default function ExpenseCategoriesPage() {
                           </Typography>
                         </Stack>
                       </TableCell>
-                      <TableCell>{cat.name}</TableCell>
+                      <TableCell>{t(cat.name, cat.name)}</TableCell>
                       <TableCell sx={{ color: "text.secondary" }}>
                         {cat.description || "—"}
                       </TableCell>
                       <TableCell>
                         {parentCat ? (
-                          <Chip label={parentCat.name} size="small" variant="outlined" />
+                          <Chip label={t(parentCat.name, parentCat.name)} size="small" variant="outlined" />
                         ) : (
                           <Typography variant="caption" color="text.disabled">—</Typography>
                         )}

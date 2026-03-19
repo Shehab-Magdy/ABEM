@@ -12,9 +12,9 @@ export default function LanguageSwitcher() {
   const { i18n, t } = useTranslation("common");
   const user = useAuthStore((s) => s.user);
 
-  const currentLang = i18n.language === "ar" ? "ar" : "en";
-  const nextLang = currentLang === "ar" ? "en" : "ar";
-  const label = currentLang === "ar" ? "EN" : "AR";
+  const isArabic = (i18n.language || "en").startsWith("ar");
+  const nextLang = isArabic ? "en" : "ar";
+  const label = isArabic ? "EN" : "AR";
 
   const handleSwitch = () => {
     i18n.changeLanguage(nextLang);

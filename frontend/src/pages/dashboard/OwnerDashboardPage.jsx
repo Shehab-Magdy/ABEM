@@ -109,7 +109,7 @@ export default function OwnerDashboardPage() {
   const pieData = (data?.expense_breakdown ?? []).map((row, idx) => ({
     id: idx,
     value: parseFloat(row.total),
-    label: row.category_name,
+    label: t(`categories:${row.category_name}`, row.category_name),
   }));
 
   const hasPayments = (data?.recent_payments ?? []).length > 0;
