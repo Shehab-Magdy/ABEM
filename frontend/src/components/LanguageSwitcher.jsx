@@ -1,47 +1,55 @@
 /**
- * Compact language toggle: EN ↔ AR
- * Placed in the AppHeader and on public auth pages.
+ * Language selector dropdown for public pages (login/register).
+ * After login, the user's preferred_language from the server is used
+ * and the switcher is not shown — language can only be changed from
+ * the profile page.
  */
 import { useTranslation } from "react-i18next";
-import { IconButton, Tooltip, Typography } from "@mui/material";
+import { FormControl, MenuItem, Select } from "@mui/material";
 import { Translate } from "@mui/icons-material";
-import { useAuthStore } from "../contexts/authStore";
-import { authApi } from "../api/authApi";
+
+const LANGUAGES = [
+  { code: "en", label: "English", flag: "🇬🇧" },
+  { code: "ar", label: "العربية", flag: "🇪🇬" },
+];
 
 export default function LanguageSwitcher() {
-  const { i18n, t } = useTranslation("common");
-  const user = useAuthStore((s) => s.user);
+  const { i18n } = useTranslation();
+  const currentLang = (i18n.language || "en").startsWith("ar") ? "ar" : "en";
 
-  const isArabic = (i18n.language || "en").startsWith("ar");
-  const nextLang = isArabic ? "en" : "ar";
-  const label = isArabic ? "EN" : "AR";
-
-  const handleSwitch = () => {
-    i18n.changeLanguage(nextLang);
+  const handleChange = (e) => {
+    const lang = e.target.value;
+    i18n.changeLanguage(lang);
     try {
-      localStorage.setItem("abem_language", nextLang);
+      localStorage.setItem("abem_language", lang);
     } catch {
-      // Storage disabled — ignore
-    }
-    // Fire-and-forget: sync preference to server if logged in
-    if (user) {
-      authApi.updateProfile({ preferred_language: nextLang }).catch(() => {});
+      // Storage disabled
     }
   };
 
   return (
-    <Tooltip title={t("change_language")}>
-      <IconButton
-        onClick={handleSwitch}
-        size="small"
-        aria-label={t("change_language")}
-        sx={{ mx: 0.5 }}
+    <FormControl size="small" sx={{ minWidth: 120 }}>
+      <Select
+        value={currentLang}
+        onChange={handleChange}
+        variant="outlined"
+        startAdornment={<Translate sx={{ fontSize: 18, mr: 0.5, color: "text.secondary" }} />}
+        sx={{
+          "& .MuiSelect-select": {
+            py: 0.75,
+            display: "flex",
+            alignItems: "center",
+            fontSize: 14,
+          },
+          bgcolor: "background.paper",
+        }}
       >
-        <Translate sx={{ fontSize: 18, mr: 0.3 }} />
-        <Typography variant="caption" fontWeight={600} sx={{ fontSize: 11 }}>
-          {label}
-        </Typography>
-      </IconButton>
-    </Tooltip>
+        {LANGUAGES.map((lang) => (
+          <MenuItem key={lang.code} value={lang.code}>
+            {lang.flag} {lang.label}
+          </MenuItem>
+        ))}
+      </Select>
+    </FormControl>
   );
 }

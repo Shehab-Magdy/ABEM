@@ -9,21 +9,28 @@ import {
   Card,
   CardContent,
   CircularProgress,
+  FormControl,
   IconButton,
+  InputLabel,
+  MenuItem,
+  Select,
+  Snackbar,
   Stack,
   TextField,
   Tooltip,
   Typography,
 } from "@mui/material";
-import { CameraAlt } from "@mui/icons-material";
+import { CameraAlt, Translate } from "@mui/icons-material";
 import { authApi } from "../../api/authApi";
 import { useAuth } from "../../hooks/useAuth";
+import { useAuthStore } from "../../contexts/authStore";
 import { PrivateSEO } from "../../components/seo/SEO";
 import PhoneInput from "../../components/PhoneInput";
 
 export default function ProfilePage() {
-  const { t } = useTranslation("profile");
+  const { t, i18n } = useTranslation("profile");
   const { user, setUser } = useAuth();
+  const storeSetUser = useAuthStore((s) => s.setUser);
   const [profileSuccess, setProfileSuccess] = useState(false);
   const [profileError, setProfileError] = useState(null);
   const [pwSuccess, setPwSuccess] = useState(false);
@@ -32,6 +39,8 @@ export default function ProfilePage() {
   const [savingPw, setSavingPw] = useState(false);
   const [uploadingPic, setUploadingPic] = useState(false);
   const [picError, setPicError] = useState(null);
+  const [langSaving, setLangSaving] = useState(false);
+  const [langSuccess, setLangSuccess] = useState(false);
   const fileInputRef = useRef(null);
 
   const profileForm = useForm({ defaultValues: { first_name: user?.first_name, last_name: user?.last_name, phone: user?.phone } });
@@ -92,9 +101,39 @@ export default function ProfilePage() {
     }
   };
 
+  // ── Language preference ─────────────────────────────────────────────────────
+  const currentLang = (i18n.language || "en").startsWith("ar") ? "ar" : "en";
+
+  const handleLanguageChange = async (e) => {
+    const lang = e.target.value;
+    setLangSaving(true);
+    i18n.changeLanguage(lang);
+    try {
+      localStorage.setItem("abem_language", lang);
+      const res = await authApi.updateProfile({ preferred_language: lang });
+      storeSetUser(res.data);
+      setLangSuccess(true);
+    } catch {
+      // Revert on failure
+      i18n.changeLanguage(currentLang);
+    } finally {
+      setLangSaving(false);
+    }
+  };
+
   return (
     <>
       <PrivateSEO title="ABEM – Profile" />
+      <Snackbar
+        open={langSuccess}
+        autoHideDuration={3000}
+        onClose={() => setLangSuccess(false)}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        <Alert severity="success" onClose={() => setLangSuccess(false)}>
+          {t("language_updated")}
+        </Alert>
+      </Snackbar>
       <Box id="profile-card" maxWidth={640}>
       <Typography variant="h5" mb={3}>{t("title")}</Typography>
 
@@ -197,6 +236,28 @@ export default function ProfilePage() {
               </Button>
             </Stack>
           </Box>
+        </CardContent>
+      </Card>
+
+      {/* Language & Region */}
+      <Card sx={{ mb: 3 }}>
+        <CardContent>
+          <Stack direction="row" alignItems="center" spacing={1} mb={2}>
+            <Translate color="action" />
+            <Typography variant="h6">{t("language_region")}</Typography>
+          </Stack>
+          <FormControl size="small" sx={{ minWidth: 200 }}>
+            <InputLabel>{t("language")}</InputLabel>
+            <Select
+              value={currentLang}
+              label={t("language")}
+              onChange={handleLanguageChange}
+              disabled={langSaving}
+            >
+              <MenuItem value="en">🇬🇧 {t("english")}</MenuItem>
+              <MenuItem value="ar">🇪🇬 {t("arabic")}</MenuItem>
+            </Select>
+          </FormControl>
         </CardContent>
       </Card>
 

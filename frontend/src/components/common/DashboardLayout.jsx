@@ -48,7 +48,6 @@ import { useAuthStore } from "../../contexts/authStore";
 import { usePreferredLanguage } from "../../hooks/usePreferredLanguage";
 import axiosClient from "../../api/axiosClient";
 import { TutorialButton } from "../../tutorial/TutorialOverlay";
-import LanguageSwitcher from "../LanguageSwitcher";
 import Footer from "./Footer";
 
 const DRAWER_WIDTH = 240;
@@ -237,7 +236,6 @@ export default function DashboardLayout() {
             </IconButton>
             <Box flex={1} />
             <TutorialButton />
-            <LanguageSwitcher />
             <Tooltip title={t("common:notifications")}>
               <IconButton
                 color="inherit"
