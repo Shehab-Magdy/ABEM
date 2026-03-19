@@ -32,6 +32,7 @@ import {
 import { TrendingUp, TrendingDown } from "@mui/icons-material";
 import { BarChart } from "@mui/x-charts/BarChart";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "../../hooks/useAuth";
 import axiosClient from "../../api/axiosClient";
 import { PrivateSEO } from "../../components/seo/SEO";
@@ -59,6 +60,7 @@ function TrendBadge({ pct, invertColors }) {
 }
 
 export default function AdminDashboardPage() {
+  const { t } = useTranslation("dashboard");
   const { isAdmin } = useAuth();
   const navigate = useNavigate();
 
@@ -132,21 +134,21 @@ export default function AdminDashboardPage() {
     <PrivateSEO title="ABEM – Dashboard" />
     <Box sx={{ p: 3 }}>
       <Typography variant="h4" fontWeight={700} gutterBottom>
-        Admin Dashboard
+        {t("admin_dashboard")}
       </Typography>
 
       {/* ── Filters ── */}
       <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap", mb: 3 }}>
         <FormControl size="small" sx={{ minWidth: 200 }}>
-          <InputLabel id="building-select-label">Building</InputLabel>
+          <InputLabel id="building-select-label">{t("building_filter")}</InputLabel>
           <Select
             labelId="building-select-label"
-            label="Building"
+            label={t("building_filter")}
             value={selectedBuilding}
             onChange={(e) => setSelectedBuilding(e.target.value)}
             inputProps={{ "data-testid": "building-selector" }}
           >
-            <MenuItem value="">All Buildings</MenuItem>
+            <MenuItem value="">{t("all_buildings")}</MenuItem>
             {buildings.map((b) => (
               <MenuItem key={b.id} value={b.id}>
                 {b.name}
@@ -157,7 +159,7 @@ export default function AdminDashboardPage() {
 
         <TextField
           size="small"
-          label="Date From"
+          label={t("date_from")}
           type="date"
           value={dateFrom}
           onChange={(e) => setDateFrom(e.target.value)}
@@ -166,7 +168,7 @@ export default function AdminDashboardPage() {
         />
         <TextField
           size="small"
-          label="Date To"
+          label={t("date_to")}
           type="date"
           value={dateTo}
           onChange={(e) => setDateTo(e.target.value)}
@@ -183,7 +185,7 @@ export default function AdminDashboardPage() {
         </Box>
       ) : !hasData ? (
         <Alert severity="info" data-testid="empty-state">
-          No data available for the selected period.
+          {t("no_data_available")}
         </Alert>
       ) : (
         <>
@@ -194,7 +196,7 @@ export default function AdminDashboardPage() {
             <Grid item xs={12} sm={6} md={3}>
               <Card>
                 <CardContent>
-                  <Typography variant="overline" color="text.secondary">Total Income</Typography>
+                  <Typography variant="overline" color="text.secondary">{t("total_income")}</Typography>
                   <Typography variant="h5" fontWeight={700} color="success.main" data-testid="total-income">
                     {parseFloat(data?.total_income ?? 0).toLocaleString()} EGP
                   </Typography>
@@ -207,7 +209,7 @@ export default function AdminDashboardPage() {
             <Grid item xs={12} sm={6} md={3}>
               <Card>
                 <CardContent>
-                  <Typography variant="overline" color="text.secondary">Total Expenses</Typography>
+                  <Typography variant="overline" color="text.secondary">{t("total_expenses")}</Typography>
                   <Typography variant="h5" fontWeight={700} color="warning.main" data-testid="total-expenses">
                     {parseFloat(data?.total_expenses ?? 0).toLocaleString()} EGP
                   </Typography>
@@ -228,7 +230,7 @@ export default function AdminDashboardPage() {
                 data-testid="overdue-units-card"
               >
                 <CardContent>
-                  <Typography variant="overline" color="text.secondary">Overdue Units</Typography>
+                  <Typography variant="overline" color="text.secondary">{t("overdue_units")}</Typography>
                   <Typography
                     variant="h5"
                     fontWeight={700}
@@ -238,11 +240,11 @@ export default function AdminDashboardPage() {
                     {data?.overdue_units_count ?? 0}
                   </Typography>
                   <Typography variant="caption" color="text.secondary">
-                    Units with past-due expenses
+                    {t("units_past_due")}
                   </Typography>
                   {data?.overdue_units_count > 0 && (
                     <Box sx={{ mt: 0.5 }}>
-                      <Chip label="View payments" size="small" color="error" />
+                      <Chip label={t("view_payments")} size="small" color="error" />
                     </Box>
                   )}
                 </CardContent>
@@ -257,7 +259,7 @@ export default function AdminDashboardPage() {
                 data-testid="buildings-card"
               >
                 <CardContent>
-                  <Typography variant="overline" color="text.secondary">Buildings</Typography>
+                  <Typography variant="overline" color="text.secondary">{t("buildings_label")}</Typography>
                   <Typography variant="h5" fontWeight={700} color="primary.main">
                     {data?.building_summary?.total_buildings ?? 0}
                   </Typography>
@@ -275,13 +277,13 @@ export default function AdminDashboardPage() {
             <Card sx={{ mb: 3 }}>
               <CardContent>
                 <Typography variant="h6" gutterBottom>
-                  Payment Collection Progress
+                  {t("payment_collection_progress")}
                 </Typography>
                 <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                  Units that have settled their balance out of all billed units
+                  {t("payment_collection_desc")}
                 </Typography>
                 {data.payment_coverage.total_billed === 0 ? (
-                  <Typography variant="body2" color="text.secondary">No billed units yet.</Typography>
+                  <Typography variant="body2" color="text.secondary">{t("no_billed_units")}</Typography>
                 ) : (
                   <>
                     <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 0.5 }}>
@@ -301,11 +303,11 @@ export default function AdminDashboardPage() {
                         {data.payment_coverage.paid} / {data.payment_coverage.total_billed}
                       </Typography>
                       {data.payment_coverage.paid === data.payment_coverage.total_billed && (
-                        <Chip label="All Paid" color="success" size="small" />
+                        <Chip label={t("all_paid")} color="success" size="small" />
                       )}
                     </Box>
                     <Typography variant="caption" color="text.secondary">
-                      {data.payment_coverage.total_billed - data.payment_coverage.paid} unit(s) still have an outstanding balance
+                      {t("units_outstanding", { count: data.payment_coverage.total_billed - data.payment_coverage.paid })}
                     </Typography>
                   </>
                 )}
@@ -316,18 +318,18 @@ export default function AdminDashboardPage() {
           {/* ── Recent Expenses (last 30 days) ── */}
           <Card sx={{ mb: 3 }}>
             <CardContent>
-              <Typography variant="h6" gutterBottom>Recent Expenses (Last 30 Days)</Typography>
+              <Typography variant="h6" gutterBottom>{t("recent_expenses_30_days")}</Typography>
               {(data?.recent_expenses ?? []).length === 0 ? (
-                <Typography variant="body2" color="text.secondary">No expenses in the last 30 days.</Typography>
+                <Typography variant="body2" color="text.secondary">{t("no_expenses_30_days")}</Typography>
               ) : (
                 <TableContainer component={Paper} variant="outlined">
                   <Table size="small">
                     <TableHead>
                       <TableRow sx={{ bgcolor: "grey.100" }}>
-                        <TableCell><strong>Expense</strong></TableCell>
-                        <TableCell><strong>Category</strong></TableCell>
-                        <TableCell align="right"><strong>Amount (EGP)</strong></TableCell>
-                        <TableCell align="center"><strong>Status</strong></TableCell>
+                        <TableCell><strong>{t("expense")}</strong></TableCell>
+                        <TableCell><strong>{t("category")}</strong></TableCell>
+                        <TableCell align="right"><strong>{t("amount_egp")}</strong></TableCell>
+                        <TableCell align="center"><strong>{t("status")}</strong></TableCell>
                       </TableRow>
                     </TableHead>
                     <TableBody>
@@ -359,17 +361,17 @@ export default function AdminDashboardPage() {
             <Card sx={{ mb: 3 }}>
               <CardContent>
                 <Typography variant="h6" gutterBottom>
-                  Outstanding Balances
+                  {t("outstanding_balances")}
                 </Typography>
                 <TableContainer component={Paper} variant="outlined">
                   <Table size="small">
                     <TableHead>
                       <TableRow sx={{ bgcolor: "grey.100" }}>
                         {[
-                          { label: "Unit", field: "unit_number" },
-                          { label: "Building", field: "building_name" },
-                          { label: "Owner", field: "owner_name" },
-                          { label: "Email", field: "owner_email" },
+                          { label: t("unit_col"), field: "unit_number" },
+                          { label: t("building_col"), field: "building_name" },
+                          { label: t("owner_col"), field: "owner_name" },
+                          { label: t("email_col"), field: "owner_email" },
                         ].map(({ label, field }) => (
                           <TableCell key={field}>
                             <TableSortLabel
@@ -387,7 +389,7 @@ export default function AdminDashboardPage() {
                             direction={balanceSort.field === "balance" ? balanceSort.order : "asc"}
                             onClick={() => handleBalanceSort("balance")}
                           >
-                            <strong>Balance Due (EGP)</strong>
+                            <strong>{t("balance_due_egp")}</strong>
                           </TableSortLabel>
                         </TableCell>
                       </TableRow>
@@ -415,10 +417,10 @@ export default function AdminDashboardPage() {
           <Card>
             <CardContent>
               <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 1 }}>
-                <Typography variant="h6">Monthly Income vs Expenses</Typography>
+                <Typography variant="h6">{t("monthly_income_vs_expenses")}</Typography>
                 <Button size="small" variant="outlined" data-testid="download-report"
                   onClick={() => window.print()}>
-                  Download Report
+                  {t("download_report")}
                 </Button>
               </Box>
               <Box
@@ -428,8 +430,8 @@ export default function AdminDashboardPage() {
               >
                 <BarChart
                   series={[
-                    { data: incomeValues, label: "Income", color: "#10B981" },
-                    { data: expenseValues, label: "Expenses", color: "#F59E0B" },
+                    { data: incomeValues, label: t("income"), color: "#10B981" },
+                    { data: expenseValues, label: t("expenses"), color: "#F59E0B" },
                   ]}
                   xAxis={[{ data: MONTH_LABELS, scaleType: "band" }]}
                   height={300}
