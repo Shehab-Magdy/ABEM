@@ -53,6 +53,7 @@ import {
 import { expensesApi } from "../../api/expensesApi";
 import { buildingsApi } from "../../api/buildingsApi";
 import { useAuth } from "../../hooks/useAuth";
+import { useTranslation } from "react-i18next";
 import { PrivateSEO } from "../../components/seo/SEO";
 
 // Resolve relative media paths to absolute backend URLs so the browser
@@ -106,6 +107,7 @@ function statusChip(expense) {
 // ── Main component ─────────────────────────────────────────────────────────────
 
 export default function ExpensesPage() {
+  const { t } = useTranslation("expenses");
   const { isAdmin } = useAuth();
 
   const [buildings, setBuildings] = useState([]);
@@ -318,11 +320,11 @@ export default function ExpensesPage() {
       {/* Header */}
       <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
         <Typography variant="h5" fontWeight={600}>
-          Expenses
+          {t("page_title")}
         </Typography>
         {isAdmin && (
           <Button id="add-expense-btn" variant="contained" startIcon={<AddIcon />} onClick={openCreate}>
-            Add Expense
+            {t("add_expense")}
           </Button>
         )}
       </Stack>
@@ -331,9 +333,9 @@ export default function ExpensesPage() {
       <Paper sx={{ p: 2, mb: 2 }}>
         <Stack direction="row" spacing={2} flexWrap="wrap" alignItems="center">
           <FormControl size="small" sx={{ minWidth: 220 }}>
-            <InputLabel>Building</InputLabel>
+            <InputLabel>{t("building")}</InputLabel>
             <Select
-              label="Building"
+              label={t("building")}
               value={selectedBuilding}
               onChange={(e) => setSelectedBuilding(e.target.value)}
             >
@@ -347,7 +349,7 @@ export default function ExpensesPage() {
 
           <TextField
             size="small"
-            label="Date From"
+            label={t("date_from")}
             type="date"
             value={filterDateFrom}
             onChange={(e) => setFilterDateFrom(e.target.value)}
@@ -355,7 +357,7 @@ export default function ExpensesPage() {
           />
           <TextField
             size="small"
-            label="Date To"
+            label={t("date_to")}
             type="date"
             value={filterDateTo}
             onChange={(e) => setFilterDateTo(e.target.value)}
@@ -363,13 +365,13 @@ export default function ExpensesPage() {
           />
 
           <FormControl size="small" sx={{ minWidth: 180 }}>
-            <InputLabel>Category</InputLabel>
+            <InputLabel>{t("category")}</InputLabel>
             <Select
-              label="Category"
+              label={t("category")}
               value={filterCategory}
               onChange={(e) => setFilterCategory(e.target.value)}
             >
-              <MenuItem value="">All Categories</MenuItem>
+              <MenuItem value="">{t("all_categories")}</MenuItem>
               {categories.map((c) => (
                 <MenuItem key={c.id} value={c.id}>
                   {c.name}
@@ -379,7 +381,7 @@ export default function ExpensesPage() {
           </FormControl>
 
           <Button variant="outlined" startIcon={<FilterIcon />} onClick={loadExpenses}>
-            Apply
+            {t("apply")}
           </Button>
         </Stack>
       </Paper>
@@ -394,22 +396,22 @@ export default function ExpensesPage() {
           <Table size="small">
             <TableHead>
               <TableRow sx={{ bgcolor: "grey.100" }}>
-                <TableCell>Title</TableCell>
-                <TableCell>Amount</TableCell>
-                <TableCell>Date</TableCell>
-                <TableCell>Split</TableCell>
-                <TableCell>Status</TableCell>
-                <TableCell>Recurring</TableCell>
-                <TableCell align="center">Bill</TableCell>
-                <TableCell align="right">Actions</TableCell>
+                <TableCell>{t("title")}</TableCell>
+                <TableCell>{t("amount")}</TableCell>
+                <TableCell>{t("date")}</TableCell>
+                <TableCell>{t("split_type")}</TableCell>
+                <TableCell>{t("status")}</TableCell>
+                <TableCell>{t("recurring")}</TableCell>
+                <TableCell align="center">{t("bill")}</TableCell>
+                <TableCell align="right">{t("actions")}</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {expenses.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={8} align="center" sx={{ py: 4, color: "text.secondary" }}>
-                    No expenses found.{" "}
-                    {isAdmin && "Click 'Add Expense' to create one."}
+                    {t("no_expenses")}{" "}
+                    {isAdmin && t("no_expenses_hint")}
                   </TableCell>
                 </TableRow>
               ) : (
@@ -440,7 +442,7 @@ export default function ExpensesPage() {
                       </Typography>
                       {!isAdmin && exp.my_share_amount != null && (
                         <Typography variant="caption" color="text.secondary" display="block">
-                          your share
+                          {t("your_share")}
                         </Typography>
                       )}
                     </TableCell>
@@ -484,24 +486,24 @@ export default function ExpensesPage() {
                     </TableCell>
                     <TableCell align="right">
                       <Stack id="expense-actions-btn" direction="row" spacing={0.5} justifyContent="flex-end">
-                        <Tooltip title="View details">
+                        <Tooltip title={t("view_details")}>
                           <IconButton size="small" onClick={() => setDetailExpense(exp)}>
                             <ViewIcon fontSize="small" />
                           </IconButton>
                         </Tooltip>
                         {isAdmin && (
                           <>
-                            <Tooltip title="Edit">
+                            <Tooltip title={t("edit")}>
                               <IconButton size="small" onClick={() => openEdit(exp)}>
                                 <EditIcon fontSize="small" />
                               </IconButton>
                             </Tooltip>
-                            <Tooltip title="Upload bill">
+                            <Tooltip title={t("upload_bill")}>
                               <IconButton size="small" onClick={() => setUploadTarget(exp)}>
                                 <AttachFileIcon fontSize="small" />
                               </IconButton>
                             </Tooltip>
-                            <Tooltip title="Delete">
+                            <Tooltip title={t("delete")}>
                               <IconButton
                                 size="small"
                                 color="error"
@@ -524,20 +526,20 @@ export default function ExpensesPage() {
 
       {/* ── Add / Edit Dialog ─────────────────────────────────────────────── */}
       <Dialog open={formOpen} onClose={() => setFormOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>{editTarget ? "Edit Expense" : "Add Expense"}</DialogTitle>
+        <DialogTitle>{editTarget ? t("edit_expense") : t("add_expense")}</DialogTitle>
         <DialogContent dividers>
           <Stack spacing={2} pt={1}>
             {formError && <Alert severity="error">{formError}</Alert>}
 
             <TextField
-              label="Title *"
+              label={`${t("title")} *`}
               value={form.title}
               onChange={handleFormChange("title")}
               size="small"
               fullWidth
             />
             <TextField
-              label="Description"
+              label={t("description")}
               value={form.description}
               onChange={handleFormChange("description")}
               size="small"
@@ -547,7 +549,7 @@ export default function ExpensesPage() {
             />
             <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
               <TextField
-                label="Amount *"
+                label={`${t("amount")} *`}
                 type="number"
                 inputProps={{ min: 0.01, step: 0.01 }}
                 value={form.amount}
@@ -556,7 +558,7 @@ export default function ExpensesPage() {
                 fullWidth
               />
               <TextField
-                label="Expense Date *"
+                label={`${t("expense_date")} *`}
                 type="date"
                 value={form.expense_date}
                 onChange={handleFormChange("expense_date")}
@@ -566,7 +568,7 @@ export default function ExpensesPage() {
               />
             </Stack>
             <TextField
-              label="Due Date"
+              label={t("due_date")}
               type="date"
               value={form.due_date}
               onChange={handleFormChange("due_date")}
@@ -576,9 +578,9 @@ export default function ExpensesPage() {
             />
 
             <FormControl size="small" fullWidth>
-              <InputLabel>Category *</InputLabel>
+              <InputLabel>{t("category")} *</InputLabel>
               <Select
-                label="Category *"
+                label={`${t("category")} *`}
                 value={form.category_id}
                 onChange={(e) => {
                   handleFormChange("category_id")(e);
@@ -596,13 +598,13 @@ export default function ExpensesPage() {
             {/* Show subcategory dropdown if the selected category has subcategories */}
             {form.category_id && categories.some((c) => c.parent_id === form.category_id) && (
               <FormControl size="small" fullWidth>
-                <InputLabel>Subcategory (optional)</InputLabel>
+                <InputLabel>{t("subcategory_optional")}</InputLabel>
                 <Select
-                  label="Subcategory (optional)"
+                  label={t("subcategory_optional")}
                   value={subcategoryId}
                   onChange={(e) => setSubcategoryId(e.target.value)}
                 >
-                  <MenuItem value="">— None —</MenuItem>
+                  <MenuItem value="">{t("none_subcategory")}</MenuItem>
                   {categories
                     .filter((c) => c.parent_id === form.category_id)
                     .map((c) => (
@@ -615,9 +617,9 @@ export default function ExpensesPage() {
             )}
 
             <FormControl size="small" fullWidth>
-              <InputLabel>Split Type</InputLabel>
+              <InputLabel>{t("split_type")}</InputLabel>
               <Select
-                label="Split Type"
+                label={t("split_type")}
                 value={form.split_type}
                 onChange={handleFormChange("split_type")}
               >
@@ -633,7 +635,7 @@ export default function ExpensesPage() {
             {form.split_type === "custom" && (
               <Box>
                 <Typography variant="caption" color="text.secondary" mb={0.5} display="block">
-                  Set weight per unit (1.0 = full share, 0.5 = half share). Uncheck to exclude.
+                  {t("custom_weight_hint")}
                 </Typography>
                 <Table size="small">
                   <TableHead>
@@ -654,9 +656,9 @@ export default function ExpensesPage() {
                           }}
                         />
                       </TableCell>
-                      <TableCell>Unit</TableCell>
-                      <TableCell>Type</TableCell>
-                      <TableCell width={100}>Weight</TableCell>
+                      <TableCell>{t("unit")}</TableCell>
+                      <TableCell>{t("type")}</TableCell>
+                      <TableCell width={100}>{t("weight")}</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
@@ -715,15 +717,15 @@ export default function ExpensesPage() {
                 onChange={handleFormChange("is_recurring")}
               />
               <label htmlFor="is_recurring">
-                <Typography variant="body2">Recurring expense</Typography>
+                <Typography variant="body2">{t("recurring_expense")}</Typography>
               </label>
             </Stack>
 
             {form.is_recurring && (
               <FormControl size="small" fullWidth>
-                <InputLabel>Frequency *</InputLabel>
+                <InputLabel>{t("frequency")} *</InputLabel>
                 <Select
-                  label="Frequency *"
+                  label={`${t("frequency")} *`}
                   value={form.frequency}
                   onChange={handleFormChange("frequency")}
                 >
@@ -738,9 +740,9 @@ export default function ExpensesPage() {
           </Stack>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setFormOpen(false)}>Cancel</Button>
+          <Button onClick={() => setFormOpen(false)}>{t("cancel")}</Button>
           <Button variant="contained" onClick={handleFormSubmit}>
-            {editTarget ? "Save Changes" : "Create Expense"}
+            {editTarget ? t("save_changes") : t("create_expense")}
           </Button>
         </DialogActions>
       </Dialog>
@@ -771,7 +773,7 @@ export default function ExpensesPage() {
               <Stack spacing={1.5}>
                 <Stack direction="row" justifyContent="space-between">
                   <Typography variant="body2" color="text.secondary">
-                    Total Amount
+                    {t("total_amount")}
                   </Typography>
                   <Typography fontWeight={600}>
                     {parseFloat(detailExpense.amount).toLocaleString("en-US", {
@@ -781,13 +783,13 @@ export default function ExpensesPage() {
                 </Stack>
                 <Stack direction="row" justifyContent="space-between">
                   <Typography variant="body2" color="text.secondary">
-                    Date
+                    {t("date")}
                   </Typography>
                   <Typography>{detailExpense.expense_date}</Typography>
                 </Stack>
                 <Stack direction="row" justifyContent="space-between">
                   <Typography variant="body2" color="text.secondary">
-                    Split Type
+                    {t("split_type")}
                   </Typography>
                   <Chip
                     label={
@@ -801,7 +803,7 @@ export default function ExpensesPage() {
                 {detailExpense.description && (
                   <Stack direction="row" justifyContent="space-between">
                     <Typography variant="body2" color="text.secondary">
-                      Description
+                      {t("description")}
                     </Typography>
                     <Typography variant="body2" sx={{ maxWidth: "60%", textAlign: "right" }}>
                       {detailExpense.description}
@@ -812,18 +814,18 @@ export default function ExpensesPage() {
                 <Divider />
 
                 <Typography variant="subtitle2" fontWeight={600}>
-                  Per-Unit Breakdown ({(detailExpense.apartment_shares || []).length} units)
+                  {t("per_unit_breakdown", { count: (detailExpense.apartment_shares || []).length })}
                 </Typography>
                 {(detailExpense.apartment_shares || []).length === 0 ? (
                   <Typography variant="body2" color="text.secondary">
-                    No units assigned.
+                    {t("no_units_assigned")}
                   </Typography>
                 ) : (
                   <Table size="small">
                     <TableHead>
                       <TableRow>
-                        <TableCell>Unit</TableCell>
-                        <TableCell align="right">Share Amount</TableCell>
+                        <TableCell>{t("unit")}</TableCell>
+                        <TableCell align="right">{t("share_amount")}</TableCell>
                       </TableRow>
                     </TableHead>
                     <TableBody>
@@ -840,7 +842,7 @@ export default function ExpensesPage() {
                     </TableBody>
                     <TableFooter>
                       <TableRow sx={{ "& td": { borderTop: "2px solid", borderColor: "divider" } }}>
-                        <TableCell sx={{ fontWeight: 700 }}>Total Shares</TableCell>
+                        <TableCell sx={{ fontWeight: 700 }}>{t("total_shares")}</TableCell>
                         <TableCell align="right" sx={{ fontWeight: 700 }}>
                           {detailExpense.apartment_shares
                             .reduce((sum, s) => sum + parseFloat(s.share_amount), 0)
@@ -855,7 +857,7 @@ export default function ExpensesPage() {
                   <>
                     <Divider />
                     <Typography variant="subtitle2" fontWeight={600}>
-                      Attachments
+                      {t("attachments")}
                     </Typography>
                     {detailExpense.attachments.map((att) => (
                       <Stack key={att.id} direction="row" alignItems="center" spacing={1}>
@@ -876,7 +878,7 @@ export default function ExpensesPage() {
               </Stack>
             </DialogContent>
             <DialogActions>
-              <Button onClick={() => setDetailExpense(null)}>Close</Button>
+              <Button onClick={() => setDetailExpense(null)}>{t("close")}</Button>
             </DialogActions>
           </>
         )}
@@ -884,30 +886,30 @@ export default function ExpensesPage() {
 
       {/* ── Delete confirmation ───────────────────────────────────────────── */}
       <Dialog open={Boolean(deleteTarget)} onClose={() => setDeleteTarget(null)}>
-        <DialogTitle>Delete Expense</DialogTitle>
+        <DialogTitle>{t("delete_expense")}</DialogTitle>
         <DialogContent>
           <Typography>
-            Are you sure you want to delete <strong>{deleteTarget?.title}</strong>?
+            {t("confirm_delete")}
           </Typography>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setDeleteTarget(null)}>Cancel</Button>
+          <Button onClick={() => setDeleteTarget(null)}>{t("cancel")}</Button>
           <Button variant="contained" color="error" onClick={handleDelete}>
-            Delete
+            {t("delete")}
           </Button>
         </DialogActions>
       </Dialog>
 
       {/* ── Bill upload dialog ────────────────────────────────────────────── */}
       <Dialog open={Boolean(uploadTarget)} onClose={() => setUploadTarget(null)}>
-        <DialogTitle>Upload Bill — "{uploadTarget?.title}"</DialogTitle>
+        <DialogTitle>{t("upload_bill_title", { title: uploadTarget?.title })}</DialogTitle>
         <DialogContent>
           <Stack spacing={2} pt={1}>
             <Typography variant="body2" color="text.secondary">
-              Accepted: JPEG, PNG, PDF · Max 10 MB
+              {t("accepted_formats")}
             </Typography>
             <Button variant="outlined" component="label" startIcon={<AttachFileIcon />}>
-              Choose File
+              {t("choose_file")}
               <input
                 hidden
                 accept="image/jpeg,image/png,application/pdf"
@@ -918,7 +920,7 @@ export default function ExpensesPage() {
           </Stack>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setUploadTarget(null)}>Cancel</Button>
+          <Button onClick={() => setUploadTarget(null)}>{t("cancel")}</Button>
         </DialogActions>
       </Dialog>
 

@@ -34,6 +34,7 @@ import {
   Typography,
 } from "@mui/material";
 import { Add as AddIcon, Delete as DeleteIcon } from "@mui/icons-material";
+import { useTranslation } from "react-i18next";
 import { expensesApi } from "../../api/expensesApi";
 import { buildingsApi } from "../../api/buildingsApi";
 import { PrivateSEO } from "../../components/seo/SEO";
@@ -41,6 +42,7 @@ import { PrivateSEO } from "../../components/seo/SEO";
 const EMPTY_FORM = { name: "", description: "", icon: "", color: "#2563EB", parent_id: "" };
 
 export default function ExpenseCategoriesPage() {
+  const { t } = useTranslation("categories");
   const [buildings, setBuildings] = useState([]);
   const [selectedBuilding, setSelectedBuilding] = useState("");
   const [categories, setCategories] = useState([]);
@@ -161,7 +163,7 @@ export default function ExpenseCategoriesPage() {
       {/* Header */}
       <Box display="flex" alignItems="center" justifyContent="space-between" mb={3}>
         <Typography variant="h5" fontWeight={600}>
-          Expense Categories
+          {t("page_title")}
         </Typography>
         <Button
           variant="contained"
@@ -169,16 +171,16 @@ export default function ExpenseCategoriesPage() {
           onClick={openAdd}
           disabled={!selectedBuilding}
         >
-          Add Category
+          {t("add_category")}
         </Button>
       </Box>
 
       {/* Building selector */}
       <FormControl size="small" sx={{ minWidth: 260, mb: 3 }}>
-        <InputLabel>Building</InputLabel>
+        <InputLabel>{t("building")}</InputLabel>
         <Select
           value={selectedBuilding}
-          label="Building"
+          label={t("building")}
           onChange={(e) => setSelectedBuilding(e.target.value)}
         >
           {buildings.map((b) => (
@@ -199,18 +201,18 @@ export default function ExpenseCategoriesPage() {
           <Table size="small">
             <TableHead>
               <TableRow>
-                <TableCell><strong>Icon / Color</strong></TableCell>
-                <TableCell><strong>Name</strong></TableCell>
-                <TableCell><strong>Description</strong></TableCell>
-                <TableCell><strong>Subcategory of</strong></TableCell>
-                <TableCell align="right"><strong>Actions</strong></TableCell>
+                <TableCell><strong>{t("icon_color")}</strong></TableCell>
+                <TableCell><strong>{t("name")}</strong></TableCell>
+                <TableCell><strong>{t("description")}</strong></TableCell>
+                <TableCell><strong>{t("subcategory_of")}</strong></TableCell>
+                <TableCell align="right"><strong>{t("actions")}</strong></TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {categories.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={5} align="center" sx={{ py: 4, color: "text.secondary" }}>
-                    No categories found for this building.
+                    {t("no_categories")}
                   </TableCell>
                 </TableRow>
               ) : (
@@ -248,7 +250,7 @@ export default function ExpenseCategoriesPage() {
                         )}
                       </TableCell>
                       <TableCell align="right">
-                        <Tooltip title="Remove category">
+                        <Tooltip title={t("remove_category")}>
                           <IconButton
                             size="small"
                             color="error"
@@ -269,7 +271,7 @@ export default function ExpenseCategoriesPage() {
 
       {/* Add category dialog */}
       <Dialog open={formOpen} onClose={() => setFormOpen(false)} maxWidth="xs" fullWidth>
-        <DialogTitle>Add Expense Category</DialogTitle>
+        <DialogTitle>{t("add_category_title")}</DialogTitle>
         <DialogContent>
           {formError && (
             <Alert severity="error" sx={{ mb: 2 }}>
@@ -277,7 +279,7 @@ export default function ExpenseCategoriesPage() {
             </Alert>
           )}
           <TextField
-            label="Name"
+            label={t("name")}
             name="name"
             value={form.name}
             onChange={handleFormChange}
@@ -287,7 +289,7 @@ export default function ExpenseCategoriesPage() {
             sx={{ mt: 1, mb: 2 }}
           />
           <TextField
-            label="Description"
+            label={t("description")}
             name="description"
             value={form.description}
             onChange={handleFormChange}
@@ -299,7 +301,7 @@ export default function ExpenseCategoriesPage() {
           />
           <Stack direction="row" spacing={2} sx={{ mb: 2 }}>
             <TextField
-              label="Icon name"
+              label={t("icon_name")}
               name="icon"
               value={form.icon}
               onChange={handleFormChange}
@@ -308,7 +310,7 @@ export default function ExpenseCategoriesPage() {
               size="small"
             />
             <TextField
-              label="Color"
+              label={t("color")}
               name="color"
               value={form.color}
               onChange={handleFormChange}
@@ -332,14 +334,14 @@ export default function ExpenseCategoriesPage() {
             />
           </Stack>
           <FormControl fullWidth size="small">
-            <InputLabel>Subcategory of (optional)</InputLabel>
+            <InputLabel>{t("subcategory_of_optional")}</InputLabel>
             <Select
               name="parent_id"
               value={form.parent_id}
-              label="Subcategory of (optional)"
+              label={t("subcategory_of_optional")}
               onChange={handleFormChange}
             >
-              <MenuItem value="">— None (top-level) —</MenuItem>
+              <MenuItem value="">{t("none_top_level")}</MenuItem>
               {topLevelCategories.map((c) => (
                 <MenuItem key={c.id} value={c.id}>
                   {c.name}
@@ -350,29 +352,28 @@ export default function ExpenseCategoriesPage() {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setFormOpen(false)} disabled={saving}>
-            Cancel
+            {t("cancel")}
           </Button>
           <Button variant="contained" onClick={handleSave} disabled={saving}>
-            {saving ? "Saving…" : "Add"}
+            {saving ? t("saving") : t("add")}
           </Button>
         </DialogActions>
       </Dialog>
 
       {/* Delete confirmation dialog */}
       <Dialog open={Boolean(deleteTarget)} onClose={() => setDeleteTarget(null)} maxWidth="xs" fullWidth>
-        <DialogTitle>Remove Category</DialogTitle>
+        <DialogTitle>{t("remove_category_title")}</DialogTitle>
         <DialogContent>
           <Typography>
-            Remove <strong>{deleteTarget?.name}</strong>? This cannot be undone.
-            Categories with expenses assigned cannot be removed.
+            {t("remove_confirm_text", { name: deleteTarget?.name })}
           </Typography>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setDeleteTarget(null)} disabled={deleting}>
-            Cancel
+            {t("cancel")}
           </Button>
           <Button variant="contained" color="error" onClick={handleDelete} disabled={deleting}>
-            {deleting ? "Removing…" : "Remove"}
+            {deleting ? t("removing") : t("remove")}
           </Button>
         </DialogActions>
       </Dialog>

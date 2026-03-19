@@ -1,6 +1,7 @@
 {
   "page_title": "فئات المصروفات",
   "add_category": "إضافة فئة",
+  "add_category_title": "إضافة فئة مصروفات",
   "delete_category": "حذف الفئة",
   "category_name": "اسم الفئة",
   "icon": "الأيقونة",
@@ -45,5 +46,23 @@
   "Waste Management": "إدارة النفايات",
   "Insurance": "التأمين",
   "Management": "الإدارة",
-  "Other": "أخرى"
+  "Other": "أخرى",
+  "name": "الاسم",
+  "description": "الوصف",
+  "building": "المبنى",
+  "icon_color": "الأيقونة / اللون",
+  "subcategory_of": "فئة فرعية من",
+  "actions": "الإجراءات",
+  "no_categories": "لا توجد فئات لهذا المبنى.",
+  "remove_category": "إزالة الفئة",
+  "icon_name": "اسم الأيقونة",
+  "subcategory_of_optional": "فئة فرعية من (اختياري)",
+  "none_top_level": "— لا شيء (مستوى أعلى) —",
+  "cancel": "إلغاء",
+  "saving": "جارٍ الحفظ…",
+  "add": "إضافة",
+  "remove_category_title": "إزالة الفئة",
+  "remove_confirm_text": "إزالة \"{{name}}\"؟ لا يمكن التراجع عن هذا. لا يمكن إزالة الفئات التي لها مصروفات مرتبطة.",
+  "removing": "جارٍ الإزالة…",
+  "remove": "إزالة"
 }

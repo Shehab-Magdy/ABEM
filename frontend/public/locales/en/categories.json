@@ -1,6 +1,7 @@
 {
   "page_title": "Expense Categories",
   "add_category": "Add Category",
+  "add_category_title": "Add Expense Category",
   "delete_category": "Delete Category",
   "category_name": "Category Name",
   "icon": "Icon",
@@ -45,5 +46,23 @@
   "Waste Management": "Waste Management",
   "Insurance": "Insurance",
   "Management": "Management",
-  "Other": "Other"
+  "Other": "Other",
+  "name": "Name",
+  "description": "Description",
+  "building": "Building",
+  "icon_color": "Icon / Color",
+  "subcategory_of": "Subcategory of",
+  "actions": "Actions",
+  "no_categories": "No categories found for this building.",
+  "remove_category": "Remove category",
+  "icon_name": "Icon name",
+  "subcategory_of_optional": "Subcategory of (optional)",
+  "none_top_level": "— None (top-level) —",
+  "cancel": "Cancel",
+  "saving": "Saving…",
+  "add": "Add",
+  "remove_category_title": "Remove Category",
+  "remove_confirm_text": "Remove \"{{name}}\"? This cannot be undone. Categories with expenses assigned cannot be removed.",
+  "removing": "Removing…",
+  "remove": "Remove"
 }
