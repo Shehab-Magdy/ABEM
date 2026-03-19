@@ -14,5 +14,23 @@
   "profile_updated": "تم تحديث الملف الشخصي بنجاح",
   "password_changed": "تم تغيير كلمة المرور بنجاح",
   "language_region": "اللغة والمنطقة",
-  "email_readonly": "البريد الإلكتروني (للقراءة فقط)"
+  "email_readonly": "البريد الإلكتروني (للقراءة فقط)",
+
+  "title": "ملفي الشخصي",
+  "profilePicture": "صورة الملف الشخصي",
+  "changePhoto": "تغيير الصورة",
+  "clickCameraToUpload": "اضغط على أيقونة الكاميرا لرفع صورة جديدة.",
+  "acceptedFormats": "الأنواع المقبولة: JPG, PNG, WEBP (الحد الأقصى ٥ ميغابايت).",
+  "personalInformation": "المعلومات الشخصية",
+  "profileUpdatedSuccess": "تم تحديث الملف الشخصي بنجاح.",
+  "firstName": "الاسم الأول",
+  "lastName": "اسم العائلة",
+  "phoneNumber": "رقم الهاتف",
+  "email": "البريد الإلكتروني",
+  "saveChanges": "حفظ التغييرات",
+  "changePassword": "تغيير كلمة المرور",
+  "passwordChangedSuccess": "تم تغيير كلمة المرور بنجاح.",
+  "currentPassword": "كلمة المرور الحالية",
+  "newPassword": "كلمة المرور الجديدة",
+  "confirmNewPassword": "تأكيد كلمة المرور الجديدة"
 }

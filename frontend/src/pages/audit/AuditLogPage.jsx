@@ -3,6 +3,7 @@
  * Admin-only page displaying the immutable audit log with filters and data exports.
  */
 import { useEffect, useState, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Alert,
   Box,
@@ -40,6 +41,7 @@ const ENTITY_OPTIONS = ["", "expense", "payment", "user", "building", "apartment
 const PAGE_SIZE = 20;
 
 export default function AuditLogPage() {
+  const { t } = useTranslation("audit");
   const { isAdmin } = useAuth();
 
   // Filter state
@@ -153,11 +155,11 @@ export default function AuditLogPage() {
       {/* Header */}
       <Stack direction="row" justifyContent="space-between" alignItems="center" mb={3}>
         <Typography variant="h5" fontWeight={700}>
-          Audit Log
+          {t("title")}
         </Typography>
         {isAdmin && (
           <Stack direction="row" spacing={1}>
-            <Tooltip title="Export Payments CSV">
+            <Tooltip title={t("exportPaymentsCsv")}>
               <Button
                 variant="outlined"
                 size="small"
@@ -165,10 +167,10 @@ export default function AuditLogPage() {
                 data-testid="export-csv"
                 onClick={() => handleExport("/exports/payments/?file_format=csv", "payments.csv")}
               >
-                Payments CSV
+                {t("paymentsCsv")}
               </Button>
             </Tooltip>
-            <Tooltip title="Export Expenses CSV">
+            <Tooltip title={t("exportExpensesCsv")}>
               <Button
                 variant="outlined"
                 size="small"
@@ -176,7 +178,7 @@ export default function AuditLogPage() {
                 data-testid="export-expenses"
                 onClick={() => handleExport("/exports/expenses/?file_format=csv", "expenses.csv")}
               >
-                Expenses CSV
+                {t("expensesCsv")}
               </Button>
             </Tooltip>
           </Stack>
@@ -187,23 +189,23 @@ export default function AuditLogPage() {
       <Paper variant="outlined" sx={{ p: 2, mb: 2 }}>
         <Stack direction={{ xs: "column", sm: "row" }} spacing={2} alignItems="flex-end">
           <FormControl size="small" sx={{ minWidth: 150 }}>
-            <InputLabel>Entity</InputLabel>
+            <InputLabel>{t("entity")}</InputLabel>
             <Select
-              label="Entity"
+              label={t("entity")}
               value={filterEntity}
               onChange={(e) => setFilterEntity(e.target.value)}
               inputProps={{ "data-testid": "filter-entity" }}
             >
               {ENTITY_OPTIONS.map((opt) => (
                 <MenuItem key={opt} value={opt}>
-                  {opt || "All"}
+                  {opt || t("all")}
                 </MenuItem>
               ))}
             </Select>
           </FormControl>
 
           <TextField
-            label="Action"
+            label={t("action")}
             size="small"
             value={filterAction}
             onChange={(e) => setFilterAction(e.target.value)}
@@ -213,7 +215,7 @@ export default function AuditLogPage() {
           />
 
           <TextField
-            label="Date From"
+            label={t("dateFrom")}
             type="date"
             size="small"
             value={filterDateFrom}
@@ -223,7 +225,7 @@ export default function AuditLogPage() {
           />
 
           <TextField
-            label="Date To"
+            label={t("dateTo")}
             type="date"
             size="small"
             value={filterDateTo}
@@ -239,7 +241,7 @@ export default function AuditLogPage() {
             data-testid="apply-filters"
             onClick={handleApplyFilters}
           >
-            Apply
+            {t("apply")}
           </Button>
         </Stack>
       </Paper>
@@ -261,7 +263,7 @@ export default function AuditLogPage() {
       {/* Empty state */}
       {!loading && logs.length === 0 && !error && (
         <Box py={6} textAlign="center" data-testid="audit-empty">
-          <Typography color="text.secondary">No audit log entries found.</Typography>
+          <Typography color="text.secondary">{t("noEntriesFound")}</Typography>
         </Box>
       )}
 
@@ -271,11 +273,11 @@ export default function AuditLogPage() {
           <Table size="small" data-testid="audit-table">
             <TableHead>
               <TableRow>
-                <TableCell>Timestamp</TableCell>
-                <TableCell>User Email</TableCell>
-                <TableCell>Action</TableCell>
-                <TableCell>Entity</TableCell>
-                <TableCell>Entity ID</TableCell>
+                <TableCell>{t("colTimestamp")}</TableCell>
+                <TableCell>{t("colUserEmail")}</TableCell>
+                <TableCell>{t("colAction")}</TableCell>
+                <TableCell>{t("colEntity")}</TableCell>
+                <TableCell>{t("colEntityId")}</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -311,7 +313,7 @@ export default function AuditLogPage() {
             <ChevronLeft />
           </IconButton>
           <Typography variant="body2">
-            Page {page} of {totalPages}
+            {t("pageOf", { page, totalPages })}
           </Typography>
           <IconButton onClick={handleNext} disabled={!nextUrl} aria-label="next page">
             <ChevronRight />

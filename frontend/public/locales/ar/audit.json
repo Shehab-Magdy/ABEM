@@ -21,5 +21,22 @@
   "filter_by_action": "تصفية حسب الإجراء",
   "filter_by_entity": "تصفية حسب العنصر",
   "export_csv": "تصدير CSV",
-  "export_xlsx": "تصدير XLSX"
+  "export_xlsx": "تصدير XLSX",
+
+  "title": "سجل التدقيق",
+  "exportPaymentsCsv": "تصدير مدفوعات CSV",
+  "paymentsCsv": "مدفوعات CSV",
+  "exportExpensesCsv": "تصدير مصروفات CSV",
+  "expensesCsv": "مصروفات CSV",
+  "all": "الكل",
+  "dateFrom": "من تاريخ",
+  "dateTo": "إلى تاريخ",
+  "apply": "تطبيق",
+  "noEntriesFound": "لا توجد سجلات تدقيق.",
+  "colTimestamp": "التاريخ والوقت",
+  "colUserEmail": "بريد المستخدم",
+  "colAction": "الإجراء",
+  "colEntity": "العنصر",
+  "colEntityId": "معرّف العنصر",
+  "pageOf": "صفحة {{page}} من {{totalPages}}"
 }

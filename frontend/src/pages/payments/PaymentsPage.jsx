@@ -8,6 +8,7 @@
  * - Record Payment dialog (admin only)
  */
 import { useEffect, useState, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Alert,
   Box,
@@ -51,11 +52,11 @@ import { PrivateSEO } from "../../components/seo/SEO";
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
-const PAYMENT_METHODS = [
-  { value: "cash", label: "Cash" },
-  { value: "bank_transfer", label: "Bank Transfer" },
-  { value: "cheque", label: "Cheque" },
-  { value: "other", label: "Other" },
+const PAYMENT_METHOD_KEYS = [
+  { value: "cash", key: "methodCash" },
+  { value: "bank_transfer", key: "methodBankTransfer" },
+  { value: "cheque", key: "methodCheque" },
+  { value: "other", key: "methodOther" },
 ];
 
 const EMPTY_FORM = {
@@ -77,20 +78,22 @@ function balanceColor(balance) {
   return "error";              // owes money
 }
 
-function balanceLabel(balance) {
+function balanceLabel(balance, t) {
   const n = parseFloat(balance) || 0;
-  if (n === 0) return "Settled";
-  if (n < 0) return `Credit: ${Math.abs(n).toFixed(2)}`;
-  return `Owes: ${n.toFixed(2)}`;
+  if (n === 0) return t("balanceSettled");
+  if (n < 0) return `${t("balanceCredit")}: ${Math.abs(n).toFixed(2)}`;
+  return `${t("balanceOwes")}: ${n.toFixed(2)}`;
 }
 
-function methodLabel(method) {
-  return PAYMENT_METHODS.find((m) => m.value === method)?.label ?? method;
+function methodLabel(method, t) {
+  const found = PAYMENT_METHOD_KEYS.find((m) => m.value === method);
+  return found ? t(found.key) : method;
 }
 
 // ── Main component ─────────────────────────────────────────────────────────────
 
 export default function PaymentsPage() {
+  const { t } = useTranslation("payments");
   const { isAdmin } = useAuth();
 
   const [buildings, setBuildings] = useState([]);
@@ -220,7 +223,7 @@ export default function PaymentsPage() {
     try {
       await paymentsApi.create(payload);
       setDialogOpen(false);
-      setSnackbar({ open: true, message: "Payment recorded successfully.", severity: "success" });
+      setSnackbar({ open: true, message: t("paymentRecordedSuccess"), severity: "success" });
       await Promise.all([loadPayments(selectedApartment), loadBalance(selectedApartment)]);
     } catch (err) {
       const detail =
@@ -242,11 +245,11 @@ export default function PaymentsPage() {
       {/* Header */}
       <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
         <Typography variant="h5" fontWeight={600}>
-          Payments
+          {t("title")}
         </Typography>
         {isAdmin && selectedBuilding && (
           <Button variant="contained" startIcon={<AddIcon />} onClick={openCreate}>
-            Record Payment
+            {t("recordPayment")}
           </Button>
         )}
       </Stack>
@@ -255,9 +258,9 @@ export default function PaymentsPage() {
       <Paper sx={{ p: 2, mb: 2 }}>
         <Stack direction="row" spacing={2} flexWrap="wrap" alignItems="center">
           <FormControl size="small" sx={{ minWidth: 220 }}>
-            <InputLabel>Building</InputLabel>
+            <InputLabel>{t("building")}</InputLabel>
             <Select
-              label="Building"
+              label={t("building")}
               value={selectedBuilding}
               onChange={(e) => setSelectedBuilding(e.target.value)}
             >
@@ -268,9 +271,9 @@ export default function PaymentsPage() {
           </FormControl>
 
           <FormControl size="small" sx={{ minWidth: 220 }}>
-            <InputLabel>Apartment</InputLabel>
+            <InputLabel>{t("apartment")}</InputLabel>
             <Select
-              label="Apartment"
+              label={t("apartment")}
               value={selectedApartment}
               onChange={(e) => setSelectedApartment(e.target.value)}
               disabled={apartments.length === 0}
@@ -291,38 +294,38 @@ export default function PaymentsPage() {
           <CardContent>
             <Stack direction="row" alignItems="center" spacing={1} mb={1}>
               <BalanceIcon color="primary" />
-              <Typography variant="h6">Balance Summary</Typography>
+              <Typography variant="h6">{t("balanceSummary")}</Typography>
             </Stack>
             <Divider sx={{ mb: 1.5 }} />
             <Grid container spacing={2}>
               <Grid item xs={6} sm={3}>
-                <Typography variant="body2" color="text.secondary">Total Owed</Typography>
+                <Typography variant="body2" color="text.secondary">{t("totalOwed")}</Typography>
                 <Typography fontWeight={600}>
                   {parseFloat(balance.total_owed).toFixed(2)}
                 </Typography>
               </Grid>
               <Grid item xs={6} sm={3}>
-                <Typography variant="body2" color="text.secondary">Total Paid</Typography>
+                <Typography variant="body2" color="text.secondary">{t("totalPaid")}</Typography>
                 <Typography fontWeight={600}>
                   {parseFloat(balance.total_paid).toFixed(2)}
                 </Typography>
               </Grid>
               <Grid item xs={6} sm={3}>
-                <Typography variant="body2" color="text.secondary">Current Balance</Typography>
+                <Typography variant="body2" color="text.secondary">{t("currentBalance")}</Typography>
                 <Chip
-                  label={balanceLabel(balance.current_balance)}
+                  label={balanceLabel(balance.current_balance, t)}
                   color={balanceColor(balance.current_balance)}
                   size="small"
                 />
               </Grid>
               <Grid item xs={6} sm={3}>
-                <Typography variant="body2" color="text.secondary">Status</Typography>
+                <Typography variant="body2" color="text.secondary">{t("status")}</Typography>
                 <Typography variant="body2">
                   {balance.is_credit
-                    ? "Credit (Overpaid)"
+                    ? t("statusCreditOverpaid")
                     : parseFloat(balance.current_balance) === 0
-                    ? "Settled"
-                    : "Outstanding"}
+                    ? t("balanceSettled")
+                    : t("statusOutstanding")}
                 </Typography>
               </Grid>
             </Grid>
@@ -335,9 +338,16 @@ export default function PaymentsPage() {
         <Table size="small">
           <TableHead>
             <TableRow sx={{ backgroundColor: "primary.main" }}>
-              {["Date", "Amount", "Method", "Notes", "Balance After", "Receipt"].map((h) => (
-                <TableCell key={h} sx={{ color: "white", fontWeight: 600 }}>
-                  {h}
+              {[
+                { key: "colDate", label: t("colDate") },
+                { key: "colAmount", label: t("colAmount") },
+                { key: "colMethod", label: t("colMethod") },
+                { key: "colNotes", label: t("colNotes") },
+                { key: "colBalanceAfter", label: t("colBalanceAfter") },
+                { key: "colReceipt", label: t("colReceipt") },
+              ].map((h) => (
+                <TableCell key={h.key} sx={{ color: "white", fontWeight: 600 }}>
+                  {h.label}
                 </TableCell>
               ))}
             </TableRow>
@@ -353,8 +363,8 @@ export default function PaymentsPage() {
               <TableRow>
                 <TableCell colSpan={isAdmin ? 6 : 5} align="center" sx={{ py: 4, color: "text.secondary" }}>
                   {selectedApartment
-                    ? "No payment history for this apartment."
-                    : "Select an apartment to view payment history."}
+                    ? t("noPaymentHistory")
+                    : t("selectApartmentPrompt")}
                 </TableCell>
               </TableRow>
             ) : (
@@ -362,7 +372,7 @@ export default function PaymentsPage() {
                 <TableRow key={p.id} hover>
                   <TableCell>{p.payment_date}</TableCell>
                   <TableCell>{parseFloat(p.amount_paid).toFixed(2)}</TableCell>
-                  <TableCell>{methodLabel(p.payment_method)}</TableCell>
+                  <TableCell>{methodLabel(p.payment_method, t)}</TableCell>
                   <TableCell
                     sx={{
                       maxWidth: 200,
@@ -375,7 +385,7 @@ export default function PaymentsPage() {
                   </TableCell>
                   <TableCell>
                     <Chip
-                      label={balanceLabel(p.balance_after)}
+                      label={balanceLabel(p.balance_after, t)}
                       color={balanceColor(p.balance_after)}
                       size="small"
                     />
@@ -419,7 +429,7 @@ export default function PaymentsPage() {
                         }
                       }}
                     >
-                      {loadingReceipt === p.id ? "Generating…" : "Receipt"}
+                      {loadingReceipt === p.id ? t("generating") : t("colReceipt")}
                     </Button>
                   </TableCell>
                 </TableRow>
@@ -431,15 +441,15 @@ export default function PaymentsPage() {
 
       {/* Record Payment dialog */}
       <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>Record Payment</DialogTitle>
+        <DialogTitle>{t("recordPayment")}</DialogTitle>
         <DialogContent>
           <Stack spacing={2} sx={{ mt: 1 }}>
             {formError && <Alert severity="error">{formError}</Alert>}
 
             <FormControl fullWidth size="small" required>
-              <InputLabel>Unit / Payer *</InputLabel>
+              <InputLabel>{t("unitPayer")} *</InputLabel>
               <Select
-                label="Unit / Payer *"
+                label={`${t("unitPayer")} *`}
                 value={form.apartment_id}
                 onChange={(e) => handleFormChange("apartment_id", e.target.value)}
               >
@@ -453,7 +463,7 @@ export default function PaymentsPage() {
             </FormControl>
 
             <TextField
-              label="Amount Paid"
+              label={t("amountPaid")}
               type="number"
               inputProps={{ min: 0.01, step: 0.01 }}
               value={form.amount_paid}
@@ -469,7 +479,7 @@ export default function PaymentsPage() {
             />
 
             <TextField
-              label="Payment Date"
+              label={t("paymentDate")}
               type="date"
               value={form.payment_date}
               onChange={(e) => handleFormChange("payment_date", e.target.value)}
@@ -480,21 +490,21 @@ export default function PaymentsPage() {
             />
 
             <FormControl fullWidth size="small">
-              <InputLabel>Payment Method</InputLabel>
+              <InputLabel>{t("paymentMethod")}</InputLabel>
               <Select
-                label="Payment Method"
+                label={t("paymentMethod")}
                 value={form.payment_method}
                 onChange={(e) => handleFormChange("payment_method", e.target.value)}
               >
-                {PAYMENT_METHODS.map((m) => (
-                  <MenuItem key={m.value} value={m.value}>{m.label}</MenuItem>
+                {PAYMENT_METHOD_KEYS.map((m) => (
+                  <MenuItem key={m.value} value={m.value}>{t(m.key)}</MenuItem>
                 ))}
               </Select>
             </FormControl>
 
             {form.payment_method === "other" && (
               <TextField
-                label="Specify payment method *"
+                label={`${t("specifyPaymentMethod")} *`}
                 placeholder="e.g. Mobile Wallet, Instalment…"
                 value={form.other_method_detail}
                 onChange={(e) => handleFormChange("other_method_detail", e.target.value)}
@@ -505,16 +515,16 @@ export default function PaymentsPage() {
             )}
 
             <FormControl fullWidth size="small">
-              <InputLabel>Expenses (optional)</InputLabel>
+              <InputLabel>{t("expensesOptional")}</InputLabel>
               <Select
-                label="Expenses (optional)"
+                label={t("expensesOptional")}
                 multiple
                 value={form.expense_ids}
                 onChange={(e) => handleFormChange("expense_ids", e.target.value)}
-                input={<OutlinedInput label="Expenses (optional)" />}
+                input={<OutlinedInput label={t("expensesOptional")} />}
                 renderValue={(selected) =>
                   selected.length === 0
-                    ? <em>General payment</em>
+                    ? <em>{t("generalPayment")}</em>
                     : selected.map((id) => {
                         const exp = dialogExpenses.find((e) => e.id === id);
                         return exp ? exp.title : id;
@@ -531,18 +541,18 @@ export default function PaymentsPage() {
                   </MenuItem>
                 ))}
                 {dialogExpenses.length === 0 && (
-                  <MenuItem disabled><em>No expenses for this building</em></MenuItem>
+                  <MenuItem disabled><em>{t("noExpensesForBuilding")}</em></MenuItem>
                 )}
               </Select>
               {form.expense_ids.length === 0 && (
                 <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, ml: 1.5 }}>
-                  No selection = general payment
+                  {t("noSelectionGeneralPayment")}
                 </Typography>
               )}
             </FormControl>
 
             <TextField
-              label="Notes"
+              label={t("notes")}
               multiline
               rows={2}
               value={form.notes}
@@ -554,14 +564,14 @@ export default function PaymentsPage() {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setDialogOpen(false)} disabled={saving}>
-            Cancel
+            {t("cancel")}
           </Button>
           <Button
             variant="contained"
             onClick={handleSubmit}
             disabled={saving || !form.amount_paid || !form.payment_date || !form.apartment_id || (form.payment_method === "other" && !form.other_method_detail)}
           >
-            {saving ? <CircularProgress size={18} /> : "Record"}
+            {saving ? <CircularProgress size={18} /> : t("record")}
           </Button>
         </DialogActions>
       </Dialog>

@@ -19,5 +19,25 @@
   "select_recipients": "Select recipients",
   "message_sent": "Message sent successfully",
   "all_members": "All building members",
-  "specific_members": "Specific members"
+  "specific_members": "Specific members",
+
+  "title": "Notifications",
+  "sendMessage": "Send Message",
+  "building": "Building",
+  "recipients": "Recipients",
+  "allMembers": "All members",
+  "adminsOnly": "Admins only",
+  "ownersOnly": "Owners only",
+  "specificPerson": "Specific person",
+  "selectRecipients": "Select recipient(s)",
+  "subject": "Subject",
+  "message": "Message",
+  "broadcastAnnouncement": "Broadcast Announcement",
+  "sendBroadcast": "Send Broadcast",
+  "yourNotifications": "Your Notifications",
+  "all": "All",
+  "unread": "Unread",
+  "noNotificationsYet": "No notifications yet.",
+  "new": "New",
+  "markAsRead": "Mark as Read"
 }

@@ -6,6 +6,7 @@
  * All authenticated users can send messages to building members.
  */
 import { useEffect, useState, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Alert,
   Box,
@@ -106,6 +107,7 @@ function SectionHeader({ icon, title, badge, open, onToggle, accent }) {
 // ── Main component ─────────────────────────────────────────────────────────
 
 export default function NotificationCenterPage() {
+  const { t } = useTranslation("notifications");
   const { isAdmin } = useAuth();
   const [notifications, setNotifications] = useState([]);
   const [filter, setFilter] = useState("all");
@@ -235,7 +237,7 @@ export default function NotificationCenterPage() {
       <PrivateSEO title="ABEM – Notifications" />
       <Box sx={{ p: 3, maxWidth: 1200 }}>
       <Typography variant="h4" fontWeight={700} sx={{ mb: 3 }}>
-        Notifications
+        {t("title")}
       </Typography>
 
       {/* ── Top compose row ── */}
@@ -258,7 +260,7 @@ export default function NotificationCenterPage() {
         >
           <SectionHeader
             icon={<Send fontSize="small" />}
-            title="Send Message"
+            title={t("sendMessage")}
             open={sendOpen}
             onToggle={() => setSendOpen((p) => !p)}
             accent="#6366F1"
@@ -269,10 +271,10 @@ export default function NotificationCenterPage() {
             <CardContent sx={{ pt: 2 }}>
               <Stack spacing={2}>
                 <FormControl size="small" fullWidth>
-                  <InputLabel>Building</InputLabel>
+                  <InputLabel>{t("building")}</InputLabel>
                   <Select
                     value={sendBuilding}
-                    label="Building"
+                    label={t("building")}
                     onChange={(e) => {
                       setSendBuilding(e.target.value);
                       setSelectedMembers([]);
@@ -285,29 +287,29 @@ export default function NotificationCenterPage() {
                 </FormControl>
 
                 <FormControl size="small" fullWidth>
-                  <InputLabel>Recipients</InputLabel>
+                  <InputLabel>{t("recipients")}</InputLabel>
                   <Select
                     value={sendRecipientType}
-                    label="Recipients"
+                    label={t("recipients")}
                     onChange={(e) => {
                       setSendRecipientType(e.target.value);
                       setSelectedMembers([]);
                     }}
                   >
-                    <MenuItem value="all">All members</MenuItem>
-                    <MenuItem value="admins">Admins only</MenuItem>
-                    <MenuItem value="owners">Owners only</MenuItem>
-                    <MenuItem value="individual">Specific person</MenuItem>
+                    <MenuItem value="all">{t("allMembers")}</MenuItem>
+                    <MenuItem value="admins">{t("adminsOnly")}</MenuItem>
+                    <MenuItem value="owners">{t("ownersOnly")}</MenuItem>
+                    <MenuItem value="individual">{t("specificPerson")}</MenuItem>
                   </Select>
                 </FormControl>
 
                 {sendRecipientType === "individual" && buildingMembers.length > 0 && (
                   <FormControl size="small" fullWidth>
-                    <InputLabel>Select recipient(s)</InputLabel>
+                    <InputLabel>{t("selectRecipients")}</InputLabel>
                     <Select
                       multiple
                       value={selectedMembers}
-                      label="Select recipient(s)"
+                      label={t("selectRecipients")}
                       onChange={(e) => setSelectedMembers(e.target.value)}
                       renderValue={(selected) =>
                         buildingMembers
@@ -327,14 +329,14 @@ export default function NotificationCenterPage() {
 
                 <TextField
                   size="small"
-                  label="Subject"
+                  label={t("subject")}
                   value={sendTitle}
                   onChange={(e) => setSendTitle(e.target.value)}
                   fullWidth
                 />
                 <TextField
                   size="small"
-                  label="Message"
+                  label={t("message")}
                   value={sendMessage}
                   onChange={(e) => setSendMessage(e.target.value)}
                   multiline
@@ -358,7 +360,7 @@ export default function NotificationCenterPage() {
                     fontWeight: 600,
                   }}
                 >
-                  {sendingMsg ? <CircularProgress size={20} color="inherit" /> : "Send Message"}
+                  {sendingMsg ? <CircularProgress size={20} color="inherit" /> : t("sendMessage")}
                 </Button>
                 {sendStatus && (
                   <Alert severity={sendStatus.startsWith("Message sent") ? "success" : "error"}>
@@ -382,7 +384,7 @@ export default function NotificationCenterPage() {
           >
             <SectionHeader
               icon={<Campaign fontSize="small" />}
-              title="Broadcast Announcement"
+              title={t("broadcastAnnouncement")}
               open={broadcastOpen}
               onToggle={() => setBroadcastOpen((p) => !p)}
               accent="#F59E0B"
@@ -394,10 +396,10 @@ export default function NotificationCenterPage() {
               <CardContent sx={{ pt: 2 }} data-testid="broadcast-form">
                 <Stack spacing={2}>
                   <FormControl size="small" fullWidth>
-                    <InputLabel>Building</InputLabel>
+                    <InputLabel>{t("building")}</InputLabel>
                     <Select
                       value={broadcastBuilding}
-                      label="Building"
+                      label={t("building")}
                       onChange={(e) => setBroadcastBuilding(e.target.value)}
                       inputProps={{ "data-testid": "broadcast-building" }}
                     >
@@ -410,7 +412,7 @@ export default function NotificationCenterPage() {
                   </FormControl>
                   <TextField
                     size="small"
-                    label="Subject"
+                    label={t("subject")}
                     value={broadcastSubject}
                     onChange={(e) => setBroadcastSubject(e.target.value)}
                     inputProps={{ "data-testid": "broadcast-subject" }}
@@ -418,7 +420,7 @@ export default function NotificationCenterPage() {
                   />
                   <TextField
                     size="small"
-                    label="Message"
+                    label={t("message")}
                     value={broadcastMessage}
                     onChange={(e) => setBroadcastMessage(e.target.value)}
                     inputProps={{ "data-testid": "broadcast-message" }}
@@ -439,7 +441,7 @@ export default function NotificationCenterPage() {
                       fontWeight: 600,
                     }}
                   >
-                    Send Broadcast
+                    {t("sendBroadcast")}
                   </Button>
                   {broadcastStatus && (
                     <Alert
@@ -467,7 +469,7 @@ export default function NotificationCenterPage() {
       >
         <SectionHeader
           icon={<NotificationsIcon fontSize="small" />}
-          title="Your Notifications"
+          title={t("yourNotifications")}
           badge={unreadCount}
           open={notifOpen}
           onToggle={() => setNotifOpen((p) => !p)}
@@ -480,7 +482,7 @@ export default function NotificationCenterPage() {
             {/* Filter chips */}
             <Stack direction="row" spacing={1} sx={{ mb: 2 }}>
               <Chip
-                label="All"
+                label={t("all")}
                 onClick={() => setFilter("all")}
                 color={filter === "all" ? "primary" : "default"}
                 variant={filter === "all" ? "filled" : "outlined"}
@@ -488,7 +490,7 @@ export default function NotificationCenterPage() {
                 data-testid="filter-all"
               />
               <Chip
-                label="Unread"
+                label={t("unread")}
                 onClick={() => setFilter("unread")}
                 color={filter === "unread" ? "primary" : "default"}
                 variant={filter === "unread" ? "filled" : "outlined"}
@@ -509,7 +511,7 @@ export default function NotificationCenterPage() {
               </Box>
             ) : notifications.length === 0 ? (
               <Alert severity="info" data-testid="empty-notifications">
-                No notifications yet.
+                {t("noNotificationsYet")}
               </Alert>
             ) : (
               <Stack id="notifications-list" spacing={1.5} data-testid="notification-list">
@@ -542,7 +544,7 @@ export default function NotificationCenterPage() {
                             data-testid="notification-type-chip"
                           />
                           {!n.is_read && (
-                            <Chip label="New" size="small" color="primary" variant="outlined" />
+                            <Chip label={t("new")} size="small" color="primary" variant="outlined" />
                           )}
                         </Box>
                         <Typography variant="subtitle2" fontWeight={600}>
@@ -569,7 +571,7 @@ export default function NotificationCenterPage() {
                           onClick={() => handleMarkRead(n.id)}
                           data-testid="mark-read-btn"
                         >
-                          Mark as Read
+                          {t("markAsRead")}
                         </Button>
                       )}
                     </CardContent>

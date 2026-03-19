@@ -19,5 +19,25 @@
   "select_recipients": "اختر المستلمين",
   "message_sent": "تم إرسال الرسالة بنجاح",
   "all_members": "جميع أعضاء المبنى",
-  "specific_members": "أعضاء محددين"
+  "specific_members": "أعضاء محددين",
+
+  "title": "الإشعارات",
+  "sendMessage": "إرسال رسالة",
+  "building": "المبنى",
+  "recipients": "المستلمون",
+  "allMembers": "جميع الأعضاء",
+  "adminsOnly": "المديرون فقط",
+  "ownersOnly": "الملاك فقط",
+  "specificPerson": "شخص محدد",
+  "selectRecipients": "اختر المستلمين",
+  "subject": "الموضوع",
+  "message": "الرسالة",
+  "broadcastAnnouncement": "إشعار عام",
+  "sendBroadcast": "إرسال إشعار للجميع",
+  "yourNotifications": "إشعاراتك",
+  "all": "الكل",
+  "unread": "غير مقروء",
+  "noNotificationsYet": "لا توجد إشعارات بعد.",
+  "new": "جديد",
+  "markAsRead": "تحديد كمقروء"
 }

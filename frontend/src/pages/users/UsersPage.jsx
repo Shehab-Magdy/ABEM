@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Alert,
   Box,
@@ -48,6 +49,7 @@ function formatApiError(data) {
 }
 
 export default function UsersPage() {
+  const { t } = useTranslation("users");
   const [rows, setRows] = useState([]);
   const [rowCount, setRowCount] = useState(0);
   const [paginationModel, setPaginationModel] = useState({ page: 0, pageSize: 20 });
@@ -170,21 +172,21 @@ export default function UsersPage() {
 
   // ── DataGrid columns ────────────────────────────────────────────────────────
   const columns = [
-    { field: "email", headerName: "Email", flex: 1.5, minWidth: 200 },
+    { field: "email", headerName: t("colEmail"), flex: 1.5, minWidth: 200 },
     {
       field: "full_name",
-      headerName: "Name",
+      headerName: t("colName"),
       flex: 1,
       minWidth: 150,
       valueGetter: (_, row) => `${row.first_name} ${row.last_name}`,
     },
     {
       field: "role",
-      headerName: "Role",
+      headerName: t("colRole"),
       width: 110,
       renderCell: ({ value }) => (
         <Chip
-          label={value}
+          label={value === "admin" ? t("roleAdmin") : t("roleOwner")}
           size="small"
           color={value === "admin" ? "primary" : "default"}
         />
@@ -192,11 +194,11 @@ export default function UsersPage() {
     },
     {
       field: "is_active",
-      headerName: "Status",
+      headerName: t("colStatus"),
       width: 110,
       renderCell: ({ value }) => (
         <Chip
-          label={value ? "Active" : "Inactive"}
+          label={value ? t("statusActive") : t("statusInactive")}
           size="small"
           color={value ? "success" : "error"}
         />
@@ -204,18 +206,18 @@ export default function UsersPage() {
     },
     {
       field: "created_at",
-      headerName: "Created",
+      headerName: t("colCreated"),
       width: 140,
       valueFormatter: (value) => new Date(value).toLocaleDateString(),
     },
     {
       field: "actions",
-      headerName: "Actions",
+      headerName: t("colActions"),
       width: 160,
       sortable: false,
       renderCell: ({ row }) => (
         <Stack direction="row" spacing={0.5}>
-          <Tooltip title={row.is_active ? "Deactivate" : "Activate"}>
+          <Tooltip title={row.is_active ? t("deactivate") : t("activate")}>
             <IconButton size="small" onClick={() => toggleActive(row)}>
               {row.is_active ? (
                 <Block fontSize="small" color="error" />
@@ -224,12 +226,12 @@ export default function UsersPage() {
               )}
             </IconButton>
           </Tooltip>
-          <Tooltip title="Reset password">
+          <Tooltip title={t("resetPassword")}>
             <IconButton size="small" onClick={() => { setResetTarget(row); setResetError(null); }}>
               <LockReset fontSize="small" color="warning" />
             </IconButton>
           </Tooltip>
-          <Tooltip title="Messaging restrictions">
+          <Tooltip title={t("messagingRestrictions")}>
             <IconButton
               size="small"
               onClick={() => openMsgDialog(row)}
@@ -248,9 +250,9 @@ export default function UsersPage() {
       <PrivateSEO title="ABEM – Users" />
       <Box>
       <Stack direction="row" justifyContent="space-between" alignItems="center" mb={3}>
-        <Typography variant="h5">User Management</Typography>
+        <Typography variant="h5">{t("title")}</Typography>
         <Button id="add-user-btn" variant="contained" startIcon={<Add />} onClick={() => { setCreateOpen(true); setCreateError(null); }}>
-          New User
+          {t("newUser")}
         </Button>
       </Stack>
 
@@ -272,7 +274,7 @@ export default function UsersPage() {
 
       {/* Create User Dialog */}
       <Dialog open={createOpen} onClose={() => setCreateOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>Create New User</DialogTitle>
+        <DialogTitle>{t("createNewUser")}</DialogTitle>
         <Box component="form" onSubmit={createForm.handleSubmit(onCreateUser)}>
           <DialogContent>
             {createError && (
@@ -282,21 +284,21 @@ export default function UsersPage() {
             )}
             <Stack spacing={2}>
               <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
-                <TextField label="First name" fullWidth required {...createForm.register("first_name", { required: true })} />
-                <TextField label="Last name" fullWidth required {...createForm.register("last_name", { required: true })} />
+                <TextField label={t("firstName")} fullWidth required {...createForm.register("first_name", { required: true })} />
+                <TextField label={t("lastName")} fullWidth required {...createForm.register("last_name", { required: true })} />
               </Stack>
-              <TextField label="Email" type="email" fullWidth required {...createForm.register("email", { required: true })} />
-              <TextField label="Phone" fullWidth {...createForm.register("phone")} />
-              <TextField label="Role" select fullWidth defaultValue="owner" {...createForm.register("role")}>
-                {ROLES.map((r) => <MenuItem key={r} value={r}>{r.charAt(0).toUpperCase() + r.slice(1)}</MenuItem>)}
+              <TextField label={t("colEmail")} type="email" fullWidth required {...createForm.register("email", { required: true })} />
+              <TextField label={t("phone")} fullWidth {...createForm.register("phone")} />
+              <TextField label={t("colRole")} select fullWidth defaultValue="owner" {...createForm.register("role")}>
+                {ROLES.map((r) => <MenuItem key={r} value={r}>{r === "admin" ? t("roleAdmin") : t("roleOwner")}</MenuItem>)}
               </TextField>
-              <TextField label="Password" type="password" fullWidth required {...createForm.register("password", { required: true })} />
+              <TextField label={t("password")} type="password" fullWidth required {...createForm.register("password", { required: true })} />
             </Stack>
           </DialogContent>
           <DialogActions sx={{ px: 3, pb: 2 }}>
-            <Button onClick={() => setCreateOpen(false)}>Cancel</Button>
+            <Button onClick={() => setCreateOpen(false)}>{t("cancel")}</Button>
             <Button type="submit" variant="contained" disabled={creating}>
-              {creating ? "Creating…" : "Create"}
+              {creating ? t("creating") : t("create")}
             </Button>
           </DialogActions>
         </Box>
@@ -304,19 +306,19 @@ export default function UsersPage() {
 
       {/* Reset Password Dialog */}
       <Dialog open={!!resetTarget} onClose={() => setResetTarget(null)} maxWidth="xs" fullWidth>
-        <DialogTitle>Reset Password — {resetTarget?.email}</DialogTitle>
+        <DialogTitle>{t("resetPassword")} — {resetTarget?.email}</DialogTitle>
         <Box component="form" onSubmit={resetForm.handleSubmit(onResetPassword)}>
           <DialogContent>
             {resetError && <Alert severity="error" sx={{ mb: 2 }}>{resetError}</Alert>}
             <Stack spacing={2}>
-              <TextField label="New password" type="password" fullWidth required {...resetForm.register("new_password", { required: true })} />
-              <TextField label="Confirm password" type="password" fullWidth required {...resetForm.register("confirm_password", { required: true })} />
+              <TextField label={t("newPassword")} type="password" fullWidth required {...resetForm.register("new_password", { required: true })} />
+              <TextField label={t("confirmPassword")} type="password" fullWidth required {...resetForm.register("confirm_password", { required: true })} />
             </Stack>
           </DialogContent>
           <DialogActions sx={{ px: 3, pb: 2 }}>
-            <Button onClick={() => setResetTarget(null)}>Cancel</Button>
+            <Button onClick={() => setResetTarget(null)}>{t("cancel")}</Button>
             <Button type="submit" variant="contained" color="warning" disabled={resetting}>
-              {resetting ? "Resetting…" : "Reset"}
+              {resetting ? t("resetting") : t("reset")}
             </Button>
           </DialogActions>
         </Box>
@@ -324,7 +326,7 @@ export default function UsersPage() {
 
       {/* Messaging Restrictions Dialog */}
       <Dialog open={!!msgTarget} onClose={() => setMsgTarget(null)} maxWidth="xs" fullWidth>
-        <DialogTitle>Messaging Restrictions — {msgTarget?.email}</DialogTitle>
+        <DialogTitle>{t("messagingRestrictions")} — {msgTarget?.email}</DialogTitle>
         <DialogContent>
           {msgError && <Alert severity="error" sx={{ mb: 2 }}>{msgError}</Alert>}
           <Stack spacing={1} sx={{ mt: 1 }}>
@@ -339,7 +341,7 @@ export default function UsersPage() {
                   color="error"
                 />
               }
-              label="Block all messaging"
+              label={t("blockAllMessaging")}
             />
             <FormControlLabel
               control={
@@ -350,14 +352,14 @@ export default function UsersPage() {
                   color="warning"
                 />
               }
-              label="Block individual (direct) messages only"
+              label={t("blockIndividualMessages")}
             />
           </Stack>
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button onClick={() => setMsgTarget(null)}>Cancel</Button>
+          <Button onClick={() => setMsgTarget(null)}>{t("cancel")}</Button>
           <Button variant="contained" color="error" disabled={msgSaving} onClick={saveMsgRestrictions}>
-            {msgSaving ? "Saving…" : "Save"}
+            {msgSaving ? t("saving") : t("save")}
           </Button>
         </DialogActions>
       </Dialog>

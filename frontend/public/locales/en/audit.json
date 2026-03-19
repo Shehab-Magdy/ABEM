@@ -21,5 +21,22 @@
   "filter_by_action": "Filter by action",
   "filter_by_entity": "Filter by entity",
   "export_csv": "Export CSV",
-  "export_xlsx": "Export XLSX"
+  "export_xlsx": "Export XLSX",
+
+  "title": "Audit Log",
+  "exportPaymentsCsv": "Export Payments CSV",
+  "paymentsCsv": "Payments CSV",
+  "exportExpensesCsv": "Export Expenses CSV",
+  "expensesCsv": "Expenses CSV",
+  "all": "All",
+  "dateFrom": "Date From",
+  "dateTo": "Date To",
+  "apply": "Apply",
+  "noEntriesFound": "No audit log entries found.",
+  "colTimestamp": "Timestamp",
+  "colUserEmail": "User Email",
+  "colAction": "Action",
+  "colEntity": "Entity",
+  "colEntityId": "Entity ID",
+  "pageOf": "Page {{page}} of {{totalPages}}"
 }
