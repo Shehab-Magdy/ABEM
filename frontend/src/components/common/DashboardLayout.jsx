@@ -41,10 +41,10 @@ import { useAuth } from "../../hooks/useAuth";
 import { authApi } from "../../api/authApi";
 import { useAuthStore } from "../../contexts/authStore";
 import { usePreferredLanguage } from "../../hooks/usePreferredLanguage";
-import { useDirection } from "../../hooks/useDirection";
 import axiosClient from "../../api/axiosClient";
 import { TutorialButton } from "../../tutorial/TutorialOverlay";
 import LanguageSwitcher from "../LanguageSwitcher";
+import Footer from "./Footer";
 
 const DRAWER_WIDTH = 240;
 
@@ -95,8 +95,7 @@ function NavSection({ title, items, currentPath }) {
 export default function DashboardLayout() {
   const { user, isAdmin } = useAuth();
   const { logout, refreshToken } = useAuthStore();
-  const { t } = useTranslation(["common"]);
-  const dir = useDirection();
+  const { t, i18n } = useTranslation(["common", "auth"]);
   const location = useLocation();
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -105,6 +104,9 @@ export default function DashboardLayout() {
 
   // Sync language from user preference on mount
   usePreferredLanguage();
+
+  // Derive direction from current language — reactive on language change
+  const dir = i18n.language === "ar" ? "rtl" : "ltr";
 
   useEffect(() => {
     axiosClient
@@ -128,21 +130,21 @@ export default function DashboardLayout() {
   };
 
   const mainItems = [
-    { to: "/dashboard", icon: <Assessment />, label: "Dashboard", show: true },
-    { to: "/buildings", icon: <Business />, label: "Buildings", show: isAdmin },
-    { to: "/expenses", icon: <Apartment />, label: "Expenses", show: true },
-    { to: "/payments", icon: <Payment />, label: "Payments", show: true },
-    { to: "/notifications", icon: <Notifications />, label: "Notifications", show: true },
+    { to: "/dashboard", icon: <Assessment />, label: t("common:dashboard", "Dashboard"), show: true },
+    { to: "/buildings", icon: <Business />, label: t("common:buildings", "Buildings"), show: isAdmin },
+    { to: "/expenses", icon: <Apartment />, label: t("common:expenses", "Expenses"), show: true },
+    { to: "/payments", icon: <Payment />, label: t("common:payments", "Payments"), show: true },
+    { to: "/notifications", icon: <Notifications />, label: t("common:notifications", "Notifications"), show: true },
   ].filter((i) => i.show);
 
   const adminItems = [
-    { to: "/users", icon: <People />, label: "Users", show: isAdmin },
-    { to: "/expense-categories", icon: <Category />, label: "Categories", show: isAdmin },
-    { to: "/assets", icon: <AccountBalance />, label: "Assets", show: isAdmin },
+    { to: "/users", icon: <People />, label: t("common:users", "Users"), show: isAdmin },
+    { to: "/expense-categories", icon: <Category />, label: t("common:categories", "Categories"), show: isAdmin },
+    { to: "/assets", icon: <AccountBalance />, label: t("common:assets", "Assets"), show: isAdmin },
   ].filter((i) => i.show);
 
   const accountItems = [
-    { to: "/profile", icon: <AccountCircle />, label: "Profile", show: true },
+    { to: "/profile", icon: <AccountCircle />, label: t("common:profile", "Profile"), show: true },
   ];
 
   const drawer = (
@@ -150,23 +152,23 @@ export default function DashboardLayout() {
       <Box sx={{ p: 2.5, pb: 2 }}>
         <Box component="img" src="/abem-logo-dark.svg" alt="ABEM" sx={{ height: 36, mb: 0.5 }} />
         <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.6)", display: "block" }}>
-          Building Expense Manager
+          {t("auth:apartment_building_expense")}
         </Typography>
       </Box>
       <Divider sx={{ borderColor: "rgba(255,255,255,0.12)" }} />
 
       <Box sx={{ flex: 1, overflowY: "auto", pt: 0.5 }}>
-        <NavSection title="Main" items={mainItems} currentPath={location.pathname} />
+        <NavSection title={t("common:main_section", "Main")} items={mainItems} currentPath={location.pathname} />
 
         {adminItems.length > 0 && (
           <>
             <Divider sx={{ borderColor: "rgba(255,255,255,0.08)", mx: 2, my: 0.5 }} />
-            <NavSection title="Admin" items={adminItems} currentPath={location.pathname} />
+            <NavSection title={t("common:admin_section", "Admin")} items={adminItems} currentPath={location.pathname} />
           </>
         )}
 
         <Divider sx={{ borderColor: "rgba(255,255,255,0.08)", mx: 2, my: 0.5 }} />
-        <NavSection title="Account" items={accountItems} currentPath={location.pathname} />
+        <NavSection title={t("common:account_section", "Account")} items={accountItems} currentPath={location.pathname} />
       </Box>
     </Box>
   );
@@ -206,11 +208,11 @@ export default function DashboardLayout() {
             <Box flex={1} />
             <TutorialButton />
             <LanguageSwitcher />
-            <Tooltip title={t("common:filter") === "تصفية" ? "الإشعارات" : "Notifications"}>
+            <Tooltip title={t("common:notifications")}>
               <IconButton
                 color="inherit"
                 onClick={() => navigate("/notifications")}
-                aria-label="notifications"
+                aria-label={t("common:notifications")}
                 data-testid="notification-bell"
                 sx={{ mr: 1 }}
               >
@@ -219,7 +221,7 @@ export default function DashboardLayout() {
                 </Badge>
               </IconButton>
             </Tooltip>
-            <Tooltip title="Account">
+            <Tooltip title={t("common:account_section")}>
               <IconButton onClick={(e) => setAnchorEl(e.currentTarget)} size="small">
                 <Avatar
                   src={user?.profile_picture || undefined}
@@ -242,19 +244,22 @@ export default function DashboardLayout() {
               <Divider />
               <MenuItem component={Link} to="/profile" onClick={() => setAnchorEl(null)}>
                 <AccountCircle fontSize="small" sx={{ mr: 1 }} />
-                My Profile
+                {t("common:profile")}
               </MenuItem>
               <MenuItem onClick={handleLogout} sx={{ color: "error.main" }}>
                 <ExitToApp fontSize="small" sx={{ mr: 1 }} />
-                Sign Out
+                {t("auth:sign_out")}
               </MenuItem>
             </Menu>
           </Toolbar>
         </AppBar>
 
         {/* Page content */}
-        <Box component="main" sx={{ flex: 1, overflow: "auto", p: 3, bgcolor: "background.default" }}>
-          <Outlet />
+        <Box component="main" sx={{ flex: 1, overflow: "auto", bgcolor: "background.default", display: "flex", flexDirection: "column" }}>
+          <Box sx={{ flex: 1, p: 3 }}>
+            <Outlet />
+          </Box>
+          <Footer />
         </Box>
       </Box>
     </Box>

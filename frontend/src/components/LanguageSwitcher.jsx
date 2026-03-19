@@ -1,6 +1,6 @@
 /**
  * Compact language toggle: EN ↔ AR
- * Placed in the AppHeader between Tutorial button and notification bell.
+ * Placed in the AppHeader and on public auth pages.
  */
 import { useTranslation } from "react-i18next";
 import { IconButton, Tooltip, Typography } from "@mui/material";
@@ -9,7 +9,7 @@ import { useAuthStore } from "../contexts/authStore";
 import { authApi } from "../api/authApi";
 
 export default function LanguageSwitcher() {
-  const { i18n, t } = useTranslation();
+  const { i18n, t } = useTranslation("common");
   const user = useAuthStore((s) => s.user);
 
   const currentLang = i18n.language === "ar" ? "ar" : "en";
@@ -30,11 +30,11 @@ export default function LanguageSwitcher() {
   };
 
   return (
-    <Tooltip title={t("common:filter") === "تصفية" ? "تغيير اللغة" : "Change language"}>
+    <Tooltip title={t("change_language")}>
       <IconButton
         onClick={handleSwitch}
         size="small"
-        aria-label={currentLang === "ar" ? "تغيير اللغة" : "Change language"}
+        aria-label={t("change_language")}
         sx={{ mx: 0.5 }}
       >
         <Translate sx={{ fontSize: 18, mr: 0.3 }} />
