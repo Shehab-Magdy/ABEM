@@ -40,6 +40,7 @@ import {
   Typography,
 } from "@mui/material";
 import { Add, Delete, Visibility, VisibilityOff } from "@mui/icons-material";
+import { useTranslation } from "react-i18next";
 import { authApi } from "../../api/authApi";
 import { buildingsApi } from "../../api/buildingsApi";
 import { apartmentsApi } from "../../api/apartmentsApi";
@@ -52,6 +53,7 @@ const STEPS_OWNER = ["Account", "Your Unit", "Done"];
 // ── Step 1: Account ────────────────────────────────────────────────────────────
 
 function AccountStep({ onDone, prefillEmail }) {
+  const { t } = useTranslation("auth");
   const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -96,21 +98,21 @@ function AccountStep({ onDone, prefillEmail }) {
       <Stack spacing={2.5}>
         {error && <Alert severity="error">{error}</Alert>}
         <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
-          <TextField label="First name *" fullWidth autoFocus
+          <TextField label={t("first_name")} fullWidth autoFocus
             error={!!errors.first_name} helperText={errors.first_name?.message}
             {...register("first_name", { required: "Required." })} />
-          <TextField label="Last name *" fullWidth
+          <TextField label={t("last_name")} fullWidth
             error={!!errors.last_name} helperText={errors.last_name?.message}
             {...register("last_name", { required: "Required." })} />
         </Stack>
-        <TextField label="Email address *" type="email" fullWidth
+        <TextField label={t("email_address")} type="email" fullWidth
           error={!!errors.email} helperText={errors.email?.message}
           {...register("email", {
             required: "Required.",
             pattern: { value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: "Invalid email." },
           })} />
         <TextField
-          label="Phone (optional)"
+          label={t("phone_optional")}
           type="tel"
           fullWidth
           error={!!errors.phone}
@@ -122,7 +124,7 @@ function AccountStep({ onDone, prefillEmail }) {
             },
           })}
         />
-        <TextField label="Password *" type={showPw ? "text" : "password"} fullWidth
+        <TextField label={t("password")} type={showPw ? "text" : "password"} fullWidth
           error={!!errors.password}
           helperText={errors.password?.message || "Min 8 chars, 1 uppercase, 1 digit, 1 special char."}
           InputProps={{
@@ -135,32 +137,32 @@ function AccountStep({ onDone, prefillEmail }) {
             ),
           }}
           {...register("password", { required: "Required." })} />
-        <TextField label="Confirm password *" type={showPw ? "text" : "password"} fullWidth
+        <TextField label={t("confirm_password")} type={showPw ? "text" : "password"} fullWidth
           error={!!errors.confirm_password} helperText={errors.confirm_password?.message}
           {...register("confirm_password", {
             required: "Required.",
             validate: (v) => v === password || "Passwords do not match.",
           })} />
         <FormControl component="fieldset">
-          <FormLabel>I am a…</FormLabel>
+          <FormLabel>{t("i_am_a")}</FormLabel>
           <Controller
             name="role"
             control={control}
             defaultValue="owner"
             render={({ field }) => (
               <RadioGroup row {...field}>
-                <FormControlLabel value="owner" control={<Radio />} label="Owner (apartment / tenant)" />
-                <FormControlLabel value="admin" control={<Radio />} label="Admin (building manager)" />
+                <FormControlLabel value="owner" control={<Radio />} label={t("owner_role_label")} />
+                <FormControlLabel value="admin" control={<Radio />} label={t("admin_role_label")} />
               </RadioGroup>
             )}
           />
         </FormControl>
         <Button type="submit" variant="contained" size="large" fullWidth disabled={loading}>
-          {loading ? <CircularProgress size={24} color="inherit" /> : "Continue"}
+          {loading ? <CircularProgress size={24} color="inherit" /> : t("continue")}
         </Button>
         <Typography variant="body2" align="center" color="text.secondary">
-          Already have an account?{" "}
-          <Link component={RouterLink} to="/login" underline="hover">Sign in</Link>
+          {t("already_have_account")}{" "}
+          <Link component={RouterLink} to="/login" underline="hover">{t("sign_in_link")}</Link>
         </Typography>
       </Stack>
     </Box>
@@ -170,6 +172,7 @@ function AccountStep({ onDone, prefillEmail }) {
 // ── Step 2 Admin: Add buildings ────────────────────────────────────────────────
 
 function AdminBuildingsStep({ onDone, onSkip }) {
+  const { t } = useTranslation("auth");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
   const { control, register, handleSubmit, formState: { errors } } = useForm({
@@ -228,28 +231,28 @@ function AdminBuildingsStep({ onDone, onSkip }) {
               )}
             </Stack>
             <Stack spacing={2}>
-              <TextField label="Name *" fullWidth size="small"
+              <TextField label={t("buildings:building_name")} fullWidth size="small"
                 error={!!errors.buildings?.[idx]?.name} helperText={errors.buildings?.[idx]?.name?.message}
                 {...register(`buildings.${idx}.name`, { required: "Required." })} />
-              <TextField label="Address *" fullWidth size="small"
+              <TextField label={t("buildings:address")} fullWidth size="small"
                 error={!!errors.buildings?.[idx]?.address} helperText={errors.buildings?.[idx]?.address?.message}
                 {...register(`buildings.${idx}.address`, { required: "Required." })} />
               <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
-                <TextField label="City *" fullWidth size="small"
+                <TextField label={t("buildings:city")} fullWidth size="small"
                   error={!!errors.buildings?.[idx]?.city} helperText={errors.buildings?.[idx]?.city?.message}
                   {...register(`buildings.${idx}.city`, { required: "Required." })} />
-                <TextField label="Country" fullWidth size="small"
+                <TextField label={t("buildings:country")} fullWidth size="small"
                   {...register(`buildings.${idx}.country`)} />
               </Stack>
               <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
-                <TextField label="Floors *" type="number" size="small" fullWidth
+                <TextField label={t("buildings:floors")} type="number" size="small" fullWidth
                   inputProps={{ min: 1 }}
                   {...register(`buildings.${idx}.num_floors`)} />
-                <TextField label="# Apartments" type="number" size="small" fullWidth
+                <TextField label={t("buildings:num_apartments")} type="number" size="small" fullWidth
                   inputProps={{ min: 0 }}
                   helperText="Auto-created as A1, A2…"
                   {...register(`buildings.${idx}.num_apartments`)} />
-                <TextField label="# Stores" type="number" size="small" fullWidth
+                <TextField label={t("buildings:num_stores")} type="number" size="small" fullWidth
                   inputProps={{ min: 0 }}
                   helperText="Auto-created as S1, S2…"
                   {...register(`buildings.${idx}.num_stores`)} />
@@ -259,12 +262,12 @@ function AdminBuildingsStep({ onDone, onSkip }) {
         ))}
         <Button variant="outlined" startIcon={<Add />} size="small" sx={{ alignSelf: "flex-start" }}
           onClick={() => append({ name: "", address: "", city: "", country: "", num_floors: 1, num_apartments: 0, num_stores: 0 })}>
-          Add another building
+          {t("add_another_building")}
         </Button>
         <Stack direction="row" spacing={2}>
-          <Button variant="outlined" fullWidth onClick={onSkip}>Skip for now</Button>
+          <Button variant="outlined" fullWidth onClick={onSkip}>{t("skip_for_now")}</Button>
           <Button type="submit" variant="contained" fullWidth disabled={submitting}>
-            {submitting ? <CircularProgress size={22} color="inherit" /> : "Save & Continue"}
+            {submitting ? <CircularProgress size={22} color="inherit" /> : t("save_continue")}
           </Button>
         </Stack>
       </Stack>
@@ -275,6 +278,7 @@ function AdminBuildingsStep({ onDone, onSkip }) {
 // ── Shared: Select and claim a unit ───────────────────────────────────────────
 
 function ClaimUnitStep({ onDone, onSkip, isAdmin }) {
+  const { t } = useTranslation("auth");
   const [buildings, setBuildings] = useState([]);
   const [apartments, setApartments] = useState([]);
   const [selectedBuilding, setSelectedBuilding] = useState("");
@@ -442,9 +446,9 @@ function ClaimUnitStep({ onDone, onSkip, isAdmin }) {
         </>
       )}
       <Stack direction="row" spacing={2}>
-        <Button variant="outlined" fullWidth onClick={onSkip}>Skip for now</Button>
+        <Button variant="outlined" fullWidth onClick={onSkip}>{t("skip_for_now")}</Button>
         <Button variant="contained" fullWidth disabled={!selectedApartment || claiming} onClick={handleClaim}>
-          {claiming ? <CircularProgress size={22} color="inherit" /> : "Claim Unit"}
+          {claiming ? <CircularProgress size={22} color="inherit" /> : t("claim_unit")}
         </Button>
       </Stack>
 
@@ -460,7 +464,7 @@ function ClaimUnitStep({ onDone, onSkip, isAdmin }) {
       )}
       <Stack direction="row" spacing={1} alignItems="flex-start">
         <TextField
-          label="Registration Code"
+          label={t("registration_code")}
           value={regCode}
           onChange={(e) => { setRegCode(e.target.value.toUpperCase()); setCodeInfo(null); setCodeError(null); }}
           size="small"
@@ -475,7 +479,7 @@ function ClaimUnitStep({ onDone, onSkip, isAdmin }) {
           onClick={handleValidateCode}
           sx={{ mt: 0.5 }}
         >
-          {validatingCode ? <CircularProgress size={18} /> : "Validate"}
+          {validatingCode ? <CircularProgress size={18} /> : t("validate")}
         </Button>
       </Stack>
       {codeInfo && (
@@ -490,15 +494,16 @@ function ClaimUnitStep({ onDone, onSkip, isAdmin }) {
 // ── Step 3 / 4: Done ──────────────────────────────────────────────────────────
 
 function DoneStep({ role, onFinish }) {
+  const { t } = useTranslation("auth");
   return (
     <Stack spacing={3} alignItems="center" py={2}>
-      <Typography variant="h6" color="success.main" fontWeight={700}>Account created!</Typography>
+      <Typography variant="h6" color="success.main" fontWeight={700}>{t("account_created")}</Typography>
       <Typography variant="body2" color="text.secondary" align="center">
         {role === "admin"
           ? "Your buildings have been set up. Manage apartments, expenses, and payments from your dashboard."
           : "Your account is ready. Head to the dashboard to view your expenses and payments."}
       </Typography>
-      <Button variant="contained" size="large" onClick={onFinish}>Go to Dashboard</Button>
+      <Button variant="contained" size="large" onClick={onFinish}>{t("go_to_dashboard")}</Button>
     </Stack>
   );
 }
@@ -506,6 +511,7 @@ function DoneStep({ role, onFinish }) {
 // ── Invite claim step ──────────────────────────────────────────────────────────
 
 function InviteClaimStep({ inviteToken, inviteInfo, onDone }) {
+  const { t } = useTranslation("auth");
   const [claiming, setClaiming] = useState(false);
   const [error, setError] = useState(null);
 
@@ -533,9 +539,9 @@ function InviteClaimStep({ inviteToken, inviteInfo, onDone }) {
       </Alert>
       {error && <Alert severity="error">{error}</Alert>}
       <Stack direction="row" spacing={2}>
-        <Button variant="outlined" fullWidth onClick={onDone}>Skip for now</Button>
+        <Button variant="outlined" fullWidth onClick={onDone}>{t("skip_for_now")}</Button>
         <Button variant="contained" fullWidth disabled={claiming} onClick={handleClaim}>
-          {claiming ? <CircularProgress size={22} color="inherit" /> : "Claim My Unit"}
+          {claiming ? <CircularProgress size={22} color="inherit" /> : t("claim_unit")}
         </Button>
       </Stack>
     </Stack>
@@ -545,6 +551,7 @@ function InviteClaimStep({ inviteToken, inviteInfo, onDone }) {
 // ── Main wizard ────────────────────────────────────────────────────────────────
 
 export default function RegisterPage() {
+  const { t } = useTranslation("auth");
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [step, setStep] = useState(0);
@@ -598,7 +605,7 @@ export default function RegisterPage() {
         <CardContent sx={{ p: 4 }}>
           <Stack alignItems="center" spacing={0.5} mb={3}>
             <Box component="img" src="/abem-logo-light.svg" alt="ABEM" sx={{ height: 40 }} />
-            <Typography variant="body2" color="text.secondary">Create your account</Typography>
+            <Typography variant="body2" color="text.secondary">{t("create_account")}</Typography>
           </Stack>
 
           {inviteToken && inviteError ? (

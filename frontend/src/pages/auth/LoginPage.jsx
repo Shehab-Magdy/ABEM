@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate, Link as RouterLink, useSearchParams } from "react-router-dom";
 import { useForm } from "react-hook-form";
+import { useTranslation } from "react-i18next";
 import {
   Alert,
   Box,
@@ -21,6 +22,7 @@ import { useAuthStore } from "../../contexts/authStore";
 import { PublicSEO } from "../../components/seo/SEO";
 
 export default function LoginPage() {
+  const { t } = useTranslation("auth");
   const navigate = useNavigate();
   const { login } = useAuthStore();
   const [searchParams] = useSearchParams();
@@ -90,14 +92,14 @@ export default function LoginPage() {
           <Stack alignItems="center" spacing={1} mb={4}>
             <Box component="img" src="/abem-logo-light.svg" alt="ABEM" sx={{ height: 48 }} />
             <Typography variant="body2" color="text.secondary">
-              Apartment & Building Expense Management
+              {t("apartment_building_expense")}
             </Typography>
           </Stack>
 
           {/* Lockout alert */}
           {lockoutUntil && (
             <Alert severity="error" sx={{ mb: 2 }}>
-              Account locked. Too many failed attempts.
+              {t("account_locked")}
               <br />
               Try again after{" "}
               <strong>{new Date(lockoutUntil).toLocaleTimeString()}</strong>.
@@ -117,7 +119,7 @@ export default function LoginPage() {
                     component={RouterLink}
                     to={`/register?email=${encodeURIComponent(getValues("email"))}`}
                   >
-                    Create account
+                    {t("create_account")}
                   </Button>
                 ) : undefined
               }
@@ -130,7 +132,7 @@ export default function LoginPage() {
           <Box component="form" onSubmit={handleSubmit(onSubmit)} noValidate>
             <Stack spacing={2.5}>
               <TextField
-                label="Email address"
+                label={t("email_address")}
                 type="email"
                 fullWidth
                 autoComplete="email"
@@ -138,16 +140,16 @@ export default function LoginPage() {
                 error={!!errors.email}
                 helperText={errors.email?.message}
                 {...register("email", {
-                  required: "Email is required.",
+                  required: t("email_required"),
                   pattern: {
                     value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-                    message: "Enter a valid email address.",
+                    message: t("errors:invalid_email"),
                   },
                 })}
               />
 
               <TextField
-                label="Password"
+                label={t("password")}
                 type={showPassword ? "text" : "password"}
                 fullWidth
                 autoComplete="current-password"
@@ -167,7 +169,7 @@ export default function LoginPage() {
                     </InputAdornment>
                   ),
                 }}
-                {...register("password", { required: "Password is required." })}
+                {...register("password", { required: t("password_required") })}
               />
 
               <Button
@@ -178,13 +180,13 @@ export default function LoginPage() {
                 disabled={isLoading}
                 sx={{ mt: 1 }}
               >
-                {isLoading ? <CircularProgress size={24} color="inherit" /> : "Sign in"}
+                {isLoading ? <CircularProgress size={24} color="inherit" /> : t("sign_in")}
               </Button>
 
               <Typography variant="body2" align="center" color="text.secondary">
-                Don&apos;t have an account?{" "}
+                {t("dont_have_account")}{" "}
                 <Link component={RouterLink} to="/register" underline="hover">
-                  Create account
+                  {t("create_account")}
                 </Link>
               </Typography>
             </Stack>

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
+import { useTranslation } from "react-i18next";
 import {
   Alert,
   Box,
@@ -20,6 +21,7 @@ import { useAuthStore } from "../../contexts/authStore";
 import { PrivateSEO } from "../../components/seo/SEO";
 
 export default function ForceChangePasswordPage() {
+  const { t } = useTranslation("auth");
   const navigate = useNavigate();
   const { setUser } = useAuthStore();
   const [showPassword, setShowPassword] = useState(false);
@@ -72,10 +74,10 @@ export default function ForceChangePasswordPage() {
             <Stack alignItems="center" spacing={1} mb={3}>
               <Box component="img" src="/abem-logo-light.svg" alt="ABEM" sx={{ height: 48 }} />
               <Typography variant="h6" fontWeight={600}>
-                Password Change Required
+                {t("password_change_required")}
               </Typography>
               <Typography variant="body2" color="text.secondary" align="center">
-                Your password was reset by an administrator. Please create a new password to continue.
+                {t("password_change_required_desc")}
               </Typography>
             </Stack>
 
@@ -88,7 +90,7 @@ export default function ForceChangePasswordPage() {
             <Box component="form" onSubmit={handleSubmit(onSubmit)} noValidate>
               <Stack spacing={2.5}>
                 <TextField
-                  label="New password"
+                  label={t("new_password")}
                   type={showPassword ? "text" : "password"}
                   fullWidth
                   autoFocus
@@ -96,7 +98,7 @@ export default function ForceChangePasswordPage() {
                   error={!!errors.new_password}
                   helperText={
                     errors.new_password?.message ||
-                    "Min 8 chars, 1 uppercase, 1 digit, 1 special char."
+                    t("password_min_length")
                   }
                   InputProps={{
                     endAdornment: (
@@ -113,22 +115,22 @@ export default function ForceChangePasswordPage() {
                     ),
                   }}
                   {...register("new_password", {
-                    required: "New password is required.",
+                    required: t("password_required"),
                     minLength: { value: 8, message: "Min 8 characters." },
                   })}
                 />
 
                 <TextField
-                  label="Confirm new password"
+                  label={t("confirm_new_password")}
                   type={showPassword ? "text" : "password"}
                   fullWidth
                   autoComplete="new-password"
                   error={!!errors.confirm_password}
                   helperText={errors.confirm_password?.message}
                   {...register("confirm_password", {
-                    required: "Please confirm your new password.",
+                    required: t("password_required"),
                     validate: (val) =>
-                      val === watch("new_password") || "Passwords do not match.",
+                      val === watch("new_password") || t("passwords_dont_match"),
                   })}
                 />
 
@@ -142,7 +144,7 @@ export default function ForceChangePasswordPage() {
                   {isLoading ? (
                     <CircularProgress size={24} color="inherit" />
                   ) : (
-                    "Set New Password"
+                    t("set_new_password")
                   )}
                 </Button>
               </Stack>
