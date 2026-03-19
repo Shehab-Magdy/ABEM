@@ -240,7 +240,7 @@ export default function ExpenseCategoriesPage() {
                       </TableCell>
                       <TableCell>{t(cat.name, cat.name)}</TableCell>
                       <TableCell sx={{ color: "text.secondary" }}>
-                        {cat.description || "—"}
+                        {cat.description ? t(cat.description, cat.description) : "—"}
                       </TableCell>
                       <TableCell>
                         {parentCat ? (
