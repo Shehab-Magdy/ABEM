@@ -1,6 +1,7 @@
 /**
- * Main app shell: sidebar navigation + top bar + content outlet.
- * Navigation items are role-aware (admin vs owner), split into sections.
+ * Main app shell: collapsible sidebar + top bar + content outlet.
+ * Sidebar position follows document dir (left in LTR, right in RTL).
+ * Burger menu always visible to toggle sidebar open/closed.
  */
 import { useState, useEffect } from "react";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
@@ -22,6 +23,7 @@ import {
   Toolbar,
   Tooltip,
   Typography,
+  useMediaQuery,
 } from "@mui/material";
 import {
   AccountBalance,
@@ -30,6 +32,8 @@ import {
   Assessment,
   Business,
   Category,
+  ChevronLeft,
+  ChevronRight,
   ExitToApp,
   Menu as MenuIcon,
   Notifications,
@@ -37,6 +41,7 @@ import {
   People,
 } from "@mui/icons-material";
 import { useTranslation } from "react-i18next";
+import { useTheme } from "@mui/material/styles";
 import { useAuth } from "../../hooks/useAuth";
 import { authApi } from "../../api/authApi";
 import { useAuthStore } from "../../contexts/authStore";
@@ -96,17 +101,22 @@ export default function DashboardLayout() {
   const { user, isAdmin } = useAuth();
   const { logout, refreshToken } = useAuthStore();
   const { t, i18n } = useTranslation(["common", "auth"]);
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
   const location = useLocation();
   const navigate = useNavigate();
-  const [mobileOpen, setMobileOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
   const [anchorEl, setAnchorEl] = useState(null);
   const [unreadCount, setUnreadCount] = useState(0);
 
-  // Sync language from user preference on mount
   usePreferredLanguage();
 
-  // Derive direction from current language — reactive on language change
-  const dir = (i18n.language || "en").startsWith("ar") ? "rtl" : "ltr";
+  const isRtl = (i18n.language || "en").startsWith("ar");
+
+  // Close sidebar on mobile when navigating
+  useEffect(() => {
+    if (isMobile) setSidebarOpen(false);
+  }, [location.pathname, isMobile]);
 
   useEffect(() => {
     axiosClient
@@ -129,6 +139,8 @@ export default function DashboardLayout() {
     navigate("/login", { replace: true });
   };
 
+  const toggleSidebar = () => setSidebarOpen((prev) => !prev);
+
   const mainItems = [
     { to: "/dashboard", icon: <Assessment />, label: t("common:dashboard", "Dashboard"), show: true },
     { to: "/buildings", icon: <Business />, label: t("common:buildings", "Buildings"), show: isAdmin },
@@ -147,13 +159,19 @@ export default function DashboardLayout() {
     { to: "/profile", icon: <AccountCircle />, label: t("common:profile", "Profile"), show: true },
   ];
 
-  const drawer = (
+  const drawerContent = (
     <Box sx={{ height: "100%", bgcolor: "primary.dark", display: "flex", flexDirection: "column" }}>
-      <Box sx={{ p: 2.5, pb: 2 }}>
-        <Box component="img" src="/abem-logo-dark.svg" alt="ABEM" sx={{ height: 36, mb: 0.5 }} />
-        <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.6)", display: "block" }}>
-          {t("auth:apartment_building_expense")}
-        </Typography>
+      {/* Header with close button */}
+      <Box sx={{ p: 2.5, pb: 2, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <Box>
+          <Box component="img" src="/abem-logo-dark.svg" alt="ABEM" sx={{ height: 36, mb: 0.5 }} />
+          <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.6)", display: "block" }}>
+            {t("auth:apartment_building_expense")}
+          </Typography>
+        </Box>
+        <IconButton onClick={toggleSidebar} sx={{ color: "rgba(255,255,255,0.6)" }} size="small">
+          {isRtl ? <ChevronRight /> : <ChevronLeft />}
+        </IconButton>
       </Box>
       <Divider sx={{ borderColor: "rgba(255,255,255,0.12)" }} />
 
@@ -175,34 +193,46 @@ export default function DashboardLayout() {
 
   return (
     <Box sx={{ display: "flex", height: "100vh" }}>
-      {/* Sidebar – permanent on desktop */}
-      <Box component="nav" sx={{ width: { md: DRAWER_WIDTH }, flexShrink: 0 }}>
+      {/* Sidebar — uses Drawer for overlay on mobile, fixed Box on desktop */}
+      {isMobile ? (
         <Drawer
           variant="temporary"
-          anchor={dir === "rtl" ? "right" : "left"}
-          open={mobileOpen}
-          onClose={() => setMobileOpen(false)}
+          anchor={isRtl ? "right" : "left"}
+          open={sidebarOpen}
+          onClose={() => setSidebarOpen(false)}
           ModalProps={{ keepMounted: true }}
-          sx={{ display: { xs: "block", md: "none" }, "& .MuiDrawer-paper": { width: DRAWER_WIDTH, boxSizing: "border-box" } }}
+          sx={{ "& .MuiDrawer-paper": { width: DRAWER_WIDTH, boxSizing: "border-box" } }}
         >
-          {drawer}
+          {drawerContent}
         </Drawer>
-        <Drawer
-          variant="permanent"
-          anchor={dir === "rtl" ? "right" : "left"}
-          sx={{ display: { xs: "none", md: "block" }, "& .MuiDrawer-paper": { width: DRAWER_WIDTH, boxSizing: "border-box", border: "none" } }}
-          open
-        >
-          {drawer}
-        </Drawer>
-      </Box>
+      ) : (
+        sidebarOpen && (
+          <Box
+            component="nav"
+            sx={{
+              width: DRAWER_WIDTH,
+              flexShrink: 0,
+              height: "100vh",
+              overflow: "hidden",
+            }}
+          >
+            {drawerContent}
+          </Box>
+        )
+      )}
 
       {/* Main area */}
-      <Box sx={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+      <Box sx={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", minWidth: 0 }}>
         {/* Top AppBar */}
         <AppBar position="static" color="inherit" elevation={0} sx={{ borderBottom: "1px solid", borderColor: "divider" }}>
           <Toolbar>
-            <IconButton edge="start" sx={{ mr: 2, display: { md: "none" } }} onClick={() => setMobileOpen(true)}>
+            {/* Burger icon — always visible */}
+            <IconButton
+              edge="start"
+              onClick={toggleSidebar}
+              sx={{ mr: 1 }}
+              aria-label={sidebarOpen ? t("common:close") : t("common:dashboard")}
+            >
               <MenuIcon />
             </IconButton>
             <Box flex={1} />
