@@ -19,6 +19,7 @@ import { Visibility, VisibilityOff } from "@mui/icons-material";
 import { authApi } from "../../api/authApi";
 import { useAuthStore } from "../../contexts/authStore";
 import { PrivateSEO } from "../../components/seo/SEO";
+import LanguageSwitcher from "../../components/LanguageSwitcher";
 
 export default function ForceChangePasswordPage() {
   const { t } = useTranslation("auth");
@@ -68,7 +69,11 @@ export default function ForceChangePasswordPage() {
         minHeight="100vh"
         bgcolor="background.default"
         px={2}
+        position="relative"
       >
+        <Box sx={{ position: "absolute", top: 16, right: 16 }}>
+          <LanguageSwitcher />
+        </Box>
         <Card sx={{ width: "100%", maxWidth: 420 }}>
           <CardContent sx={{ p: 4 }}>
             <Stack alignItems="center" spacing={1} mb={3}>

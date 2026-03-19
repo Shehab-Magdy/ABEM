@@ -20,6 +20,7 @@ import { Visibility, VisibilityOff } from "@mui/icons-material";
 import { authApi } from "../../api/authApi";
 import { useAuthStore } from "../../contexts/authStore";
 import { PublicSEO } from "../../components/seo/SEO";
+import LanguageSwitcher from "../../components/LanguageSwitcher";
 
 export default function LoginPage() {
   const { t } = useTranslation("auth");
@@ -85,7 +86,13 @@ export default function LoginPage() {
       minHeight="100vh"
       bgcolor="background.default"
       px={2}
+      position="relative"
     >
+      {/* Language switcher — top-right corner */}
+      <Box sx={{ position: "absolute", top: 16, right: 16 }}>
+        <LanguageSwitcher />
+      </Box>
+
       <Card sx={{ width: "100%", maxWidth: 420 }}>
         <CardContent sx={{ p: 4 }}>
           {/* Header */}

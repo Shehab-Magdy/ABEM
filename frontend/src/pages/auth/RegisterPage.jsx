@@ -46,6 +46,7 @@ import { buildingsApi } from "../../api/buildingsApi";
 import { apartmentsApi } from "../../api/apartmentsApi";
 import { useAuthStore } from "../../contexts/authStore";
 import { PublicSEO } from "../../components/seo/SEO";
+import LanguageSwitcher from "../../components/LanguageSwitcher";
 
 const STEPS_ADMIN = ["Account", "Your Buildings", "Your Unit", "Done"];
 const STEPS_OWNER = ["Account", "Your Unit", "Done"];
@@ -600,7 +601,10 @@ export default function RegisterPage() {
       description="Create your ABEM account and start managing your building's expenses in minutes."
     />
     <Box display="flex" alignItems="center" justifyContent="center"
-      minHeight="100vh" bgcolor="background.default" px={2} py={4}>
+      minHeight="100vh" bgcolor="background.default" px={2} py={4} position="relative">
+      <Box sx={{ position: "absolute", top: 16, right: 16 }}>
+        <LanguageSwitcher />
+      </Box>
       <Card sx={{ width: "100%", maxWidth: 560 }}>
         <CardContent sx={{ p: 4 }}>
           <Stack alignItems="center" spacing={0.5} mb={3}>
