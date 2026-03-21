@@ -3,9 +3,10 @@ import { ThemeProvider, CssBaseline } from "@mui/material";
 import { CacheProvider } from "@emotion/react";
 import { useTranslation } from "react-i18next";
 import AppRouter from "./routes/AppRouter";
+import SessionExpiryModal from "./components/SessionExpiryModal";
 import { ltrTheme, rtlTheme } from "./theme/theme";
-import { useEasternArabicInput } from "./hooks/useEasternArabicInput";
 import { createDirectionCache } from "./theme/rtlCache";
+import { useEasternArabicInput } from "./hooks/useEasternArabicInput";
 
 export default function App() {
   const { i18n } = useTranslation();
@@ -41,6 +42,7 @@ export default function App() {
       <ThemeProvider theme={theme}>
         <CssBaseline />
         <AppRouter />
+        <SessionExpiryModal />
       </ThemeProvider>
     </CacheProvider>
   );

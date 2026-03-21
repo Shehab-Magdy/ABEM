@@ -132,5 +132,9 @@
   "assets.type.furniture": "Furniture",
   "assets.type.electronics": "Electronics",
   "assets.type.property": "Property",
-  "assets.type.other": "Other"
+  "assets.type.other": "Other",
+  "session_expiring_title": "Session Expiring",
+  "session_expiring_message": "Your session is about to expire. You will be logged out automatically.",
+  "extend_session": "Extend Session",
+  "log_out": "Log Out"
 }

@@ -132,5 +132,9 @@
   "assets.type.furniture": "أثاث",
   "assets.type.electronics": "إلكترونيات",
   "assets.type.property": "عقار",
-  "assets.type.other": "أخرى"
+  "assets.type.other": "أخرى",
+  "session_expiring_title": "الجلسة على وشك الانتهاء",
+  "session_expiring_message": "جلستك على وشك الانتهاء. سيتم تسجيل خروجك تلقائياً.",
+  "extend_session": "تمديد الجلسة",
+  "log_out": "تسجيل الخروج"
 }
