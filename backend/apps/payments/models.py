@@ -19,7 +19,7 @@ class PaymentMethod(models.TextChoices):
 class Payment(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     apartment = models.ForeignKey(Apartment, on_delete=models.CASCADE, related_name="payments")
-    expenses = models.ManyToManyField(Expense, blank=True, related_name="payments")
+    expenses = models.ManyToManyField(Expense, through="PaymentExpense", blank=True, related_name="payments")
 
     amount_paid = models.DecimalField(max_digits=10, decimal_places=2)
     payment_method = models.CharField(max_length=20, choices=PaymentMethod.choices, default=PaymentMethod.CASH)
@@ -50,13 +50,28 @@ class Payment(models.Model):
         return f"{self.apartment} | {self.amount_paid} on {self.payment_date}"
 
 
+class PaymentExpense(models.Model):
+    """Explicit through table for Payment <-> Expense with per-expense allocation."""
+    payment = models.ForeignKey(Payment, on_delete=models.CASCADE, related_name="payment_expenses")
+    expense = models.ForeignKey(Expense, on_delete=models.CASCADE, related_name="payment_expenses")
+    allocated_amount = models.DecimalField(
+        max_digits=10, decimal_places=2, null=True, blank=True,
+        help_text=_("Amount of the payment allocated to this expense. NULL = legacy/unspecified."),
+    )
+
+    class Meta:
+        unique_together = ("payment", "expense")
+
+    def __str__(self):
+        return f"{self.payment_id} → {self.expense_id} ({self.allocated_amount})"
+
+
 class AssetType(models.TextChoices):
     VEHICLE = "vehicle", _("Vehicle")
     EQUIPMENT = "equipment", _("Equipment")
     FURNITURE = "furniture", _("Furniture")
     ELECTRONICS = "electronics", _("Electronics")
     PROPERTY = "property", _("Property")
-    MOBILE_WALLET = "mobile_wallet", _("Mobile Wallet")
     OTHER = "other", _("Other")
 
 

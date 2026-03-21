@@ -66,5 +66,10 @@
   "cancel": "Cancel",
   "record": "Record",
   "paymentRecordedSuccess": "Payment recorded successfully.",
-  "methodMobileWallet": "Mobile Wallet"
+  "methodMobileWallet": "Mobile Wallet",
+  "allocatedAmount": "Allocated",
+  "totalAllocated": "Total Allocated",
+  "allocationExceedsPayment": "Total allocated ({{sum}}) cannot exceed amount paid ({{amount}})",
+  "creditRemainder": "Credit Remainder",
+  "allocation": "Allocation"
 }

@@ -66,5 +66,10 @@
   "cancel": "إلغاء",
   "record": "تسجيل",
   "paymentRecordedSuccess": "تم تسجيل الدفعة بنجاح.",
-  "methodMobileWallet": "محفظة موبايل"
+  "methodMobileWallet": "محفظة موبايل",
+  "allocatedAmount": "المبلغ المخصص",
+  "totalAllocated": "إجمالي المخصص",
+  "allocationExceedsPayment": "إجمالي المخصص ({{sum}}) لا يمكن أن يتجاوز المبلغ المدفوع ({{amount}})",
+  "creditRemainder": "رصيد متبقي",
+  "allocation": "التخصيص"
 }
