@@ -46,5 +46,10 @@
   "type_expense_updated": "تحديث مصروف",
   "type_user_registered": "مستخدم جديد",
   "type_announcement": "إعلان",
-  "type_message": "رسالة"
+  "type_message": "رسالة",
+  "message_sent_one": "تم إرسال الرسالة إلى مستلم واحد.",
+  "message_sent_two": "تم إرسال الرسالة إلى مستلمَين.",
+  "message_sent_few": "تم إرسال الرسالة إلى {{count}} مستلمين.",
+  "message_sent_many": "تم إرسال الرسالة إلى {{count}} مستلمين.",
+  "message_sent_other": "تم إرسال الرسالة إلى {{count}} مستلمين."
 }

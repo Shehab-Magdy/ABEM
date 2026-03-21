@@ -5,10 +5,11 @@
  * Admin users also see a Broadcast form.
  * All authenticated users can send messages to building members.
  */
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Alert,
+  Avatar,
   Box,
   Button,
   Card,
@@ -23,6 +24,7 @@ import {
   Select,
   Stack,
   TextField,
+  Tooltip,
   Typography,
 } from "@mui/material";
 import {
@@ -44,6 +46,7 @@ const TYPE_COLORS = {
   expense_updated: "info",
   user_registered: "default",
   announcement: "primary",
+  message: "secondary",
 };
 
 // ── Collapsible section header ─────────────────────────────────────────────
@@ -94,6 +97,87 @@ function SectionHeader({ icon, title, badge, open, onToggle, accent }) {
   );
 }
 
+// ── Read-by tooltip (lazy-loaded on hover, admin only) ────────────────────
+
+function ReadByTooltip({ notificationId, readCount, totalRecipients, t }) {
+  const [readers, setReaders] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const fetchedRef = useRef(false);
+
+  const handleOpen = () => {
+    if (fetchedRef.current || loading) return;
+    setLoading(true);
+    axiosClient
+      .get(`/notifications/${notificationId}/read-by/`)
+      .then((r) => {
+        setReaders(r.data.read_by ?? []);
+        fetchedRef.current = true;
+      })
+      .catch(() => {
+        setReaders([]);
+        fetchedRef.current = true;
+      })
+      .finally(() => setLoading(false));
+  };
+
+  const tooltipContent = (
+    <Box sx={{ p: 0.5, maxHeight: 240, overflowY: "auto" }}>
+      {loading && <CircularProgress size={16} sx={{ color: "inherit" }} />}
+      {!loading && readers && readers.length === 0 && (
+        <Typography variant="caption">—</Typography>
+      )}
+      {!loading &&
+        readers &&
+        readers.map((reader) => (
+          <Stack
+            key={reader.id}
+            direction="row"
+            spacing={1}
+            alignItems="center"
+            sx={{ py: 0.5 }}
+          >
+            <Avatar
+              src={reader.profile_picture}
+              sx={{ width: 24, height: 24, fontSize: 12 }}
+            >
+              {reader.first_name?.[0]}
+            </Avatar>
+            <Typography variant="caption" sx={{ whiteSpace: "nowrap" }}>
+              {reader.first_name} {reader.last_name}
+            </Typography>
+          </Stack>
+        ))}
+    </Box>
+  );
+
+  return (
+    <Tooltip
+      title={tooltipContent}
+      arrow
+      placement="top"
+      onOpen={handleOpen}
+      slotProps={{
+        tooltip: {
+          sx: { maxWidth: 260, bgcolor: "grey.900", p: 1 },
+        },
+      }}
+    >
+      <Typography
+        variant="caption"
+        color="text.secondary"
+        sx={{
+          cursor: "pointer",
+          textDecoration: "underline dotted",
+          "&:hover": { color: "primary.main" },
+        }}
+        data-testid="read-by-count"
+      >
+        {t("read_by_count", { read: readCount, total: totalRecipients })}
+      </Typography>
+    </Tooltip>
+  );
+}
+
 // ── Main component ─────────────────────────────────────────────────────────
 
 export default function NotificationCenterPage() {
@@ -106,6 +190,7 @@ export default function NotificationCenterPage() {
     expense_updated: t("type_expense_updated", "Expense Updated"),
     user_registered: t("type_user_registered", "User Registered"),
     announcement: t("type_announcement", "Announcement"),
+    message: t("type_message", "Message"),
   };
   const { isAdmin } = useAuth();
   const [notifications, setNotifications] = useState([]);
@@ -132,6 +217,7 @@ export default function NotificationCenterPage() {
   const [sendRecipientType, setSendRecipientType] = useState("all");
   const [sendingMsg, setSendingMsg] = useState(false);
   const [sendStatus, setSendStatus] = useState("");
+  const [sendSuccess, setSendSuccess] = useState(false);
   const [buildingMembers, setBuildingMembers] = useState([]);
   const [selectedMembers, setSelectedMembers] = useState([]);
 
@@ -188,7 +274,7 @@ export default function NotificationCenterPage() {
         building_id: broadcastBuilding,
       })
       .then((r) => {
-        setBroadcastStatus(`Sent to ${r.data.created} owner(s).`);
+        setBroadcastStatus(t("message_sent", { count: r.data.created }));
         setBroadcastSubject("");
         setBroadcastMessage("");
         setBroadcastBuilding("");
@@ -211,13 +297,15 @@ export default function NotificationCenterPage() {
         payload.recipient_ids = selectedMembers;
       }
       const r = await axiosClient.post("/notifications/send/", payload);
-      setSendStatus(`Message sent to ${r.data.created} recipient(s).`);
+      setSendSuccess(true);
+      setSendStatus(t("message_sent", { count: r.data.created }));
       setSendTitle("");
       setSendMessage("");
       setSendBuilding("");
       setSendRecipientType("all");
       setSelectedMembers([]);
     } catch (err) {
+      setSendSuccess(false);
       const detail = err.response?.data?.detail;
       if (err.response?.status === 403 && detail) {
         setSendStatus(`${detail} Please contact your building admin.`);
@@ -362,7 +450,7 @@ export default function NotificationCenterPage() {
                   {sendingMsg ? <CircularProgress size={20} color="inherit" /> : t("sendMessage")}
                 </Button>
                 {sendStatus && (
-                  <Alert severity={sendStatus.startsWith("Message sent") ? "success" : "error"}>
+                  <Alert severity={sendSuccess ? "success" : "error"}>
                     {sendStatus}
                   </Alert>
                 )}
@@ -552,7 +640,7 @@ export default function NotificationCenterPage() {
                         <Typography variant="body2" color="text.secondary">
                           {n.body}
                         </Typography>
-                        <Stack direction="row" spacing={1} alignItems="center" mt={0.5}>
+                        <Stack direction="row" spacing={1} alignItems="center" mt={0.5} flexWrap="wrap">
                           <Typography variant="caption" color="text.disabled">
                             {new Date(n.created_at).toLocaleString()}
                           </Typography>
@@ -561,6 +649,22 @@ export default function NotificationCenterPage() {
                               · From: {n.sender_name}
                             </Typography>
                           )}
+                          {isAdmin &&
+                            n.notification_type === "announcement" &&
+                            n.read_count != null &&
+                            n.total_recipients != null && (
+                              <>
+                                <Typography variant="caption" color="text.disabled">
+                                  ·
+                                </Typography>
+                                <ReadByTooltip
+                                  notificationId={n.id}
+                                  readCount={n.read_count}
+                                  totalRecipients={n.total_recipients}
+                                  t={t}
+                                />
+                              </>
+                            )}
                         </Stack>
                       </Box>
                       {!n.is_read && (
