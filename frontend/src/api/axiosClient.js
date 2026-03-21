@@ -7,6 +7,7 @@
  */
 import axios from "axios";
 import { useAuthStore } from "../contexts/authStore";
+import { deepConvertEasternArabic } from "../utils/formatters";
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || "/api/v1";
 
@@ -16,11 +17,16 @@ const axiosClient = axios.create({
   timeout: 15000,
 });
 
-// ── Request interceptor: inject access token ─────────────────────────────────
+// ── Request interceptor: inject access token + normalize Eastern Arabic digits
 axiosClient.interceptors.request.use((config) => {
   const token = useAuthStore.getState().accessToken;
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
+  }
+  // T-01: convert any Eastern Arabic-Indic digits (٠-٩) → ASCII (0-9) in
+  // request body so the backend always receives standard digits.
+  if (config.data && typeof config.data === "object") {
+    config.data = deepConvertEasternArabic(config.data);
   }
   return config;
 });

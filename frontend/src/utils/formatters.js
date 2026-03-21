@@ -92,3 +92,39 @@ export function formatPhone(phone, locale) {
   }
   return phone;
 }
+
+// ── T-01: Eastern Arabic-Indic digit support ────────────────────────────────
+
+/**
+ * Convert Eastern Arabic-Indic digits (٠١٢٣٤٥٦٧٨٩) to ASCII digits (0-9).
+ * Returns the string unchanged if no Eastern Arabic digits are found.
+ */
+export function easternArabicToAscii(str) {
+  if (!str) return str;
+  return String(str).replaceAll(/[٠-٩]/g, (d) => String(d.codePointAt(0) - 0x0660));
+}
+
+/**
+ * Check if a string contains any Eastern Arabic-Indic digits.
+ */
+export function hasEasternArabicDigits(str) {
+  return /[٠-٩]/.test(String(str));
+}
+
+/**
+ * Recursively walk a value (object / array / string) and convert every
+ * Eastern Arabic-Indic digit to its ASCII equivalent.
+ * Used by the Axios request interceptor so all outgoing data is normalized.
+ */
+export function deepConvertEasternArabic(value) {
+  if (typeof value === "string") return easternArabicToAscii(value);
+  if (Array.isArray(value)) return value.map(deepConvertEasternArabic);
+  if (value !== null && typeof value === "object") {
+    const out = {};
+    for (const key of Object.keys(value)) {
+      out[key] = deepConvertEasternArabic(value[key]);
+    }
+    return out;
+  }
+  return value; // number, boolean, null, undefined — pass through
+}

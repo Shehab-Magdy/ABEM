@@ -4,6 +4,7 @@ import { CacheProvider } from "@emotion/react";
 import { useTranslation } from "react-i18next";
 import AppRouter from "./routes/AppRouter";
 import { ltrTheme, rtlTheme } from "./theme/theme";
+import { useEasternArabicInput } from "./hooks/useEasternArabicInput";
 import { createDirectionCache } from "./theme/rtlCache";
 
 export default function App() {
@@ -22,6 +23,9 @@ export default function App() {
     i18n.on("languageChanged", updateDir);
     return () => i18n.off("languageChanged", updateDir);
   }, [i18n, updateDir]);
+
+  // T-01: convert Eastern Arabic-Indic digits (٠-٩) → ASCII in number fields
+  useEasternArabicInput();
 
   const theme = dir === "rtl" ? rtlTheme : ltrTheme;
 
