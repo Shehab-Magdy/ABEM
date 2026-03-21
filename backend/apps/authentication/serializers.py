@@ -106,7 +106,7 @@ class SelfRegisterSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ["id", "email", "first_name", "last_name", "phone", "role", "password", "confirm_password"]
+        fields = ["id", "email", "first_name", "last_name", "phone", "role", "password", "confirm_password", "preferred_language"]
         read_only_fields = ["id"]
 
     def validate_email(self, value):

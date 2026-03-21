@@ -23,7 +23,7 @@ import { PublicSEO } from "../../components/seo/SEO";
 import LanguageSwitcher from "../../components/LanguageSwitcher";
 
 export default function LoginPage() {
-  const { t } = useTranslation("auth");
+  const { t, i18n } = useTranslation("auth");
   const navigate = useNavigate();
   const { login } = useAuthStore();
   const [searchParams] = useSearchParams();
@@ -50,6 +50,9 @@ export default function LoginPage() {
       const response = await authApi.login(data);
       const { access, refresh, user } = response.data;
       login(user, access, refresh);
+      if (user.preferred_language) {
+        i18n.changeLanguage(user.preferred_language);
+      }
       navigate("/dashboard", { replace: true });
     } catch (err) {
       const httpStatus = err.response?.status;

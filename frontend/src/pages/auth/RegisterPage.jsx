@@ -54,7 +54,7 @@ import LanguageSwitcher from "../../components/LanguageSwitcher";
 // ── Step 1: Account ────────────────────────────────────────────────────────────
 
 function AccountStep({ onDone, prefillEmail }) {
-  const { t } = useTranslation("auth");
+  const { t, i18n } = useTranslation("auth");
   const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -76,6 +76,7 @@ function AccountStep({ onDone, prefillEmail }) {
         role: data.role,
         password: data.password,
         confirm_password: data.confirm_password,
+        preferred_language: i18n.language || "en",
       });
       const { access, refresh, user } = res.data;
       login(user, access, refresh);
