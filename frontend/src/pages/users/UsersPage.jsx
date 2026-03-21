@@ -2,8 +2,10 @@ import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Alert,
+  Autocomplete,
   Box,
   Button,
+  Checkbox,
   Chip,
   Dialog,
   DialogActions,
@@ -22,15 +24,22 @@ import { DataGrid } from "@mui/x-data-grid";
 import {
   Add,
   Block,
+  CheckBoxOutlineBlank,
+  CheckBox as CheckBoxIcon,
   CheckCircleOutline,
+  Edit as EditIcon,
   LockReset,
   SpeakerNotesOff,
 } from "@mui/icons-material";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { usersApi } from "../../api/usersApi";
+import { buildingsApi } from "../../api/buildingsApi";
 import { PrivateSEO } from "../../components/seo/SEO";
+import PhoneInput from "../../components/PhoneInput";
 
 const ROLES = ["admin", "owner"];
+const checkboxIcon = <CheckBoxOutlineBlank fontSize="small" />;
+const checkedIcon = <CheckBoxIcon fontSize="small" />;
 
 function formatApiError(data) {
   if (!data) return "An error occurred.";
@@ -56,11 +65,22 @@ export default function UsersPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
+  // Buildings list for admin role assignment
+  const [buildingsList, setBuildingsList] = useState([]);
+
   // Create user dialog
   const [createOpen, setCreateOpen] = useState(false);
   const [createError, setCreateError] = useState(null);
   const [creating, setCreating] = useState(false);
-  const createForm = useForm();
+  const createForm = useForm({ defaultValues: { role: "owner", buildings: [] } });
+  const watchCreateRole = createForm.watch("role");
+
+  // Edit user dialog
+  const [editTarget, setEditTarget] = useState(null);
+  const [editError, setEditError] = useState(null);
+  const [editing, setEditing] = useState(false);
+  const editForm = useForm({ defaultValues: { role: "owner", buildings: [] } });
+  const watchEditRole = editForm.watch("role");
 
   // Reset password dialog
   const [resetTarget, setResetTarget] = useState(null);
@@ -94,6 +114,58 @@ export default function UsersPage() {
 
   useEffect(() => { fetchUsers(); }, [fetchUsers]);
 
+  // ── Fetch buildings for admin role multi-select ──────────────────────────────
+  const fetchBuildings = useCallback(async () => {
+    try {
+      const res = await buildingsApi.list({ page_size: 200 });
+      setBuildingsList(res.data.results || res.data || []);
+    } catch {
+      // silently ignore — buildings list is optional context
+    }
+  }, []);
+
+  useEffect(() => { fetchBuildings(); }, [fetchBuildings]);
+
+  // ── Open edit user dialog ─────────────────────────────────────────────────────
+  const openEditDialog = (user) => {
+    setEditTarget(user);
+    setEditError(null);
+    editForm.reset({
+      first_name: user.first_name,
+      last_name: user.last_name,
+      phone: user.phone || "",
+      role: user.role,
+      buildings: user.buildings || [],
+    });
+  };
+
+  // ── Edit user submit ──────────────────────────────────────────────────────────
+  const onEditUser = async (data) => {
+    setEditing(true);
+    setEditError(null);
+    try {
+      const payload = {
+        first_name: data.first_name?.trim(),
+        last_name: data.last_name?.trim(),
+        phone: data.phone?.trim(),
+        role: data.role,
+      };
+      if (data.role === "admin") {
+        payload.buildings = data.buildings || [];
+      } else {
+        payload.buildings = [];
+      }
+      await usersApi.update(editTarget.id, payload);
+      setEditTarget(null);
+      editForm.reset();
+      fetchUsers();
+    } catch (err) {
+      setEditError(formatApiError(err.response?.data));
+    } finally {
+      setEditing(false);
+    }
+  };
+
   // ── Activate / Deactivate ───────────────────────────────────────────────────
   const toggleActive = async (user) => {
     try {
@@ -113,15 +185,20 @@ export default function UsersPage() {
     setCreating(true);
     setCreateError(null);
     try {
-      await usersApi.create({
-        ...data,
+      const payload = {
         first_name: data.first_name?.trim(),
         last_name: data.last_name?.trim(),
         email: data.email?.trim(),
         phone: data.phone?.trim(),
-      });
+        role: data.role,
+        password: data.password,
+      };
+      if (data.role === "admin") {
+        payload.buildings = data.buildings || [];
+      }
+      await usersApi.create(payload);
       setCreateOpen(false);
-      createForm.reset();
+      createForm.reset({ role: "owner", buildings: [] });
       fetchUsers();
     } catch (err) {
       setCreateError(formatApiError(err.response?.data));
@@ -213,10 +290,15 @@ export default function UsersPage() {
     {
       field: "actions",
       headerName: t("colActions"),
-      width: 160,
+      width: 200,
       sortable: false,
       renderCell: ({ row }) => (
         <Stack direction="row" spacing={0.5}>
+          <Tooltip title={t("editUser")}>
+            <IconButton size="small" onClick={() => openEditDialog(row)}>
+              <EditIcon fontSize="small" color="info" />
+            </IconButton>
+          </Tooltip>
           <Tooltip title={row.is_active ? t("deactivate") : t("activate")}>
             <IconButton size="small" onClick={() => toggleActive(row)}>
               {row.is_active ? (
@@ -288,10 +370,86 @@ export default function UsersPage() {
                 <TextField label={t("lastName")} fullWidth required {...createForm.register("last_name", { required: true })} />
               </Stack>
               <TextField label={t("colEmail")} type="email" fullWidth required {...createForm.register("email", { required: true })} />
-              <TextField label={t("phone")} fullWidth {...createForm.register("phone")} />
-              <TextField label={t("colRole")} select fullWidth defaultValue="owner" {...createForm.register("role")}>
-                {ROLES.map((r) => <MenuItem key={r} value={r}>{r === "admin" ? t("roleAdmin") : t("roleOwner")}</MenuItem>)}
-              </TextField>
+              <Controller
+                name="phone"
+                control={createForm.control}
+                defaultValue=""
+                render={({ field }) => (
+                  <PhoneInput
+                    label={t("phone")}
+                    value={field.value}
+                    onChange={field.onChange}
+                  />
+                )}
+              />
+              <Controller
+                name="role"
+                control={createForm.control}
+                defaultValue="owner"
+                rules={{ required: t("roleRequired") }}
+                render={({ field, fieldState }) => (
+                  <TextField
+                    {...field}
+                    select
+                    label={t("colRole")}
+                    fullWidth
+                    required
+                    error={!!fieldState.error}
+                    helperText={fieldState.error?.message}
+                  >
+                    {ROLES.map((r) => (
+                      <MenuItem key={r} value={r}>
+                        {r === "admin" ? t("roleAdmin") : t("roleOwner")}
+                      </MenuItem>
+                    ))}
+                  </TextField>
+                )}
+              />
+              {watchCreateRole === "admin" && (
+                <Controller
+                  name="buildings"
+                  control={createForm.control}
+                  defaultValue={[]}
+                  rules={{
+                    validate: (v) =>
+                      (Array.isArray(v) && v.length > 0) || t("buildingsRequired"),
+                  }}
+                  render={({ field, fieldState }) => (
+                    <Autocomplete
+                      multiple
+                      options={buildingsList}
+                      disableCloseOnSelect
+                      getOptionLabel={(opt) => opt.name || ""}
+                      isOptionEqualToValue={(opt, val) => opt.id === val.id || opt.id === val}
+                      value={buildingsList.filter((b) => (field.value || []).includes(b.id))}
+                      onChange={(_, newVal) => field.onChange(newVal.map((b) => b.id))}
+                      renderOption={(props, option, { selected }) => {
+                        const { key, ...rest } = props;
+                        return (
+                          <li key={key} {...rest}>
+                            <Checkbox
+                              icon={checkboxIcon}
+                              checkedIcon={checkedIcon}
+                              checked={selected}
+                              sx={{ mr: 1 }}
+                            />
+                            {option.name}
+                          </li>
+                        );
+                      }}
+                      renderInput={(params) => (
+                        <TextField
+                          {...params}
+                          label={t("managesBuildings")}
+                          placeholder={t("selectBuildings")}
+                          error={!!fieldState.error}
+                          helperText={fieldState.error?.message}
+                        />
+                      )}
+                    />
+                  )}
+                />
+              )}
               <TextField label={t("password")} type="password" fullWidth required {...createForm.register("password", { required: true })} />
             </Stack>
           </DialogContent>
@@ -299,6 +457,112 @@ export default function UsersPage() {
             <Button onClick={() => setCreateOpen(false)}>{t("cancel")}</Button>
             <Button type="submit" variant="contained" disabled={creating}>
               {creating ? t("creating") : t("create")}
+            </Button>
+          </DialogActions>
+        </Box>
+      </Dialog>
+
+      {/* Edit User Dialog */}
+      <Dialog open={!!editTarget} onClose={() => setEditTarget(null)} maxWidth="sm" fullWidth>
+        <DialogTitle>{t("editUser")} — {editTarget?.email}</DialogTitle>
+        <Box component="form" onSubmit={editForm.handleSubmit(onEditUser)}>
+          <DialogContent>
+            {editError && (
+              <Alert severity="error" sx={{ mb: 2, whiteSpace: "pre-line" }}>
+                {editError}
+              </Alert>
+            )}
+            <Stack spacing={2}>
+              <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+                <TextField label={t("firstName")} fullWidth required {...editForm.register("first_name", { required: true })} />
+                <TextField label={t("lastName")} fullWidth required {...editForm.register("last_name", { required: true })} />
+              </Stack>
+              <Controller
+                name="phone"
+                control={editForm.control}
+                defaultValue=""
+                render={({ field }) => (
+                  <PhoneInput
+                    label={t("phone")}
+                    value={field.value}
+                    onChange={field.onChange}
+                  />
+                )}
+              />
+              <Controller
+                name="role"
+                control={editForm.control}
+                defaultValue="owner"
+                rules={{ required: t("roleRequired") }}
+                render={({ field, fieldState }) => (
+                  <TextField
+                    {...field}
+                    select
+                    label={t("colRole")}
+                    fullWidth
+                    required
+                    error={!!fieldState.error}
+                    helperText={fieldState.error?.message}
+                  >
+                    {ROLES.map((r) => (
+                      <MenuItem key={r} value={r}>
+                        {r === "admin" ? t("roleAdmin") : t("roleOwner")}
+                      </MenuItem>
+                    ))}
+                  </TextField>
+                )}
+              />
+              {watchEditRole === "admin" && (
+                <Controller
+                  name="buildings"
+                  control={editForm.control}
+                  defaultValue={[]}
+                  rules={{
+                    validate: (v) =>
+                      (Array.isArray(v) && v.length > 0) || t("buildingsRequired"),
+                  }}
+                  render={({ field, fieldState }) => (
+                    <Autocomplete
+                      multiple
+                      options={buildingsList}
+                      disableCloseOnSelect
+                      getOptionLabel={(opt) => opt.name || ""}
+                      isOptionEqualToValue={(opt, val) => opt.id === val.id || opt.id === val}
+                      value={buildingsList.filter((b) => (field.value || []).includes(b.id))}
+                      onChange={(_, newVal) => field.onChange(newVal.map((b) => b.id))}
+                      renderOption={(props, option, { selected }) => {
+                        const { key, ...rest } = props;
+                        return (
+                          <li key={key} {...rest}>
+                            <Checkbox
+                              icon={checkboxIcon}
+                              checkedIcon={checkedIcon}
+                              checked={selected}
+                              sx={{ mr: 1 }}
+                            />
+                            {option.name}
+                          </li>
+                        );
+                      }}
+                      renderInput={(params) => (
+                        <TextField
+                          {...params}
+                          label={t("managesBuildings")}
+                          placeholder={t("selectBuildings")}
+                          error={!!fieldState.error}
+                          helperText={fieldState.error?.message}
+                        />
+                      )}
+                    />
+                  )}
+                />
+              )}
+            </Stack>
+          </DialogContent>
+          <DialogActions sx={{ px: 3, pb: 2 }}>
+            <Button onClick={() => setEditTarget(null)}>{t("cancel")}</Button>
+            <Button type="submit" variant="contained" disabled={editing}>
+              {editing ? t("updating") : t("update")}
             </Button>
           </DialogActions>
         </Box>
