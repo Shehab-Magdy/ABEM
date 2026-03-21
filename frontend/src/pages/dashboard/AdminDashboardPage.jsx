@@ -263,9 +263,11 @@ export default function AdminDashboardPage() {
                   <Typography variant="h5" fontWeight={700} color="primary.main">
                     {data?.building_summary?.total_buildings ?? 0}
                   </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    {data?.building_summary?.total_units ?? 0} total units &nbsp;·&nbsp;{" "}
-                    {data?.building_summary?.occupied ?? 0} occupied
+                  <Typography variant="caption" color="text.secondary" display="block">
+                    {t("total_units", { count: data?.building_summary?.total_units ?? 0 })}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary" display="block">
+                    {t("occupied_units", { count: data?.building_summary?.occupied ?? 0 })}
                   </Typography>
                 </CardContent>
               </Card>
@@ -342,9 +344,14 @@ export default function AdminDashboardPage() {
                           </TableCell>
                           <TableCell align="center">
                             <Chip
-                              label={row.status}
+                              label={{
+                                'Paid': t('status_paid'),
+                                'Unpaid': t('status_unpaid'),
+                                'Partial': t('status_partial'),
+                                'Overdue': t('status_overdue'),
+                              }[row.status] || row.status}
                               size="small"
-                              color={row.status === "Overdue" ? "error" : "success"}
+                              color={row.status === "Overdue" ? "error" : row.status === "Paid" ? "success" : "warning"}
                             />
                           </TableCell>
                         </TableRow>

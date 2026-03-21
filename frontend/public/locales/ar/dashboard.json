@@ -31,10 +31,10 @@
   "units_past_due": "وحدات عليها مستحقات متأخرة",
   "view_payments": "عرض المدفوعات",
   "buildings_label": "المباني",
-  "total_units": "{{count}} وحدة إجمالاً",
-  "occupied_units": "{{count}} مشغولة",
+  "total_units": "إجمالي الوحدات: {{count}}",
+  "occupied_units": "مشغولة: {{count}}",
   "payment_collection_progress": "تقدم تحصيل المدفوعات",
-  "payment_collection_desc": "الوحدات التي سددت رصيدها من إجمالي الوحدات المفوترة",
+  "payment_collection_desc": "الوحدات المسددة بالكامل من إجمالي الوحدات المحملة بمصاريف",
   "no_billed_units": "لا توجد وحدات مفوترة بعد.",
   "all_paid": "تم السداد الكامل",
   "units_outstanding": "{{count}} وحدة لا تزال لديها رصيد مستحق",
@@ -66,5 +66,9 @@
   "registration_code": "رمز التسجيل",
   "validate": "تحقق",
   "claim_unit_number": "المطالبة بالوحدة {{unit}}",
-  "recurring_expense": "مصروف متكرر"
+  "recurring_expense": "مصروف متكرر",
+  "status_paid": "مدفوع",
+  "status_unpaid": "غير مدفوع",
+  "status_partial": "مدفوع جزئياً",
+  "status_overdue": "متأخر"
 }

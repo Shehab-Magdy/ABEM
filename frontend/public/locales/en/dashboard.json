@@ -31,10 +31,10 @@
   "units_past_due": "Units with past-due expenses",
   "view_payments": "View payments",
   "buildings_label": "Buildings",
-  "total_units": "{{count}} total units",
-  "occupied_units": "{{count}} occupied",
+  "total_units": "Total Units: {{count}}",
+  "occupied_units": "Occupied: {{count}}",
   "payment_collection_progress": "Payment Collection Progress",
-  "payment_collection_desc": "Units that have settled their balance out of all billed units",
+  "payment_collection_desc": "Fully paid units out of all units with active charges",
   "no_billed_units": "No billed units yet.",
   "all_paid": "All Paid",
   "units_outstanding": "{{count}} unit(s) still have an outstanding balance",
@@ -66,5 +66,9 @@
   "registration_code": "Registration Code",
   "validate": "Validate",
   "claim_unit_number": "Claim Unit {{unit}}",
-  "recurring_expense": "Recurring expense"
+  "recurring_expense": "Recurring expense",
+  "status_paid": "Paid",
+  "status_unpaid": "Unpaid",
+  "status_partial": "Partial",
+  "status_overdue": "Overdue"
 }
