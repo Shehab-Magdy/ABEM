@@ -56,5 +56,13 @@
   "blockAllMessaging": "حظر جميع الرسائل",
   "blockIndividualMessages": "حظر الرسائل المباشرة فقط",
   "saving": "جارٍ الحفظ\u2026",
-  "save": "حفظ"
+  "save": "حفظ",
+  "selectRole": "اختر الصلاحية",
+  "managesBuildings": "المباني التي يديرها",
+  "selectBuildings": "اختر المباني",
+  "roleRequired": "الصلاحية مطلوبة.",
+  "buildingsRequired": "يجب تحديد مبنى واحد على الأقل للمدير.",
+  "editUser": "تعديل بيانات المستخدم",
+  "update": "تحديث",
+  "updating": "جارٍ التحديث\u2026"
 }

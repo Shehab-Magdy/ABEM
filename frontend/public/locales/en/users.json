@@ -56,5 +56,13 @@
   "blockAllMessaging": "Block all messaging",
   "blockIndividualMessages": "Block individual (direct) messages only",
   "saving": "Saving\u2026",
-  "save": "Save"
+  "save": "Save",
+  "selectRole": "Select Role",
+  "managesBuildings": "Manages Buildings",
+  "selectBuildings": "Select buildings",
+  "roleRequired": "Role is required.",
+  "buildingsRequired": "At least one building must be assigned to an admin user.",
+  "editUser": "Edit User",
+  "update": "Update",
+  "updating": "Updating\u2026"
 }
