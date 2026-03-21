@@ -34,5 +34,7 @@
   "tour_button": "Tour",
   "start_tour": "Start tour",
   "step_8a_title": "Building assets",
-  "step_8a_desc": "Track physical equipment — elevators, generators, pumps, CCTV. Each asset carries a type, acquisition date, and value. When sold, record buyer details and sale price to maintain a complete asset ledger."
+  "step_8a_desc": "Track physical equipment — elevators, generators, pumps, CCTV. Each asset carries a type, acquisition date, and value. When sold, record buyer details and sale price to maintain a complete asset ledger.",
+  "step_9_title": "Your Profile",
+  "step_9_desc": "Update your display name, phone number, profile picture, and preferred language here. Your language preference is saved and applied across all your devices and sessions."
 }

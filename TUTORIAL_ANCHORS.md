@@ -19,10 +19,10 @@
 | `add-user-btn` | `pages/users/UsersPage.jsx` | Button | Admin step 6 — Manage users |
 | `categories-table` | `pages/expenses/ExpenseCategoriesPage.jsx` | TableContainer | Admin step 7 — Expense categories |
 | `assets-table` | `pages/assets/AssetsPage.jsx` | TableContainer | Admin step 8 — Building assets |
-| `audit-table` | `pages/audit/AuditLogPage.jsx` | TableContainer | Admin step 9 — Audit log |
 | `payments-table` | `pages/payments/PaymentsPage.jsx` | TableContainer | Owner step 3 — Your payment history |
 | `notifications-list` | `pages/notifications/NotificationCenterPage.jsx` | Stack | Owner step 4 — Notifications centre |
 | `profile-card` | `pages/profile/ProfilePage.jsx` | Box (page root) | Owner step 5 — Your profile |
+| `tutorial-profile-form` | `pages/profile/ProfilePage.jsx` | Box (wraps profile form section) | Admin step 9 — Your Profile; Owner step 5 — Your profile |
 | `tutorial-btn` | `tutorial/TutorialOverlay.jsx` | Button (in header) | — (meta: opens role picker) |
 
 ### Steps with no anchor (centered card)
@@ -45,7 +45,6 @@
 | `kAddUserKey` | FAB in UsersScreen | UsersScreen | Admin step 6 |
 | `kCategoriesListKey` | ListView in CategoriesScreen | CategoriesScreen | Admin step 7 |
 | `kAssetsListKey` | ListView in AssetsScreen | AssetsScreen | Admin step 8 |
-| `kAuditListKey` | ListView in AuditScreen | AuditScreen | Admin step 9 |
 | `kExpensesListKey` | ListView in ExpensesScreen | ExpensesScreen | Owner step 2 |
 | `kPaymentsListKey` | ListView in PaymentsScreen | PaymentsScreen | Owner step 3 |
 | `kNotificationsListKey` | ListView in NotificationsScreen | NotificationsScreen | Owner step 4 |

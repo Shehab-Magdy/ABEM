@@ -135,6 +135,7 @@ export default function ProfilePage() {
         </Alert>
       </Snackbar>
       <Box id="profile-card" maxWidth={640}>
+      <Box id="tutorial-profile-form">
       <Typography variant="h5" mb={3}>{t("title")}</Typography>
 
       {/* Profile picture */}
@@ -303,6 +304,7 @@ export default function ProfilePage() {
           </Box>
         </CardContent>
       </Card>
+    </Box>
     </Box>
     </>
   );

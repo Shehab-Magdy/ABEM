@@ -116,13 +116,13 @@ export const TUTORIAL_STEPS = {
         "Track physical equipment — elevators, generators, pumps, CCTV. Each asset carries a type, acquisition date, and value. When sold, record buyer details and sale price to maintain a complete asset ledger.",
     },
     {
-      page: "/audit",
-      anchor: "audit-table",
-      titleKey: "step_8_title",
-      descKey: "step_8_desc",
-      title: "Audit log",
+      page: "/profile",
+      anchor: "tutorial-profile-form",
+      titleKey: "step_9_title",
+      descKey: "step_9_desc",
+      title: "Your Profile",
       description:
-        "Every write action is logged automatically with the actor, action type, affected entity, and timestamp. Admins cannot edit or delete audit entries. Use this screen for financial compliance, dispute resolution, and accountability.",
+        "Update your display name, phone number, profile picture, and preferred language here. Your language preference is saved and applied across all your devices and sessions.",
     },
   ],
   owner: [
@@ -164,7 +164,7 @@ export const TUTORIAL_STEPS = {
     },
     {
       page: "/profile",
-      anchor: "profile-card",
+      anchor: "tutorial-profile-form",
       titleKey: "step_o5_title",
       descKey: "step_o5_desc",
       title: "Your profile",
@@ -215,19 +215,28 @@ const EDGE   = 12;  // minimum distance from viewport edge
 const RING_PAD = 6; // padding around highlight ring
 
 /** Returns { top, left } for the tooltip card so it never clips outside viewport. */
-function calcCardPos(rect, vw, vh) {
+function calcCardPos(rect, vw, vh, isRTL = false) {
   if (!rect) {
     return { top: vh / 2 - CARD_H / 2, left: vw / 2 - CARD_W / 2 };
   }
 
-  const candidates = [
-    { top: rect.bottom + MARGIN, left: rect.left },                    // below
-    { top: rect.top - CARD_H - MARGIN, left: rect.left },              // above
-    { top: rect.top, left: rect.right + MARGIN },                      // right
-    { top: rect.top, left: rect.left - CARD_W - MARGIN },              // left
-    { top: rect.bottom + MARGIN, left: rect.right - CARD_W },          // below-right-aligned
-    { top: rect.top - CARD_H - MARGIN, left: rect.right - CARD_W },    // above-right-aligned
-  ];
+  const candidates = isRTL
+    ? [
+        { top: rect.bottom + MARGIN, left: rect.right - CARD_W },          // below-right-aligned (RTL preferred)
+        { top: rect.bottom + MARGIN, left: rect.left },                    // below-left-aligned
+        { top: rect.top - CARD_H - MARGIN, left: rect.right - CARD_W },    // above-right-aligned
+        { top: rect.top - CARD_H - MARGIN, left: rect.left },              // above-left-aligned
+        { top: rect.top, left: rect.left - CARD_W - MARGIN },              // left
+        { top: rect.top, left: rect.right + MARGIN },                      // right
+      ]
+    : [
+        { top: rect.bottom + MARGIN, left: rect.left },                    // below
+        { top: rect.top - CARD_H - MARGIN, left: rect.left },              // above
+        { top: rect.top, left: rect.right + MARGIN },                      // right
+        { top: rect.top, left: rect.left - CARD_W - MARGIN },              // left
+        { top: rect.bottom + MARGIN, left: rect.right - CARD_W },          // below-right-aligned
+        { top: rect.top - CARD_H - MARGIN, left: rect.right - CARD_W },    // above-right-aligned
+      ];
 
   for (const pos of candidates) {
     if (
@@ -243,7 +252,7 @@ function calcCardPos(rect, vw, vh) {
   // Clamp fallback
   return {
     top: Math.max(EDGE, Math.min(rect.bottom + MARGIN, vh - CARD_H - EDGE)),
-    left: Math.max(EDGE, Math.min(rect.left, vw - CARD_W - EDGE)),
+    left: Math.max(EDGE, Math.min(isRTL ? rect.right - CARD_W : rect.left, vw - CARD_W - EDGE)),
   };
 }
 
@@ -429,6 +438,7 @@ function TutorialCard({ step, stepIndex, totalSteps, cardPos, onNext, onPrev, on
 export function TutorialOverlay() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { i18n } = useTranslation();
   const {
     isActive, role, currentStep,
     nextStep, prevStep, endTutorial,
@@ -440,6 +450,8 @@ export function TutorialOverlay() {
 
   const steps = role ? TUTORIAL_STEPS[role] : [];
   const step  = steps[currentStep] ?? null;
+
+  const isRTL = document.documentElement.dir === 'rtl' || document.body.dir === 'rtl';
 
   /** Resolve the anchor element and compute positions. */
   const resolveAnchor = useCallback(async () => {
@@ -463,8 +475,8 @@ export function TutorialOverlay() {
 
     const rect = el.getBoundingClientRect();
     setAnchorRect(rect);
-    setCardPos(calcCardPos(rect, window.innerWidth, window.innerHeight));
-  }, [step]);
+    setCardPos(calcCardPos(rect, window.innerWidth, window.innerHeight, isRTL));
+  }, [step, isRTL]);
 
   // Navigate whenever the step changes, then resolve the anchor.
   useEffect(() => {
@@ -477,7 +489,7 @@ export function TutorialOverlay() {
       resolveAnchor();
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isActive, currentStep]);
+  }, [isActive, currentStep, i18n.language]);
 
   // After navigation completes, resolve the anchor.
   useEffect(() => {
