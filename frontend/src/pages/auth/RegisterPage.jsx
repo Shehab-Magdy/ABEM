@@ -414,7 +414,7 @@ function ClaimUnitStep({ onDone, onSkip, isAdmin }) {
                     onChange={(_, v) => { if (v) { setUnitTypeFilter(v); setSelectedApartment(""); } }}
                     size="small"
                   >
-                    <ToggleButton value="all">{t("common:all_buildings", "All")}</ToggleButton>
+                    <ToggleButton value="all">{t("all_units")}</ToggleButton>
                     <ToggleButton value="apartment">{t("buildings:apartments_title", "Apartments")}</ToggleButton>
                     <ToggleButton value="store">{t("buildings:num_stores", "Stores")}</ToggleButton>
                   </ToggleButtonGroup>
