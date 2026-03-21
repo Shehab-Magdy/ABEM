@@ -131,7 +131,7 @@ class ExpenseViewSet(ModelViewSet):
     # ── Permissions ────────────────────────────────────────────────────────────
 
     def get_permissions(self):
-        write_actions = ("create", "partial_update", "update", "destroy", "upload")
+        write_actions = ("create", "partial_update", "update", "destroy", "upload", "mark_paid")
         if self.action in write_actions:
             return [IsAuthenticated(), IsAdminRole()]
         return [IsAuthenticated()]
@@ -205,6 +205,32 @@ class ExpenseViewSet(ModelViewSet):
         )
         instance.deleted_at = timezone.now()
         instance.save()
+
+    # ── Mark as paid ──────────────────────────────────────────────────────────
+
+    @action(
+        detail=True,
+        methods=["post"],
+        url_path="mark_paid",
+        permission_classes=[IsAuthenticated, IsAdminRole],
+    )
+    def mark_paid(self, request, pk=None):
+        """
+        POST /expenses/{id}/mark_paid/
+        Toggle the is_manually_paid flag (admin only).
+        """
+        expense = self.get_object()
+        expense.is_manually_paid = not expense.is_manually_paid
+        expense.save(update_fields=["is_manually_paid"])
+        log_action(
+            user=request.user,
+            action="expense.marked_paid",
+            entity="expense",
+            entity_id=expense.id,
+            changes={"is_manually_paid": {"after": expense.is_manually_paid}},
+            request=request,
+        )
+        return Response(self.get_serializer(expense).data)
 
     # ── File upload ────────────────────────────────────────────────────────────
 

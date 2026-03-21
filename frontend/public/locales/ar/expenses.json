@@ -76,5 +76,8 @@
   "status_paid": "مدفوع",
   "status_unpaid": "غير مدفوع",
   "status_partial": "مدفوع جزئياً",
-  "paid_amount": "المدفوع"
+  "paid_amount": "المدفوع",
+  "mark_as_paid": "تحديد كمدفوع",
+  "marked_paid": "تم التحديد كمدفوع",
+  "paid": "مدفوع"
 }

@@ -6,6 +6,7 @@ export const expensesApi = {
   create: (data) => axiosClient.post("/expenses/", data),
   update: (id, data) => axiosClient.patch(`/expenses/${id}/`, data),
   remove: (id) => axiosClient.delete(`/expenses/${id}/`),
+  markPaid: (id) => axiosClient.post(`/expenses/${id}/mark_paid/`),
   uploadBill: (id, formData) =>
     axiosClient.post(`/expenses/${id}/upload/`, formData, {
       headers: { "Content-Type": "multipart/form-data" },
