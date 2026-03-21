@@ -68,9 +68,6 @@ export default function Footer() {
               <Link component={RouterLink} to="/expense-categories" variant="body2" color="text.secondary" underline="hover">
                 {t("categories")}
               </Link>
-              <Link component={RouterLink} to="/audit" variant="body2" color="text.secondary" underline="hover">
-                {t("footer_audit", "Audit Log")}
-              </Link>
             </Stack>
           </Grid>
 
