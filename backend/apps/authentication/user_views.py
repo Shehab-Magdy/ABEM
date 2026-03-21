@@ -62,10 +62,16 @@ class UserViewSet(AuditLogMixin, ModelViewSet):
             Q(admin=requesting_admin) | Q(co_admins=requesting_admin)
         ).values_list("id", flat=True)
 
+        # Include users who belong to managed buildings, plus users with no
+        # building associations at all (e.g. freshly admin-created owners not
+        # yet assigned to a building) so they appear in the assign-owner dropdown.
         return base.filter(
             Q(buildings__id__in=managed_ids)
             | Q(administered_buildings__id__in=managed_ids)
             | Q(co_administered_buildings__id__in=managed_ids)
+            | Q(buildings__isnull=True,
+                administered_buildings__isnull=True,
+                co_administered_buildings__isnull=True)
         ).distinct().order_by("-created_at")
 
     def get_serializer_class(self):
@@ -76,6 +82,34 @@ class UserViewSet(AuditLogMixin, ModelViewSet):
         if self.action == "reset_password":
             return AdminResetPasswordSerializer
         return UserSerializer
+
+    def get_serializer_context(self):
+        """Ensure the request object is always available in serializer context."""
+        context = super().get_serializer_context()
+        context["request"] = self.request
+        return context
+
+    def perform_update(self, serializer):
+        """Override to handle non-model 'buildings' field in audit logging."""
+        # Collect old values only for real model fields (skip 'buildings')
+        model_fields = {
+            field: getattr(serializer.instance, field)
+            for field in serializer.validated_data
+            if field != "buildings" and hasattr(serializer.instance, field)
+        }
+        instance = serializer.save()
+        changes = {
+            field: {"before": str(model_fields.get(field, "")), "after": str(getattr(instance, field, ""))}
+            for field in model_fields
+        }
+        log_action(
+            user=self.request.user,
+            action="update",
+            entity=self.audit_entity or instance.__class__.__name__.lower(),
+            entity_id=instance.pk,
+            changes=changes,
+            request=self.request,
+        )
 
     # ── Custom actions ────────────────────────────────────────────────────────
 
