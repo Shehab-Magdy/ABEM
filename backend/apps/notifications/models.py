@@ -13,6 +13,7 @@ class NotificationType(models.TextChoices):
     EXPENSE_UPDATED = "expense_updated", _("Expense Updated")
     USER_REGISTERED = "user_registered", _("New User Registered")
     ANNOUNCEMENT = "announcement", _("Announcement")
+    MESSAGE = "message", _("Message")
 
 
 class NotificationChannel(models.TextChoices):
@@ -38,6 +39,10 @@ class Notification(models.Model):
     title = models.CharField(max_length=255)
     body = models.TextField()
     message_key = models.CharField(max_length=100, null=True, blank=True)
+    broadcast_group = models.UUIDField(
+        null=True, blank=True,
+        help_text="Groups notifications from the same broadcast/announcement.",
+    )
     is_read = models.BooleanField(default=False)
     metadata = models.JSONField(default=dict, blank=True)  # extra context (expense_id, amount, etc.)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -48,6 +53,7 @@ class Notification(models.Model):
         indexes = [
             models.Index(fields=["user", "is_read"]),
             models.Index(fields=["created_at"]),
+            models.Index(fields=["broadcast_group"]),
         ]
 
     def __str__(self):

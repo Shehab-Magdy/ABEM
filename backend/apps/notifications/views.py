@@ -1,6 +1,8 @@
 """Notification views – Sprint 6."""
 from __future__ import annotations
 
+import uuid
+
 from django.shortcuts import get_object_or_404
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
@@ -49,7 +51,7 @@ class NotificationViewSet(ReadOnlyModelViewSet):
         notification = self.get_object()
         notification.is_read = True
         notification.save(update_fields=["is_read"])
-        return Response(NotificationSerializer(notification).data)
+        return Response(NotificationSerializer(notification, context={"request": request}).data)
 
     @action(
         detail=False,
@@ -80,6 +82,7 @@ class NotificationViewSet(ReadOnlyModelViewSet):
             .distinct()
         )
 
+        group_id = uuid.uuid4()
         created = 0
         for owner in owners:
             notify_user(
@@ -88,6 +91,8 @@ class NotificationViewSet(ReadOnlyModelViewSet):
                 title=serializer.validated_data["subject"],
                 body=serializer.validated_data["message"],
                 metadata={"building_id": str(building.id)},
+                sender=request.user,
+                broadcast_group=group_id,
             )
             created += 1
 
@@ -95,6 +100,45 @@ class NotificationViewSet(ReadOnlyModelViewSet):
             {"created": created, "building_id": str(building.id)},
             status=201,
         )
+
+    @action(
+        detail=True,
+        methods=["get"],
+        url_path="read-by",
+        permission_classes=[IsAuthenticated, IsAdminRole],
+    )
+    def read_by(self, request, pk=None):
+        """
+        GET /api/v1/notifications/{id}/read-by/
+        Admin-only: returns who has read this broadcast announcement.
+        """
+        notification = self.get_object()
+        if not notification.broadcast_group:
+            return Response(
+                {"total_recipients": 1, "read_count": int(notification.is_read), "read_by": []},
+            )
+
+        related = Notification.objects.filter(broadcast_group=notification.broadcast_group)
+        total = related.count()
+        read_notifications = related.filter(is_read=True).select_related("user")
+
+        read_users = []
+        for n in read_notifications:
+            profile_url = None
+            if n.user.profile_picture:
+                profile_url = request.build_absolute_uri(n.user.profile_picture.url)
+            read_users.append({
+                "id": str(n.user.id),
+                "first_name": n.user.first_name,
+                "last_name": n.user.last_name,
+                "profile_picture": profile_url,
+            })
+
+        return Response({
+            "total_recipients": total,
+            "read_count": len(read_users),
+            "read_by": read_users,
+        })
 
     @action(
         detail=False,
@@ -172,7 +216,7 @@ class NotificationViewSet(ReadOnlyModelViewSet):
                 continue  # don't send to yourself
             notify_user(
                 user=recipient,
-                notification_type=NotificationType.ANNOUNCEMENT,
+                notification_type=NotificationType.MESSAGE,
                 title=title,
                 body=message,
                 metadata={"building_id": str(building.id), "sender_id": str(request.user.pk)},
