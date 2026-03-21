@@ -48,5 +48,7 @@
   "type_announcement": "Announcement",
   "type_message": "Message",
   "message_sent_one": "Message sent to 1 recipient.",
-  "message_sent_other": "Message sent to {{count}} recipients."
+  "message_sent_other": "Message sent to {{count}} recipients.",
+  "read_by_count": "Read by {{read}}/{{total}}",
+  "read_by": "Read by"
 }

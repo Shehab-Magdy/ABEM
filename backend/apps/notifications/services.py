@@ -86,6 +86,7 @@ def notify_user(
     metadata: dict | None = None,
     sender=None,
     message_key: str | None = None,
+    broadcast_group=None,
 ) -> Notification:
     """Create a single in-app notification for *user*."""
     return Notification.objects.create(
@@ -96,6 +97,7 @@ def notify_user(
         title=title,
         body=body,
         message_key=message_key,
+        broadcast_group=broadcast_group,
         metadata=metadata or {},
     )
 

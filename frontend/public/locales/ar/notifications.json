@@ -51,5 +51,7 @@
   "message_sent_two": "تم إرسال الرسالة إلى مستلمَين.",
   "message_sent_few": "تم إرسال الرسالة إلى {{count}} مستلمين.",
   "message_sent_many": "تم إرسال الرسالة إلى {{count}} مستلمين.",
-  "message_sent_other": "تم إرسال الرسالة إلى {{count}} مستلمين."
+  "message_sent_other": "تم إرسال الرسالة إلى {{count}} مستلمين.",
+  "read_by_count": "قرأها {{read}}/{{total}}",
+  "read_by": "قرأها"
 }
