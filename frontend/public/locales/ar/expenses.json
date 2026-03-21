@@ -72,5 +72,9 @@
   "delete": "حذف",
   "apartments_only": "الشقق السكنية فقط",
   "stores_only": "المحلات التجارية فقط",
-  "type": "النوع"
+  "type": "النوع",
+  "status_paid": "مدفوع",
+  "status_unpaid": "غير مدفوع",
+  "status_partial": "مدفوع جزئياً",
+  "paid_amount": "المدفوع"
 }

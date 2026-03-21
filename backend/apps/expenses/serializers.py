@@ -43,10 +43,45 @@ class ApartmentExpenseSerializer(serializers.ModelSerializer):
     """Read-only share row returned inside expense detail."""
     apartment_id = serializers.UUIDField(source="apartment.id", read_only=True)
     unit_number = serializers.CharField(source="apartment.unit_number", read_only=True)
+    payment_status = serializers.SerializerMethodField()
+    total_paid = serializers.SerializerMethodField()
 
     class Meta:
         model = ApartmentExpense
-        fields = ["id", "apartment_id", "unit_number", "share_amount"]
+        fields = ["id", "apartment_id", "unit_number", "share_amount", "payment_status", "total_paid"]
+
+    def get_total_paid(self, obj):
+        """Sum of payments linked to this expense for this apartment."""
+        from apps.payments.models import Payment
+        from django.db.models import Sum
+        result = Payment.objects.filter(
+            apartment_id=obj.apartment_id,
+            expenses=obj.expense,
+        ).aggregate(total=Sum("amount_paid"))
+        return str(result["total"] or 0)
+
+    def get_payment_status(self, obj):
+        """
+        Derived payment status for this apartment's share of the expense.
+        - "paid"    if is_manually_paid or cumulative payments >= share_amount
+        - "partial" if cumulative payments > 0 but < share_amount
+        - "unpaid"  if no payments
+        """
+        if obj.expense.is_manually_paid:
+            return "paid"
+        from apps.payments.models import Payment
+        from django.db.models import Sum
+        from decimal import Decimal
+        result = Payment.objects.filter(
+            apartment_id=obj.apartment_id,
+            expenses=obj.expense,
+        ).aggregate(total=Sum("amount_paid"))
+        total_paid = result["total"] or Decimal("0.00")
+        if total_paid >= obj.share_amount:
+            return "paid"
+        elif total_paid > Decimal("0.00"):
+            return "partial"
+        return "unpaid"
 
 
 class RecurringConfigSerializer(serializers.ModelSerializer):
@@ -84,6 +119,9 @@ class ExpenseSerializer(serializers.ModelSerializer):
 
     # The requesting user's per-unit share; None when the user is admin
     my_share_amount = serializers.SerializerMethodField()
+
+    # The requesting user's derived payment status; None when the user is admin
+    my_payment_status = serializers.SerializerMethodField()
 
     # Write-only: frequency for creating the recurring config
     frequency = serializers.ChoiceField(
@@ -131,6 +169,8 @@ class ExpenseSerializer(serializers.ModelSerializer):
             "recurring_config",
             "attachments",
             "my_share_amount",
+            "my_payment_status",
+            "is_manually_paid",
             "created_at",
             "updated_at",
         ]
@@ -172,6 +212,41 @@ class ExpenseSerializer(serializers.ModelSerializer):
                 apartment__owner=request.user
             ).first()
         return str(share.share_amount) if share else None
+
+    def get_my_payment_status(self, obj):
+        """
+        Derived payment status for the requesting owner's share.
+        Returns None for admin users.
+        When is_manually_paid is True, always returns "paid".
+        """
+        if obj.is_manually_paid:
+            return "paid"
+        request = self.context.get("request")
+        if not request or request.user.role == "admin":
+            return None
+        share = obj.apartment_expenses.filter(
+            apartment__owners=request.user
+        ).first()
+        if share is None:
+            share = obj.apartment_expenses.filter(
+                apartment__owner=request.user
+            ).first()
+        if share is None:
+            return None
+
+        from apps.payments.models import Payment
+        from django.db.models import Sum
+        from decimal import Decimal
+        result = Payment.objects.filter(
+            apartment_id=share.apartment_id,
+            expenses=obj,
+        ).aggregate(total=Sum("amount_paid"))
+        total_paid = result["total"] or Decimal("0.00")
+        if total_paid >= share.share_amount:
+            return "paid"
+        elif total_paid > Decimal("0.00"):
+            return "partial"
+        return "unpaid"
 
     # ── Write ──────────────────────────────────────────────────────────────────
 

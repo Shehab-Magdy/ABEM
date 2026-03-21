@@ -72,5 +72,9 @@
   "delete": "Delete",
   "apartments_only": "Apartments Only",
   "stores_only": "Stores Only",
-  "type": "Type"
+  "type": "Type",
+  "status_paid": "Paid",
+  "status_unpaid": "Unpaid",
+  "status_partial": "Partial",
+  "paid_amount": "Paid"
 }

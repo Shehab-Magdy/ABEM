@@ -44,9 +44,12 @@ import {
 import {
   Add as AddIcon,
   AttachFile as AttachFileIcon,
+  CheckCircle as CheckCircleIcon,
   Delete as DeleteIcon,
   Edit as EditIcon,
   FilterList as FilterIcon,
+  HourglassEmpty as HourglassIcon,
+  Cancel as CancelIcon,
   Repeat as RepeatIcon,
   Visibility as ViewIcon,
 } from "@mui/icons-material";
@@ -85,10 +88,36 @@ const EMPTY_FORM = {
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
-function statusChip(expense, t) {
+function statusChip(expense, t, isAdmin) {
+  // Admin override: is_manually_paid always shows "Paid"
+  if (expense.is_manually_paid) {
+    return <Chip label={t("paid", "Paid")} size="small" color="success" />;
+  }
+
   const shares = expense.apartment_shares || [];
   if (!shares.length) return <Chip label={t("no_split", "No Split")} size="small" color="default" />;
-  return <Chip label={t("unpaid", "Unpaid")} size="small" color="error" />;
+
+  // Owner view: use the per-owner computed status from the API
+  if (!isAdmin && expense.my_payment_status) {
+    const statusMap = {
+      paid:    { label: t("status_paid", "Paid"),    color: "success" },
+      partial: { label: t("status_partial", "Partial"), color: "warning" },
+      unpaid:  { label: t("status_unpaid", "Unpaid"),  color: "error" },
+    };
+    const s = statusMap[expense.my_payment_status] || statusMap.unpaid;
+    return <Chip label={s.label} size="small" color={s.color} />;
+  }
+
+  // Admin view: derive an aggregate status from all per-unit statuses
+  if (isAdmin && shares.length > 0 && shares[0].payment_status) {
+    const allPaid = shares.every((s) => s.payment_status === "paid");
+    const anyPaid = shares.some((s) => s.payment_status === "paid" || s.payment_status === "partial");
+    if (allPaid) return <Chip label={t("status_paid", "Paid")} size="small" color="success" />;
+    if (anyPaid) return <Chip label={t("status_partial", "Partial")} size="small" color="warning" />;
+    return <Chip label={t("status_unpaid", "Unpaid")} size="small" color="error" />;
+  }
+
+  return <Chip label={t("status_unpaid", "Unpaid")} size="small" color="error" />;
 }
 
 // ── Main component ─────────────────────────────────────────────────────────────
@@ -277,6 +306,27 @@ export default function ExpensesPage() {
     }
   };
 
+  // ── Mark as paid ───────────────────────────────────────────────────────────
+
+  const handleMarkPaid = async (expense) => {
+    try {
+      const res = await expensesApi.markPaid(expense.id);
+      const updated = res.data;
+      setExpenses((prev) =>
+        prev.map((e) => (e.id === updated.id ? updated : e))
+      );
+      setSnack({
+        open: true,
+        msg: updated.is_manually_paid
+          ? t("marked_paid", "Marked as Paid")
+          : t("mark_as_paid", "Mark as Paid"),
+        severity: "success",
+      });
+    } catch {
+      setSnack({ open: true, msg: t("save_error", "Error saving expense"), severity: "error" });
+    }
+  };
+
   // ── Delete ─────────────────────────────────────────────────────────────────
 
   const handleDelete = async () => {
@@ -455,7 +505,7 @@ export default function ExpensesPage() {
                         variant="outlined"
                       />
                     </TableCell>
-                    <TableCell>{statusChip(exp, t)}</TableCell>
+                    <TableCell>{statusChip(exp, t, isAdmin)}</TableCell>
                     <TableCell>
                       {exp.is_recurring && (
                         <Chip
@@ -499,6 +549,15 @@ export default function ExpensesPage() {
                             <Tooltip title={t("upload_bill")}>
                               <IconButton size="small" onClick={() => setUploadTarget(exp)}>
                                 <AttachFileIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                            <Tooltip title={exp.is_manually_paid ? t("marked_paid") : t("mark_as_paid")}>
+                              <IconButton
+                                size="small"
+                                color={exp.is_manually_paid ? "success" : "default"}
+                                onClick={() => handleMarkPaid(exp)}
+                              >
+                                <CheckCircleIcon fontSize="small" />
                               </IconButton>
                             </Tooltip>
                             <Tooltip title={t("delete")}>
@@ -824,19 +883,43 @@ export default function ExpensesPage() {
                       <TableRow>
                         <TableCell>{t("unit")}</TableCell>
                         <TableCell align="right">{t("share_amount")}</TableCell>
+                        <TableCell align="right">{t("paid_amount")}</TableCell>
+                        <TableCell align="center">{t("status")}</TableCell>
                       </TableRow>
                     </TableHead>
                     <TableBody>
-                      {detailExpense.apartment_shares.map((s) => (
-                        <TableRow key={s.id}>
-                          <TableCell>{s.unit_number}</TableCell>
-                          <TableCell align="right" sx={{ fontWeight: 500 }}>
-                            {parseFloat(s.share_amount).toLocaleString("en-US", {
-                              minimumFractionDigits: 2,
-                            })}
-                          </TableCell>
-                        </TableRow>
-                      ))}
+                      {detailExpense.apartment_shares.map((s) => {
+                        const statusConfig = {
+                          paid:    { label: t("status_paid", "Paid"),    color: "success", icon: <CheckCircleIcon fontSize="small" color="success" /> },
+                          partial: { label: t("status_partial", "Partial"), color: "warning", icon: <HourglassIcon fontSize="small" color="warning" /> },
+                          unpaid:  { label: t("status_unpaid", "Unpaid"),  color: "error",   icon: <CancelIcon fontSize="small" color="error" /> },
+                        };
+                        const sc = statusConfig[s.payment_status] || statusConfig.unpaid;
+                        return (
+                          <TableRow key={s.id}>
+                            <TableCell>{s.unit_number}</TableCell>
+                            <TableCell align="right" sx={{ fontWeight: 500 }}>
+                              {parseFloat(s.share_amount).toLocaleString("en-US", {
+                                minimumFractionDigits: 2,
+                              })}
+                            </TableCell>
+                            <TableCell align="right" sx={{ fontWeight: 500 }}>
+                              {parseFloat(s.total_paid || 0).toLocaleString("en-US", {
+                                minimumFractionDigits: 2,
+                              })}
+                            </TableCell>
+                            <TableCell align="center">
+                              <Chip
+                                icon={sc.icon}
+                                label={sc.label}
+                                size="small"
+                                color={sc.color}
+                                variant="outlined"
+                              />
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
                     </TableBody>
                     <TableFooter>
                       <TableRow sx={{ "& td": { borderTop: "2px solid", borderColor: "divider" } }}>
@@ -846,6 +929,12 @@ export default function ExpensesPage() {
                             .reduce((sum, s) => sum + parseFloat(s.share_amount), 0)
                             .toLocaleString("en-US", { minimumFractionDigits: 2 })}
                         </TableCell>
+                        <TableCell align="right" sx={{ fontWeight: 700 }}>
+                          {detailExpense.apartment_shares
+                            .reduce((sum, s) => sum + parseFloat(s.total_paid || 0), 0)
+                            .toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                        </TableCell>
+                        <TableCell />
                       </TableRow>
                     </TableFooter>
                   </Table>
