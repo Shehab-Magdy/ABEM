@@ -1,4 +1,4 @@
-"""Payment views – Sprint 4 + Sprint 8 (PDF receipt)."""
+"""Payment views – Sprint 4 + Sprint 8 (PDF receipt) + BF-01 (i18n/RTL)."""
 from __future__ import annotations
 
 import html as html_lib
@@ -15,8 +15,85 @@ from apps.apartments.models import Apartment
 from apps.audit.mixins import log_action
 from apps.authentication.permissions import IsAdminRole
 
-from .models import AssetSale, BuildingAsset, Payment
+from .models import AssetSale, BuildingAsset, Payment, PaymentExpense, PaymentMethod
 from .serializers import BuildingAssetSerializer, PaymentSerializer
+
+
+# ── Arabic numeral / receipt helpers ─────────────────────────────────────────
+
+_EASTERN_ARABIC_DIGITS = '٠١٢٣٤٥٦٧٨٩'
+
+
+def _to_eastern_arabic(value: str) -> str:
+    """Replace ASCII digits with Eastern Arabic-Indic digits."""
+    return ''.join(
+        _EASTERN_ARABIC_DIGITS[int(ch)] if ch.isdigit() else ch
+        for ch in str(value)
+    )
+
+
+def _fmt_money(amount, lang: str) -> str:
+    """Format a Decimal/float as a money string with currency label."""
+    formatted = f"{amount:,.2f}"
+    currency = "ج.م" if lang == "ar" else "EGP"
+    if lang == "ar":
+        return f"{_to_eastern_arabic(formatted)} {currency}"
+    return f"{formatted} {currency}"
+
+
+# Labels used in the receipt, keyed by language code
+_RECEIPT_LABELS = {
+    "en": {
+        "receipt_title": "PAYMENT RECEIPT",
+        "receipt_no": "Receipt No",
+        "building": "BUILDING",
+        "unit": "UNIT",
+        "owner": "OWNER",
+        "amount_paid": "Amount Paid",
+        "payment_date": "Payment Date",
+        "payment_method": "Payment Method",
+        "for_expenses": "For Expenses",
+        "balance_before": "Balance Before",
+        "balance_after": "Balance After",
+        "recorded_by": "Recorded By",
+        "notes": "Notes",
+        "general_payment": "General payment",
+        "paid_received": "PAID {amount} RECEIVED",
+        "footer": "This is an automatically generated receipt. ABEM - abem.app",
+        "subtitle": "Apartment & Building Expense Management",
+        # payment method translations
+        "cash": "Cash",
+        "bank_transfer": "Bank Transfer",
+        "cheque": "Cheque",
+        "mobile_wallet": "Mobile Wallet",
+        "other": "Other",
+    },
+    "ar": {
+        "receipt_title": "إيصال دفع",
+        "receipt_no": "رقم الإيصال",
+        "building": "المبنى",
+        "unit": "الوحدة",
+        "owner": "المالك",
+        "amount_paid": "المبلغ المدفوع",
+        "payment_date": "تاريخ الدفع",
+        "payment_method": "طريقة الدفع",
+        "for_expenses": "للمصروفات",
+        "balance_before": "الرصيد قبل",
+        "balance_after": "الرصيد بعد",
+        "recorded_by": "سُجّل بواسطة",
+        "notes": "ملاحظات",
+        "general_payment": "دفعة عامة",
+        "paid_received": "تم الدفع {amount} تم الاستلام",
+        "footer": "هذا إيصال تم إنشاؤه تلقائيًا. ABEM - abem.app",
+        "subtitle": "إدارة مصروفات الشقق والمباني",
+        # payment method translations
+        "cash": "نقداً",
+        "bank_transfer": "تحويل بنكي",
+        "cheque": "شيك",
+        "mobile_wallet": "محفظة موبايل",
+        "other": "أخرى",
+    },
+}
 
 
 class PaymentViewSet(ModelViewSet):
@@ -39,7 +116,9 @@ class PaymentViewSet(ModelViewSet):
     # ── Scoping & filtering ─────────────────────────────────────────────────────
 
     def get_queryset(self):
-        qs = Payment.objects.select_related("apartment", "recorded_by").prefetch_related("expenses")
+        qs = Payment.objects.select_related("apartment", "recorded_by").prefetch_related(
+            "expenses", "payment_expenses", "payment_expenses__expense",
+        )
 
         if self.request.user.role != "admin":
             # Owners see payments for any apartment they are primary or co-owner of
@@ -77,10 +156,14 @@ class PaymentViewSet(ModelViewSet):
           2. Snapshot balance_before.
           3. Deduct amount_paid from apartment.balance.
           4. Save Payment with balance snapshots + recorded_by.
-          5. Emit audit log.
+          5. Create PaymentExpense rows with optional allocations.
+          6. Emit audit log.
         """
+        from decimal import Decimal
+
         apartment = serializer.validated_data["apartment"]
         amount_paid = serializer.validated_data["amount_paid"]
+        raw_allocations = self.request.data.get("allocations", [])
 
         with transaction.atomic():
             apt = Apartment.objects.select_for_update().get(pk=apartment.pk)
@@ -94,9 +177,24 @@ class PaymentViewSet(ModelViewSet):
                 balance_after=apt.balance,
             )
 
+            # Handle manual allocations if provided
+            if raw_allocations:
+                for alloc in raw_allocations:
+                    expense_id = alloc.get("expense_id")
+                    alloc_amount = alloc.get("allocated_amount")
+                    PaymentExpense.objects.update_or_create(
+                        payment=payment,
+                        expense_id=expense_id,
+                        defaults={
+                            "allocated_amount": Decimal(str(alloc_amount)) if alloc_amount is not None else None,
+                        },
+                    )
+
+        # Determine audit action based on whether allocations were distributed
+        audit_action = "payment.distributed" if raw_allocations else "create"
         log_action(
             user=self.request.user,
-            action="create",
+            action=audit_action,
             entity="payment",
             entity_id=payment.pk,
             request=self.request,
@@ -135,6 +233,11 @@ class PaymentViewSet(ModelViewSet):
                 from rest_framework.exceptions import PermissionDenied
                 raise PermissionDenied(_("You do not have permission to view this receipt."))
 
+        # Determine language from user preference
+        lang = getattr(request.user, "preferred_language", None) or "en"
+        labels = _RECEIPT_LABELS.get(lang, _RECEIPT_LABELS["en"])
+        is_rtl = lang == "ar"
+
         def esc(value) -> str:
             """HTML-escape any user-provided value to prevent injection in the PDF."""
             return html_lib.escape(str(value))
@@ -143,7 +246,7 @@ class PaymentViewSet(ModelViewSet):
         expense_str = (
             ", ".join(esc(e.title) for e in linked_expenses)
             if linked_expenses
-            else "General payment"
+            else labels["general_payment"]
         )
 
         recorded_by_name = (
@@ -151,20 +254,29 @@ class PaymentViewSet(ModelViewSet):
             if payment.recorded_by else "—"
         )
 
+        # Translate payment method using the labels dict
+        method_display = labels.get(payment.payment_method, payment.payment_method.replace("_", " ").title())
+
         fields = [
-            (str(_("Amount Paid")),    f"{payment.amount_paid:,.2f} EGP"),
-            (str(_("Payment Date")),   str(payment.payment_date)),
-            (str(_("Payment Method")), payment.payment_method.replace("_", " ").title()),
-            (str(_("For Expenses")),   expense_str),
-            (str(_("Balance Before")), f"{payment.balance_before:,.2f} EGP"),
-            (str(_("Balance After")),  f"{payment.balance_after:,.2f} EGP"),
-            (str(_("Recorded By")),    recorded_by_name),
-            (str(_("Notes")),          esc(payment.notes or "—")),
+            (labels["amount_paid"],    _fmt_money(payment.amount_paid, lang)),
+            (labels["payment_date"],   _to_eastern_arabic(str(payment.payment_date)) if is_rtl else str(payment.payment_date)),
+            (labels["payment_method"], method_display),
+            (labels["for_expenses"],   expense_str),
+            (labels["balance_before"], _fmt_money(payment.balance_before, lang)),
+            (labels["balance_after"],  _fmt_money(payment.balance_after, lang)),
+            (labels["recorded_by"],    recorded_by_name),
+            (labels["notes"],          esc(payment.notes or "—")),
         ]
-        rows_html = "".join(
-            f'<tr><td class="lbl">{label}</td><td class="val">{value}</td></tr>'
-            for label, value in fields
-        )
+        if is_rtl:
+            rows_html = "".join(
+                f'<tr><td class="val">{value}</td><td class="lbl">{label}</td></tr>'
+                for label, value in fields
+            )
+        else:
+            rows_html = "".join(
+                f'<tr><td class="lbl">{label}</td><td class="val">{value}</td></tr>'
+                for label, value in fields
+            )
 
         # Owner display — prefer primary owner, fall back to first M2M owner
         if apt.owner:
@@ -173,19 +285,29 @@ class PaymentViewSet(ModelViewSet):
             first_owner = apt.owners.first()
             owner_display = esc(first_owner.get_full_name() or first_owner.email) if first_owner else "—"
 
+        receipt_no_label = labels["receipt_no"]
+        receipt_no_value = str(payment.id)[:8].upper()
+        if is_rtl:
+            receipt_no_value = _to_eastern_arabic(receipt_no_value)
+        paid_amount_display = _fmt_money(payment.amount_paid, lang)
+        paid_received_text = labels["paid_received"].replace("{amount}", paid_amount_display)
+
+        html_dir = "rtl" if is_rtl else "ltr"
         html_content = f"""<!DOCTYPE html>
-<html>
+<html dir="{html_dir}" lang="{lang}">
 <head>
-<meta charset="UTF-8">
+<meta charset="utf-8">
 <style>
+  @import url("https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;700&family=Noto+Sans+Arabic:wght@400;700&display=swap");
   @page {{ size: B5; margin: 0; }}
   * {{ box-sizing: border-box; margin: 0; padding: 0; }}
   body {{
-    font-family: "Noto Sans Arabic", "Noto Sans", Arial, sans-serif;
+    font-family: "Noto Sans Arabic", "Noto Sans", "Segoe UI", Tahoma, Arial, sans-serif;
     font-size: 11pt;
     color: #222;
     position: relative;
     min-height: 250mm;
+    direction: {html_dir};
   }}
   .header {{
     background: #1E3A5F;
@@ -197,8 +319,8 @@ class PaymentViewSet(ModelViewSet):
   }}
   .logo {{ font-size: 22pt; font-weight: bold; }}
   .subtitle {{ font-size: 10pt; margin-top: 3px; }}
-  .receipt-title {{ font-size: 14pt; font-weight: bold; text-align: right; }}
-  .receipt-no {{ font-size: 9pt; text-align: right; margin-top: 4px; }}
+  .receipt-title {{ font-size: 14pt; font-weight: bold; text-align: {"left" if is_rtl else "right"}; }}
+  .receipt-no {{ font-size: 9pt; text-align: {"left" if is_rtl else "right"}; margin-top: 4px; }}
   .info-section {{
     background: #F0F4F8;
     margin: 8mm 15mm 0;
@@ -217,7 +339,7 @@ class PaymentViewSet(ModelViewSet):
   .details-table tr:nth-child(odd) td {{ background: #F0F4F8; }}
   .details-table td {{ padding: 3mm 5mm; vertical-align: middle; }}
   .details-table td.lbl {{ color: #555; font-size: 9pt; font-weight: bold; width: 38%; }}
-  .details-table td.val {{ text-align: right; font-size: 10pt; unicode-bidi: plaintext; }}
+  .details-table td.val {{ text-align: {"left" if is_rtl else "right"}; font-size: 10pt; unicode-bidi: plaintext; }}
   .paid-box {{
     background: #E8F5E9;
     color: #2E7D32;
@@ -242,25 +364,25 @@ class PaymentViewSet(ModelViewSet):
   <div class="header">
     <div>
       <div class="logo">ABEM</div>
-      <div class="subtitle">Apartment &amp; Building Expense Management</div>
+      <div class="subtitle">{labels["subtitle"]}</div>
     </div>
     <div>
-      <div class="receipt-title">PAYMENT RECEIPT</div>
-      <div class="receipt-no">Receipt No: {str(payment.id)[:8].upper()}</div>
+      <div class="receipt-title">{labels["receipt_title"]}</div>
+      <div class="receipt-no">{receipt_no_label}: {receipt_no_value}</div>
     </div>
   </div>
 
   <div class="info-section">
     <div>
-      <div class="info-label">BUILDING</div>
+      <div class="info-label">{labels["building"]}</div>
       <div class="info-value">{esc(apt.building.name)}</div>
     </div>
     <div>
-      <div class="info-label">UNIT</div>
-      <div class="info-value">Unit {esc(apt.unit_number)} &nbsp;|&nbsp; {esc(apt.get_unit_type_display())}</div>
+      <div class="info-label">{labels["unit"]}</div>
+      <div class="info-value">{esc(apt.unit_number)} &nbsp;|&nbsp; {esc(apt.get_unit_type_display())}</div>
     </div>
     <div>
-      <div class="info-label">OWNER</div>
+      <div class="info-label">{labels["owner"]}</div>
       <div class="info-value">{owner_display}</div>
     </div>
   </div>
@@ -269,9 +391,9 @@ class PaymentViewSet(ModelViewSet):
     {rows_html}
   </table>
 
-  <div class="paid-box">&#10003; PAID &nbsp;&nbsp; {payment.amount_paid:,.2f} EGP &nbsp;&nbsp; RECEIVED</div>
+  <div class="paid-box">&#10003; {paid_received_text}</div>
 
-  <div class="footer">This is an automatically generated receipt. ABEM - abem.app</div>
+  <div class="footer">{labels["footer"]}</div>
 </body>
 </html>"""
 
