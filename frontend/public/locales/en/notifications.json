@@ -20,7 +20,6 @@
   "message_sent": "Message sent successfully",
   "all_members": "All building members",
   "specific_members": "Specific members",
-
   "title": "Notifications",
   "sendMessage": "Send Message",
   "building": "Building",
@@ -39,5 +38,13 @@
   "unread": "Unread",
   "noNotificationsYet": "No notifications yet.",
   "new": "New",
-  "markAsRead": "Mark as Read"
+  "markAsRead": "Mark as Read",
+  "type_payment_due": "Payment Due",
+  "type_payment_overdue": "Payment Overdue",
+  "type_payment_confirmed": "Payment Confirmed",
+  "type_expense_added": "Expense Added",
+  "type_expense_updated": "Expense Updated",
+  "type_user_registered": "User Registered",
+  "type_announcement": "Announcement",
+  "type_message": "Message"
 }

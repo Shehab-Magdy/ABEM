@@ -20,7 +20,6 @@
   "message_sent": "تم إرسال الرسالة بنجاح",
   "all_members": "جميع أعضاء المبنى",
   "specific_members": "أعضاء محددين",
-
   "title": "الإشعارات",
   "sendMessage": "إرسال رسالة",
   "building": "المبنى",
@@ -39,5 +38,13 @@
   "unread": "غير مقروء",
   "noNotificationsYet": "لا توجد إشعارات بعد.",
   "new": "جديد",
-  "markAsRead": "تحديد كمقروء"
+  "markAsRead": "تحديد كمقروء",
+  "type_payment_due": "موعد السداد",
+  "type_payment_overdue": "متأخر عن السداد",
+  "type_payment_confirmed": "تم تأكيد الدفعة",
+  "type_expense_added": "مصروف جديد",
+  "type_expense_updated": "تحديث مصروف",
+  "type_user_registered": "مستخدم جديد",
+  "type_announcement": "إعلان",
+  "type_message": "رسالة"
 }
