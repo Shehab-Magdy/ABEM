@@ -27,7 +27,6 @@
   "method": "Method",
   "for_expenses": "For Expenses",
   "recorded_by": "Recorded By",
-
   "title": "Payments",
   "recordPayment": "Record Payment",
   "building": "Building",
@@ -50,7 +49,7 @@
   "colReceipt": "Receipt",
   "noPaymentHistory": "No payment history for this apartment.",
   "selectApartmentPrompt": "Select an apartment to view payment history.",
-  "generating": "Generating\u2026",
+  "generating": "Generating…",
   "methodCash": "Cash",
   "methodBankTransfer": "Bank Transfer",
   "methodCheque": "Cheque",
@@ -66,5 +65,6 @@
   "noSelectionGeneralPayment": "No selection = general payment",
   "cancel": "Cancel",
   "record": "Record",
-  "paymentRecordedSuccess": "Payment recorded successfully."
+  "paymentRecordedSuccess": "Payment recorded successfully.",
+  "methodMobileWallet": "Mobile Wallet"
 }

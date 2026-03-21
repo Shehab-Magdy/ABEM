@@ -12,6 +12,7 @@ class PaymentMethod(models.TextChoices):
     CASH = "cash", _("Cash")
     BANK_TRANSFER = "bank_transfer", _("Bank Transfer")
     CHEQUE = "cheque", _("Cheque")
+    MOBILE_WALLET = "mobile_wallet", _("Mobile Wallet")
     OTHER = "other", _("Other")
 
 
@@ -55,6 +56,7 @@ class AssetType(models.TextChoices):
     FURNITURE = "furniture", _("Furniture")
     ELECTRONICS = "electronics", _("Electronics")
     PROPERTY = "property", _("Property")
+    MOBILE_WALLET = "mobile_wallet", _("Mobile Wallet")
     OTHER = "other", _("Other")
 
 

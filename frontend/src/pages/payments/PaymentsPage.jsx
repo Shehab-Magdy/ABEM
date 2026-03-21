@@ -56,12 +56,14 @@ const PAYMENT_METHOD_KEYS = [
   { value: "cash", key: "methodCash" },
   { value: "bank_transfer", key: "methodBankTransfer" },
   { value: "cheque", key: "methodCheque" },
+  { value: "mobile_wallet", key: "methodMobileWallet" },
   { value: "other", key: "methodOther" },
 ];
 
 const EMPTY_FORM = {
   apartment_id: "",
   expense_ids: [],
+  allocations: {},  // { [expense_id]: allocated_amount_string }
   amount_paid: "",
   payment_date: new Date().toISOString().slice(0, 10),
   payment_method: "cash",
@@ -201,11 +203,52 @@ export default function PaymentsPage() {
   };
 
   const handleFormChange = (field, value) => {
-    setForm((prev) => ({ ...prev, [field]: value }));
+    setForm((prev) => {
+      const next = { ...prev, [field]: value };
+      // When expense selection changes, pre-populate allocations for newly added expenses
+      if (field === "expense_ids") {
+        const newAllocations = { ...prev.allocations };
+        // Pre-populate newly added expenses with their share_amount for this apartment
+        value.forEach((expId) => {
+          if (!(expId in newAllocations)) {
+            const exp = dialogExpenses.find((e) => e.id === expId);
+            const share = exp?.apartment_shares?.find(
+              (s) => s.apartment_id === (prev.apartment_id || selectedApartment)
+            );
+            newAllocations[expId] = share ? parseFloat(share.share_amount).toFixed(2) : "";
+          }
+        });
+        // Remove allocations for deselected expenses
+        Object.keys(newAllocations).forEach((key) => {
+          if (!value.includes(key)) delete newAllocations[key];
+        });
+        next.allocations = newAllocations;
+      }
+      return next;
+    });
   };
+
+  // Compute total allocated from the allocations map
+  const totalAllocated = Object.values(form.allocations).reduce(
+    (sum, val) => sum + (parseFloat(val) || 0), 0
+  );
+  const amountPaidNum = parseFloat(form.amount_paid) || 0;
+  const allocationExceeds = totalAllocated > amountPaidNum && amountPaidNum > 0;
+  const creditRemainder = amountPaidNum - totalAllocated;
 
   const handleSubmit = async () => {
     setFormError("");
+
+    if (allocationExceeds) {
+      setFormError(
+        t("allocationExceedsPayment", {
+          sum: totalAllocated.toFixed(2),
+          amount: amountPaidNum.toFixed(2),
+        })
+      );
+      return;
+    }
+
     const notesWithMethod =
       form.payment_method === "other" && form.other_method_detail.trim()
         ? `[Method: ${form.other_method_detail.trim()}]${form.notes.trim() ? " " + form.notes.trim() : ""}`
@@ -218,6 +261,15 @@ export default function PaymentsPage() {
       notes: notesWithMethod,
     };
     if (form.expense_ids.length) payload.expense_ids = form.expense_ids;
+
+    // Build allocations array if any amounts have been entered
+    const hasAllocations = Object.values(form.allocations).some((v) => v !== "" && v !== null);
+    if (form.expense_ids.length && hasAllocations) {
+      payload.allocations = form.expense_ids.map((expId) => ({
+        expense_id: expId,
+        allocated_amount: form.allocations[expId] ? parseFloat(form.allocations[expId]) : null,
+      }));
+    }
 
     setSaving(true);
     try {
@@ -398,20 +450,23 @@ export default function PaymentsPage() {
                       disabled={loadingReceipt === p.id}
                       data-testid="print-receipt"
                       onClick={async () => {
+                        // Open blank tab synchronously (in the click handler)
+                        // to avoid popup-blocker issues.
+                        const newTab = window.open("", "_blank");
                         setLoadingReceipt(p.id);
                         try {
                           const res = await paymentsApi.receipt(p.id);
                           const blob = new Blob([res.data], { type: "application/pdf" });
                           const url = URL.createObjectURL(blob);
-                          const link = document.createElement("a");
-                          link.href = url;
-                          link.target = "_blank";
-                          link.rel = "noopener noreferrer";
-                          document.body.appendChild(link);
-                          link.click();
-                          document.body.removeChild(link);
-                          setTimeout(() => URL.revokeObjectURL(url), 10000);
+                          if (newTab) {
+                            newTab.location.href = url;
+                          } else {
+                            // Fallback if popup was still blocked
+                            window.location.href = url;
+                          }
+                          setTimeout(() => URL.revokeObjectURL(url), 30000);
                         } catch (err) {
+                          if (newTab) newTab.close();
                           const isTimeout = err?.code === "ECONNABORTED" || err?.message?.includes("timeout");
                           let msg = t("receipt_load_error", "Could not load receipt.");
                           if (isTimeout) {
@@ -551,6 +606,72 @@ export default function PaymentsPage() {
               )}
             </FormControl>
 
+            {/* ── Per-expense allocation inputs ──────────────────────── */}
+            {form.expense_ids.length > 1 && (
+              <Paper variant="outlined" sx={{ p: 2 }}>
+                <Typography variant="subtitle2" gutterBottom>
+                  {t("allocation")}
+                </Typography>
+                <Stack spacing={1.5}>
+                  {form.expense_ids.map((expId) => {
+                    const exp = dialogExpenses.find((e) => e.id === expId);
+                    return (
+                      <Stack key={expId} direction="row" alignItems="center" spacing={1}>
+                        <Typography variant="body2" sx={{ flex: 1, minWidth: 0 }} noWrap>
+                          {exp ? exp.title : expId}
+                        </Typography>
+                        <TextField
+                          label={t("allocatedAmount")}
+                          type="number"
+                          inputProps={{ min: 0, step: 0.01 }}
+                          value={form.allocations[expId] ?? ""}
+                          onChange={(e) =>
+                            setForm((prev) => ({
+                              ...prev,
+                              allocations: { ...prev.allocations, [expId]: e.target.value },
+                            }))
+                          }
+                          size="small"
+                          sx={{ width: 140 }}
+                        />
+                      </Stack>
+                    );
+                  })}
+                  <Divider />
+                  <Stack direction="row" justifyContent="space-between">
+                    <Typography variant="body2" fontWeight={600}>
+                      {t("totalAllocated")}
+                    </Typography>
+                    <Typography
+                      variant="body2"
+                      fontWeight={600}
+                      color={allocationExceeds ? "error" : "text.primary"}
+                    >
+                      {totalAllocated.toFixed(2)}
+                    </Typography>
+                  </Stack>
+                  {creditRemainder > 0 && !allocationExceeds && (
+                    <Stack direction="row" justifyContent="space-between">
+                      <Typography variant="body2" color="text.secondary">
+                        {t("creditRemainder")}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        {creditRemainder.toFixed(2)}
+                      </Typography>
+                    </Stack>
+                  )}
+                  {allocationExceeds && (
+                    <Alert severity="error" sx={{ py: 0 }}>
+                      {t("allocationExceedsPayment", {
+                        sum: totalAllocated.toFixed(2),
+                        amount: amountPaidNum.toFixed(2),
+                      })}
+                    </Alert>
+                  )}
+                </Stack>
+              </Paper>
+            )}
+
             <TextField
               label={t("notes")}
               multiline
@@ -569,7 +690,7 @@ export default function PaymentsPage() {
           <Button
             variant="contained"
             onClick={handleSubmit}
-            disabled={saving || !form.amount_paid || !form.payment_date || !form.apartment_id || (form.payment_method === "other" && !form.other_method_detail)}
+            disabled={saving || !form.amount_paid || !form.payment_date || !form.apartment_id || (form.payment_method === "other" && !form.other_method_detail) || allocationExceeds}
           >
             {saving ? <CircularProgress size={18} /> : t("record")}
           </Button>

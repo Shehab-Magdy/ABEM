@@ -30,8 +30,16 @@ import axiosClient from "../../api/axiosClient";
 import { apartmentsApi } from "../../api/apartmentsApi";
 import { PrivateSEO } from "../../components/seo/SEO";
 
+const PAYMENT_METHOD_KEYS = {
+  cash: "payments:methodCash",
+  bank_transfer: "payments:methodBankTransfer",
+  cheque: "payments:methodCheque",
+  mobile_wallet: "payments:methodMobileWallet",
+  other: "payments:methodOther",
+};
+
 export default function OwnerDashboardPage() {
-  const { t } = useTranslation("dashboard");
+  const { t } = useTranslation(["dashboard", "payments"]);
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [data, setData] = useState(null);
@@ -303,7 +311,7 @@ export default function OwnerDashboardPage() {
                               <TableCell>
                                 {parseFloat(p.amount_paid).toLocaleString()} EGP
                               </TableCell>
-                              <TableCell>{p.payment_method}</TableCell>
+                              <TableCell>{PAYMENT_METHOD_KEYS[p.payment_method] ? t(PAYMENT_METHOD_KEYS[p.payment_method]) : p.payment_method}</TableCell>
                               <TableCell>{p.notes}</TableCell>
                             </TableRow>
                           ))}
