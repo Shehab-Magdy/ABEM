@@ -75,5 +75,8 @@
   "assigning": "Assigning…",
   "assign": "Assign",
   "apt": "Apt",
-  "store": "Store"
+  "store": "Store",
+  "status_occupied": "Occupied",
+  "status_vacant": "Vacant",
+  "status_under_maintenance": "Under Maintenance"
 }

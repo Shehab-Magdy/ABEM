@@ -481,7 +481,6 @@ export default function BuildingsPage() {
                   type="number"
                   inputProps={{ min: 0 }}
                   fullWidth
-                  helperText={t("apartments_helper")}
                   {...form.register("num_apartments", { min: 0 })}
                 />
                 <TextField
@@ -489,7 +488,6 @@ export default function BuildingsPage() {
                   type="number"
                   inputProps={{ min: 0 }}
                   fullWidth
-                  helperText={t("stores_helper")}
                   {...form.register("num_stores", { min: 0 })}
                 />
               </Stack>
@@ -590,7 +588,13 @@ export default function BuildingsPage() {
                         variant="outlined"
                       />
                     </TableCell>
-                    <TableCell>{u.status}</TableCell>
+                    <TableCell>
+                      {{
+                        'Occupied': t('status_occupied'),
+                        'Vacant': t('status_vacant'),
+                        'Under Maintenance': t('status_under_maintenance'),
+                      }[u.status] || u.status}
+                    </TableCell>
                     <TableCell>
                       <TextField
                         type="number"

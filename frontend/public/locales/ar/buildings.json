@@ -75,5 +75,8 @@
   "assigning": "جارٍ التعيين…",
   "assign": "تعيين",
   "apt": "شقة",
-  "store": "محل"
+  "store": "محل",
+  "status_occupied": "مشغولة",
+  "status_vacant": "شاغرة",
+  "status_under_maintenance": "تحت الصيانة"
 }
