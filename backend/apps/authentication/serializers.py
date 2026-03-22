@@ -64,8 +64,8 @@ class RegisterUserSerializer(serializers.ModelSerializer):
 
     def validate(self, data):
         role = data.get("role", "owner")
-        buildings = data.get("buildings", [])
-        if role == "admin" and not buildings:
+        buildings = data.get("buildings")
+        if role == "admin" and buildings is not None and len(buildings) == 0:
             raise serializers.ValidationError(
                 {"buildings": _("At least one building must be assigned to an admin user.")}
             )
