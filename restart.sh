@@ -7,9 +7,22 @@
 #   ./restart.sh            Restart services only
 #   ./restart.sh --test     Restart then run smoke tests
 #   ./restart.sh --test-only  Run smoke tests without restarting
+#
+# Environment:
+#   APP_HOST  Override the host used for health checks and tests
+#             (default: auto-detect from .env or fall back to 127.0.0.1)
 set -e
 
 cd "$(dirname "$0")"
+
+# ── Resolve host ──────────────────────────────────────────────
+if [ -z "$APP_HOST" ] && [ -f .env ]; then
+  APP_HOST=$(grep -E '^APP_HOST=' .env 2>/dev/null | cut -d= -f2 | tr -d '[:space:]')
+fi
+APP_HOST="${APP_HOST:-127.0.0.1}"
+
+API_URL="http://${APP_HOST}:8000"
+APP_URL="http://${APP_HOST}:5173"
 
 RUN_TESTS=false
 SKIP_RESTART=false
@@ -22,6 +35,9 @@ for arg in "$@"; do
       echo "Usage: ./restart.sh [--test] [--test-only]"
       echo "  --test        Restart services, then run smoke tests"
       echo "  --test-only   Run smoke tests without restarting"
+      echo ""
+      echo "Environment:"
+      echo "  APP_HOST=<ip>  Override host (current: ${APP_HOST})"
       exit 0 ;;
     *) echo "Unknown flag: $arg"; exit 1 ;;
   esac
@@ -34,11 +50,11 @@ if [ "$SKIP_RESTART" = false ]; then
 
   # Wait for backend to be healthy
   echo ""
-  echo "Waiting for backend health check..."
+  echo "Waiting for backend health check (${API_URL})..."
   retries=0
   max_retries=30
-  until curl -sf http://localhost:8000/api/v1/health/ > /dev/null 2>&1 \
-     || curl -sf http://localhost:8000/api/v1/auth/login/ > /dev/null 2>&1; do
+  until curl -sf "${API_URL}/api/v1/health/" > /dev/null 2>&1 \
+     || curl -sf "${API_URL}/api/v1/auth/login/" > /dev/null 2>&1; do
     retries=$((retries + 1))
     if [ "$retries" -ge "$max_retries" ]; then
       echo "  Backend did not become healthy after ${max_retries}s"
@@ -51,7 +67,7 @@ if [ "$SKIP_RESTART" = false ]; then
 
   # Wait for frontend to be healthy
   retries=0
-  until curl -sf http://localhost:5173/ > /dev/null 2>&1; do
+  until curl -sf "${APP_URL}/" > /dev/null 2>&1; do
     retries=$((retries + 1))
     if [ "$retries" -ge "$max_retries" ]; then
       echo "  Frontend did not become healthy after ${max_retries}s"
@@ -64,8 +80,8 @@ if [ "$SKIP_RESTART" = false ]; then
 
   echo ""
   echo "Services restarted."
-  echo "  API   → http://localhost:8000"
-  echo "  App   → http://localhost:5173"
+  echo "  API   → ${API_URL}"
+  echo "  App   → ${APP_URL}"
 fi
 
 # ── Run smoke tests ───────────────────────────────────────────
@@ -81,6 +97,11 @@ if [ "$RUN_TESTS" = true ]; then
       .venv/bin/pip install -q -r requirements.txt
       .venv/bin/playwright install chromium
     fi
+
+    # Pass resolved host to the test framework
+    BASE_URL="${APP_URL}" \
+    API_BASE_URL="${API_URL}" \
+    DB_HOST="${APP_HOST}" \
     .venv/bin/pytest tests/smoke/ -m smoke --tb=short 2>&1
     exit_code=$?
     cd ..
