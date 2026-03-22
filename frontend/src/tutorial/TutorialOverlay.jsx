@@ -343,18 +343,20 @@ function TutorialCard({ step, stepIndex, totalSteps, cardPos, onNext, onPrev, on
 
   return (
     <Box
-      sx={{
+      style={{
         position: "fixed",
         top: cardPos.top,
         left: cardPos.left,
         width: CARD_W,
+        transition: "top 0.3s ease, left 0.3s ease",
+      }}
+      sx={{
         zIndex: 10001,
         bgcolor: "white",
         border: "0.5px solid #E5E7EB",
         borderRadius: 2.5,
         boxShadow: "0 20px 60px rgba(0,0,0,0.25)",
         p: 2.5,
-        transition: "top 0.3s ease, left 0.3s ease",
       }}
     >
       {/* Step badge */}
@@ -557,18 +559,21 @@ export function TutorialOverlay() {
         />
       </svg>
 
-      {/* Blue highlight ring around the anchor element */}
+      {/* Blue highlight ring around the anchor element.
+          Uses inline style (not sx) so stylis-plugin-rtl does NOT flip
+          left→right — the ring must use the same viewport coordinates
+          as the SVG spotlight cutout regardless of document direction. */}
       {anchorRect && (
-        <Box
-          sx={{
+        <div
+          style={{
             position: "fixed",
             top: ry,
             left: rx,
             width: rw,
             height: rh,
-            borderRadius: "6px",
+            borderRadius: 6,
             outline: "3px solid #2563EB",
-            outlineOffset: "0px",
+            outlineOffset: 0,
             boxShadow: "0 0 0 6px rgba(37,99,235,0.18)",
             zIndex: 10000,
             pointerEvents: "none",
