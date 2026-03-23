@@ -74,6 +74,7 @@ export default function BuildingsPage() {
   const [units, setUnits] = useState([]);
   const [unitsLoading, setUnitsLoading] = useState(false);
   const [floorEdits, setFloorEdits] = useState({});
+  const [sizeEdits, setSizeEdits] = useState({});
   const [savingFloors, setSavingFloors] = useState(false);
   const [unitsError, setUnitsError] = useState(null);
   const [inviteEmails, setInviteEmails] = useState({});
@@ -285,6 +286,7 @@ export default function BuildingsPage() {
   const openUnits = async (building) => {
     setUnitsTarget(building);
     setFloorEdits({});
+    setSizeEdits({});
     setInviteEmails({});
     setInviteLinks({});
     setInviteCodes({});
@@ -305,22 +307,27 @@ export default function BuildingsPage() {
     }
   };
 
-  const saveFloors = async () => {
-    const changed = Object.entries(floorEdits);
-    if (!changed.length) return;
+  const saveUnitEdits = async () => {
+    // Merge floor and size edits per unit into a single patch per unit
+    const unitIds = new Set([...Object.keys(floorEdits), ...Object.keys(sizeEdits)]);
+    if (!unitIds.size) return;
     setSavingFloors(true);
     setUnitsError(null);
     try {
       await Promise.all(
-        changed.map(([id, floor]) =>
-          apartmentsApi.update(id, { floor: parseInt(floor, 10) })
-        )
+        [...unitIds].map((id) => {
+          const patch = {};
+          if (id in floorEdits) patch.floor = parseInt(floorEdits[id], 10);
+          if (id in sizeEdits) patch.size_sqm = sizeEdits[id] === "" ? null : parseFloat(sizeEdits[id]);
+          return apartmentsApi.update(id, patch);
+        })
       );
       setFloorEdits({});
+      setSizeEdits({});
       const res = await buildingsApi.apartments(unitsTarget.id, { page_size: 100 });
       setUnits(res.data?.results ?? res.data);
     } catch (err) {
-      setUnitsError(err.response?.data?.detail || t("floor_save_error", "Failed to save floor changes."));
+      setUnitsError(err.response?.data?.detail || t("unit_save_error", "Failed to save unit changes."));
     } finally {
       setSavingFloors(false);
     }
@@ -648,6 +655,7 @@ export default function BuildingsPage() {
                   <TableCell>{t("type")}</TableCell>
                   <TableCell>{t("status")}</TableCell>
                   <TableCell width={110}>{t("floor")}</TableCell>
+                  <TableCell width={110}>{t("size_sqm")}</TableCell>
                   <TableCell>{t("invite_owner")}</TableCell>
                 </TableRow>
               </TableHead>
@@ -683,6 +691,18 @@ export default function BuildingsPage() {
                           setFloorEdits((prev) => ({ ...prev, [u.id]: e.target.value }))
                         }
                         sx={{ width: 80 }}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <TextField
+                        type="number"
+                        size="small"
+                        inputProps={{ min: 0, step: "0.01" }}
+                        value={sizeEdits[u.id] ?? u.size_sqm ?? ""}
+                        onChange={(e) =>
+                          setSizeEdits((prev) => ({ ...prev, [u.id]: e.target.value }))
+                        }
+                        sx={{ width: 90 }}
                       />
                     </TableCell>
                     <TableCell>
@@ -780,10 +800,10 @@ export default function BuildingsPage() {
           <Button onClick={() => setUnitsTarget(null)}>{t("close")}</Button>
           <Button
             variant="contained"
-            disabled={!Object.keys(floorEdits).length || savingFloors}
-            onClick={saveFloors}
+            disabled={(!Object.keys(floorEdits).length && !Object.keys(sizeEdits).length) || savingFloors}
+            onClick={saveUnitEdits}
           >
-            {savingFloors ? t("saving") : t("save_floor_changes")}
+            {savingFloors ? t("saving") : t("save_unit_changes")}
           </Button>
         </DialogActions>
       </Dialog>
