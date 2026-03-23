@@ -123,3 +123,29 @@ def assert_valid_uuid(value: str) -> None:
     assert re.match(pattern, str(value), re.IGNORECASE), (
         f"Not a valid UUID: {value}"
     )
+
+
+# ── Financial assertions (rounding & tenant isolation) ───────
+
+
+def assert_all_shares_rounded_up(shares: list[Decimal]) -> None:
+    """Assert every share value is a multiple of 5."""
+    for share in shares:
+        assert_round_up_to_5(share)
+
+
+def assert_shares_sum_gte_expense(shares: list[Decimal], expense_amount: Decimal) -> None:
+    """Assert the sum of share amounts >= the original expense amount."""
+    total = sum(shares)
+    assert total >= expense_amount, (
+        f"Shares total {total} < expense amount {expense_amount}"
+    )
+
+
+def assert_tenant_isolation(response_data: list, forbidden_building_id: str) -> None:
+    """Assert no items in the response belong to a forbidden building."""
+    for item in response_data:
+        bid = item.get("building_id") or item.get("building")
+        assert str(bid) != str(forbidden_building_id), (
+            f"Tenant isolation breach: found data from building {forbidden_building_id}"
+        )
