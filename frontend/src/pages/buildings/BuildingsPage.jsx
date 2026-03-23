@@ -7,9 +7,10 @@
  * - Soft-delete building (admin only)
  * - Assign owner users to buildings
  */
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Alert,
+  Avatar,
   Autocomplete,
   Box,
   Button,
@@ -38,7 +39,7 @@ import {
   Typography,
 } from "@mui/material";
 import { DataGrid } from "@mui/x-data-grid";
-import { Add, Apartment, Check, ContentCopy, Delete, Edit, PersonAdd, Send, PersonPin, PowerSettingsNew } from "@mui/icons-material";
+import { Add, Apartment, Check, ContentCopy, Delete, Edit, PersonAdd, PhotoCamera, Send, PersonPin, PowerSettingsNew } from "@mui/icons-material";
 import { useForm } from "react-hook-form";
 import { buildingsApi } from "../../api/buildingsApi";
 import { apartmentsApi } from "../../api/apartmentsApi";
@@ -87,6 +88,11 @@ export default function BuildingsPage() {
   const [adminUsers, setAdminUsers] = useState([]);
   const [coAdminIds, setCoAdminIds] = useState([]);
 
+  // Photo upload
+  const [photoFile, setPhotoFile] = useState(null);
+  const [photoPreview, setPhotoPreview] = useState(null);
+  const photoInputRef = useRef(null);
+
   // Assign user dialog
   const [assignTarget, setAssignTarget] = useState(null);
   const [owners, setOwners] = useState([]);
@@ -134,6 +140,8 @@ export default function BuildingsPage() {
     setEditTarget(null);
     form.reset({ name: "", address: "", city: "", country: "", num_floors: 1, num_apartments: 0, num_stores: 0, admin_id: "" });
     setCoAdminIds([]);
+    setPhotoFile(null);
+    setPhotoPreview(null);
     setDialogError(null);
     loadAdminUsers();
     setDialogOpen(true);
@@ -153,6 +161,8 @@ export default function BuildingsPage() {
       admin_id: building.admin_id || "",
     });
     setCoAdminIds(building.co_admin_ids ?? []);
+    setPhotoFile(null);
+    setPhotoPreview(building.photo || null);
     setDialogError(null);
     loadAdminUsers();
     setDialogOpen(true);
@@ -162,7 +172,7 @@ export default function BuildingsPage() {
     setSubmitting(true);
     setDialogError(null);
     try {
-      const payload = {
+      const fields = {
         name: data.name?.trim(),
         address: data.address?.trim(),
         city: data.city?.trim(),
@@ -171,8 +181,24 @@ export default function BuildingsPage() {
         num_apartments: parseInt(data.num_apartments, 10) || 0,
         num_stores: parseInt(data.num_stores, 10) || 0,
       };
-      if (data.admin_id) payload.admin_id = data.admin_id;
-      if (coAdminIds.length) payload.co_admin_ids = coAdminIds;
+      if (data.admin_id) fields.admin_id = data.admin_id;
+      if (coAdminIds.length) fields.co_admin_ids = coAdminIds;
+
+      let payload;
+      if (photoFile) {
+        payload = new FormData();
+        Object.entries(fields).forEach(([key, value]) => {
+          if (Array.isArray(value)) {
+            value.forEach((v) => payload.append(key, v));
+          } else {
+            payload.append(key, value);
+          }
+        });
+        payload.append("photo", photoFile);
+      } else {
+        payload = fields;
+      }
+
       if (editTarget) {
         await buildingsApi.update(editTarget.id, payload);
       } else {
@@ -441,6 +467,49 @@ export default function BuildingsPage() {
           <DialogContent>
             {dialogError && <Alert severity="error" sx={{ mb: 2 }}>{dialogError}</Alert>}
             <Stack spacing={2}>
+              {/* Photo upload */}
+              <Stack direction="row" alignItems="center" spacing={2}>
+                <Avatar
+                  src={photoPreview || undefined}
+                  variant="rounded"
+                  sx={{ width: 80, height: 80, bgcolor: "grey.200" }}
+                >
+                  {!photoPreview && <PhotoCamera sx={{ color: "grey.500" }} />}
+                </Avatar>
+                <Box>
+                  <input
+                    ref={photoInputRef}
+                    type="file"
+                    accept="image/jpeg,image/png"
+                    hidden
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        setPhotoFile(file);
+                        setPhotoPreview(URL.createObjectURL(file));
+                      }
+                    }}
+                  />
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    startIcon={<PhotoCamera />}
+                    onClick={() => photoInputRef.current?.click()}
+                  >
+                    {t("upload_photo")}
+                  </Button>
+                  {photoPreview && (
+                    <Button
+                      size="small"
+                      color="error"
+                      sx={{ ml: 1 }}
+                      onClick={() => { setPhotoFile(null); setPhotoPreview(null); }}
+                    >
+                      {t("remove")}
+                    </Button>
+                  )}
+                </Box>
+              </Stack>
               <TextField
                 label={`${t("name")} *`}
                 fullWidth

@@ -4,6 +4,7 @@ from django.utils import timezone
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.filters import OrderingFilter, SearchFilter
+from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
@@ -30,6 +31,7 @@ class BuildingViewSet(ModelViewSet):
     """
 
     serializer_class = BuildingSerializer
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
     http_method_names = ["get", "post", "patch", "delete", "options", "head"]
 
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]

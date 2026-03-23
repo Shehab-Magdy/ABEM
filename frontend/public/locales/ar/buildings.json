@@ -80,5 +80,7 @@
   "status_vacant": "شاغرة",
   "status_under_maintenance": "تحت الصيانة",
   "unit_type_apartment": "شقة سكنية",
-  "unit_type_store": "محل تجاري"
+  "unit_type_store": "محل تجاري",
+  "upload_photo": "رفع صورة",
+  "remove": "إزالة"
 }

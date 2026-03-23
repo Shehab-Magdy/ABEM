@@ -59,6 +59,7 @@ class BuildingSerializer(serializers.ModelSerializer):
             "num_stores",
             "admin_id",
             "co_admin_ids",
+            "photo",
             "is_active",
             "created_at",
             "updated_at",

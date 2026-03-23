@@ -25,7 +25,9 @@ axiosClient.interceptors.request.use((config) => {
   }
   // T-01: convert any Eastern Arabic-Indic digits (٠-٩) → ASCII (0-9) in
   // request body so the backend always receives standard digits.
-  if (config.data && typeof config.data === "object") {
+  // Skip FormData — it is not a plain object and its entries are not enumerable
+  // via Object.keys, so deepConvertEasternArabic would destroy its contents.
+  if (config.data && typeof config.data === "object" && !(config.data instanceof FormData)) {
     config.data = deepConvertEasternArabic(config.data);
   }
   return config;

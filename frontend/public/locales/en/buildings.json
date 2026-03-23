@@ -80,5 +80,7 @@
   "status_vacant": "Vacant",
   "status_under_maintenance": "Under Maintenance",
   "unit_type_apartment": "Apartment",
-  "unit_type_store": "Store"
+  "unit_type_store": "Store",
+  "upload_photo": "Upload Photo",
+  "remove": "Remove"
 }
