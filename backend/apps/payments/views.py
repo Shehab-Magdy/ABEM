@@ -293,71 +293,73 @@ class PaymentViewSet(ModelViewSet):
         paid_received_text = labels["paid_received"].replace("{amount}", paid_amount_display)
 
         html_dir = "rtl" if is_rtl else "ltr"
+        lbl_align = "right" if is_rtl else "left"
+        val_align = "left" if is_rtl else "right"
         html_content = f"""<!DOCTYPE html>
 <html dir="{html_dir}" lang="{lang}">
 <head>
 <meta charset="utf-8">
 <style>
   @import url("https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;700&family=Noto+Sans+Arabic:wght@400;700&display=swap");
-  @page {{ size: B5; margin: 0; }}
+  @page {{ size: A6; margin: 0; }}
   * {{ box-sizing: border-box; margin: 0; padding: 0; }}
   body {{
     font-family: "Noto Sans Arabic", "Noto Sans", "Segoe UI", Tahoma, Arial, sans-serif;
-    font-size: 11pt;
+    font-size: 8pt;
     color: #222;
     position: relative;
-    min-height: 250mm;
+    width: 105mm;
+    min-height: 148mm;
     direction: {html_dir};
   }}
   .header {{
     background: #1E3A5F;
     color: white;
-    padding: 10mm 20mm;
+    padding: 5mm 8mm;
     display: flex;
     justify-content: space-between;
     align-items: center;
   }}
-  .logo {{ font-size: 22pt; font-weight: bold; }}
-  .subtitle {{ font-size: 10pt; margin-top: 3px; }}
-  .receipt-title {{ font-size: 14pt; font-weight: bold; text-align: {"left" if is_rtl else "right"}; }}
-  .receipt-no {{ font-size: 9pt; text-align: {"left" if is_rtl else "right"}; margin-top: 4px; }}
+  .logo {{ font-size: 14pt; font-weight: bold; }}
+  .subtitle {{ font-size: 7pt; margin-top: 2px; }}
+  .receipt-title {{ font-size: 10pt; font-weight: bold; text-align: {val_align}; }}
+  .receipt-no {{ font-size: 7pt; text-align: {val_align}; margin-top: 2px; }}
   .info-section {{
     background: #F0F4F8;
-    margin: 8mm 15mm 0;
-    padding: 5mm 8mm;
+    margin: 3mm 6mm 0;
+    padding: 3mm 5mm;
     display: flex;
     justify-content: space-between;
   }}
-  .info-label {{ color: #1E3A5F; font-size: 9pt; font-weight: bold; margin-bottom: 3px; }}
-  .info-value {{ font-size: 11pt; unicode-bidi: plaintext; }}
+  .info-label {{ color: #1E3A5F; font-size: 6.5pt; font-weight: bold; margin-bottom: 1px; }}
+  .info-value {{ font-size: 8pt; unicode-bidi: plaintext; }}
   .details-table {{
-    width: calc(100% - 30mm);
-    margin: 6mm 15mm 0;
+    width: calc(100% - 12mm);
+    margin: 3mm 6mm 0;
     border-collapse: collapse;
-    direction: {html_dir};
   }}
-  .details-table tr {{ height: 12mm; }}
+  .details-table tr {{ height: 7mm; }}
   .details-table tr:nth-child(odd) td {{ background: #F0F4F8; }}
-  .details-table td {{ padding: 3mm 5mm; vertical-align: middle; direction: {html_dir}; unicode-bidi: embed; }}
-  .details-table td.lbl {{ color: #555; font-size: 9pt; font-weight: bold; width: 38%; text-align: {"right" if is_rtl else "left"}; }}
-  .details-table td.val {{ text-align: {"left" if is_rtl else "right"}; font-size: 10pt; unicode-bidi: plaintext; }}
+  .details-table td {{ padding: 1.5mm 3mm; vertical-align: middle; }}
+  .details-table td.lbl {{ color: #555; font-size: 7pt; font-weight: bold; width: 38%; text-align: {lbl_align}; }}
+  .details-table td.val {{ font-size: 7.5pt; text-align: {val_align}; unicode-bidi: plaintext; }}
   .paid-box {{
     background: #E8F5E9;
     color: #2E7D32;
-    font-size: 13pt;
+    font-size: 9pt;
     font-weight: bold;
     text-align: center;
-    margin: 6mm 15mm 0;
-    padding: 4mm;
-    border-radius: 3mm;
+    margin: 3mm 6mm 0;
+    padding: 2.5mm;
+    border-radius: 2mm;
   }}
   .footer {{
     position: absolute;
-    bottom: 10mm;
+    bottom: 4mm;
     width: 100%;
     text-align: center;
     color: #888;
-    font-size: 8pt;
+    font-size: 6pt;
   }}
 </style>
 </head>
@@ -380,7 +382,7 @@ class PaymentViewSet(ModelViewSet):
     </div>
     <div>
       <div class="info-label">{labels["unit"]}</div>
-      <div class="info-value">{esc(apt.unit_number)} &nbsp;|&nbsp; {esc(apt.get_unit_type_display())}</div>
+      <div class="info-value">{esc(apt.unit_number)} | {esc(apt.get_unit_type_display())}</div>
     </div>
     <div>
       <div class="info-label">{labels["owner"]}</div>
