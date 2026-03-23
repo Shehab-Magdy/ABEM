@@ -59,6 +59,15 @@ class User(AbstractBaseUser, PermissionsMixin):
     # Notification preferences (JSON flags)
     notification_preferences = models.JSONField(default=dict, blank=True)
 
+    # Track which admin created this user (FE-01 scoping)
+    created_by = models.ForeignKey(
+        'self',
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name='created_users',
+    )
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

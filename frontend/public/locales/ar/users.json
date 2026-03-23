@@ -64,5 +64,11 @@
   "buildingsRequired": "يجب تحديد مبنى واحد على الأقل للمدير.",
   "editUser": "تعديل بيانات المستخدم",
   "update": "تحديث",
-  "updating": "جارٍ التحديث\u2026"
+  "updating": "جارٍ التحديث\u2026",
+  "ownerBuilding": "المبنى",
+  "selectBuilding": "اختر مبنى",
+  "assignUnits": "تعيين الوحدات",
+  "selectUnits": "اختر الوحدات",
+  "unit": "وحدة",
+  "floor": "طابق"
 }

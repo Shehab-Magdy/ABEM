@@ -34,6 +34,7 @@ import {
 import { useForm, Controller } from "react-hook-form";
 import { usersApi } from "../../api/usersApi";
 import { buildingsApi } from "../../api/buildingsApi";
+import { apartmentsApi } from "../../api/apartmentsApi";
 import { PrivateSEO } from "../../components/seo/SEO";
 import PhoneInput from "../../components/PhoneInput";
 
@@ -65,22 +66,27 @@ export default function UsersPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // Buildings list for admin role assignment
+  // Buildings list for role assignment
   const [buildingsList, setBuildingsList] = useState([]);
+
+  // Apartments list for owner building selection (keyed by building id)
+  const [apartmentsByBuilding, setApartmentsByBuilding] = useState({});
 
   // Create user dialog
   const [createOpen, setCreateOpen] = useState(false);
   const [createError, setCreateError] = useState(null);
   const [creating, setCreating] = useState(false);
-  const createForm = useForm({ defaultValues: { role: "owner", buildings: [] } });
+  const createForm = useForm({ defaultValues: { role: "owner", buildings: [], ownerBuilding: "", apartment_ids: [] } });
   const watchCreateRole = createForm.watch("role");
+  const watchCreateOwnerBuilding = createForm.watch("ownerBuilding");
 
   // Edit user dialog
   const [editTarget, setEditTarget] = useState(null);
   const [editError, setEditError] = useState(null);
   const [editing, setEditing] = useState(false);
-  const editForm = useForm({ defaultValues: { role: "owner", buildings: [] } });
+  const editForm = useForm({ defaultValues: { role: "owner", buildings: [], ownerBuilding: "", apartment_ids: [] } });
   const watchEditRole = editForm.watch("role");
+  const watchEditOwnerBuilding = editForm.watch("ownerBuilding");
 
   // Reset password dialog
   const [resetTarget, setResetTarget] = useState(null);
@@ -114,7 +120,7 @@ export default function UsersPage() {
 
   useEffect(() => { fetchUsers(); }, [fetchUsers]);
 
-  // ── Fetch buildings for admin role multi-select ──────────────────────────────
+  // ── Fetch buildings for role assignment ──────────────────────────────────────
   const fetchBuildings = useCallback(async () => {
     try {
       const res = await buildingsApi.list({ page_size: 200 });
@@ -126,16 +132,75 @@ export default function UsersPage() {
 
   useEffect(() => { fetchBuildings(); }, [fetchBuildings]);
 
+  // ── Fetch apartments for a building (cached) ───────────────────────────────
+  const fetchApartmentsForBuilding = useCallback(async (buildingId) => {
+    if (!buildingId) return;
+    if (apartmentsByBuilding[buildingId]) return; // already cached
+    try {
+      const res = await apartmentsApi.list({ building_id: buildingId, page_size: 500 });
+      const apts = res.data.results || res.data || [];
+      setApartmentsByBuilding((prev) => ({ ...prev, [buildingId]: apts }));
+    } catch {
+      // silently ignore
+    }
+  }, [apartmentsByBuilding]);
+
+  // Auto-fetch apartments when owner building changes in create dialog
+  useEffect(() => {
+    if (watchCreateRole === "owner" && watchCreateOwnerBuilding) {
+      fetchApartmentsForBuilding(watchCreateOwnerBuilding);
+    }
+  }, [watchCreateRole, watchCreateOwnerBuilding, fetchApartmentsForBuilding]);
+
+  // Auto-fetch apartments when owner building changes in edit dialog
+  useEffect(() => {
+    if (watchEditRole === "owner" && watchEditOwnerBuilding) {
+      fetchApartmentsForBuilding(watchEditOwnerBuilding);
+    }
+  }, [watchEditRole, watchEditOwnerBuilding, fetchApartmentsForBuilding]);
+
   // ── Open edit user dialog ─────────────────────────────────────────────────────
-  const openEditDialog = (user) => {
+  const openEditDialog = async (user) => {
     setEditTarget(user);
     setEditError(null);
+
+    // For owners, determine which building their apartments are in to pre-select
+    let ownerBuilding = "";
+    let apartmentIds = user.apartment_ids || [];
+
+    if (user.role === "owner" && apartmentIds.length > 0) {
+      // Find the building for the first apartment. We need to look it up from buildingsList + apartments.
+      // Fetch all buildings' apartments to find the building that contains these apartments
+      for (const bld of buildingsList) {
+        if (!apartmentsByBuilding[bld.id]) {
+          try {
+            const res = await apartmentsApi.list({ building_id: bld.id, page_size: 500 });
+            const apts = res.data.results || res.data || [];
+            setApartmentsByBuilding((prev) => ({ ...prev, [bld.id]: apts }));
+            if (apts.some((a) => apartmentIds.includes(a.id))) {
+              ownerBuilding = bld.id;
+              break;
+            }
+          } catch {
+            // continue
+          }
+        } else {
+          if (apartmentsByBuilding[bld.id].some((a) => apartmentIds.includes(a.id))) {
+            ownerBuilding = bld.id;
+            break;
+          }
+        }
+      }
+    }
+
     editForm.reset({
       first_name: user.first_name,
       last_name: user.last_name,
       phone: user.phone || "",
       role: user.role,
       buildings: user.buildings || [],
+      ownerBuilding: ownerBuilding,
+      apartment_ids: apartmentIds,
     });
   };
 
@@ -154,6 +219,9 @@ export default function UsersPage() {
         payload.buildings = data.buildings || [];
       } else {
         payload.buildings = [];
+      }
+      if (data.role === "owner") {
+        payload.apartment_ids = data.apartment_ids || [];
       }
       await usersApi.update(editTarget.id, payload);
       setEditTarget(null);
@@ -196,9 +264,12 @@ export default function UsersPage() {
       if (data.role === "admin") {
         payload.buildings = data.buildings || [];
       }
+      if (data.role === "owner") {
+        payload.apartment_ids = data.apartment_ids || [];
+      }
       await usersApi.create(payload);
       setCreateOpen(false);
-      createForm.reset({ role: "owner", buildings: [] });
+      createForm.reset({ role: "owner", buildings: [], ownerBuilding: "", apartment_ids: [] });
       fetchUsers();
     } catch (err) {
       setCreateError(formatApiError(err.response?.data));
@@ -245,6 +316,89 @@ export default function UsersPage() {
     } finally {
       setMsgSaving(false);
     }
+  };
+
+  // ── Reusable owner building + unit selector ─────────────────────────────────
+  const renderOwnerBuildingUnitFields = (form, watchBuilding) => {
+    const currentApts = watchBuilding ? (apartmentsByBuilding[watchBuilding] || []) : [];
+
+    return (
+      <>
+        {/* Building selector (single) */}
+        <Controller
+          name="ownerBuilding"
+          control={form.control}
+          defaultValue=""
+          render={({ field }) => (
+            <TextField
+              {...field}
+              select
+              label={t("ownerBuilding")}
+              placeholder={t("selectBuilding")}
+              fullWidth
+              onChange={(e) => {
+                field.onChange(e.target.value);
+                // Reset apartment selection when building changes
+                form.setValue("apartment_ids", []);
+              }}
+            >
+              <MenuItem value="">
+                <em>{t("selectBuilding")}</em>
+              </MenuItem>
+              {buildingsList.map((b) => (
+                <MenuItem key={b.id} value={b.id}>
+                  {b.name}
+                </MenuItem>
+              ))}
+            </TextField>
+          )}
+        />
+        {/* Unit multi-select (only when building is selected) */}
+        {watchBuilding && (
+          <Controller
+            name="apartment_ids"
+            control={form.control}
+            defaultValue={[]}
+            render={({ field }) => (
+              <Autocomplete
+                multiple
+                options={currentApts}
+                disableCloseOnSelect
+                getOptionLabel={(opt) =>
+                  opt.unit_number
+                    ? `${t("unit")} ${opt.unit_number} (${t("floor")} ${opt.floor})`
+                    : String(opt)
+                }
+                isOptionEqualToValue={(opt, val) => opt.id === val.id || opt.id === val}
+                value={currentApts.filter((a) => (field.value || []).includes(a.id))}
+                onChange={(_, newVal) => field.onChange(newVal.map((a) => a.id))}
+                renderOption={(props, option, { selected }) => {
+                  const { key, ...rest } = props;
+                  return (
+                    <li key={key} {...rest}>
+                      <Checkbox
+                        icon={checkboxIcon}
+                        checkedIcon={checkedIcon}
+                        checked={selected}
+                        sx={{ mr: 1 }}
+                      />
+                      {t("unit")} {option.unit_number} ({t("floor")} {option.floor})
+                    </li>
+                  );
+                }}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    label={t("assignUnits")}
+                    placeholder={t("selectUnits")}
+                  />
+                )}
+              />
+            )}
+          />
+        )}
+      </>
+    );
   };
 
   // ── DataGrid columns ────────────────────────────────────────────────────────
@@ -396,6 +550,13 @@ export default function UsersPage() {
                     required
                     error={!!fieldState.error}
                     helperText={fieldState.error?.message}
+                    onChange={(e) => {
+                      field.onChange(e.target.value);
+                      // Reset role-specific fields when switching roles
+                      createForm.setValue("buildings", []);
+                      createForm.setValue("ownerBuilding", "");
+                      createForm.setValue("apartment_ids", []);
+                    }}
                   >
                     {ROLES.map((r) => (
                       <MenuItem key={r} value={r}>
@@ -450,6 +611,7 @@ export default function UsersPage() {
                   )}
                 />
               )}
+              {watchCreateRole === "owner" && renderOwnerBuildingUnitFields(createForm, watchCreateOwnerBuilding)}
               <TextField label={t("password")} type="password" fullWidth required {...createForm.register("password", { required: true })} />
             </Stack>
           </DialogContent>
@@ -503,6 +665,13 @@ export default function UsersPage() {
                     required
                     error={!!fieldState.error}
                     helperText={fieldState.error?.message}
+                    onChange={(e) => {
+                      field.onChange(e.target.value);
+                      // Reset role-specific fields when switching roles
+                      editForm.setValue("buildings", []);
+                      editForm.setValue("ownerBuilding", "");
+                      editForm.setValue("apartment_ids", []);
+                    }}
                   >
                     {ROLES.map((r) => (
                       <MenuItem key={r} value={r}>
@@ -557,6 +726,7 @@ export default function UsersPage() {
                   )}
                 />
               )}
+              {watchEditRole === "owner" && renderOwnerBuildingUnitFields(editForm, watchEditOwnerBuilding)}
             </Stack>
           </DialogContent>
           <DialogActions sx={{ px: 3, pb: 2 }}>

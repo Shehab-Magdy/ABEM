@@ -64,5 +64,11 @@
   "buildingsRequired": "At least one building must be assigned to an admin user.",
   "editUser": "Edit User",
   "update": "Update",
-  "updating": "Updating\u2026"
+  "updating": "Updating\u2026",
+  "ownerBuilding": "Building",
+  "selectBuilding": "Select a building",
+  "assignUnits": "Assign Units",
+  "selectUnits": "Select units",
+  "unit": "Unit",
+  "floor": "Floor"
 }
