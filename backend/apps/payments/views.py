@@ -354,12 +354,10 @@ class PaymentViewSet(ModelViewSet):
     border-radius: 2mm;
   }}
   .footer {{
-    position: absolute;
-    bottom: 4mm;
-    width: 100%;
     text-align: center;
     color: #888;
     font-size: 6pt;
+    margin: 3mm 6mm 0;
   }}
 </style>
 </head>
