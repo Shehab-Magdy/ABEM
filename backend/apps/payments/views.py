@@ -84,7 +84,7 @@ _RECEIPT_LABELS = {
         "notes": "ملاحظات",
         "general_payment": "دفعة عامة",
         "paid_received": "تم الدفع {amount} تم الاستلام",
-        "footer": "هذا إيصال تم إنشاؤه تلقائيًا. ABEM - abem.app",
+        "footer": "هذا إيصال تم إنشاؤه تلقائيا. app.abem - ABEM",
         "subtitle": "إدارة مصروفات الشقق والمباني",
         # payment method translations
         "cash": "نقداً",
