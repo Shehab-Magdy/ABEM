@@ -29,6 +29,7 @@ import { useTranslation } from "react-i18next";
 import axiosClient from "../../api/axiosClient";
 import { apartmentsApi } from "../../api/apartmentsApi";
 import { PrivateSEO } from "../../components/seo/SEO";
+import { formatCurrency } from "../../utils/formatters";
 
 const PAYMENT_METHOD_KEYS = {
   cash: "payments:methodCash",
@@ -256,7 +257,7 @@ export default function OwnerDashboardPage() {
                       color={isCredit ? "info.main" : isSettled ? "success.main" : "error.main"}
                       data-testid="current-balance"
                     >
-                      {Math.abs(balance).toLocaleString()} EGP
+                      {formatCurrency(Math.abs(balance))}
                     </Typography>
                     {isCredit && (
                       <Chip label={t("credit_label")} size="small" color="info" data-testid="credit-label" />
@@ -272,7 +273,7 @@ export default function OwnerDashboardPage() {
                 <Box>
                   <Typography variant="overline" color="text.secondary">{t("total_paid_ytd")}</Typography>
                   <Typography variant="h5" fontWeight={700} color="success.main" data-testid="total-paid-ytd">
-                    {parseFloat(data?.balance_summary?.total_paid_ytd ?? 0).toLocaleString()} EGP
+                    {formatCurrency(data?.balance_summary?.total_paid_ytd ?? 0)}
                   </Typography>
                 </Box>
               </Box>
@@ -325,7 +326,7 @@ export default function OwnerDashboardPage() {
                             <TableRow key={p.id}>
                               <TableCell>{p.payment_date}</TableCell>
                               <TableCell>
-                                {parseFloat(p.amount_paid).toLocaleString()} EGP
+                                {formatCurrency(p.amount_paid)}
                               </TableCell>
                               <TableCell>{PAYMENT_METHOD_KEYS[p.payment_method] ? t(PAYMENT_METHOD_KEYS[p.payment_method]) : p.payment_method}</TableCell>
                               <TableCell>{p.notes}</TableCell>

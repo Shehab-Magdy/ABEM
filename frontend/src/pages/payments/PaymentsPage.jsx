@@ -49,6 +49,7 @@ import { expensesApi } from "../../api/expensesApi";
 import axiosClient from "../../api/axiosClient";
 import { useAuth } from "../../hooks/useAuth";
 import { PrivateSEO } from "../../components/seo/SEO";
+import { formatCurrency } from "../../utils/formatters";
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
@@ -606,7 +607,7 @@ export default function PaymentsPage() {
                     <Checkbox checked={form.expense_ids.includes(exp.id)} />
                     <ListItemText
                       primary={exp.title}
-                      secondary={`${parseFloat(exp.amount).toFixed(2)} EGP · ${exp.expense_date}`}
+                      secondary={`${formatCurrency(exp.amount)} · ${exp.expense_date}`}
                     />
                   </MenuItem>
                 ))}

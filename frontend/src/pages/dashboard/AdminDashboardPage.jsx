@@ -35,6 +35,7 @@ import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../../hooks/useAuth";
 import axiosClient from "../../api/axiosClient";
+import { formatCurrency } from "../../utils/formatters";
 import { PrivateSEO } from "../../components/seo/SEO";
 
 const MONTH_LABELS = [
@@ -214,7 +215,7 @@ export default function AdminDashboardPage() {
                 <CardContent>
                   <Typography variant="overline" color="text.secondary">{t("total_income")}</Typography>
                   <Typography variant="h5" fontWeight={700} color="success.main" data-testid="total-income">
-                    {parseFloat(data?.total_income ?? 0).toLocaleString()} EGP
+                    {formatCurrency(data?.total_income ?? 0)}
                   </Typography>
                   <TrendBadge pct={data?.income_change_pct} invertColors={false} />
                 </CardContent>
@@ -227,7 +228,7 @@ export default function AdminDashboardPage() {
                 <CardContent>
                   <Typography variant="overline" color="text.secondary">{t("total_expenses")}</Typography>
                   <Typography variant="h5" fontWeight={700} color="warning.main" data-testid="total-expenses">
-                    {parseFloat(data?.total_expenses ?? 0).toLocaleString()} EGP
+                    {formatCurrency(data?.total_expenses ?? 0)}
                   </Typography>
                   <TrendBadge pct={data?.expense_change_pct} invertColors={true} />
                 </CardContent>
