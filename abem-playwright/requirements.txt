@@ -41,3 +41,10 @@ Pillow==11.1.0
 
 # Accessibility testing
 axe-playwright-python==0.1.5
+
+# Load testing
+locust==2.29.0
+requests==2.32.2
+
+# Async support
+pytest-asyncio==0.23.6
