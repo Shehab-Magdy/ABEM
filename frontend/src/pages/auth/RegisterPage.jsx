@@ -611,7 +611,14 @@ export default function RegisterPage() {
       description="Create your ABEM account and start managing your building's expenses in minutes."
     />
     <Box display="flex" alignItems="center" justifyContent="center"
-      minHeight="100vh" bgcolor="background.default" px={2} py={4} position="relative">
+      minHeight="100vh" px={2} py={4} position="relative"
+      sx={{
+        backgroundImage: 'url(/abem-hero-banner.svg)',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat',
+        bgcolor: 'background.default',
+      }}>
       <Box sx={{ position: "absolute", top: 16, right: 16 }}>
         <LanguageSwitcher />
       </Box>

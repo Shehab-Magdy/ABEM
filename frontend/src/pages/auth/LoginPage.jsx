@@ -87,9 +87,15 @@ export default function LoginPage() {
       alignItems="center"
       justifyContent="center"
       minHeight="100vh"
-      bgcolor="background.default"
       px={2}
       position="relative"
+      sx={{
+        backgroundImage: 'url(/abem-hero-banner.svg)',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat',
+        bgcolor: 'background.default',
+      }}
     >
       {/* Language switcher — top-right corner */}
       <Box sx={{ position: "absolute", top: 16, right: 16 }}>
