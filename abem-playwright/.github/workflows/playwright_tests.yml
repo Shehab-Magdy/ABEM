@@ -1,0 +1,96 @@
+name: ABEM — Playwright UI & Load Tests
+
+on:
+  push:
+    branches: [main, develop, "sprint/*"]
+    paths: ['abem-playwright/**']
+  pull_request:
+    branches: [main]
+    paths: ['abem-playwright/**']
+
+defaults:
+  run:
+    working-directory: abem-playwright
+
+jobs:
+  ui-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+          playwright install chromium --with-deps
+
+      - name: Run Playwright UI tests
+        env:
+          BASE_URL: ${{ secrets.BASE_URL }}
+          API_BASE_URL: ${{ secrets.API_BASE_URL }}
+          ADMIN_EMAIL: ${{ secrets.ADMIN_EMAIL }}
+          ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
+          OWNER_EMAIL: ${{ secrets.OWNER_EMAIL }}
+          OWNER_PASSWORD: ${{ secrets.OWNER_PASSWORD }}
+          HEADLESS: "true"
+        run: |
+          pytest tests/ui/ -v \
+            --html=reports/ui_report.html \
+            --self-contained-html \
+            -n auto \
+            --timeout=60
+
+      - name: Upload HTML report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: abem-playwright/reports/ui_report.html
+          retention-days: 14
+
+  load-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run smoke load test
+        env:
+          LOCUST_HOST: ${{ secrets.LOCUST_HOST }}
+          ADMIN_EMAIL: ${{ secrets.ADMIN_EMAIL }}
+          ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
+          OWNER_EMAIL: ${{ secrets.OWNER_EMAIL }}
+          OWNER_PASSWORD: ${{ secrets.OWNER_PASSWORD }}
+        run: |
+          cd tests/load
+          locust -f scenarios/smoke_load.py --headless \
+            -u 10 -r 2 --run-time 30s \
+            --html ../reports/smoke_load_report.html \
+            --csv ../reports/smoke
+
+      - name: Upload load report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: load-test-report
+          path: abem-playwright/reports/
+          retention-days: 14
