@@ -334,11 +334,12 @@ class PaymentViewSet(ModelViewSet):
     width: calc(100% - 30mm);
     margin: 6mm 15mm 0;
     border-collapse: collapse;
+    direction: {html_dir};
   }}
   .details-table tr {{ height: 12mm; }}
   .details-table tr:nth-child(odd) td {{ background: #F0F4F8; }}
-  .details-table td {{ padding: 3mm 5mm; vertical-align: middle; }}
-  .details-table td.lbl {{ color: #555; font-size: 9pt; font-weight: bold; width: 38%; }}
+  .details-table td {{ padding: 3mm 5mm; vertical-align: middle; direction: {html_dir}; unicode-bidi: embed; }}
+  .details-table td.lbl {{ color: #555; font-size: 9pt; font-weight: bold; width: 38%; text-align: {"right" if is_rtl else "left"}; }}
   .details-table td.val {{ text-align: {"left" if is_rtl else "right"}; font-size: 10pt; unicode-bidi: plaintext; }}
   .paid-box {{
     background: #E8F5E9;
