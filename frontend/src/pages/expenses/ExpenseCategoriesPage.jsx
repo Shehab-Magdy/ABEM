@@ -90,6 +90,46 @@ export default function ExpenseCategoriesPage() {
   // Top-level categories (no parent) available for subcategory assignment
   const topLevelCategories = categories.filter((c) => !c.parent_id);
 
+  // ── Category name translation mapping ─────────────────────────────────────
+  const translateCategoryName = (name) => {
+    const keyMap = {
+      'Maintenance': 'cat_maintenance',
+      'Utilities': 'cat_utilities',
+      'Cleaning': 'cat_cleaning',
+      'Security': 'cat_security',
+      'Elevator': 'cat_elevator',
+      'Plumbing': 'cat_plumbing',
+      'Internet & Cable': 'cat_internet_cable',
+      'Parking': 'cat_parking',
+      'Landscaping': 'cat_landscaping',
+      'Pest Control': 'cat_pest_control',
+      'Fire Safety': 'cat_fire_safety',
+      'Waste Management': 'cat_waste_management',
+      'Insurance': 'cat_insurance',
+      'Management': 'cat_management',
+      'Other': 'cat_other',
+    };
+    const key = keyMap[name];
+    return key ? t(key) : name;
+  };
+
+  // ── Build hierarchical (nested) category list ─────────────────────────────
+  const sortedCategories = (() => {
+    const parents = categories.filter((c) => !c.parent_id);
+    const result = [];
+    parents.forEach((parent) => {
+      result.push(parent);
+      const children = categories.filter((c) => c.parent_id === parent.id);
+      children.forEach((child) => result.push(child));
+    });
+    // Include orphan subcategories whose parent is not in the current list
+    const ids = new Set(result.map((c) => c.id));
+    categories.forEach((c) => {
+      if (!ids.has(c.id)) result.push(c);
+    });
+    return result;
+  })();
+
   // ── Add category ─────────────────────────────────────────────────────────────
 
   const openAdd = () => {
@@ -209,14 +249,15 @@ export default function ExpenseCategoriesPage() {
               </TableRow>
             </TableHead>
             <TableBody>
-              {categories.length === 0 ? (
+              {sortedCategories.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={5} align="center" sx={{ py: 4, color: "text.secondary" }}>
                     {t("no_categories")}
                   </TableCell>
                 </TableRow>
               ) : (
-                categories.map((cat) => {
+                sortedCategories.map((cat) => {
+                  const isChild = Boolean(cat.parent_id);
                   const parentCat = cat.parent_id
                     ? categories.find((c) => c.id === cat.parent_id)
                     : null;
@@ -238,13 +279,15 @@ export default function ExpenseCategoriesPage() {
                           </Typography>
                         </Stack>
                       </TableCell>
-                      <TableCell>{t(cat.name, cat.name)}</TableCell>
+                      <TableCell sx={isChild ? { pl: 4 } : undefined}>
+                        {isChild ? "— " : ""}{translateCategoryName(cat.name)}
+                      </TableCell>
                       <TableCell sx={{ color: "text.secondary" }}>
                         {cat.description ? t(cat.description, cat.description) : "—"}
                       </TableCell>
                       <TableCell>
                         {parentCat ? (
-                          <Chip label={t(parentCat.name, parentCat.name)} size="small" variant="outlined" />
+                          <Chip label={translateCategoryName(parentCat.name)} size="small" variant="outlined" />
                         ) : (
                           <Typography variant="caption" color="text.disabled">—</Typography>
                         )}
@@ -344,7 +387,7 @@ export default function ExpenseCategoriesPage() {
               <MenuItem value="">{t("none_top_level")}</MenuItem>
               {topLevelCategories.map((c) => (
                 <MenuItem key={c.id} value={c.id}>
-                  {c.name}
+                  {translateCategoryName(c.name)}
                 </MenuItem>
               ))}
             </Select>
