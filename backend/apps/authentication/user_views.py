@@ -54,24 +54,31 @@ class UserViewSet(AuditLogMixin, ModelViewSet):
         base = User.objects.filter(is_superuser=False)
 
         if building_id:
-            # Scoped to members of one specific building (used by invite-owner autocomplete)
-            return base.filter(buildings__id=building_id).distinct().order_by("-created_at")
+            # Members of this building PLUS owner-role users created by the
+            # requesting admin who have no building yet (so freshly admin-created
+            # owners appear in the invite / assign-owner autocomplete).
+            return base.filter(
+                Q(buildings__id=building_id)
+                | Q(
+                    role="owner",
+                    created_by=requesting_admin,
+                    buildings__isnull=True,
+                    administered_buildings__isnull=True,
+                    co_administered_buildings__isnull=True,
+                )
+            ).distinct().order_by("-created_at")
 
         # Default: scope to users in buildings this admin manages (as primary admin or co-admin)
+        # PLUS users this admin created (FE-01)
         managed_ids = Building.objects.filter(
             Q(admin=requesting_admin) | Q(co_admins=requesting_admin)
         ).values_list("id", flat=True)
 
-        # Include users who belong to managed buildings, plus users with no
-        # building associations at all (e.g. freshly admin-created owners not
-        # yet assigned to a building) so they appear in the assign-owner dropdown.
         return base.filter(
             Q(buildings__id__in=managed_ids)
             | Q(administered_buildings__id__in=managed_ids)
             | Q(co_administered_buildings__id__in=managed_ids)
-            | Q(buildings__isnull=True,
-                administered_buildings__isnull=True,
-                co_administered_buildings__isnull=True)
+            | Q(created_by=requesting_admin)
         ).distinct().order_by("-created_at")
 
     def get_serializer_class(self):
@@ -90,12 +97,13 @@ class UserViewSet(AuditLogMixin, ModelViewSet):
         return context
 
     def perform_update(self, serializer):
-        """Override to handle non-model 'buildings' field in audit logging."""
-        # Collect old values only for real model fields (skip 'buildings')
+        """Override to handle non-model virtual fields in audit logging."""
+        # Collect old values only for real model fields (skip virtual fields)
+        skip_fields = {"buildings", "apartment_ids"}
         model_fields = {
             field: getattr(serializer.instance, field)
             for field in serializer.validated_data
-            if field != "buildings" and hasattr(serializer.instance, field)
+            if field not in skip_fields and hasattr(serializer.instance, field)
         }
         instance = serializer.save()
         changes = {
