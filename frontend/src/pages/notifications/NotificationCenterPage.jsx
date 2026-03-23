@@ -36,6 +36,7 @@ import {
 } from "@mui/icons-material";
 import axiosClient from "../../api/axiosClient";
 import { useAuth } from "../../hooks/useAuth";
+import { useNotificationStore } from "../../contexts/notificationStore";
 import { PrivateSEO } from "../../components/seo/SEO";
 
 const TYPE_COLORS = {
@@ -193,6 +194,7 @@ export default function NotificationCenterPage() {
     message: t("type_message", "Message"),
   };
   const { isAdmin } = useAuth();
+  const decrementUnread = useNotificationStore((s) => s.decrementUnread);
   const [notifications, setNotifications] = useState([]);
   const [filter, setFilter] = useState("all");
   const [loading, setLoading] = useState(false);
@@ -261,7 +263,10 @@ export default function NotificationCenterPage() {
   const handleMarkRead = (id) => {
     axiosClient
       .post(`/notifications/${id}/read/`)
-      .then(() => fetchNotifications())
+      .then(() => {
+        decrementUnread();
+        fetchNotifications();
+      })
       .catch(() => {});
   };
 

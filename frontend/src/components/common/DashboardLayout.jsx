@@ -47,6 +47,7 @@ import { authApi } from "../../api/authApi";
 import { useAuthStore } from "../../contexts/authStore";
 import { usePreferredLanguage } from "../../hooks/usePreferredLanguage";
 import axiosClient from "../../api/axiosClient";
+import { useNotificationStore } from "../../contexts/notificationStore";
 import { TutorialButton } from "../../tutorial/TutorialOverlay";
 import Footer from "./Footer";
 
@@ -106,7 +107,7 @@ export default function DashboardLayout() {
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
   const [anchorEl, setAnchorEl] = useState(null);
-  const [unreadCount, setUnreadCount] = useState(0);
+  const { unreadCount, setUnreadCount } = useNotificationStore();
 
   usePreferredLanguage();
 
