@@ -212,3 +212,70 @@ def unique_id():
     def _generate() -> str:
         return f"test_{uuid4().hex[:8]}"
     return _generate
+
+
+# ── API client fixture (authenticated as admin) ─────────────
+
+
+@pytest.fixture(scope="function")
+def admin_api(api_context: APIRequestContext) -> "APIClient":
+    """Function-scoped APIClient pre-authenticated as admin.
+
+    Logs in via /auth/login/ and injects the Bearer token into a new
+    APIRequestContext so all subsequent calls are authenticated.
+    """
+    from utils.api_client import APIClient
+    client = APIClient(api_context)
+    tokens = client.login(settings.ADMIN_EMAIL, settings.ADMIN_PASSWORD)
+    access = tokens.get("access") or tokens.get("token")
+    client._access_token = access
+    return client
+
+
+# ── Test data seeding fixtures ───────────────────────────────
+
+
+@pytest.fixture(scope="function")
+def seeded_building(admin_api: "APIClient"):
+    """Seed a temporary building via API; soft-delete in teardown."""
+    from utils.data_factory import build_building
+    payload = build_building()
+    resp = admin_api.post("buildings/", data=payload)
+    assert resp.status in (200, 201), f"Failed to create building: {resp.text()}"
+    building = resp.json()
+    yield building
+    # Teardown: soft-delete
+    admin_api.delete(f"buildings/{building['id']}/")
+
+
+@pytest.fixture(scope="function")
+def seeded_expense(admin_api: "APIClient", seeded_building: dict):
+    """Seed a temporary expense via API; soft-delete in teardown."""
+    from utils.data_factory import build_expense
+    # Get the first category for this building
+    cat_resp = admin_api.get("expenses/categories/", params={"building_id": seeded_building["id"]})
+    categories = cat_resp.json().get("results", cat_resp.json()) if cat_resp.status == 200 else []
+    cat_id = categories[0]["id"] if categories else None
+    payload = build_expense(seeded_building["id"], cat_id or "")
+    resp = admin_api.post("expenses/", data=payload)
+    assert resp.status in (200, 201), f"Failed to create expense: {resp.text()}"
+    expense = resp.json()
+    yield expense
+    admin_api.delete(f"expenses/{expense['id']}/")
+
+
+@pytest.fixture(scope="function")
+def seeded_payment(admin_api: "APIClient", seeded_building: dict):
+    """Seed a temporary payment via API. No teardown (payments are immutable)."""
+    from utils.data_factory import build_payment
+    # Get the first apartment for this building
+    apt_resp = admin_api.get(f"buildings/{seeded_building['id']}/apartments/", params={"page_size": 1})
+    apartments = apt_resp.json().get("results", apt_resp.json()) if apt_resp.status == 200 else []
+    if not apartments:
+        pytest.skip("No apartments available for payment seeding")
+    apt_id = apartments[0]["id"]
+    payload = build_payment(apt_id, amount_paid="100.00")
+    resp = admin_api.post("payments/", data=payload)
+    assert resp.status in (200, 201), f"Failed to create payment: {resp.text()}"
+    payment = resp.json()
+    yield payment
