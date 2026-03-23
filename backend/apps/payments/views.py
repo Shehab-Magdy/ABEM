@@ -269,7 +269,7 @@ class PaymentViewSet(ModelViewSet):
         ]
         if is_rtl:
             rows_html = "".join(
-                f'<tr><td class="val">{value}</td><td class="lbl">{label}</td></tr>'
+                f'<tr><td class="lbl">{label}</td><td class="val">{value}</td></tr>'
                 for label, value in fields
             )
         else:
