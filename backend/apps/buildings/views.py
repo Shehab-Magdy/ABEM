@@ -40,7 +40,9 @@ class BuildingViewSet(ModelViewSet):
     # ── Scoping ────────────────────────────────────────────────────────────────
 
     def get_queryset(self):
-        qs = Building.objects.filter(deleted_at__isnull=True)
+        qs = Building.objects.filter(deleted_at__isnull=True).prefetch_related(
+            "co_admins", "userbuilding_set"
+        )
         # Owners only see active buildings; admins see active + inactive (so they can reactivate)
         if not self.request.user.role == "admin":
             qs = qs.filter(is_active=True)

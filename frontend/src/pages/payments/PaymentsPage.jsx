@@ -117,60 +117,75 @@ export default function PaymentsPage() {
 
   // ── Data fetching ────────────────────────────────────────────────────────────
 
-  const loadBuildings = useCallback(async () => {
+  const loadBuildings = useCallback(async ({ signal } = {}) => {
     try {
-      const res = await buildingsApi.list();
+      const res = await buildingsApi.list(undefined, { signal });
       const list = res.data?.results ?? res.data ?? [];
       setBuildings(list);
       if (list.length > 0 && !selectedBuilding) {
         setSelectedBuilding(list[0].id);
       }
-    } catch {
+    } catch (err) {
+      if (err?.code === "ERR_CANCELED") return;
       /* ignore */
     }
   }, [selectedBuilding]);
 
-  const loadApartments = useCallback(async (buildingId) => {
+  const loadApartments = useCallback(async (buildingId, { signal } = {}) => {
     if (!buildingId) return;
     try {
-      const res = await axiosClient.get("/apartments/", { params: { building_id: buildingId } });
+      const res = await axiosClient.get("/apartments/", { params: { building_id: buildingId }, signal });
       const list = res.data?.results ?? res.data ?? [];
       setApartments(list);
       setSelectedApartment(list.length > 0 ? list[0].id : "");
-    } catch {
+    } catch (err) {
+      if (err?.code === "ERR_CANCELED") return;
       setApartments([]);
     }
   }, []);
 
-  const loadPayments = useCallback(async (apartmentId) => {
+  const loadPayments = useCallback(async (apartmentId, { signal } = {}) => {
     if (!apartmentId) return;
     setLoading(true);
     try {
-      const res = await paymentsApi.list({ apartment_id: apartmentId });
+      const res = await paymentsApi.list({ apartment_id: apartmentId }, { signal });
       setPayments(res.data?.results ?? res.data ?? []);
-    } catch {
+    } catch (err) {
+      if (err?.code === "ERR_CANCELED") return;
       setPayments([]);
     } finally {
       setLoading(false);
     }
   }, []);
 
-  const loadBalance = useCallback(async (apartmentId) => {
+  const loadBalance = useCallback(async (apartmentId, { signal } = {}) => {
     if (!apartmentId) return;
     try {
-      const res = await paymentsApi.getApartmentBalance(apartmentId);
+      const res = await paymentsApi.getApartmentBalance(apartmentId, { signal });
       setBalance(res.data);
-    } catch {
+    } catch (err) {
+      if (err?.code === "ERR_CANCELED") return;
       setBalance(null);
     }
   }, []);
 
-  useEffect(() => { loadBuildings(); }, []);
-  useEffect(() => { if (selectedBuilding) loadApartments(selectedBuilding); }, [selectedBuilding]);
+  useEffect(() => {
+    const controller = new AbortController();
+    loadBuildings({ signal: controller.signal });
+    return () => controller.abort();
+  }, []);
+  useEffect(() => {
+    if (!selectedBuilding) return;
+    const controller = new AbortController();
+    loadApartments(selectedBuilding, { signal: controller.signal });
+    return () => controller.abort();
+  }, [selectedBuilding]);
   useEffect(() => {
     if (selectedApartment) {
-      loadPayments(selectedApartment);
-      loadBalance(selectedApartment);
+      const controller = new AbortController();
+      loadPayments(selectedApartment, { signal: controller.signal });
+      loadBalance(selectedApartment, { signal: controller.signal });
+      return () => controller.abort();
     } else {
       setPayments([]);
       setBalance(null);

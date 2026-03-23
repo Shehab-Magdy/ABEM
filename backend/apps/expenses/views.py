@@ -107,6 +107,8 @@ class ExpenseViewSet(ModelViewSet):
     def get_queryset(self):
         qs = Expense.objects.filter(deleted_at__isnull=True).select_related(
             "building", "category", "created_by"
+        ).prefetch_related(
+            "apartment_expenses", "apartment_expenses__apartment"
         )
 
         building_id = self.request.query_params.get("building_id")

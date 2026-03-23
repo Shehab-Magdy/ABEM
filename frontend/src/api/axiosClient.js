@@ -94,4 +94,18 @@ axiosClient.interceptors.response.use(
   }
 );
 
+// ── AbortController helper ────────────────────────────────────────────────────
+/**
+ * Creates an AbortController-based cancel token for use with axios requests.
+ * Usage:
+ *   const { signal, cancel } = createCancelToken();
+ *   axiosClient.get('/endpoint/', { signal });
+ *   // on cleanup:
+ *   cancel();
+ */
+export function createCancelToken() {
+  const controller = new AbortController();
+  return { signal: controller.signal, cancel: () => controller.abort() };
+}
+
 export default axiosClient;
