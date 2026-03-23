@@ -78,5 +78,7 @@
   "store": "Store",
   "status_occupied": "Occupied",
   "status_vacant": "Vacant",
-  "status_under_maintenance": "Under Maintenance"
+  "status_under_maintenance": "Under Maintenance",
+  "unit_type_apartment": "Apartment",
+  "unit_type_store": "Store"
 }

@@ -95,25 +95,30 @@ export default function BuildingsPage() {
   const [assigning, setAssigning] = useState(false);
 
   // ── Fetch buildings ──────────────────────────────────────────────────────────
-  const fetchBuildings = useCallback(async () => {
+  const fetchBuildings = useCallback(async (options) => {
     setLoading(true);
     setError(null);
     try {
       const res = await buildingsApi.list({
         page: paginationModel.page + 1,
         page_size: paginationModel.pageSize,
-      });
+      }, options);
       const data = res.data;
       setRows(data.results ?? data);
       setRowCount(data.count ?? (data.results ?? data).length);
-    } catch {
+    } catch (err) {
+      if (err?.code === "ERR_CANCELED") return; // request was aborted on unmount
       setError(t("load_error", "Failed to load buildings."));
     } finally {
       setLoading(false);
     }
   }, [paginationModel]);
 
-  useEffect(() => { fetchBuildings(); }, [fetchBuildings]);
+  useEffect(() => {
+    const controller = new AbortController();
+    fetchBuildings({ signal: controller.signal });
+    return () => controller.abort();
+  }, [fetchBuildings]);
 
   // ── Create ──────────────────────────────────────────────────────────────────
   const loadAdminUsers = async () => {
@@ -593,6 +598,9 @@ export default function BuildingsPage() {
                         'Occupied': t('status_occupied'),
                         'Vacant': t('status_vacant'),
                         'Under Maintenance': t('status_under_maintenance'),
+                        'occupied': t('status_occupied'),
+                        'vacant': t('status_vacant'),
+                        'under_maintenance': t('status_under_maintenance'),
                       }[u.status] || u.status}
                     </TableCell>
                     <TableCell>

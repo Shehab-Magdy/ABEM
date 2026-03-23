@@ -78,5 +78,7 @@
   "store": "محل",
   "status_occupied": "مشغولة",
   "status_vacant": "شاغرة",
-  "status_under_maintenance": "تحت الصيانة"
+  "status_under_maintenance": "تحت الصيانة",
+  "unit_type_apartment": "شقة سكنية",
+  "unit_type_store": "محل تجاري"
 }
