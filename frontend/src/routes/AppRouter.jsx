@@ -1,39 +1,42 @@
+import { lazy, Suspense } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { useAuthStore } from "../contexts/authStore";
 import TutorialSystem from "../tutorial/TutorialOverlay";
+import { CircularProgress, Box } from "@mui/material";
 
-// Layout
+// Layout (kept eager – it wraps every authenticated page)
 import DashboardLayout from "../components/common/DashboardLayout";
 
-// Public pages
-import LandingPage from "../pages/landing/LandingPage";
-import LoginPage from "../pages/auth/LoginPage";
-import RegisterPage from "../pages/auth/RegisterPage";
-import ForgotPasswordPage from "../pages/auth/ForgotPasswordPage";
-import ForceChangePasswordPage from "../pages/auth/ForceChangePasswordPage";
-
-// Dashboards
-import AdminDashboardPage from "../pages/dashboard/AdminDashboardPage";
-import OwnerDashboardPage from "../pages/dashboard/OwnerDashboardPage";
-
-// Sprint 1
-import UsersPage from "../pages/users/UsersPage";
-import ProfilePage from "../pages/profile/ProfilePage";
-
-// Feature pages
-import BuildingsPage from "../pages/buildings/BuildingsPage";
-import ExpensesPage from "../pages/expenses/ExpensesPage";
-import PaymentsPage from "../pages/payments/PaymentsPage";
-import NotificationCenterPage from "../pages/notifications/NotificationCenterPage";
-import AuditLogPage from "../pages/audit/AuditLogPage";
-import ExpenseCategoriesPage from "../pages/expenses/ExpenseCategoriesPage";
-import AssetsPage from "../pages/assets/AssetsPage";
-
-// Error pages
+// Error pages (kept eager – used as inline fallbacks in route guards)
 import NotFoundPage from "../pages/errors/NotFoundPage";
 import ForbiddenPage from "../pages/errors/ForbiddenPage";
 import UnauthorizedPage from "../pages/errors/UnauthorizedPage";
 import ServerErrorPage from "../pages/errors/ServerErrorPage";
+
+// Lazy-loaded pages
+const LandingPage = lazy(() => import("../pages/landing/LandingPage"));
+const LoginPage = lazy(() => import("../pages/auth/LoginPage"));
+const RegisterPage = lazy(() => import("../pages/auth/RegisterPage"));
+const ForgotPasswordPage = lazy(() => import("../pages/auth/ForgotPasswordPage"));
+const ForceChangePasswordPage = lazy(() => import("../pages/auth/ForceChangePasswordPage"));
+const AdminDashboardPage = lazy(() => import("../pages/dashboard/AdminDashboardPage"));
+const OwnerDashboardPage = lazy(() => import("../pages/dashboard/OwnerDashboardPage"));
+const UsersPage = lazy(() => import("../pages/users/UsersPage"));
+const ProfilePage = lazy(() => import("../pages/profile/ProfilePage"));
+const BuildingsPage = lazy(() => import("../pages/buildings/BuildingsPage"));
+const ExpensesPage = lazy(() => import("../pages/expenses/ExpensesPage"));
+const PaymentsPage = lazy(() => import("../pages/payments/PaymentsPage"));
+const NotificationCenterPage = lazy(() => import("../pages/notifications/NotificationCenterPage"));
+const AuditLogPage = lazy(() => import("../pages/audit/AuditLogPage"));
+const ExpenseCategoriesPage = lazy(() => import("../pages/expenses/ExpenseCategoriesPage"));
+const AssetsPage = lazy(() => import("../pages/assets/AssetsPage"));
+
+// Shared loading fallback
+const SuspenseFallback = (
+  <Box display="flex" justifyContent="center" alignItems="center" minHeight="60vh">
+    <CircularProgress />
+  </Box>
+);
 
 // ── Route guards ──────────────────────────────────────────────────────────────
 
@@ -66,6 +69,7 @@ export default function AppRouter() {
   return (
     <>
     <TutorialSystem />
+    <Suspense fallback={SuspenseFallback}>
     <Routes>
       {/* Public marketing page */}
       <Route path="/landing" element={user ? <Navigate to="/dashboard" replace /> : <LandingPage />} />
@@ -126,6 +130,7 @@ export default function AppRouter() {
       {/* 404 – catch-all */}
       <Route path="*" element={<NotFoundPage />} />
     </Routes>
+    </Suspense>
     </>
   );
 }

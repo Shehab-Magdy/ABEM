@@ -1,0 +1,8 @@
+{
+  "export_payments_csv": "Export Payments (CSV)",
+  "export_payments_xlsx": "Export Payments (Excel)",
+  "export_expenses": "Export Expenses",
+  "downloading": "Downloading...",
+  "download_complete": "Download complete",
+  "export_error": "Export failed. Please try again."
+}

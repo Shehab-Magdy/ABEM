@@ -25,11 +25,23 @@ import {
 } from "@mui/material";
 import { VpnKey } from "@mui/icons-material";
 import { PieChart } from "@mui/x-charts/PieChart";
+import { useTranslation } from "react-i18next";
 import axiosClient from "../../api/axiosClient";
 import { apartmentsApi } from "../../api/apartmentsApi";
 import { PrivateSEO } from "../../components/seo/SEO";
+import { formatCurrency } from "../../utils/formatters";
+
+const PAYMENT_METHOD_KEYS = {
+  cash: "payments:methodCash",
+  bank_transfer: "payments:methodBankTransfer",
+  cheque: "payments:methodCheque",
+  mobile_wallet: "payments:methodMobileWallet",
+  other: "payments:methodOther",
+};
 
 export default function OwnerDashboardPage() {
+  const { t, i18n } = useTranslation(["dashboard", "payments"]);
+  const isRtl = (i18n.language || "en").startsWith("ar");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [data, setData] = useState(null);
@@ -107,7 +119,7 @@ export default function OwnerDashboardPage() {
   const pieData = (data?.expense_breakdown ?? []).map((row, idx) => ({
     id: idx,
     value: parseFloat(row.total),
-    label: row.category_name,
+    label: t(`categories:${row.category_name}`, row.category_name),
   }));
 
   const hasPayments = (data?.recent_payments ?? []).length > 0;
@@ -119,8 +131,23 @@ export default function OwnerDashboardPage() {
     <>
     <PrivateSEO title="ABEM – Dashboard" />
     <Box sx={{ p: 3 }}>
+      {/* ── Dashboard header banner ── */}
+      <Box sx={{ mb: 3 }}>
+        <img
+          src="/abem-dashboard-header.svg"
+          alt=""
+          style={{
+            width: '100%',
+            height: 'auto',
+            borderRadius: 8,
+            display: 'block',
+            transform: isRtl ? 'scaleX(-1)' : 'none',
+          }}
+        />
+      </Box>
+
       <Typography variant="h4" fontWeight={700} gutterBottom>
-        Owner Dashboard
+        {t("owner_dashboard")}
       </Typography>
 
       {/* ── Claim unit by code ── */}
@@ -129,10 +156,10 @@ export default function OwnerDashboardPage() {
           <Stack direction="row" alignItems="center" justifyContent="space-between">
             <Stack direction="row" alignItems="center" spacing={1}>
               <VpnKey fontSize="small" color="primary" />
-              <Typography variant="subtitle1" fontWeight={600}>Claim a Unit</Typography>
+              <Typography variant="subtitle1" fontWeight={600}>{t("claim_unit")}</Typography>
             </Stack>
             <Button size="small" variant="outlined" onClick={() => { setClaimOpen((p) => !p); setCodeError(null); setCodeInfo(null); setClaimSuccess(null); }}>
-              {claimOpen ? "Hide" : "Enter Code"}
+              {claimOpen ? t("hide") : t("enter_code")}
             </Button>
           </Stack>
           <Collapse in={claimOpen}>
@@ -150,7 +177,7 @@ export default function OwnerDashboardPage() {
               )}
               <Stack direction="row" spacing={1} alignItems="flex-start">
                 <TextField
-                  label="Registration Code"
+                  label={t("registration_code")}
                   value={regCode}
                   onChange={(e) => { setRegCode(e.target.value.toUpperCase()); setCodeInfo(null); setCodeError(null); }}
                   size="small"
@@ -165,12 +192,12 @@ export default function OwnerDashboardPage() {
                   onClick={handleValidateCode}
                   sx={{ mt: 0.5 }}
                 >
-                  {validating ? <CircularProgress size={18} /> : "Validate"}
+                  {validating ? <CircularProgress size={18} /> : t("validate")}
                 </Button>
               </Stack>
               {codeInfo && (
                 <Button variant="contained" disabled={claiming} onClick={handleClaimCode}>
-                  {claiming ? <CircularProgress size={20} color="inherit" /> : `Claim Unit ${codeInfo.unit_number}`}
+                  {claiming ? <CircularProgress size={20} color="inherit" /> : t("claim_unit_number", { unit: codeInfo.unit_number })}
                 </Button>
               )}
             </Stack>
@@ -182,7 +209,7 @@ export default function OwnerDashboardPage() {
       <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap", mb: 3 }}>
         <TextField
           size="small"
-          label="Date From"
+          label={t("date_from")}
           type="date"
           value={dateFrom}
           onChange={(e) => setDateFrom(e.target.value)}
@@ -191,7 +218,7 @@ export default function OwnerDashboardPage() {
         />
         <TextField
           size="small"
-          label="Date To"
+          label={t("date_to")}
           type="date"
           value={dateTo}
           onChange={(e) => setDateTo(e.target.value)}
@@ -200,7 +227,7 @@ export default function OwnerDashboardPage() {
         />
         <Button size="small" variant="outlined" data-testid="download-report"
           onClick={() => window.print()}>
-          Download Report
+          {t("download_report")}
         </Button>
       </Box>
 
@@ -212,17 +239,17 @@ export default function OwnerDashboardPage() {
         </Box>
       ) : !dataLoaded ? (
         <Alert severity="info" data-testid="empty-state">
-          No data available for the selected period.
+          {t("no_data_available")}
         </Alert>
       ) : (
         <>
           {/* ── Balance summary ── */}
           <Card sx={{ mb: 3 }}>
             <CardContent>
-              <Typography variant="h6" gutterBottom>Balance Summary</Typography>
+              <Typography variant="h6" gutterBottom>{t("balance_summary")}</Typography>
               <Box sx={{ display: "flex", gap: 4, flexWrap: "wrap", alignItems: "center" }}>
                 <Box>
-                  <Typography variant="overline" color="text.secondary">Current Balance</Typography>
+                  <Typography variant="overline" color="text.secondary">{t("current_balance")}</Typography>
                   <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                     <Typography
                       variant="h5"
@@ -230,23 +257,23 @@ export default function OwnerDashboardPage() {
                       color={isCredit ? "info.main" : isSettled ? "success.main" : "error.main"}
                       data-testid="current-balance"
                     >
-                      {Math.abs(balance).toLocaleString()} EGP
+                      {formatCurrency(Math.abs(balance))}
                     </Typography>
                     {isCredit && (
-                      <Chip label="Credit" size="small" color="info" data-testid="credit-label" />
+                      <Chip label={t("credit_label")} size="small" color="info" data-testid="credit-label" />
                     )}
                     {isSettled && (
-                      <Chip label="Settled" size="small" color="success" data-testid="settled-label" />
+                      <Chip label={t("settled_label")} size="small" color="success" data-testid="settled-label" />
                     )}
                     {!isCredit && !isSettled && (
-                      <Chip label="Owed" size="small" color="error" data-testid="owed-label" />
+                      <Chip label={t("owed_label")} size="small" color="error" data-testid="owed-label" />
                     )}
                   </Box>
                 </Box>
                 <Box>
-                  <Typography variant="overline" color="text.secondary">Total Paid (YTD)</Typography>
+                  <Typography variant="overline" color="text.secondary">{t("total_paid_ytd")}</Typography>
                   <Typography variant="h5" fontWeight={700} color="success.main" data-testid="total-paid-ytd">
-                    {parseFloat(data?.balance_summary?.total_paid_ytd ?? 0).toLocaleString()} EGP
+                    {formatCurrency(data?.balance_summary?.total_paid_ytd ?? 0)}
                   </Typography>
                 </Box>
               </Box>
@@ -259,7 +286,7 @@ export default function OwnerDashboardPage() {
               <Grid item xs={12} md={5}>
                 <Card sx={{ height: "100%" }}>
                   <CardContent>
-                    <Typography variant="h6" gutterBottom>Expense Breakdown</Typography>
+                    <Typography variant="h6" gutterBottom>{t("expense_breakdown")}</Typography>
                     <Box
                       aria-label="Expense breakdown by category pie chart"
                       role="img"
@@ -280,18 +307,18 @@ export default function OwnerDashboardPage() {
             <Grid item xs={12} md={hasBreakdown ? 7 : 12}>
               <Card>
                 <CardContent>
-                  <Typography variant="h6" gutterBottom>Recent Payments</Typography>
+                  <Typography variant="h6" gutterBottom>{t("recent_payments")}</Typography>
                   {!hasPayments ? (
-                    <Typography color="text.secondary">No payments yet.</Typography>
+                    <Typography color="text.secondary">{t("no_payments_yet")}</Typography>
                   ) : (
                     <Paper variant="outlined">
                       <Table size="small">
                         <TableHead>
                           <TableRow>
-                            <TableCell>Date</TableCell>
-                            <TableCell>Amount</TableCell>
-                            <TableCell>Method</TableCell>
-                            <TableCell>Notes</TableCell>
+                            <TableCell>{t("date_col")}</TableCell>
+                            <TableCell>{t("amount_col")}</TableCell>
+                            <TableCell>{t("method_col")}</TableCell>
+                            <TableCell>{t("notes_col")}</TableCell>
                           </TableRow>
                         </TableHead>
                         <TableBody>
@@ -299,9 +326,9 @@ export default function OwnerDashboardPage() {
                             <TableRow key={p.id}>
                               <TableCell>{p.payment_date}</TableCell>
                               <TableCell>
-                                {parseFloat(p.amount_paid).toLocaleString()} EGP
+                                {formatCurrency(p.amount_paid)}
                               </TableCell>
-                              <TableCell>{p.payment_method}</TableCell>
+                              <TableCell>{PAYMENT_METHOD_KEYS[p.payment_method] ? t(PAYMENT_METHOD_KEYS[p.payment_method]) : p.payment_method}</TableCell>
                               <TableCell>{p.notes}</TableCell>
                             </TableRow>
                           ))}

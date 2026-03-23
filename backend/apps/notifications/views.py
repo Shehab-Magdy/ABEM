@@ -1,6 +1,8 @@
 """Notification views – Sprint 6."""
 from __future__ import annotations
 
+import uuid
+
 from django.shortcuts import get_object_or_404
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
@@ -11,6 +13,7 @@ from apps.authentication.models import User
 from apps.authentication.permissions import IsAdminRole
 from apps.buildings.models import Building, UserBuilding
 
+from django.utils.translation import gettext_lazy as _
 from .models import Notification, NotificationType
 from .serializers import BroadcastSerializer, NotificationSerializer
 from .services import notify_user
@@ -48,7 +51,7 @@ class NotificationViewSet(ReadOnlyModelViewSet):
         notification = self.get_object()
         notification.is_read = True
         notification.save(update_fields=["is_read"])
-        return Response(NotificationSerializer(notification).data)
+        return Response(NotificationSerializer(notification, context={"request": request}).data)
 
     @action(
         detail=False,
@@ -59,7 +62,7 @@ class NotificationViewSet(ReadOnlyModelViewSet):
     def broadcast(self, request):
         """
         POST /api/v1/notifications/broadcast/
-        Admin sends an announcement to all owners of apartments in a building.
+        Admin sends an announcement to all members of a building (excluding sender).
         """
         serializer = BroadcastSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -70,30 +73,86 @@ class NotificationViewSet(ReadOnlyModelViewSet):
             deleted_at__isnull=True,
         )
 
-        # All owner-role members of this building
-        owners = (
+        # All building members (admins + owners) except the sender
+        recipients = (
             User.objects.filter(
                 userbuilding__building=building,
-                role="owner",
             )
+            .exclude(pk=request.user.pk)
             .distinct()
         )
 
+        group_id = uuid.uuid4()
         created = 0
-        for owner in owners:
+        for recipient in recipients:
             notify_user(
-                user=owner,
+                user=recipient,
                 notification_type=NotificationType.ANNOUNCEMENT,
                 title=serializer.validated_data["subject"],
                 body=serializer.validated_data["message"],
                 metadata={"building_id": str(building.id)},
+                sender=request.user,
+                broadcast_group=group_id,
             )
             created += 1
+
+        # Create a pre-read copy for the sender so the admin can track
+        # read-by statistics in their own notification list.
+        sender_notif = notify_user(
+            user=request.user,
+            notification_type=NotificationType.ANNOUNCEMENT,
+            title=serializer.validated_data["subject"],
+            body=serializer.validated_data["message"],
+            metadata={"building_id": str(building.id)},
+            sender=request.user,
+            broadcast_group=group_id,
+        )
+        sender_notif.is_read = True
+        sender_notif.save(update_fields=["is_read"])
 
         return Response(
             {"created": created, "building_id": str(building.id)},
             status=201,
         )
+
+    @action(
+        detail=True,
+        methods=["get"],
+        url_path="read-by",
+        permission_classes=[IsAuthenticated, IsAdminRole],
+    )
+    def read_by(self, request, pk=None):
+        """
+        GET /api/v1/notifications/{id}/read-by/
+        Admin-only: returns who has read this broadcast announcement.
+        """
+        notification = self.get_object()
+        if not notification.broadcast_group:
+            return Response(
+                {"total_recipients": 1, "read_count": int(notification.is_read), "read_by": []},
+            )
+
+        related = Notification.objects.filter(broadcast_group=notification.broadcast_group)
+        total = related.count()
+        read_notifications = related.filter(is_read=True).select_related("user")
+
+        read_users = []
+        for n in read_notifications:
+            profile_url = None
+            if n.user.profile_picture:
+                profile_url = request.build_absolute_uri(n.user.profile_picture.url)
+            read_users.append({
+                "id": str(n.user.id),
+                "first_name": n.user.first_name,
+                "last_name": n.user.last_name,
+                "profile_picture": profile_url,
+            })
+
+        return Response({
+            "total_recipients": total,
+            "read_count": len(read_users),
+            "read_by": read_users,
+        })
 
     @action(
         detail=False,
@@ -112,7 +171,7 @@ class NotificationViewSet(ReadOnlyModelViewSet):
         # Enforce messaging restrictions
         if request.user.messaging_blocked:
             return Response(
-                {"detail": "You have been blocked from sending messages."},
+                {"detail": _("You have been blocked from sending messages.")},
                 status=403,
             )
 
@@ -123,9 +182,9 @@ class NotificationViewSet(ReadOnlyModelViewSet):
         recipient_ids = request.data.get("recipient_ids", [])
 
         if not building_id:
-            return Response({"detail": "building_id is required."}, status=400)
+            return Response({"detail": _("building_id is required.")}, status=400)
         if not title or not message:
-            return Response({"detail": "title and message are required."}, status=400)
+            return Response({"detail": _("title and message are required.")}, status=400)
 
         # Verify the sender is a member or admin of this building
         is_member = UserBuilding.objects.filter(
@@ -133,7 +192,7 @@ class NotificationViewSet(ReadOnlyModelViewSet):
         ).exists()
         if not is_member:
             return Response(
-                {"detail": "You are not a member of this building."}, status=403
+                {"detail": _("You are not a member of this building.")}, status=403
             )
 
         building = get_object_or_404(Building, pk=building_id, deleted_at__isnull=True)
@@ -153,17 +212,17 @@ class NotificationViewSet(ReadOnlyModelViewSet):
         elif recipient_type == "individual":
             if request.user.individual_messaging_blocked:
                 return Response(
-                    {"detail": "You have been blocked from sending individual messages."},
+                    {"detail": _("You have been blocked from sending individual messages.")},
                     status=403,
                 )
             if not recipient_ids:
-                return Response({"detail": "recipient_ids is required for individual send."}, status=400)
+                return Response({"detail": _("recipient_ids is required for individual send.")}, status=400)
             recipients = User.objects.filter(
                 pk__in=recipient_ids,
                 userbuilding__building=building,
             ).distinct()
         else:
-            return Response({"detail": "Invalid recipient_type."}, status=400)
+            return Response({"detail": _("Invalid recipient_type.")}, status=400)
 
         created = 0
         for recipient in recipients:
@@ -171,7 +230,7 @@ class NotificationViewSet(ReadOnlyModelViewSet):
                 continue  # don't send to yourself
             notify_user(
                 user=recipient,
-                notification_type=NotificationType.ANNOUNCEMENT,
+                notification_type=NotificationType.MESSAGE,
                 title=title,
                 body=message,
                 metadata={"building_id": str(building.id), "sender_id": str(request.user.pk)},

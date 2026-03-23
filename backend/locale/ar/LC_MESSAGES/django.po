@@ -1,0 +1,445 @@
+# Arabic translations for ABEM.
+# Copyright (C) 2026 ABEM
+# This file is distributed under the same license as the ABEM package.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: ABEM 1.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-03-18 23:49+0000\n"
+"PO-Revision-Date: 2026-03-19 00:00+0200\n"
+"Last-Translator: ABEM Team\n"
+"Language-Team: Arabic\n"
+"Language: ar\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=6; plural=n==0 ? 0 : n==1 ? 1 : n==2 ? 2 : n%100>=3 && n%100<=10 ? 3 : n%100>=11 && n%100<=99 ? 4 : 5;\n"
+
+#: apps/apartments/models.py:14
+msgid "Apartment"
+msgstr "شقة سكنية"
+
+#: apps/apartments/models.py:15
+msgid "Store"
+msgstr "محل تجاري"
+
+#: apps/apartments/models.py:19
+msgid "Occupied"
+msgstr "مشغول"
+
+#: apps/apartments/models.py:20
+msgid "Vacant"
+msgstr "شاغر"
+
+#: apps/apartments/models.py:21
+msgid "Under Maintenance"
+msgstr "تحت الصيانة"
+
+#: apps/apartments/serializers.py:78
+#, python-format
+msgid "Floor %(floor)s exceeds the building's maximum of %(num_floors)s floor(s)."
+msgstr "الطابق %(floor)s يتجاوز الحد الأقصى للمبنى البالغ %(num_floors)s طابق(طوابق)."
+
+#: apps/apartments/views.py:135
+msgid "building_id query parameter is required."
+msgstr "معرّف المبنى (building_id) مطلوب."
+
+#: apps/apartments/views.py:156
+msgid "Apartment not found."
+msgstr "الوحدة غير موجودة."
+
+#: apps/apartments/views.py:160
+msgid "This apartment is already assigned to an owner."
+msgstr "هذه الوحدة مسندة بالفعل إلى مالك."
+
+#: apps/apartments/views.py:197
+msgid "email is required."
+msgstr "البريد الإلكتروني مطلوب."
+
+#: apps/apartments/views.py:228 apps/apartments/views.py:266
+msgid "token or code is required."
+msgstr "الرمز أو كود الدعوة مطلوب."
+
+#: apps/apartments/views.py:239
+msgid "Invalid invite link or code."
+msgstr "رابط أو كود الدعوة غير صالح."
+
+#: apps/apartments/views.py:242 apps/apartments/views.py:280
+msgid "This invite link has expired or already been used."
+msgstr "رابط الدعوة منتهي الصلاحية أو تم استخدامه بالفعل."
+
+#: apps/apartments/views.py:277
+msgid "Invalid invite."
+msgstr "دعوة غير صالحة."
+
+#: apps/apartments/views.py:284
+msgid "You are already an owner of this unit."
+msgstr "أنت بالفعل مالك هذه الوحدة."
+
+#: apps/apartments/views.py:325
+msgid "You do not have permission to view this apartment's balance."
+msgstr "ليس لديك صلاحية لعرض رصيد هذه الوحدة."
+
+#: apps/authentication/serializers.py:48 apps/authentication/serializers.py:114
+msgid "A user with this email already exists."
+msgstr "يوجد مستخدم بهذا البريد الإلكتروني بالفعل."
+
+#: apps/authentication/serializers.py:86
+msgid "Current password is incorrect."
+msgstr "كلمة المرور الحالية غير صحيحة."
+
+#: apps/authentication/serializers.py:92 apps/authentication/serializers.py:142
+msgid "New passwords do not match."
+msgstr "كلمتا المرور الجديدتان غير متطابقتين."
+
+#: apps/authentication/serializers.py:119
+#: apps/authentication/serializers.py:159
+msgid "Passwords do not match."
+msgstr "كلمتا المرور غير متطابقتين."
+
+#: apps/authentication/user_views.py:87
+msgid "You cannot deactivate your own account."
+msgstr "لا يمكنك تعطيل حسابك الشخصي."
+
+#: apps/authentication/user_views.py:99
+#, python-format
+msgid "User %(email)s deactivated."
+msgstr "تم تعطيل حساب المستخدم %(email)s."
+
+#: apps/authentication/user_views.py:115
+#, python-format
+msgid "User %(email)s activated."
+msgstr "تم تفعيل حساب المستخدم %(email)s."
+
+#: apps/authentication/user_views.py:136
+msgid "Provide messaging_blocked or individual_messaging_blocked."
+msgstr "يرجى تحديد messaging_blocked أو individual_messaging_blocked."
+
+#: apps/authentication/user_views.py:168
+#, python-format
+msgid "Password reset for %(email)s."
+msgstr "تم إعادة تعيين كلمة المرور لـ %(email)s."
+
+#: apps/authentication/validators.py:16
+msgid "Password must be at least 8 characters."
+msgstr "يجب أن تتكون كلمة المرور من ٨ أحرف على الأقل."
+
+#: apps/authentication/validators.py:18
+msgid "Password must contain at least one uppercase letter."
+msgstr "يجب أن تحتوي كلمة المرور على حرف كبير واحد على الأقل."
+
+#: apps/authentication/validators.py:20
+msgid "Password must contain at least one digit."
+msgstr "يجب أن تحتوي كلمة المرور على رقم واحد على الأقل."
+
+#: apps/authentication/validators.py:22
+msgid "Password must contain at least one special character."
+msgstr "يجب أن تحتوي كلمة المرور على رمز خاص واحد على الأقل."
+
+#: apps/authentication/validators.py:28
+msgid "Password must be at least 8 characters and include an uppercase letter, a digit, and a special character."
+msgstr "يجب أن تتكون كلمة المرور من ٨ أحرف على الأقل وتتضمن حرفاً كبيراً ورقماً ورمزاً خاصاً."
+
+#: apps/authentication/views.py:49
+msgid "No account found with this email address."
+msgstr "لا يوجد حساب بهذا البريد الإلكتروني."
+
+#: apps/authentication/views.py:60
+#, python-format
+msgid "Account locked. Try again in %(minutes)s minute(s)."
+msgstr "تم قفل الحساب. أعد المحاولة بعد %(minutes)s دقيقة/دقائق."
+
+#: apps/authentication/views.py:82
+msgid "Incorrect password."
+msgstr "كلمة المرور غير صحيحة."
+
+#: apps/authentication/views.py:89
+msgid "This account has been deactivated."
+msgstr "هذا الحساب معطّل."
+
+#: apps/authentication/views.py:126
+msgid "Refresh token is required."
+msgstr "رمز التحديث مطلوب."
+
+#: apps/authentication/views.py:134
+msgid "Token is invalid or already blacklisted."
+msgstr "الرمز غير صالح أو تم إبطاله بالفعل."
+
+#: apps/authentication/views.py:146
+msgid "Successfully logged out."
+msgstr "تم تسجيل الخروج بنجاح."
+
+#: apps/authentication/views.py:216 apps/authentication/views.py:247
+msgid "Password changed successfully."
+msgstr "تم تغيير كلمة المرور بنجاح."
+
+#: apps/authentication/views.py:227
+msgid "Password change is not required."
+msgstr "تغيير كلمة المرور غير مطلوب."
+
+#: apps/buildings/serializers.py:39
+msgid "Number of apartment units in the building."
+msgstr "عدد الشقق السكنية في المبنى."
+
+#: apps/buildings/serializers.py:45
+msgid "Number of store/commercial units in the building."
+msgstr "عدد المحلات التجارية في المبنى."
+
+#: apps/buildings/serializers.py:71
+msgid "num_floors must be a positive integer greater than 0."
+msgstr "عدد الطوابق يجب أن يكون عدداً صحيحاً موجباً أكبر من صفر."
+
+#: apps/buildings/serializers.py:188
+msgid "User not found."
+msgstr "المستخدم غير موجود."
+
+#: apps/buildings/views.py:148
+#, python-format
+msgid "User '%(email)s' assigned to building '%(name)s'."
+msgstr "تم تعيين المستخدم '%(email)s' في المبنى '%(name)s'."
+
+#: apps/buildings/views.py:169
+#, python-format
+msgid "Building '%(name)s' deactivated."
+msgstr "تم تعطيل المبنى '%(name)s'."
+
+#: apps/buildings/views.py:188
+#, python-format
+msgid "Building '%(name)s' activated."
+msgstr "تم تفعيل المبنى '%(name)s'."
+
+#: apps/dashboard/views.py:46
+msgid "Building not found or not accessible by you."
+msgstr "المبنى غير موجود أو ليس لديك صلاحية الوصول إليه."
+
+#: apps/dashboard/views.py:226
+msgid "Overdue"
+msgstr "متأخر"
+
+#: apps/dashboard/views.py:226
+msgid "Active"
+msgstr "نشط"
+
+#: apps/expenses/models.py:17
+msgid "Material icon name (used by web and mobile)"
+msgstr "اسم أيقونة Material (للويب والموبايل)"
+
+#: apps/expenses/models.py:19
+msgid "Hex color for the category badge"
+msgstr "لون Hex لشارة الفئة"
+
+#: apps/expenses/models.py:39
+msgid "Equal – All Units"
+msgstr "توزيع متساوٍ على الجميع"
+
+#: apps/expenses/models.py:40
+msgid "Equal – Apartments Only"
+msgstr "الشقق السكنية فقط"
+
+#: apps/expenses/models.py:41
+msgid "Equal – Stores Only"
+msgstr "المحلات التجارية فقط"
+
+#: apps/expenses/models.py:42
+msgid "Custom Subset"
+msgstr "توزيع مخصص"
+
+#: apps/expenses/models.py:46
+msgid "Monthly"
+msgstr "شهري"
+
+#: apps/expenses/models.py:47
+msgid "Quarterly"
+msgstr "ربع سنوي"
+
+#: apps/expenses/models.py:48
+msgid "Annual"
+msgstr "سنوي"
+
+#: apps/expenses/serializers.py:143
+msgid "amount must be greater than 0."
+msgstr "يجب أن يكون المبلغ أكبر من صفر."
+
+#: apps/expenses/serializers.py:153
+msgid "frequency is required when is_recurring is true."
+msgstr "التكرار مطلوب عند تفعيل خيار المصروف المتكرر."
+
+#: apps/expenses/views.py:228
+msgid "No file provided. Use multipart/form-data with key 'file'."
+msgstr "لم يتم تقديم ملف. استخدم multipart/form-data بمفتاح 'file'."
+
+#: apps/expenses/views.py:243
+#, python-format
+msgid "Unsupported file type '%(mime_type)s'. Allowed types: %(allowed_types)s"
+msgstr "نوع الملف '%(mime_type)s' غير مدعوم. الأنواع المسموحة: %(allowed_types)s"
+
+#: apps/expenses/views.py:255
+#, python-format
+msgid "File size %(size)s bytes exceeds the %(limit)s MB limit."
+msgstr "حجم الملف %(size)s بايت يتجاوز الحد المسموح %(limit)s ميغابايت."
+
+#: apps/notifications/models.py:9
+msgid "Payment Due"
+msgstr "موعد السداد"
+
+#: apps/notifications/models.py:10
+msgid "Payment Overdue"
+msgstr "دفعة متأخرة"
+
+#: apps/notifications/models.py:11
+msgid "Payment Confirmed"
+msgstr "تم تأكيد الدفعة"
+
+#: apps/notifications/models.py:12
+msgid "New Expense Added"
+msgstr "مصروف جديد"
+
+#: apps/notifications/models.py:13
+msgid "Expense Updated"
+msgstr "تم تحديث المصروف"
+
+#: apps/notifications/models.py:14
+msgid "New User Registered"
+msgstr "مستخدم جديد مسجل"
+
+#: apps/notifications/models.py:15
+msgid "Announcement"
+msgstr "إشعار من إدارة المبنى"
+
+#: apps/notifications/models.py:19
+msgid "Email"
+msgstr "البريد الإلكتروني"
+
+#: apps/notifications/models.py:20
+msgid "Push Notification"
+msgstr "إشعار الجهاز"
+
+#: apps/notifications/models.py:21
+msgid "In-App"
+msgstr "داخل التطبيق"
+
+#: apps/notifications/views.py:116
+msgid "You have been blocked from sending messages."
+msgstr "تم حظرك من إرسال الرسائل."
+
+#: apps/notifications/views.py:127
+msgid "building_id is required."
+msgstr "معرّف المبنى مطلوب."
+
+#: apps/notifications/views.py:129
+msgid "title and message are required."
+msgstr "العنوان والرسالة مطلوبان."
+
+#: apps/notifications/views.py:137
+msgid "You are not a member of this building."
+msgstr "أنت لست عضواً في هذا المبنى."
+
+#: apps/notifications/views.py:157
+msgid "You have been blocked from sending individual messages."
+msgstr "تم حظرك من إرسال الرسائل الفردية."
+
+#: apps/notifications/views.py:161
+msgid "recipient_ids is required for individual send."
+msgstr "معرّفات المستلمين مطلوبة للإرسال الفردي."
+
+#: apps/notifications/views.py:167
+msgid "Invalid recipient_type."
+msgstr "نوع المستلم غير صالح."
+
+#: apps/payments/models.py:12
+msgid "Cash"
+msgstr "نقداً"
+
+#: apps/payments/models.py:13
+msgid "Bank Transfer"
+msgstr "تحويل بنكي"
+
+#: apps/payments/models.py:14
+msgid "Cheque"
+msgstr "شيك"
+
+#: apps/payments/models.py:15 apps/payments/models.py:58
+msgid "Other"
+msgstr "أخرى"
+
+#: apps/payments/models.py:53
+msgid "Vehicle"
+msgstr "مركبة"
+
+#: apps/payments/models.py:54
+msgid "Equipment"
+msgstr "معدات"
+
+#: apps/payments/models.py:55
+msgid "Furniture"
+msgstr "أثاث"
+
+#: apps/payments/models.py:56
+msgid "Electronics"
+msgstr "إلكترونيات"
+
+#: apps/payments/models.py:57
+msgid "Property"
+msgstr "عقار"
+
+#: apps/payments/serializers.py:100
+msgid "amount_paid must be greater than zero."
+msgstr "المبلغ المدفوع يجب أن يكون أكبر من صفر."
+
+#: apps/payments/serializers.py:116
+#, python-format
+msgid "Expense '%(title)s' has not been assigned to the specified apartment."
+msgstr "المصروف '%(title)s' لم يتم تعيينه للوحدة المحددة."
+
+#: apps/payments/views.py:136
+msgid "You do not have permission to view this receipt."
+msgstr "ليس لديك صلاحية لعرض هذا الإيصال."
+
+#: apps/payments/views.py:155
+msgid "Amount Paid"
+msgstr "المبلغ المدفوع"
+
+#: apps/payments/views.py:156
+msgid "Payment Date"
+msgstr "تاريخ الدفع"
+
+#: apps/payments/views.py:157
+msgid "Payment Method"
+msgstr "طريقة الدفع"
+
+#: apps/payments/views.py:158
+msgid "For Expenses"
+msgstr "عن مصروفات"
+
+#: apps/payments/views.py:159
+msgid "Balance Before"
+msgstr "الرصيد قبل"
+
+#: apps/payments/views.py:160
+msgid "Balance After"
+msgstr "الرصيد بعد"
+
+#: apps/payments/views.py:161
+msgid "Recorded By"
+msgstr "سُجّل بواسطة"
+
+#: apps/payments/views.py:162
+msgid "Notes"
+msgstr "ملاحظات"
+
+#: apps/payments/views.py:326
+msgid "This asset has already been sold."
+msgstr "تم بيع هذا الأصل بالفعل."
+
+#: apps/payments/views.py:331
+msgid "sale_date and sale_price are required."
+msgstr "تاريخ البيع وسعر البيع مطلوبان."
+
+#: config/settings/base.py:128
+msgid "English"
+msgstr "English"
+
+#: config/settings/base.py:129
+msgid "العربية"
+msgstr "العربية"

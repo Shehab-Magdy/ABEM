@@ -2,14 +2,16 @@ name: Frontend CI
 
 on:
   push:
-    branches: [main, develop]
+    branches: [main, develop, feature/i18n-arabic-rtl]
     paths:
       - "frontend/**"
+      - "scripts/**"
       - ".github/workflows/frontend-ci.yml"
   pull_request:
     branches: [main, develop]
     paths:
       - "frontend/**"
+      - "scripts/**"
 
 jobs:
   lint-and-build:
@@ -29,6 +31,9 @@ jobs:
       - name: Install dependencies
         working-directory: frontend
         run: npm ci
+
+      - name: Verify translation key completeness
+        run: node scripts/check_translations.js
 
       - name: Run ESLint
         working-directory: frontend

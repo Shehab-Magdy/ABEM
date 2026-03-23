@@ -1,0 +1,444 @@
+# English translations for ABEM.
+# Copyright (C) 2026 ABEM
+# This file is distributed under the same license as the ABEM package.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: ABEM 1.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-03-18 23:49+0000\n"
+"PO-Revision-Date: 2026-03-19 00:00+0000\n"
+"Last-Translator: ABEM Team\n"
+"Language-Team: English\n"
+"Language: en\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+#: apps/apartments/models.py:14
+msgid "Apartment"
+msgstr ""
+
+#: apps/apartments/models.py:15
+msgid "Store"
+msgstr ""
+
+#: apps/apartments/models.py:19
+msgid "Occupied"
+msgstr ""
+
+#: apps/apartments/models.py:20
+msgid "Vacant"
+msgstr ""
+
+#: apps/apartments/models.py:21
+msgid "Under Maintenance"
+msgstr ""
+
+#: apps/apartments/serializers.py:78
+#, python-format
+msgid "Floor %(floor)s exceeds the building's maximum of %(num_floors)s floor(s)."
+msgstr ""
+
+#: apps/apartments/views.py:135
+msgid "building_id query parameter is required."
+msgstr ""
+
+#: apps/apartments/views.py:156
+msgid "Apartment not found."
+msgstr ""
+
+#: apps/apartments/views.py:160
+msgid "This apartment is already assigned to an owner."
+msgstr ""
+
+#: apps/apartments/views.py:197
+msgid "email is required."
+msgstr ""
+
+#: apps/apartments/views.py:228 apps/apartments/views.py:266
+msgid "token or code is required."
+msgstr ""
+
+#: apps/apartments/views.py:239
+msgid "Invalid invite link or code."
+msgstr ""
+
+#: apps/apartments/views.py:242 apps/apartments/views.py:280
+msgid "This invite link has expired or already been used."
+msgstr ""
+
+#: apps/apartments/views.py:277
+msgid "Invalid invite."
+msgstr ""
+
+#: apps/apartments/views.py:284
+msgid "You are already an owner of this unit."
+msgstr ""
+
+#: apps/apartments/views.py:325
+msgid "You do not have permission to view this apartment's balance."
+msgstr ""
+
+#: apps/authentication/serializers.py:48 apps/authentication/serializers.py:114
+msgid "A user with this email already exists."
+msgstr ""
+
+#: apps/authentication/serializers.py:86
+msgid "Current password is incorrect."
+msgstr ""
+
+#: apps/authentication/serializers.py:92 apps/authentication/serializers.py:142
+msgid "New passwords do not match."
+msgstr ""
+
+#: apps/authentication/serializers.py:119
+#: apps/authentication/serializers.py:159
+msgid "Passwords do not match."
+msgstr ""
+
+#: apps/authentication/user_views.py:87
+msgid "You cannot deactivate your own account."
+msgstr ""
+
+#: apps/authentication/user_views.py:99
+#, python-format
+msgid "User %(email)s deactivated."
+msgstr ""
+
+#: apps/authentication/user_views.py:115
+#, python-format
+msgid "User %(email)s activated."
+msgstr ""
+
+#: apps/authentication/user_views.py:136
+msgid "Provide messaging_blocked or individual_messaging_blocked."
+msgstr ""
+
+#: apps/authentication/user_views.py:168
+#, python-format
+msgid "Password reset for %(email)s."
+msgstr ""
+
+#: apps/authentication/validators.py:16
+msgid "Password must be at least 8 characters."
+msgstr ""
+
+#: apps/authentication/validators.py:18
+msgid "Password must contain at least one uppercase letter."
+msgstr ""
+
+#: apps/authentication/validators.py:20
+msgid "Password must contain at least one digit."
+msgstr ""
+
+#: apps/authentication/validators.py:22
+msgid "Password must contain at least one special character."
+msgstr ""
+
+#: apps/authentication/validators.py:28
+msgid "Password must be at least 8 characters and include an uppercase letter, a digit, and a special character."
+msgstr ""
+
+#: apps/authentication/views.py:49
+msgid "No account found with this email address."
+msgstr ""
+
+#: apps/authentication/views.py:60
+#, python-format
+msgid "Account locked. Try again in %(minutes)s minute(s)."
+msgstr ""
+
+#: apps/authentication/views.py:82
+msgid "Incorrect password."
+msgstr ""
+
+#: apps/authentication/views.py:89
+msgid "This account has been deactivated."
+msgstr ""
+
+#: apps/authentication/views.py:126
+msgid "Refresh token is required."
+msgstr ""
+
+#: apps/authentication/views.py:134
+msgid "Token is invalid or already blacklisted."
+msgstr ""
+
+#: apps/authentication/views.py:146
+msgid "Successfully logged out."
+msgstr ""
+
+#: apps/authentication/views.py:216 apps/authentication/views.py:247
+msgid "Password changed successfully."
+msgstr ""
+
+#: apps/authentication/views.py:227
+msgid "Password change is not required."
+msgstr ""
+
+#: apps/buildings/serializers.py:39
+msgid "Number of apartment units in the building."
+msgstr ""
+
+#: apps/buildings/serializers.py:45
+msgid "Number of store/commercial units in the building."
+msgstr ""
+
+#: apps/buildings/serializers.py:71
+msgid "num_floors must be a positive integer greater than 0."
+msgstr ""
+
+#: apps/buildings/serializers.py:188
+msgid "User not found."
+msgstr ""
+
+#: apps/buildings/views.py:148
+#, python-format
+msgid "User '%(email)s' assigned to building '%(name)s'."
+msgstr ""
+
+#: apps/buildings/views.py:169
+#, python-format
+msgid "Building '%(name)s' deactivated."
+msgstr ""
+
+#: apps/buildings/views.py:188
+#, python-format
+msgid "Building '%(name)s' activated."
+msgstr ""
+
+#: apps/dashboard/views.py:46
+msgid "Building not found or not accessible by you."
+msgstr ""
+
+#: apps/dashboard/views.py:226
+msgid "Overdue"
+msgstr ""
+
+#: apps/dashboard/views.py:226
+msgid "Active"
+msgstr ""
+
+#: apps/expenses/models.py:17
+msgid "Material icon name (used by web and mobile)"
+msgstr ""
+
+#: apps/expenses/models.py:19
+msgid "Hex color for the category badge"
+msgstr ""
+
+#: apps/expenses/models.py:39
+msgid "Equal – All Units"
+msgstr ""
+
+#: apps/expenses/models.py:40
+msgid "Equal – Apartments Only"
+msgstr ""
+
+#: apps/expenses/models.py:41
+msgid "Equal – Stores Only"
+msgstr ""
+
+#: apps/expenses/models.py:42
+msgid "Custom Subset"
+msgstr ""
+
+#: apps/expenses/models.py:46
+msgid "Monthly"
+msgstr ""
+
+#: apps/expenses/models.py:47
+msgid "Quarterly"
+msgstr ""
+
+#: apps/expenses/models.py:48
+msgid "Annual"
+msgstr ""
+
+#: apps/expenses/serializers.py:143
+msgid "amount must be greater than 0."
+msgstr ""
+
+#: apps/expenses/serializers.py:153
+msgid "frequency is required when is_recurring is true."
+msgstr ""
+
+#: apps/expenses/views.py:228
+msgid "No file provided. Use multipart/form-data with key 'file'."
+msgstr ""
+
+#: apps/expenses/views.py:243
+#, python-format
+msgid "Unsupported file type '%(mime_type)s'. Allowed types: %(allowed_types)s"
+msgstr ""
+
+#: apps/expenses/views.py:255
+#, python-format
+msgid "File size %(size)s bytes exceeds the %(limit)s MB limit."
+msgstr ""
+
+#: apps/notifications/models.py:9
+msgid "Payment Due"
+msgstr ""
+
+#: apps/notifications/models.py:10
+msgid "Payment Overdue"
+msgstr ""
+
+#: apps/notifications/models.py:11
+msgid "Payment Confirmed"
+msgstr ""
+
+#: apps/notifications/models.py:12
+msgid "New Expense Added"
+msgstr ""
+
+#: apps/notifications/models.py:13
+msgid "Expense Updated"
+msgstr ""
+
+#: apps/notifications/models.py:14
+msgid "New User Registered"
+msgstr ""
+
+#: apps/notifications/models.py:15
+msgid "Announcement"
+msgstr ""
+
+#: apps/notifications/models.py:19
+msgid "Email"
+msgstr ""
+
+#: apps/notifications/models.py:20
+msgid "Push Notification"
+msgstr ""
+
+#: apps/notifications/models.py:21
+msgid "In-App"
+msgstr ""
+
+#: apps/notifications/views.py:116
+msgid "You have been blocked from sending messages."
+msgstr ""
+
+#: apps/notifications/views.py:127
+msgid "building_id is required."
+msgstr ""
+
+#: apps/notifications/views.py:129
+msgid "title and message are required."
+msgstr ""
+
+#: apps/notifications/views.py:137
+msgid "You are not a member of this building."
+msgstr ""
+
+#: apps/notifications/views.py:157
+msgid "You have been blocked from sending individual messages."
+msgstr ""
+
+#: apps/notifications/views.py:161
+msgid "recipient_ids is required for individual send."
+msgstr ""
+
+#: apps/notifications/views.py:167
+msgid "Invalid recipient_type."
+msgstr ""
+
+#: apps/payments/models.py:12
+msgid "Cash"
+msgstr ""
+
+#: apps/payments/models.py:13
+msgid "Bank Transfer"
+msgstr ""
+
+#: apps/payments/models.py:14
+msgid "Cheque"
+msgstr ""
+
+#: apps/payments/models.py:15 apps/payments/models.py:58
+msgid "Other"
+msgstr ""
+
+#: apps/payments/models.py:53
+msgid "Vehicle"
+msgstr ""
+
+#: apps/payments/models.py:54
+msgid "Equipment"
+msgstr ""
+
+#: apps/payments/models.py:55
+msgid "Furniture"
+msgstr ""
+
+#: apps/payments/models.py:56
+msgid "Electronics"
+msgstr ""
+
+#: apps/payments/models.py:57
+msgid "Property"
+msgstr ""
+
+#: apps/payments/serializers.py:100
+msgid "amount_paid must be greater than zero."
+msgstr ""
+
+#: apps/payments/serializers.py:116
+#, python-format
+msgid "Expense '%(title)s' has not been assigned to the specified apartment."
+msgstr ""
+
+#: apps/payments/views.py:136
+msgid "You do not have permission to view this receipt."
+msgstr ""
+
+#: apps/payments/views.py:155
+msgid "Amount Paid"
+msgstr ""
+
+#: apps/payments/views.py:156
+msgid "Payment Date"
+msgstr ""
+
+#: apps/payments/views.py:157
+msgid "Payment Method"
+msgstr ""
+
+#: apps/payments/views.py:158
+msgid "For Expenses"
+msgstr ""
+
+#: apps/payments/views.py:159
+msgid "Balance Before"
+msgstr ""
+
+#: apps/payments/views.py:160
+msgid "Balance After"
+msgstr ""
+
+#: apps/payments/views.py:161
+msgid "Recorded By"
+msgstr ""
+
+#: apps/payments/views.py:162
+msgid "Notes"
+msgstr ""
+
+#: apps/payments/views.py:326
+msgid "This asset has already been sold."
+msgstr ""
+
+#: apps/payments/views.py:331
+msgid "sale_date and sale_price are required."
+msgstr ""
+
+#: config/settings/base.py:128
+msgid "English"
+msgstr ""
+
+#: config/settings/base.py:129
+msgid "العربية"
+msgstr ""

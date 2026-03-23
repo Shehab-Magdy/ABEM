@@ -1,11 +1,11 @@
 import axiosClient from "./axiosClient";
 
 export const paymentsApi = {
-  list: (params) => axiosClient.get("/payments/", { params }),
-  get: (id) => axiosClient.get(`/payments/${id}/`),
+  list: (params, { signal } = {}) => axiosClient.get("/payments/", { params, signal }),
+  get: (id, { signal } = {}) => axiosClient.get(`/payments/${id}/`, { signal }),
   create: (data) => axiosClient.post("/payments/", data),
-  getApartmentBalance: (apartmentId) =>
-    axiosClient.get(`/apartments/${apartmentId}/balance/`),
+  getApartmentBalance: (apartmentId, { signal } = {}) =>
+    axiosClient.get(`/apartments/${apartmentId}/balance/`, { signal }),
   receipt: (id) =>
     axiosClient.get(`/payments/${id}/receipt/`, {
       responseType: "blob",

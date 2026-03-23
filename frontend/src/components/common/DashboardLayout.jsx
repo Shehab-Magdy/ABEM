@@ -1,6 +1,7 @@
 /**
- * Main app shell: sidebar navigation + top bar + content outlet.
- * Navigation items are role-aware (admin vs owner), split into sections.
+ * Main app shell: collapsible sidebar + top bar + content outlet.
+ * Sidebar position follows document dir (left in LTR, right in RTL).
+ * Burger menu always visible to toggle sidebar open/closed.
  */
 import { useState, useEffect } from "react";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
@@ -22,6 +23,7 @@ import {
   Toolbar,
   Tooltip,
   Typography,
+  useMediaQuery,
 } from "@mui/material";
 import {
   AccountBalance,
@@ -30,17 +32,24 @@ import {
   Assessment,
   Business,
   Category,
+  ChevronLeft,
+  ChevronRight,
   ExitToApp,
   Menu as MenuIcon,
   Notifications,
   Payment,
   People,
 } from "@mui/icons-material";
+import { useTranslation } from "react-i18next";
+import { useTheme } from "@mui/material/styles";
 import { useAuth } from "../../hooks/useAuth";
 import { authApi } from "../../api/authApi";
 import { useAuthStore } from "../../contexts/authStore";
+import { usePreferredLanguage } from "../../hooks/usePreferredLanguage";
 import axiosClient from "../../api/axiosClient";
+import { useNotificationStore } from "../../contexts/notificationStore";
 import { TutorialButton } from "../../tutorial/TutorialOverlay";
+import Footer from "./Footer";
 
 const DRAWER_WIDTH = 240;
 
@@ -91,11 +100,23 @@ function NavSection({ title, items, currentPath }) {
 export default function DashboardLayout() {
   const { user, isAdmin } = useAuth();
   const { logout, refreshToken } = useAuthStore();
+  const { t, i18n } = useTranslation(["common", "auth"]);
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
   const location = useLocation();
   const navigate = useNavigate();
-  const [mobileOpen, setMobileOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
   const [anchorEl, setAnchorEl] = useState(null);
-  const [unreadCount, setUnreadCount] = useState(0);
+  const { unreadCount, setUnreadCount } = useNotificationStore();
+
+  usePreferredLanguage();
+
+  const isRtl = (i18n.language || "en").startsWith("ar");
+
+  // Close sidebar on mobile when navigating
+  useEffect(() => {
+    if (isMobile) setSidebarOpen(false);
+  }, [location.pathname, isMobile]);
 
   useEffect(() => {
     axiosClient
@@ -118,87 +139,109 @@ export default function DashboardLayout() {
     navigate("/login", { replace: true });
   };
 
+  const toggleSidebar = () => setSidebarOpen((prev) => !prev);
+
   const mainItems = [
-    { to: "/dashboard", icon: <Assessment />, label: "Dashboard", show: true },
-    { to: "/buildings", icon: <Business />, label: "Buildings", show: isAdmin },
-    { to: "/expenses", icon: <Apartment />, label: "Expenses", show: true },
-    { to: "/payments", icon: <Payment />, label: "Payments", show: true },
-    { to: "/notifications", icon: <Notifications />, label: "Notifications", show: true },
+    { to: "/dashboard", icon: <Assessment />, label: t("common:dashboard", "Dashboard"), show: true },
+    { to: "/buildings", icon: <Business />, label: t("common:buildings", "Buildings"), show: isAdmin },
+    { to: "/expenses", icon: <Apartment />, label: t("common:expenses", "Expenses"), show: true },
+    { to: "/payments", icon: <Payment />, label: t("common:payments", "Payments"), show: true },
+    { to: "/notifications", icon: <Notifications />, label: t("common:notifications", "Notifications"), show: true },
   ].filter((i) => i.show);
 
   const adminItems = [
-    { to: "/users", icon: <People />, label: "Users", show: isAdmin },
-    { to: "/expense-categories", icon: <Category />, label: "Categories", show: isAdmin },
-    { to: "/assets", icon: <AccountBalance />, label: "Assets", show: isAdmin },
+    { to: "/users", icon: <People />, label: t("common:users", "Users"), show: isAdmin },
+    { to: "/expense-categories", icon: <Category />, label: t("common:categories", "Categories"), show: isAdmin },
+    { to: "/assets", icon: <AccountBalance />, label: t("common:assets", "Assets"), show: isAdmin },
   ].filter((i) => i.show);
 
   const accountItems = [
-    { to: "/profile", icon: <AccountCircle />, label: "Profile", show: true },
+    { to: "/profile", icon: <AccountCircle />, label: t("common:profile", "Profile"), show: true },
   ];
 
-  const drawer = (
+  const drawerContent = (
     <Box sx={{ height: "100%", bgcolor: "primary.dark", display: "flex", flexDirection: "column" }}>
-      <Box sx={{ p: 2.5, pb: 2 }}>
-        <Box component="img" src="/abem-logo-dark.svg" alt="ABEM" sx={{ height: 36, mb: 0.5 }} />
-        <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.6)", display: "block" }}>
-          Building Expense Manager
-        </Typography>
+      {/* Header with close button */}
+      <Box sx={{ p: 2.5, pb: 2, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <Box>
+          <Box component="img" src="/abem-logo-dark.svg" alt="ABEM" sx={{ height: 36, mb: 0.5 }} />
+          <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.6)", display: "block" }}>
+            {t("auth:apartment_building_expense")}
+          </Typography>
+        </Box>
+        <IconButton onClick={toggleSidebar} sx={{ color: "rgba(255,255,255,0.6)" }} size="small">
+          {isRtl ? <ChevronRight /> : <ChevronLeft />}
+        </IconButton>
       </Box>
       <Divider sx={{ borderColor: "rgba(255,255,255,0.12)" }} />
 
       <Box sx={{ flex: 1, overflowY: "auto", pt: 0.5 }}>
-        <NavSection title="Main" items={mainItems} currentPath={location.pathname} />
+        <NavSection title={t("common:main_section", "Main")} items={mainItems} currentPath={location.pathname} />
 
         {adminItems.length > 0 && (
           <>
             <Divider sx={{ borderColor: "rgba(255,255,255,0.08)", mx: 2, my: 0.5 }} />
-            <NavSection title="Admin" items={adminItems} currentPath={location.pathname} />
+            <NavSection title={t("common:admin_section", "Admin")} items={adminItems} currentPath={location.pathname} />
           </>
         )}
 
         <Divider sx={{ borderColor: "rgba(255,255,255,0.08)", mx: 2, my: 0.5 }} />
-        <NavSection title="Account" items={accountItems} currentPath={location.pathname} />
+        <NavSection title={t("common:account_section", "Account")} items={accountItems} currentPath={location.pathname} />
       </Box>
     </Box>
   );
 
   return (
     <Box sx={{ display: "flex", height: "100vh" }}>
-      {/* Sidebar – permanent on desktop */}
-      <Box component="nav" sx={{ width: { md: DRAWER_WIDTH }, flexShrink: 0 }}>
+      {/* Sidebar — uses Drawer for overlay on mobile, fixed Box on desktop */}
+      {isMobile ? (
         <Drawer
           variant="temporary"
-          open={mobileOpen}
-          onClose={() => setMobileOpen(false)}
+          anchor={isRtl ? "right" : "left"}
+          open={sidebarOpen}
+          onClose={() => setSidebarOpen(false)}
           ModalProps={{ keepMounted: true }}
-          sx={{ display: { xs: "block", md: "none" }, "& .MuiDrawer-paper": { width: DRAWER_WIDTH, boxSizing: "border-box" } }}
+          sx={{ "& .MuiDrawer-paper": { width: DRAWER_WIDTH, boxSizing: "border-box" } }}
         >
-          {drawer}
+          {drawerContent}
         </Drawer>
-        <Drawer
-          variant="permanent"
-          sx={{ display: { xs: "none", md: "block" }, "& .MuiDrawer-paper": { width: DRAWER_WIDTH, boxSizing: "border-box", border: "none" } }}
-          open
-        >
-          {drawer}
-        </Drawer>
-      </Box>
+      ) : (
+        sidebarOpen && (
+          <Box
+            component="nav"
+            sx={{
+              width: DRAWER_WIDTH,
+              flexShrink: 0,
+              height: "100vh",
+              overflow: "hidden",
+            }}
+          >
+            {drawerContent}
+          </Box>
+        )
+      )}
 
       {/* Main area */}
-      <Box sx={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+      <Box sx={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", minWidth: 0 }}>
         {/* Top AppBar */}
         <AppBar position="static" color="inherit" elevation={0} sx={{ borderBottom: "1px solid", borderColor: "divider" }}>
           <Toolbar>
-            <IconButton edge="start" sx={{ mr: 2, display: { md: "none" } }} onClick={() => setMobileOpen(true)}>
+            {/* Burger icon — always visible */}
+            <IconButton
+              edge="start"
+              onClick={toggleSidebar}
+              sx={{ mr: 1 }}
+              aria-label={sidebarOpen ? t("common:close") : t("common:dashboard")}
+            >
               <MenuIcon />
             </IconButton>
             <Box flex={1} />
             <TutorialButton />
-            <Tooltip title="Notifications">
+            <Tooltip title={t("common:notifications")}>
               <IconButton
                 color="inherit"
                 onClick={() => navigate("/notifications")}
-                aria-label="notifications"
+                aria-label={t("common:notifications")}
                 data-testid="notification-bell"
                 sx={{ mr: 1 }}
               >
@@ -207,7 +250,7 @@ export default function DashboardLayout() {
                 </Badge>
               </IconButton>
             </Tooltip>
-            <Tooltip title="Account">
+            <Tooltip title={t("common:account_section")}>
               <IconButton onClick={(e) => setAnchorEl(e.currentTarget)} size="small">
                 <Avatar
                   src={user?.profile_picture || undefined}
@@ -230,19 +273,22 @@ export default function DashboardLayout() {
               <Divider />
               <MenuItem component={Link} to="/profile" onClick={() => setAnchorEl(null)}>
                 <AccountCircle fontSize="small" sx={{ mr: 1 }} />
-                My Profile
+                {t("common:profile")}
               </MenuItem>
               <MenuItem onClick={handleLogout} sx={{ color: "error.main" }}>
                 <ExitToApp fontSize="small" sx={{ mr: 1 }} />
-                Sign Out
+                {t("auth:sign_out")}
               </MenuItem>
             </Menu>
           </Toolbar>
         </AppBar>
 
         {/* Page content */}
-        <Box component="main" sx={{ flex: 1, overflow: "auto", p: 3, bgcolor: "background.default" }}>
-          <Outlet />
+        <Box component="main" sx={{ flex: 1, overflow: "auto", bgcolor: "background.default", display: "flex", flexDirection: "column" }}>
+          <Box sx={{ flex: 1, p: 3 }}>
+            <Outlet />
+          </Box>
+          <Footer />
         </Box>
       </Box>
     </Box>

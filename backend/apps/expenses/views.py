@@ -15,6 +15,7 @@ from rest_framework.viewsets import ModelViewSet
 
 from django_filters.rest_framework import DjangoFilterBackend
 
+from django.utils.translation import gettext_lazy as _
 from apps.audit.mixins import log_action
 from apps.authentication.permissions import IsAdminRole
 
@@ -106,6 +107,8 @@ class ExpenseViewSet(ModelViewSet):
     def get_queryset(self):
         qs = Expense.objects.filter(deleted_at__isnull=True).select_related(
             "building", "category", "created_by"
+        ).prefetch_related(
+            "apartment_expenses", "apartment_expenses__apartment"
         )
 
         building_id = self.request.query_params.get("building_id")
@@ -130,7 +133,7 @@ class ExpenseViewSet(ModelViewSet):
     # ── Permissions ────────────────────────────────────────────────────────────
 
     def get_permissions(self):
-        write_actions = ("create", "partial_update", "update", "destroy", "upload")
+        write_actions = ("create", "partial_update", "update", "destroy", "upload", "mark_paid")
         if self.action in write_actions:
             return [IsAuthenticated(), IsAdminRole()]
         return [IsAuthenticated()]
@@ -205,6 +208,32 @@ class ExpenseViewSet(ModelViewSet):
         instance.deleted_at = timezone.now()
         instance.save()
 
+    # ── Mark as paid ──────────────────────────────────────────────────────────
+
+    @action(
+        detail=True,
+        methods=["post"],
+        url_path="mark_paid",
+        permission_classes=[IsAuthenticated, IsAdminRole],
+    )
+    def mark_paid(self, request, pk=None):
+        """
+        POST /expenses/{id}/mark_paid/
+        Toggle the is_manually_paid flag (admin only).
+        """
+        expense = self.get_object()
+        expense.is_manually_paid = not expense.is_manually_paid
+        expense.save(update_fields=["is_manually_paid"])
+        log_action(
+            user=request.user,
+            action="expense.marked_paid",
+            entity="expense",
+            entity_id=expense.id,
+            changes={"is_manually_paid": {"after": expense.is_manually_paid}},
+            request=request,
+        )
+        return Response(self.get_serializer(expense).data)
+
     # ── File upload ────────────────────────────────────────────────────────────
 
     @action(
@@ -224,7 +253,7 @@ class ExpenseViewSet(ModelViewSet):
 
         if "file" not in request.FILES:
             return Response(
-                {"detail": "No file provided. Use multipart/form-data with key 'file'."},
+                {"detail": _("No file provided. Use multipart/form-data with key 'file'.")},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -239,10 +268,11 @@ class ExpenseViewSet(ModelViewSet):
         if mime_type not in allowed_types:
             return Response(
                 {
-                    "detail": (
-                        f"Unsupported file type '{mime_type}'. "
-                        f"Allowed types: {allowed_types}"
-                    )
+                    "detail": _("Unsupported file type '%(mime_type)s'. "
+                                "Allowed types: %(allowed_types)s") % {
+                        "mime_type": mime_type,
+                        "allowed_types": allowed_types,
+                    }
                 },
                 status=status.HTTP_400_BAD_REQUEST,
             )
@@ -250,10 +280,11 @@ class ExpenseViewSet(ModelViewSet):
         if uploaded.size > max_bytes:
             return Response(
                 {
-                    "detail": (
-                        f"File size {uploaded.size} bytes exceeds the "
-                        f"{settings.MAX_UPLOAD_SIZE_MB} MB limit."
-                    )
+                    "detail": _("File size %(size)s bytes exceeds the "
+                                "%(limit)s MB limit.") % {
+                        "size": uploaded.size,
+                        "limit": settings.MAX_UPLOAD_SIZE_MB,
+                    }
                 },
                 status=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
             )

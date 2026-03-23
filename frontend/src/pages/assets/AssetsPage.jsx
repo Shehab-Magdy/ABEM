@@ -8,6 +8,7 @@
  * - Summary stats: total asset value, total sale proceeds
  */
 import { useEffect, useState, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Alert,
   Box,
@@ -42,14 +43,7 @@ import { assetsApi } from "../../api/assetsApi";
 import { buildingsApi } from "../../api/buildingsApi";
 import { PrivateSEO } from "../../components/seo/SEO";
 
-const ASSET_TYPES = [
-  { value: "vehicle", label: "Vehicle" },
-  { value: "equipment", label: "Equipment" },
-  { value: "furniture", label: "Furniture" },
-  { value: "electronics", label: "Electronics" },
-  { value: "property", label: "Property" },
-  { value: "other", label: "Other" },
-];
+const ASSET_TYPE_VALUES = ["vehicle", "equipment", "furniture", "electronics", "property", "other"];
 
 const EMPTY_ASSET_FORM = {
   name: "",
@@ -69,6 +63,15 @@ const EMPTY_SALE_FORM = {
 };
 
 export default function AssetsPage() {
+  const { t } = useTranslation("common");
+
+  const ASSET_TYPES = ASSET_TYPE_VALUES.map((v) => ({
+    value: v,
+    label: t(`assets.type.${v}`, {
+      defaultValue: v.charAt(0).toUpperCase() + v.slice(1),
+    }),
+  }));
+
   const [buildings, setBuildings] = useState([]);
   const [selectedBuilding, setSelectedBuilding] = useState("");
   const [assets, setAssets] = useState([]);
@@ -106,7 +109,7 @@ export default function AssetsPage() {
       const res = await assetsApi.list({ building_id: selectedBuilding });
       setAssets(res.data.results ?? res.data);
     } catch {
-      setSnack({ open: true, msg: "Failed to load assets", severity: "error" });
+      setSnack({ open: true, msg: t("assets.failedToLoadAssets", "Failed to load assets"), severity: "error" });
     } finally {
       setLoading(false);
     }
@@ -129,7 +132,7 @@ export default function AssetsPage() {
 
   const handleSaveAsset = async () => {
     if (!assetForm.name.trim()) {
-      setAssetFormError("Name is required.");
+      setAssetFormError(t("assets.nameRequired", "Name is required."));
       return;
     }
     setSavingAsset(true);
@@ -149,10 +152,10 @@ export default function AssetsPage() {
       if (assetForm.acquisition_value) payload.acquisition_value = assetForm.acquisition_value;
       await assetsApi.create(payload);
       setAssetFormOpen(false);
-      setSnack({ open: true, msg: "Asset added.", severity: "success" });
+      setSnack({ open: true, msg: t("assets.assetAdded", "Asset added."), severity: "success" });
       loadAssets();
     } catch (err) {
-      setAssetFormError(err.response?.data?.detail || "Failed to add asset.");
+      setAssetFormError(err.response?.data?.detail || t("assets.failedToAddAsset", "Failed to add asset."));
     } finally {
       setSavingAsset(false);
     }
@@ -172,7 +175,7 @@ export default function AssetsPage() {
 
   const handleRecordSale = async () => {
     if (!saleForm.sale_price || parseFloat(saleForm.sale_price) <= 0) {
-      setSaleFormError("Sale price must be greater than 0.");
+      setSaleFormError(t("assets.salePriceRequired", "Sale price must be greater than 0."));
       return;
     }
     setRecordingSale(true);
@@ -186,10 +189,10 @@ export default function AssetsPage() {
         notes: saleForm.notes.trim(),
       });
       setSaleTarget(null);
-      setSnack({ open: true, msg: "Sale recorded.", severity: "success" });
+      setSnack({ open: true, msg: t("assets.saleRecorded", "Sale recorded."), severity: "success" });
       loadAssets();
     } catch (err) {
-      setSaleFormError(err.response?.data?.detail || "Failed to record sale.");
+      setSaleFormError(err.response?.data?.detail || t("assets.failedToRecordSale", "Failed to record sale."));
     } finally {
       setRecordingSale(false);
     }
@@ -199,12 +202,12 @@ export default function AssetsPage() {
 
   return (
     <>
-      <PrivateSEO title="ABEM – Assets" />
+      <PrivateSEO title={`ABEM – ${t("assets.pageTitle", "Assets")}`} />
       <Box>
       {/* Header */}
       <Stack direction="row" justifyContent="space-between" alignItems="center" mb={3}>
         <Typography variant="h5" fontWeight={600}>
-          Building Assets
+          {t("assets.buildingAssets", "Building Assets")}
         </Typography>
         <Button
           variant="contained"
@@ -212,16 +215,16 @@ export default function AssetsPage() {
           onClick={() => { setAssetForm(EMPTY_ASSET_FORM); setAssetFormError(""); setAssetFormOpen(true); }}
           disabled={!selectedBuilding}
         >
-          Add Asset
+          {t("assets.addAsset", "Add Asset")}
         </Button>
       </Stack>
 
       {/* Building selector */}
       <FormControl size="small" sx={{ minWidth: 260, mb: 3 }}>
-        <InputLabel>Building</InputLabel>
+        <InputLabel>{t("building", "Building")}</InputLabel>
         <Select
           value={selectedBuilding}
-          label="Building"
+          label={t("building", "Building")}
           onChange={(e) => setSelectedBuilding(e.target.value)}
         >
           {buildings.map((b) => (
@@ -235,7 +238,7 @@ export default function AssetsPage() {
         <Grid container spacing={2} sx={{ mb: 3 }}>
           <Grid item xs={12} sm={6}>
             <Paper variant="outlined" sx={{ p: 2 }}>
-              <Typography variant="caption" color="text.secondary">Total Sale Proceeds</Typography>
+              <Typography variant="caption" color="text.secondary">{t("assets.totalSaleProceeds", "Total Sale Proceeds")}</Typography>
               <Typography variant="h6" fontWeight={600} color="success.main">
                 {totalSaleProceeds.toLocaleString("en-US", { minimumFractionDigits: 2 })}
               </Typography>
@@ -243,7 +246,7 @@ export default function AssetsPage() {
           </Grid>
           <Grid item xs={12} sm={6}>
             <Paper variant="outlined" sx={{ p: 2 }}>
-              <Typography variant="caption" color="text.secondary">Total Assets</Typography>
+              <Typography variant="caption" color="text.secondary">{t("assets.totalAssets", "Total Assets")}</Typography>
               <Typography variant="h6" fontWeight={600}>{assets.length}</Typography>
             </Paper>
           </Grid>
@@ -260,19 +263,19 @@ export default function AssetsPage() {
           <Table size="small">
             <TableHead>
               <TableRow>
-                <TableCell><strong>Name</strong></TableCell>
-                <TableCell><strong>Type</strong></TableCell>
-                <TableCell><strong>Acquired</strong></TableCell>
-                <TableCell><strong>Acquisition Value</strong></TableCell>
-                <TableCell><strong>Status</strong></TableCell>
-                <TableCell align="right"><strong>Actions</strong></TableCell>
+                <TableCell><strong>{t("name", "Name")}</strong></TableCell>
+                <TableCell><strong>{t("type", "Type")}</strong></TableCell>
+                <TableCell><strong>{t("assets.acquired", "Acquired")}</strong></TableCell>
+                <TableCell><strong>{t("assets.acquisitionValue", "Acquisition Value")}</strong></TableCell>
+                <TableCell><strong>{t("status", "Status")}</strong></TableCell>
+                <TableCell align="right"><strong>{t("actions", "Actions")}</strong></TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {assets.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={7} align="center" sx={{ py: 4, color: "text.secondary" }}>
-                    No assets found. Click "Add Asset" to create one.
+                    {t("assets.emptyState", "No assets found. Click \"Add Asset\" to create one.")}
                   </TableCell>
                 </TableRow>
               ) : (
@@ -286,7 +289,7 @@ export default function AssetsPage() {
                     </TableCell>
                     <TableCell>
                       <Chip
-                        label={ASSET_TYPES.find((t) => t.value === asset.asset_type)?.label ?? asset.asset_type}
+                        label={ASSET_TYPES.find((at) => at.value === asset.asset_type)?.label ?? asset.asset_type}
                         size="small"
                         variant="outlined"
                       />
@@ -299,14 +302,14 @@ export default function AssetsPage() {
                     </TableCell>
                     <TableCell>
                       <Chip
-                        label={asset.is_sold ? "Sold" : "Active"}
+                        label={asset.is_sold ? t("assets.sold", "Sold") : t("assets.active", "Active")}
                         size="small"
                         color={asset.is_sold ? "default" : "success"}
                       />
                     </TableCell>
                     <TableCell align="right">
                       {!asset.is_sold && (
-                        <Tooltip title="Record Sale">
+                        <Tooltip title={t("assets.recordSale", "Record Sale")}>
                           <IconButton size="small" color="primary" onClick={() => openSale(asset)}>
                             <SellIcon fontSize="small" />
                           </IconButton>
@@ -323,12 +326,12 @@ export default function AssetsPage() {
 
       {/* Add Asset dialog */}
       <Dialog open={assetFormOpen} onClose={() => setAssetFormOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>Add Building Asset</DialogTitle>
+        <DialogTitle>{t("assets.addBuildingAsset", "Add Building Asset")}</DialogTitle>
         <DialogContent dividers>
           <Stack spacing={2} pt={1}>
             {assetFormError && <Alert severity="error">{assetFormError}</Alert>}
             <TextField
-              label="Name *"
+              label={`${t("name", "Name")} *`}
               name="name"
               value={assetForm.name}
               onChange={handleAssetFormChange}
@@ -336,10 +339,10 @@ export default function AssetsPage() {
               size="small"
               autoFocus
               InputLabelProps={{ shrink: true }}
-              placeholder="Asset name"
+              placeholder={t("assets.assetNamePlaceholder", "Asset name")}
             />
             <TextField
-              label="Description"
+              label={t("description", "Description")}
               name="description"
               value={assetForm.description}
               onChange={handleAssetFormChange}
@@ -348,26 +351,26 @@ export default function AssetsPage() {
               multiline
               rows={2}
               InputLabelProps={{ shrink: true }}
-              placeholder="Optional description"
+              placeholder={t("assets.optionalDescription", "Optional description")}
             />
             <FormControl size="small" fullWidth>
-              <InputLabel shrink>Asset Type</InputLabel>
+              <InputLabel shrink>{t("assets.assetType", "Asset Type")}</InputLabel>
               <Select
                 name="asset_type"
                 value={assetForm.asset_type}
-                label="Asset Type"
+                label={t("assets.assetType", "Asset Type")}
                 onChange={handleAssetFormChange}
               >
-                {ASSET_TYPES.map((t) => (
-                  <MenuItem key={t.value} value={t.value}>{t.label}</MenuItem>
+                {ASSET_TYPES.map((at) => (
+                  <MenuItem key={at.value} value={at.value}>{at.label}</MenuItem>
                 ))}
               </Select>
             </FormControl>
             {assetForm.asset_type === "other" && (
               <TextField
-                label="Specify asset type *"
+                label={`${t("assets.specifyAssetType", "Specify asset type")} *`}
                 name="other_type_label"
-                placeholder="e.g. Generator, Garden Equipment…"
+                placeholder={t("assets.specifyAssetTypePlaceholder", "e.g. Generator, Garden Equipment…")}
                 value={assetForm.other_type_label}
                 onChange={handleAssetFormChange}
                 required
@@ -379,7 +382,7 @@ export default function AssetsPage() {
             <Grid container spacing={2}>
               <Grid item xs={6}>
                 <TextField
-                  label="Acquisition Date"
+                  label={t("assets.acquisitionDate", "Acquisition Date")}
                   name="acquisition_date"
                   type="date"
                   value={assetForm.acquisition_date}
@@ -391,7 +394,7 @@ export default function AssetsPage() {
               </Grid>
               <Grid item xs={6}>
                 <TextField
-                  label="Acquisition Value"
+                  label={t("assets.acquisitionValue", "Acquisition Value")}
                   name="acquisition_value"
                   type="number"
                   value={assetForm.acquisition_value}
@@ -407,23 +410,23 @@ export default function AssetsPage() {
           </Stack>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setAssetFormOpen(false)} disabled={savingAsset}>Cancel</Button>
+          <Button onClick={() => setAssetFormOpen(false)} disabled={savingAsset}>{t("cancel", "Cancel")}</Button>
           <Button variant="contained" onClick={handleSaveAsset} disabled={savingAsset}>
-            {savingAsset ? "Saving…" : "Add Asset"}
+            {savingAsset ? t("saving", "Saving…") : t("assets.addAsset", "Add Asset")}
           </Button>
         </DialogActions>
       </Dialog>
 
       {/* Record Sale dialog */}
       <Dialog open={Boolean(saleTarget)} onClose={() => setSaleTarget(null)} maxWidth="sm" fullWidth>
-        <DialogTitle>Record Sale — {saleTarget?.name}</DialogTitle>
+        <DialogTitle>{t("assets.recordSale", "Record Sale")} — {saleTarget?.name}</DialogTitle>
         <DialogContent dividers>
           <Stack spacing={2} pt={1}>
             {saleFormError && <Alert severity="error">{saleFormError}</Alert>}
             <Grid container spacing={2}>
               <Grid item xs={6}>
                 <TextField
-                  label="Sale Date *"
+                  label={`${t("assets.saleDate", "Sale Date")} *`}
                   name="sale_date"
                   type="date"
                   value={saleForm.sale_date}
@@ -435,7 +438,7 @@ export default function AssetsPage() {
               </Grid>
               <Grid item xs={6}>
                 <TextField
-                  label="Sale Price *"
+                  label={`${t("assets.salePrice", "Sale Price")} *`}
                   name="sale_price"
                   type="number"
                   value={saleForm.sale_price}
@@ -451,31 +454,31 @@ export default function AssetsPage() {
             <Grid container spacing={2}>
               <Grid item xs={6}>
                 <TextField
-                  label="Buyer Name"
+                  label={t("assets.buyerName", "Buyer Name")}
                   name="buyer_name"
                   value={saleForm.buyer_name}
                   onChange={handleSaleFormChange}
                   fullWidth
                   size="small"
                   InputLabelProps={{ shrink: true }}
-                  placeholder="Optional"
+                  placeholder={t("optional", "Optional")}
                 />
               </Grid>
               <Grid item xs={6}>
                 <TextField
-                  label="Buyer Contact"
+                  label={t("assets.buyerContact", "Buyer Contact")}
                   name="buyer_contact"
                   value={saleForm.buyer_contact}
                   onChange={handleSaleFormChange}
                   fullWidth
                   size="small"
                   InputLabelProps={{ shrink: true }}
-                  placeholder="Phone or email"
+                  placeholder={t("assets.phoneOrEmail", "Phone or email")}
                 />
               </Grid>
             </Grid>
             <TextField
-              label="Notes"
+              label={t("notes", "Notes")}
               name="notes"
               value={saleForm.notes}
               onChange={handleSaleFormChange}
@@ -484,14 +487,14 @@ export default function AssetsPage() {
               multiline
               rows={2}
               InputLabelProps={{ shrink: true }}
-              placeholder="Optional notes"
+              placeholder={t("assets.optionalNotes", "Optional notes")}
             />
           </Stack>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setSaleTarget(null)} disabled={recordingSale}>Cancel</Button>
+          <Button onClick={() => setSaleTarget(null)} disabled={recordingSale}>{t("cancel", "Cancel")}</Button>
           <Button variant="contained" color="success" onClick={handleRecordSale} disabled={recordingSale}>
-            {recordingSale ? "Recording…" : "Record Sale"}
+            {recordingSale ? t("assets.recording", "Recording…") : t("assets.recordSale", "Record Sale")}
           </Button>
         </DialogActions>
       </Dialog>

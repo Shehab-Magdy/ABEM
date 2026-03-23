@@ -44,9 +44,11 @@ import { buildingsApi } from "../../api/buildingsApi";
 import { apartmentsApi } from "../../api/apartmentsApi";
 import { usersApi } from "../../api/usersApi";
 import { useAuth } from "../../hooks/useAuth";
+import { useTranslation } from "react-i18next";
 import { PrivateSEO } from "../../components/seo/SEO";
 
 export default function BuildingsPage() {
+  const { t } = useTranslation("buildings");
   const { isAdmin } = useAuth();
 
   const [rows, setRows] = useState([]);
@@ -93,30 +95,35 @@ export default function BuildingsPage() {
   const [assigning, setAssigning] = useState(false);
 
   // ── Fetch buildings ──────────────────────────────────────────────────────────
-  const fetchBuildings = useCallback(async () => {
+  const fetchBuildings = useCallback(async (options) => {
     setLoading(true);
     setError(null);
     try {
       const res = await buildingsApi.list({
         page: paginationModel.page + 1,
         page_size: paginationModel.pageSize,
-      });
+      }, options);
       const data = res.data;
       setRows(data.results ?? data);
       setRowCount(data.count ?? (data.results ?? data).length);
-    } catch {
-      setError("Failed to load buildings.");
+    } catch (err) {
+      if (err?.code === "ERR_CANCELED") return; // request was aborted on unmount
+      setError(t("load_error", "Failed to load buildings."));
     } finally {
       setLoading(false);
     }
   }, [paginationModel]);
 
-  useEffect(() => { fetchBuildings(); }, [fetchBuildings]);
+  useEffect(() => {
+    const controller = new AbortController();
+    fetchBuildings({ signal: controller.signal });
+    return () => controller.abort();
+  }, [fetchBuildings]);
 
   // ── Create ──────────────────────────────────────────────────────────────────
   const loadAdminUsers = async () => {
     try {
-      const res = await usersApi.list({ role: "admin", page_size: 200 });
+      const res = await usersApi.list({ role: "admin", page_size: 100 });
       setAdminUsers(res.data.results ?? res.data);
     } catch {
       setAdminUsers([]);
@@ -207,7 +214,7 @@ export default function BuildingsPage() {
       }
       fetchBuildings();
     } catch (err) {
-      setError(err.response?.data?.detail || "Failed to update building status.");
+      setError(err.response?.data?.detail || t("status_update_error", "Failed to update building status."));
     }
   };
 
@@ -223,7 +230,7 @@ export default function BuildingsPage() {
       setInviteLinks((prev) => ({ ...prev, [unit.id]: link }));
       setInviteCodes((prev) => ({ ...prev, [unit.id]: res.data.registration_code }));
     } catch (err) {
-      setUnitsError(err.response?.data?.detail || "Failed to generate invite link.");
+      setUnitsError(err.response?.data?.detail || t("invite_error", "Failed to generate invite link."));
     } finally {
       setInvitingUnit(null);
     }
@@ -234,10 +241,10 @@ export default function BuildingsPage() {
     setUnitsError(null);
     try {
       await apartmentsApi.claim(unit.id);
-      const res = await buildingsApi.apartments(unitsTarget.id, { page_size: 200 });
+      const res = await buildingsApi.apartments(unitsTarget.id, { page_size: 100 });
       setUnits(res.data?.results ?? res.data);
     } catch (err) {
-      setUnitsError(err.response?.data?.detail || "Failed to claim unit.");
+      setUnitsError(err.response?.data?.detail || t("claim_error", "Failed to claim unit."));
     } finally {
       setClaimingUnit(null);
     }
@@ -260,13 +267,13 @@ export default function BuildingsPage() {
     setUnitsLoading(true);
     try {
       const [unitsRes, membersRes] = await Promise.all([
-        buildingsApi.apartments(building.id, { page_size: 200 }),
-        usersApi.list({ building_id: building.id, page_size: 200 }),
+        buildingsApi.apartments(building.id, { page_size: 100 }),
+        usersApi.list({ building_id: building.id, page_size: 100 }),
       ]);
       setUnits(unitsRes.data?.results ?? unitsRes.data);
       setBuildingMembers(membersRes.data?.results ?? membersRes.data ?? []);
     } catch {
-      setUnitsError("Failed to load units.");
+      setUnitsError(t("units_load_error", "Failed to load units."));
     } finally {
       setUnitsLoading(false);
     }
@@ -284,10 +291,10 @@ export default function BuildingsPage() {
         )
       );
       setFloorEdits({});
-      const res = await buildingsApi.apartments(unitsTarget.id, { page_size: 200 });
+      const res = await buildingsApi.apartments(unitsTarget.id, { page_size: 100 });
       setUnits(res.data?.results ?? res.data);
     } catch (err) {
-      setUnitsError(err.response?.data?.detail || "Failed to save floor changes.");
+      setUnitsError(err.response?.data?.detail || t("floor_save_error", "Failed to save floor changes."));
     } finally {
       setSavingFloors(false);
     }
@@ -299,7 +306,7 @@ export default function BuildingsPage() {
     setAssignError(null);
     setSelectedOwner("");
     try {
-      const res = await usersApi.list({ role: "owner", page_size: 200 });
+      const res = await usersApi.list({ role: "owner", page_size: 100 });
       setOwners(res.data.results ?? res.data);
     } catch {
       setOwners([]);
@@ -314,7 +321,7 @@ export default function BuildingsPage() {
       await buildingsApi.assignUser(assignTarget.id, selectedOwner);
       setAssignTarget(null);
     } catch (err) {
-      setAssignError(err.response?.data?.detail || "Assignment failed.");
+      setAssignError(err.response?.data?.detail || t("assign_error", "Assignment failed."));
     } finally {
       setAssigning(false);
     }
@@ -322,18 +329,18 @@ export default function BuildingsPage() {
 
   // ── Columns ─────────────────────────────────────────────────────────────────
   const columns = [
-    { field: "name", headerName: "Name", flex: 1.2, minWidth: 160 },
-    { field: "address", headerName: "Address", flex: 1.5, minWidth: 180 },
-    { field: "city", headerName: "City", width: 130 },
-    { field: "country", headerName: "Country", width: 120 },
-    { field: "num_floors", headerName: "Floors", width: 80, type: "number" },
+    { field: "name", headerName: t("name"), flex: 1.2, minWidth: 160 },
+    { field: "address", headerName: t("address"), flex: 1.5, minWidth: 180 },
+    { field: "city", headerName: t("city"), width: 130 },
+    { field: "country", headerName: t("country"), width: 120 },
+    { field: "num_floors", headerName: t("floors"), width: 80, type: "number" },
     {
       field: "is_active",
-      headerName: "Status",
+      headerName: t("status"),
       width: 100,
       renderCell: ({ value }) => (
         <Chip
-          label={value ? "Active" : "Inactive"}
+          label={value ? t("active") : t("inactive")}
           size="small"
           color={value ? "success" : "error"}
         />
@@ -341,7 +348,7 @@ export default function BuildingsPage() {
     },
     {
       field: "created_at",
-      headerName: "Created",
+      headerName: t("created"),
       width: 130,
       valueFormatter: (value) => new Date(value).toLocaleDateString(),
     },
@@ -349,27 +356,27 @@ export default function BuildingsPage() {
       ? [
           {
             field: "actions",
-            headerName: "Actions",
+            headerName: t("actions"),
             width: 170,
             sortable: false,
             renderCell: ({ row }) => (
               <Stack id="building-actions-row" direction="row" spacing={0.5}>
-                <Tooltip title="Edit">
+                <Tooltip title={t("edit")}>
                   <IconButton size="small" onClick={() => openEdit(row)}>
                     <Edit fontSize="small" />
                   </IconButton>
                 </Tooltip>
-                <Tooltip title="Manage units">
+                <Tooltip title={t("manage_units")}>
                   <IconButton size="small" onClick={() => openUnits(row)}>
                     <Apartment fontSize="small" color="secondary" />
                   </IconButton>
                 </Tooltip>
-                <Tooltip title="Assign owner">
+                <Tooltip title={t("assign_owner")}>
                   <IconButton size="small" onClick={() => openAssign(row)}>
                     <PersonAdd fontSize="small" color="primary" />
                   </IconButton>
                 </Tooltip>
-                <Tooltip title={row.is_active ? "Deactivate" : "Activate"}>
+                <Tooltip title={row.is_active ? t("deactivate_building") : t("activate_building")}>
                   <IconButton
                     size="small"
                     color={row.is_active ? "warning" : "success"}
@@ -378,7 +385,7 @@ export default function BuildingsPage() {
                     <PowerSettingsNew fontSize="small" />
                   </IconButton>
                 </Tooltip>
-                <Tooltip title="Delete">
+                <Tooltip title={t("delete")}>
                   <IconButton size="small" color="error" onClick={() => setDeleteTarget(row)}>
                     <Delete fontSize="small" />
                   </IconButton>
@@ -397,11 +404,11 @@ export default function BuildingsPage() {
       {/* Header */}
       <Stack direction="row" justifyContent="space-between" alignItems="center" mb={3}>
         <Typography variant="h5" fontWeight={600}>
-          Buildings
+          {t("page_title")}
         </Typography>
         {isAdmin && (
           <Button id="add-building-btn" variant="contained" startIcon={<Add />} onClick={openCreate}>
-            New Building
+            {t("new_building")}
           </Button>
         )}
       </Stack>
@@ -428,77 +435,75 @@ export default function BuildingsPage() {
 
       {/* ── Create / Edit Dialog ──────────────────────────────────────────── */}
       <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>{editTarget ? "Edit Building" : "New Building"}</DialogTitle>
+        <DialogTitle>{editTarget ? t("edit_building") : t("new_building")}</DialogTitle>
         <Box component="form" onSubmit={form.handleSubmit(onSubmit)}>
           <DialogContent>
             {dialogError && <Alert severity="error" sx={{ mb: 2 }}>{dialogError}</Alert>}
             <Stack spacing={2}>
               <TextField
-                label="Name *"
+                label={`${t("name")} *`}
                 fullWidth
                 error={!!form.formState.errors.name}
                 helperText={form.formState.errors.name?.message}
-                {...form.register("name", { required: "Name is required." })}
+                {...form.register("name", { required: t("name_required") })}
               />
               <TextField
-                label="Address *"
+                label={`${t("address")} *`}
                 fullWidth
                 error={!!form.formState.errors.address}
                 helperText={form.formState.errors.address?.message}
-                {...form.register("address", { required: "Address is required." })}
+                {...form.register("address", { required: t("address_required") })}
               />
               <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
                 <TextField
-                  label="City *"
+                  label={`${t("city")} *`}
                   fullWidth
                   error={!!form.formState.errors.city}
                   helperText={form.formState.errors.city?.message}
-                  {...form.register("city", { required: "City is required." })}
+                  {...form.register("city", { required: t("city_required") })}
                 />
                 <TextField
-                  label="Country"
+                  label={t("country")}
                   fullWidth
                   {...form.register("country")}
                 />
               </Stack>
               <TextField
-                label="Number of Floors *"
+                label={`${t("num_floors")} *`}
                 type="number"
                 inputProps={{ min: 1 }}
                 fullWidth
                 error={!!form.formState.errors.num_floors}
                 helperText={form.formState.errors.num_floors?.message}
                 {...form.register("num_floors", {
-                  required: "Number of floors is required.",
-                  min: { value: 1, message: "Must be at least 1." },
+                  required: t("floors_required"),
+                  min: { value: 1, message: t("floors_min") },
                 })}
               />
               <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
                 <TextField
-                  label="Apartments"
+                  label={t("num_apartments")}
                   type="number"
                   inputProps={{ min: 0 }}
                   fullWidth
-                  helperText="Number of apartment units (auto-creates vacant units)"
                   {...form.register("num_apartments", { min: 0 })}
                 />
                 <TextField
-                  label="Stores"
+                  label={t("num_stores")}
                   type="number"
                   inputProps={{ min: 0 }}
                   fullWidth
-                  helperText="Number of commercial/store units"
                   {...form.register("num_stores", { min: 0 })}
                 />
               </Stack>
               <FormControl fullWidth size="small">
-                <InputLabel>Building Admin</InputLabel>
+                <InputLabel>{t("building_admin")}</InputLabel>
                 <Select
-                  label="Building Admin"
+                  label={t("building_admin")}
                   defaultValue=""
                   {...form.register("admin_id")}
                 >
-                  <MenuItem value="">— Assign to me (default) —</MenuItem>
+                  <MenuItem value="">{t("assign_to_me")}</MenuItem>
                   {adminUsers.map((u) => (
                     <MenuItem key={u.id} value={u.id}>
                       {u.first_name} {u.last_name} ({u.email})
@@ -507,13 +512,13 @@ export default function BuildingsPage() {
                 </Select>
               </FormControl>
               <FormControl fullWidth size="small">
-                <InputLabel>Additional Admins</InputLabel>
+                <InputLabel>{t("additional_admins")}</InputLabel>
                 <Select
-                  label="Additional Admins"
+                  label={t("additional_admins")}
                   multiple
                   value={coAdminIds}
                   onChange={(e) => setCoAdminIds(e.target.value)}
-                  input={<OutlinedInput label="Additional Admins" />}
+                  input={<OutlinedInput label={t("additional_admins")} />}
                   renderValue={(selected) =>
                     selected.map((id) => {
                       const u = adminUsers.find((a) => a.id === id);
@@ -534,9 +539,9 @@ export default function BuildingsPage() {
             </Stack>
           </DialogContent>
           <DialogActions sx={{ px: 3, pb: 2 }}>
-            <Button onClick={() => setDialogOpen(false)}>Cancel</Button>
+            <Button onClick={() => setDialogOpen(false)}>{t("cancel")}</Button>
             <Button type="submit" variant="contained" disabled={submitting}>
-              {submitting ? "Saving…" : editTarget ? "Save Changes" : "Create"}
+              {submitting ? t("saving") : editTarget ? t("save_changes") : t("create")}
             </Button>
           </DialogActions>
         </Box>
@@ -544,24 +549,23 @@ export default function BuildingsPage() {
 
       {/* ── Delete Dialog ─────────────────────────────────────────────────── */}
       <Dialog open={Boolean(deleteTarget)} onClose={() => setDeleteTarget(null)}>
-        <DialogTitle>Delete Building</DialogTitle>
+        <DialogTitle>{t("delete_building")}</DialogTitle>
         <DialogContent>
           <Typography>
-            Are you sure you want to delete <strong>{deleteTarget?.name}</strong>?
-            This action cannot be undone.
+            {t("confirm_delete")}
           </Typography>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setDeleteTarget(null)}>Cancel</Button>
+          <Button onClick={() => setDeleteTarget(null)}>{t("cancel")}</Button>
           <Button variant="contained" color="error" disabled={deleting} onClick={handleDelete}>
-            {deleting ? "Deleting…" : "Delete"}
+            {deleting ? t("deleting") : t("delete")}
           </Button>
         </DialogActions>
       </Dialog>
 
       {/* ── Units Dialog ──────────────────────────────────────────────────── */}
       <Dialog open={Boolean(unitsTarget)} onClose={() => setUnitsTarget(null)} maxWidth="md" fullWidth>
-        <DialogTitle>Units — {unitsTarget?.name}</DialogTitle>
+        <DialogTitle>{t("units_title", { name: unitsTarget?.name })}</DialogTitle>
         <DialogContent>
           {unitsError && <Alert severity="error" sx={{ mb: 2 }}>{unitsError}</Alert>}
           {unitsLoading ? (
@@ -570,11 +574,11 @@ export default function BuildingsPage() {
             <Table size="small">
               <TableHead>
                 <TableRow>
-                  <TableCell>Unit</TableCell>
-                  <TableCell>Type</TableCell>
-                  <TableCell>Status</TableCell>
-                  <TableCell width={110}>Floor</TableCell>
-                  <TableCell>Invite Owner</TableCell>
+                  <TableCell>{t("unit")}</TableCell>
+                  <TableCell>{t("type")}</TableCell>
+                  <TableCell>{t("status")}</TableCell>
+                  <TableCell width={110}>{t("floor")}</TableCell>
+                  <TableCell>{t("invite_owner")}</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -583,13 +587,22 @@ export default function BuildingsPage() {
                     <TableCell>{u.unit_number}</TableCell>
                     <TableCell>
                       <Chip
-                        label={u.type === "store" ? "Store" : "Apt"}
+                        label={u.type === "store" ? t("store") : t("apt")}
                         size="small"
                         color={u.type === "store" ? "warning" : "primary"}
                         variant="outlined"
                       />
                     </TableCell>
-                    <TableCell>{u.status}</TableCell>
+                    <TableCell>
+                      {{
+                        'Occupied': t('status_occupied'),
+                        'Vacant': t('status_vacant'),
+                        'Under Maintenance': t('status_under_maintenance'),
+                        'occupied': t('status_occupied'),
+                        'vacant': t('status_vacant'),
+                        'under_maintenance': t('status_under_maintenance'),
+                      }[u.status] || u.status}
+                    </TableCell>
                     <TableCell>
                       <TextField
                         type="number"
@@ -619,7 +632,7 @@ export default function BuildingsPage() {
                               <Typography variant="caption" sx={{ maxWidth: 180, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                                 {inviteLinks[u.id]}
                               </Typography>
-                              <Tooltip title={copiedUnit === u.id ? "Copied!" : "Copy link"}>
+                              <Tooltip title={copiedUnit === u.id ? t("copied") : t("copy_link")}>
                                 <IconButton size="small" onClick={() => copyLink(u.id)}>
                                   {copiedUnit === u.id ? <Check fontSize="small" color="success" /> : <ContentCopy fontSize="small" />}
                                 </IconButton>
@@ -627,7 +640,7 @@ export default function BuildingsPage() {
                             </Stack>
                             {inviteCodes[u.id] && (
                               <Stack direction="row" spacing={0.5} alignItems="center">
-                                <Typography variant="caption" color="text.secondary">Code:</Typography>
+                                <Typography variant="caption" color="text.secondary">{t("code_label", "Code:")}</Typography>
                                 <Chip label={inviteCodes[u.id]} size="small" variant="outlined" color="secondary" />
                               </Stack>
                             )}
@@ -636,7 +649,7 @@ export default function BuildingsPage() {
                               onClick={() => setInviteLinks((prev) => ({ ...prev, [u.id]: null }))}
                               sx={{ alignSelf: "flex-start", textTransform: "none", p: 0, minWidth: 0 }}
                             >
-                              Invite another
+                              {t("invite_another")}
                             </Button>
                           </Stack>
                         ) : (
@@ -657,7 +670,7 @@ export default function BuildingsPage() {
                                   />
                                 )}
                               />
-                              <Tooltip title="Generate invite link">
+                              <Tooltip title={t("generate_invite_link")}>
                                 <span>
                                   <IconButton
                                     size="small"
@@ -671,7 +684,7 @@ export default function BuildingsPage() {
                               </Tooltip>
                             </Stack>
                             {!(u.owner_ids?.length > 0 || u.owner_id) && (
-                              <Tooltip title="Claim this unit for yourself">
+                              <Tooltip title={t("claim_for_self")}>
                                 <Button
                                   size="small"
                                   variant="outlined"
@@ -679,7 +692,7 @@ export default function BuildingsPage() {
                                   onClick={() => claimUnit(u)}
                                   sx={{ alignSelf: "flex-start" }}
                                 >
-                                  Claim for self
+                                  {t("claim_for_self")}
                                 </Button>
                               </Tooltip>
                             )}
@@ -694,26 +707,26 @@ export default function BuildingsPage() {
           )}
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button onClick={() => setUnitsTarget(null)}>Close</Button>
+          <Button onClick={() => setUnitsTarget(null)}>{t("close")}</Button>
           <Button
             variant="contained"
             disabled={!Object.keys(floorEdits).length || savingFloors}
             onClick={saveFloors}
           >
-            {savingFloors ? "Saving…" : "Save Floor Changes"}
+            {savingFloors ? t("saving") : t("save_floor_changes")}
           </Button>
         </DialogActions>
       </Dialog>
 
       {/* ── Assign User Dialog ────────────────────────────────────────────── */}
       <Dialog open={Boolean(assignTarget)} onClose={() => setAssignTarget(null)} maxWidth="xs" fullWidth>
-        <DialogTitle>Assign Owner — {assignTarget?.name}</DialogTitle>
+        <DialogTitle>{t("assign_owner_title", { name: assignTarget?.name })}</DialogTitle>
         <DialogContent>
           {assignError && <Alert severity="error" sx={{ mb: 2 }}>{assignError}</Alert>}
           <FormControl fullWidth sx={{ mt: 1 }}>
-            <InputLabel>Select Owner</InputLabel>
+            <InputLabel>{t("select_owner")}</InputLabel>
             <Select
-              label="Select Owner"
+              label={t("select_owner")}
               value={selectedOwner}
               onChange={(e) => setSelectedOwner(e.target.value)}
             >
@@ -726,13 +739,13 @@ export default function BuildingsPage() {
           </FormControl>
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button onClick={() => setAssignTarget(null)}>Cancel</Button>
+          <Button onClick={() => setAssignTarget(null)}>{t("cancel")}</Button>
           <Button
             variant="contained"
             disabled={!selectedOwner || assigning}
             onClick={handleAssign}
           >
-            {assigning ? "Assigning…" : "Assign"}
+            {assigning ? t("assigning") : t("assign")}
           </Button>
         </DialogActions>
       </Dialog>

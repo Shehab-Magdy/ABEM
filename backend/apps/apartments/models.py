@@ -6,18 +6,19 @@ from decimal import Decimal
 from django.db import models
 from django.conf import settings
 from django.utils import timezone
+from django.utils.translation import gettext_lazy as _
 from apps.buildings.models import Building
 
 
 class UnitType(models.TextChoices):
-    APARTMENT = "apartment", "Apartment"
-    STORE = "store", "Store"
+    APARTMENT = "apartment", _("Apartment")
+    STORE = "store", _("Store")
 
 
 class ApartmentStatus(models.TextChoices):
-    OCCUPIED = "occupied", "Occupied"
-    VACANT = "vacant", "Vacant"
-    MAINTENANCE = "maintenance", "Under Maintenance"
+    OCCUPIED = "occupied", _("Occupied")
+    VACANT = "vacant", _("Vacant")
+    MAINTENANCE = "maintenance", _("Under Maintenance")
 
 
 class Apartment(models.Model):

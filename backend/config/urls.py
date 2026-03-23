@@ -10,6 +10,9 @@ urlpatterns = [
     # Admin
     path("admin/", admin.site.urls),
 
+    # Rosetta translation management (staff only)
+    path("rosetta/", include("rosetta.urls")),
+
     # SEO — sitemap fallback (served by web server in production)
     path("sitemap.xml", sitemap_xml, name="sitemap"),
 

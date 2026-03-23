@@ -40,18 +40,21 @@ import {
   Typography,
 } from "@mui/material";
 import { Add, Delete, Visibility, VisibilityOff } from "@mui/icons-material";
+import { useTranslation } from "react-i18next";
 import { authApi } from "../../api/authApi";
 import { buildingsApi } from "../../api/buildingsApi";
 import { apartmentsApi } from "../../api/apartmentsApi";
 import { useAuthStore } from "../../contexts/authStore";
+import PhoneInput from "../../components/PhoneInput";
 import { PublicSEO } from "../../components/seo/SEO";
+import LanguageSwitcher from "../../components/LanguageSwitcher";
 
-const STEPS_ADMIN = ["Account", "Your Buildings", "Your Unit", "Done"];
-const STEPS_OWNER = ["Account", "Your Unit", "Done"];
+// Step label arrays are built inside RegisterPage using t() — see below.
 
 // ── Step 1: Account ────────────────────────────────────────────────────────────
 
 function AccountStep({ onDone, prefillEmail }) {
+  const { t, i18n } = useTranslation("auth");
   const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -73,6 +76,7 @@ function AccountStep({ onDone, prefillEmail }) {
         role: data.role,
         password: data.password,
         confirm_password: data.confirm_password,
+        preferred_language: i18n.language || "en",
       });
       const { access, refresh, user } = res.data;
       login(user, access, refresh);
@@ -84,7 +88,7 @@ function AccountStep({ onDone, prefillEmail }) {
       if (errObj && typeof errObj === "object") {
         setError(Object.values(errObj).flat().join(" "));
       } else {
-        setError(errObj || "Registration failed.");
+        setError(errObj || t("errors:server_error"));
       }
     } finally {
       setLoading(false);
@@ -96,35 +100,42 @@ function AccountStep({ onDone, prefillEmail }) {
       <Stack spacing={2.5}>
         {error && <Alert severity="error">{error}</Alert>}
         <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
-          <TextField label="First name *" fullWidth autoFocus
+          <TextField label={t("first_name")} fullWidth autoFocus
             error={!!errors.first_name} helperText={errors.first_name?.message}
-            {...register("first_name", { required: "Required." })} />
-          <TextField label="Last name *" fullWidth
+            {...register("first_name", { required: t("common:required") })} />
+          <TextField label={t("last_name")} fullWidth
             error={!!errors.last_name} helperText={errors.last_name?.message}
-            {...register("last_name", { required: "Required." })} />
+            {...register("last_name", { required: t("common:required") })} />
         </Stack>
-        <TextField label="Email address *" type="email" fullWidth
+        <TextField label={t("email_address")} type="email" fullWidth
           error={!!errors.email} helperText={errors.email?.message}
           {...register("email", {
-            required: "Required.",
-            pattern: { value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: "Invalid email." },
+            required: t("common:required"),
+            pattern: { value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: t("errors:invalid_email") },
           })} />
-        <TextField
-          label="Phone (optional)"
-          type="tel"
-          fullWidth
-          error={!!errors.phone}
-          helperText={errors.phone?.message || "Include country code, e.g. +20 1234567890"}
-          {...register("phone", {
+        <Controller
+          name="phone"
+          control={control}
+          defaultValue=""
+          rules={{
             validate: (v) => {
               if (!v || v.trim() === "") return true;
-              return /^\+?[1-9][\d\s\-().]{6,19}$/.test(v.trim()) || "Enter a valid international phone number (e.g. +20 1234567890).";
+              return /^\+?[1-9][\d\s\-().]{6,19}$/.test(v.trim()) || t("errors:invalid_phone");
             },
-          })}
+          }}
+          render={({ field }) => (
+            <PhoneInput
+              label={t("phone_optional")}
+              value={field.value}
+              onChange={field.onChange}
+              error={!!errors.phone}
+              helperText={errors.phone?.message || t("phone_helper")}
+            />
+          )}
         />
-        <TextField label="Password *" type={showPw ? "text" : "password"} fullWidth
+        <TextField label={t("password")} type={showPw ? "text" : "password"} fullWidth
           error={!!errors.password}
-          helperText={errors.password?.message || "Min 8 chars, 1 uppercase, 1 digit, 1 special char."}
+          helperText={errors.password?.message || t("password_min_length")}
           InputProps={{
             endAdornment: (
               <InputAdornment position="end">
@@ -134,33 +145,33 @@ function AccountStep({ onDone, prefillEmail }) {
               </InputAdornment>
             ),
           }}
-          {...register("password", { required: "Required." })} />
-        <TextField label="Confirm password *" type={showPw ? "text" : "password"} fullWidth
+          {...register("password", { required: t("common:required") })} />
+        <TextField label={t("confirm_password")} type={showPw ? "text" : "password"} fullWidth
           error={!!errors.confirm_password} helperText={errors.confirm_password?.message}
           {...register("confirm_password", {
-            required: "Required.",
-            validate: (v) => v === password || "Passwords do not match.",
+            required: t("common:required"),
+            validate: (v) => v === password || t("passwords_dont_match"),
           })} />
         <FormControl component="fieldset">
-          <FormLabel>I am a…</FormLabel>
+          <FormLabel>{t("i_am_a")}</FormLabel>
           <Controller
             name="role"
             control={control}
             defaultValue="owner"
             render={({ field }) => (
               <RadioGroup row {...field}>
-                <FormControlLabel value="owner" control={<Radio />} label="Owner (apartment / tenant)" />
-                <FormControlLabel value="admin" control={<Radio />} label="Admin (building manager)" />
+                <FormControlLabel value="owner" control={<Radio />} label={t("owner_role_label")} />
+                <FormControlLabel value="admin" control={<Radio />} label={t("admin_role_label")} />
               </RadioGroup>
             )}
           />
         </FormControl>
         <Button type="submit" variant="contained" size="large" fullWidth disabled={loading}>
-          {loading ? <CircularProgress size={24} color="inherit" /> : "Continue"}
+          {loading ? <CircularProgress size={24} color="inherit" /> : t("continue")}
         </Button>
         <Typography variant="body2" align="center" color="text.secondary">
-          Already have an account?{" "}
-          <Link component={RouterLink} to="/login" underline="hover">Sign in</Link>
+          {t("already_have_account")}{" "}
+          <Link component={RouterLink} to="/login" underline="hover">{t("sign_in_link")}</Link>
         </Typography>
       </Stack>
     </Box>
@@ -170,6 +181,7 @@ function AccountStep({ onDone, prefillEmail }) {
 // ── Step 2 Admin: Add buildings ────────────────────────────────────────────────
 
 function AdminBuildingsStep({ onDone, onSkip }) {
+  const { t } = useTranslation("auth");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
   const { control, register, handleSubmit, formState: { errors } } = useForm({
@@ -203,7 +215,7 @@ function AdminBuildingsStep({ onDone, onSkip }) {
       if (errObj && typeof errObj === "object") {
         setError(Object.values(errObj).flat().join(" "));
       } else {
-        setError(errObj || "Could not save buildings.");
+        setError(errObj || t("errors:server_error"));
       }
     } finally {
       setSubmitting(false);
@@ -215,12 +227,12 @@ function AdminBuildingsStep({ onDone, onSkip }) {
       <Stack spacing={3}>
         {error && <Alert severity="error">{error}</Alert>}
         <Typography variant="body2" color="text.secondary">
-          Add the buildings you manage. You can add more later from the dashboard.
+          {t("buildings_step_desc")}
         </Typography>
         {fields.map((field, idx) => (
           <Box key={field.id} sx={{ p: 2, border: 1, borderColor: "divider", borderRadius: 2 }}>
             <Stack direction="row" justifyContent="space-between" alignItems="center" mb={1.5}>
-              <Typography variant="subtitle2" fontWeight={600}>Building {idx + 1}</Typography>
+              <Typography variant="subtitle2" fontWeight={600}>{t("building_number", { num: idx + 1 })}</Typography>
               {fields.length > 1 && (
                 <IconButton size="small" color="error" onClick={() => remove(idx)}>
                   <Delete fontSize="small" />
@@ -228,30 +240,30 @@ function AdminBuildingsStep({ onDone, onSkip }) {
               )}
             </Stack>
             <Stack spacing={2}>
-              <TextField label="Name *" fullWidth size="small"
+              <TextField label={t("buildings:building_name")} fullWidth size="small"
                 error={!!errors.buildings?.[idx]?.name} helperText={errors.buildings?.[idx]?.name?.message}
-                {...register(`buildings.${idx}.name`, { required: "Required." })} />
-              <TextField label="Address *" fullWidth size="small"
+                {...register(`buildings.${idx}.name`, { required: t("common:required") })} />
+              <TextField label={t("buildings:address")} fullWidth size="small"
                 error={!!errors.buildings?.[idx]?.address} helperText={errors.buildings?.[idx]?.address?.message}
-                {...register(`buildings.${idx}.address`, { required: "Required." })} />
+                {...register(`buildings.${idx}.address`, { required: t("common:required") })} />
               <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
-                <TextField label="City *" fullWidth size="small"
+                <TextField label={t("buildings:city")} fullWidth size="small"
                   error={!!errors.buildings?.[idx]?.city} helperText={errors.buildings?.[idx]?.city?.message}
-                  {...register(`buildings.${idx}.city`, { required: "Required." })} />
-                <TextField label="Country" fullWidth size="small"
+                  {...register(`buildings.${idx}.city`, { required: t("common:required") })} />
+                <TextField label={t("buildings:country")} fullWidth size="small"
                   {...register(`buildings.${idx}.country`)} />
               </Stack>
               <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
-                <TextField label="Floors *" type="number" size="small" fullWidth
+                <TextField label={t("buildings:floors")} type="number" size="small" fullWidth
                   inputProps={{ min: 1 }}
                   {...register(`buildings.${idx}.num_floors`)} />
-                <TextField label="# Apartments" type="number" size="small" fullWidth
+                <TextField label={t("buildings:num_apartments")} type="number" size="small" fullWidth
                   inputProps={{ min: 0 }}
-                  helperText="Auto-created as A1, A2…"
+                  helperText={t("auto_apartments_hint")}
                   {...register(`buildings.${idx}.num_apartments`)} />
-                <TextField label="# Stores" type="number" size="small" fullWidth
+                <TextField label={t("buildings:num_stores")} type="number" size="small" fullWidth
                   inputProps={{ min: 0 }}
-                  helperText="Auto-created as S1, S2…"
+                  helperText={t("auto_stores_hint")}
                   {...register(`buildings.${idx}.num_stores`)} />
               </Stack>
             </Stack>
@@ -259,12 +271,12 @@ function AdminBuildingsStep({ onDone, onSkip }) {
         ))}
         <Button variant="outlined" startIcon={<Add />} size="small" sx={{ alignSelf: "flex-start" }}
           onClick={() => append({ name: "", address: "", city: "", country: "", num_floors: 1, num_apartments: 0, num_stores: 0 })}>
-          Add another building
+          {t("add_another_building")}
         </Button>
         <Stack direction="row" spacing={2}>
-          <Button variant="outlined" fullWidth onClick={onSkip}>Skip for now</Button>
+          <Button variant="outlined" fullWidth onClick={onSkip}>{t("skip_for_now")}</Button>
           <Button type="submit" variant="contained" fullWidth disabled={submitting}>
-            {submitting ? <CircularProgress size={22} color="inherit" /> : "Save & Continue"}
+            {submitting ? <CircularProgress size={22} color="inherit" /> : t("save_continue")}
           </Button>
         </Stack>
       </Stack>
@@ -275,6 +287,7 @@ function AdminBuildingsStep({ onDone, onSkip }) {
 // ── Shared: Select and claim a unit ───────────────────────────────────────────
 
 function ClaimUnitStep({ onDone, onSkip, isAdmin }) {
+  const { t } = useTranslation("auth");
   const [buildings, setBuildings] = useState([]);
   const [apartments, setApartments] = useState([]);
   const [selectedBuilding, setSelectedBuilding] = useState("");
@@ -295,7 +308,7 @@ function ClaimUnitStep({ onDone, onSkip, isAdmin }) {
   useEffect(() => {
     apartmentsApi.buildingDirectory()
       .then((r) => setBuildings(r.data))
-      .catch(() => setError("Could not load buildings. Try again."))
+      .catch(() => setError(t("errors:network_error")))
       .finally(() => setLoadingBuildings(false));
   }, []);
 
@@ -305,7 +318,7 @@ function ClaimUnitStep({ onDone, onSkip, isAdmin }) {
     setSelectedApartment("");
     apartmentsApi.available(selectedBuilding)
       .then((r) => setApartments(r.data))
-      .catch(() => setError("Could not load units."))
+      .catch(() => setError(t("errors:network_error")))
       .finally(() => setLoadingApts(false));
   }, [selectedBuilding]);
 
@@ -317,7 +330,7 @@ function ClaimUnitStep({ onDone, onSkip, isAdmin }) {
       await apartmentsApi.claim(selectedApartment);
       onDone();
     } catch (err) {
-      setError(err.response?.data?.detail || "Could not claim unit.");
+      setError(err.response?.data?.detail || t("errors:server_error"));
     } finally {
       setClaiming(false);
     }
@@ -336,7 +349,7 @@ function ClaimUnitStep({ onDone, onSkip, isAdmin }) {
       const res = await apartmentsApi.validateInvite(undefined, regCode.trim().toUpperCase());
       setCodeInfo(res.data);
     } catch (err) {
-      setCodeError(err.response?.data?.detail || "Invalid or expired code.");
+      setCodeError(err.response?.data?.detail || t("invalid_code"));
     } finally {
       setValidatingCode(false);
     }
@@ -349,7 +362,7 @@ function ClaimUnitStep({ onDone, onSkip, isAdmin }) {
       await apartmentsApi.useInviteCode(regCode.trim().toUpperCase());
       onDone();
     } catch (err) {
-      setCodeError(err.response?.data?.detail || "Could not claim unit.");
+      setCodeError(err.response?.data?.detail || t("errors:server_error"));
     } finally {
       setClaimingCode(false);
     }
@@ -362,22 +375,22 @@ function ClaimUnitStep({ onDone, onSkip, isAdmin }) {
       {error && <Alert severity="error" onClose={() => setError(null)}>{error}</Alert>}
       <Typography variant="body2" color="text.secondary">
         {isAdmin
-          ? "If you also own a unit in one of your buildings, select it here. You can skip and do this later."
-          : "Select your building and the unit you own. You can update this later from your profile."}
+          ? t("claim_unit_admin_desc")
+          : t("claim_unit_owner_desc")}
       </Typography>
       {buildings.length === 0 ? (
         <Alert severity="info">
-          No buildings registered yet.{" "}
+          {t("no_buildings_yet")}{" "}
           {isAdmin
-            ? "Go back and add your building first, or skip."
-            : "Ask your building manager to register the building first."}
+            ? t("add_building_first")
+            : t("ask_admin_register")}
         </Alert>
       ) : (
         <>
           <FormControl fullWidth>
-            <InputLabel>Select building</InputLabel>
+            <InputLabel>{t("select_building")}</InputLabel>
             <Select
-              label="Select building"
+              label={t("select_building")}
               value={selectedBuilding}
               onChange={(e) => { setSelectedBuilding(e.target.value); setUnitTypeFilter("all"); setSelectedApartment(""); }}
             >
@@ -391,29 +404,29 @@ function ClaimUnitStep({ onDone, onSkip, isAdmin }) {
             loadingApts ? (
               <Box display="flex" justifyContent="center"><CircularProgress size={28} /></Box>
             ) : apartments.length === 0 ? (
-              <Alert severity="info">No available units in this building.</Alert>
+              <Alert severity="info">{t("no_units_available")}</Alert>
             ) : (
               <>
                 <Stack direction="row" spacing={1} alignItems="center">
-                  <Typography variant="body2" color="text.secondary">Filter by type:</Typography>
+                  <Typography variant="body2" color="text.secondary">{t("filter_by_type")}</Typography>
                   <ToggleButtonGroup
                     value={unitTypeFilter}
                     exclusive
                     onChange={(_, v) => { if (v) { setUnitTypeFilter(v); setSelectedApartment(""); } }}
                     size="small"
                   >
-                    <ToggleButton value="all">All</ToggleButton>
-                    <ToggleButton value="apartment">Apartments</ToggleButton>
-                    <ToggleButton value="store">Stores</ToggleButton>
+                    <ToggleButton value="all">{t("all_units")}</ToggleButton>
+                    <ToggleButton value="apartment">{t("buildings:apartments_title", "Apartments")}</ToggleButton>
+                    <ToggleButton value="store">{t("buildings:num_stores", "Stores")}</ToggleButton>
                   </ToggleButtonGroup>
                 </Stack>
                 {filtered.length === 0 ? (
-                  <Alert severity="info">No {unitTypeFilter} units available in this building.</Alert>
+                  <Alert severity="info">{t("no_units_of_type")}</Alert>
                 ) : (
                   <FormControl fullWidth>
-                    <InputLabel>Select your unit number</InputLabel>
+                    <InputLabel>{t("select_unit")}</InputLabel>
                     <Select
-                      label="Select your unit number"
+                      label={t("select_unit")}
                       value={selectedApartment}
                       onChange={(e) => setSelectedApartment(e.target.value)}
                     >
@@ -442,15 +455,15 @@ function ClaimUnitStep({ onDone, onSkip, isAdmin }) {
         </>
       )}
       <Stack direction="row" spacing={2}>
-        <Button variant="outlined" fullWidth onClick={onSkip}>Skip for now</Button>
+        <Button variant="outlined" fullWidth onClick={onSkip}>{t("skip_for_now")}</Button>
         <Button variant="contained" fullWidth disabled={!selectedApartment || claiming} onClick={handleClaim}>
-          {claiming ? <CircularProgress size={22} color="inherit" /> : "Claim Unit"}
+          {claiming ? <CircularProgress size={22} color="inherit" /> : t("claim_unit")}
         </Button>
       </Stack>
 
       {/* Registration code alternative */}
       <Divider sx={{ my: 1 }}>
-        <Typography variant="caption" color="text.secondary">or use a registration code</Typography>
+        <Typography variant="caption" color="text.secondary">{t("or_use_code")}</Typography>
       </Divider>
       {codeError && <Alert severity="error" onClose={() => setCodeError(null)}>{codeError}</Alert>}
       {codeInfo && (
@@ -460,7 +473,7 @@ function ClaimUnitStep({ onDone, onSkip, isAdmin }) {
       )}
       <Stack direction="row" spacing={1} alignItems="flex-start">
         <TextField
-          label="Registration Code"
+          label={t("registration_code")}
           value={regCode}
           onChange={(e) => { setRegCode(e.target.value.toUpperCase()); setCodeInfo(null); setCodeError(null); }}
           size="small"
@@ -475,7 +488,7 @@ function ClaimUnitStep({ onDone, onSkip, isAdmin }) {
           onClick={handleValidateCode}
           sx={{ mt: 0.5 }}
         >
-          {validatingCode ? <CircularProgress size={18} /> : "Validate"}
+          {validatingCode ? <CircularProgress size={18} /> : t("validate")}
         </Button>
       </Stack>
       {codeInfo && (
@@ -490,15 +503,16 @@ function ClaimUnitStep({ onDone, onSkip, isAdmin }) {
 // ── Step 3 / 4: Done ──────────────────────────────────────────────────────────
 
 function DoneStep({ role, onFinish }) {
+  const { t } = useTranslation("auth");
   return (
     <Stack spacing={3} alignItems="center" py={2}>
-      <Typography variant="h6" color="success.main" fontWeight={700}>Account created!</Typography>
+      <Typography variant="h6" color="success.main" fontWeight={700}>{t("account_created")}</Typography>
       <Typography variant="body2" color="text.secondary" align="center">
         {role === "admin"
-          ? "Your buildings have been set up. Manage apartments, expenses, and payments from your dashboard."
-          : "Your account is ready. Head to the dashboard to view your expenses and payments."}
+          ? t("done_admin_desc")
+          : t("done_owner_desc")}
       </Typography>
-      <Button variant="contained" size="large" onClick={onFinish}>Go to Dashboard</Button>
+      <Button variant="contained" size="large" onClick={onFinish}>{t("go_to_dashboard")}</Button>
     </Stack>
   );
 }
@@ -506,6 +520,7 @@ function DoneStep({ role, onFinish }) {
 // ── Invite claim step ──────────────────────────────────────────────────────────
 
 function InviteClaimStep({ inviteToken, inviteInfo, onDone }) {
+  const { t } = useTranslation("auth");
   const [claiming, setClaiming] = useState(false);
   const [error, setError] = useState(null);
 
@@ -516,7 +531,7 @@ function InviteClaimStep({ inviteToken, inviteInfo, onDone }) {
       await apartmentsApi.useInvite(inviteToken);
       onDone();
     } catch (err) {
-      setError(err.response?.data?.detail || "Failed to claim unit.");
+      setError(err.response?.data?.detail || t("errors:server_error"));
     } finally {
       setClaiming(false);
     }
@@ -525,7 +540,7 @@ function InviteClaimStep({ inviteToken, inviteInfo, onDone }) {
   return (
     <Stack spacing={3}>
       <Alert severity="success" icon={false}>
-        <Typography fontWeight={600}>You have been invited!</Typography>
+        <Typography fontWeight={600}>{t("invite_title")}</Typography>
         <Typography variant="body2">
           Claim <strong>Unit {inviteInfo.unit_number}</strong> in{" "}
           <strong>{inviteInfo.building_name}</strong> ({inviteInfo.building_city})
@@ -533,9 +548,9 @@ function InviteClaimStep({ inviteToken, inviteInfo, onDone }) {
       </Alert>
       {error && <Alert severity="error">{error}</Alert>}
       <Stack direction="row" spacing={2}>
-        <Button variant="outlined" fullWidth onClick={onDone}>Skip for now</Button>
+        <Button variant="outlined" fullWidth onClick={onDone}>{t("skip_for_now")}</Button>
         <Button variant="contained" fullWidth disabled={claiming} onClick={handleClaim}>
-          {claiming ? <CircularProgress size={22} color="inherit" /> : "Claim My Unit"}
+          {claiming ? <CircularProgress size={22} color="inherit" /> : t("claim_unit")}
         </Button>
       </Stack>
     </Stack>
@@ -545,6 +560,7 @@ function InviteClaimStep({ inviteToken, inviteInfo, onDone }) {
 // ── Main wizard ────────────────────────────────────────────────────────────────
 
 export default function RegisterPage() {
+  const { t } = useTranslation("auth");
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [step, setStep] = useState(0);
@@ -573,7 +589,9 @@ export default function RegisterPage() {
   }, [inviteToken]);
 
   // For invited owners: Account(0) → Claim Unit(1) → Done(2)
-  const STEPS_INVITE = ["Account", "Claim Unit", "Done"];
+  const STEPS_ADMIN = [t("step_account"), t("step_buildings"), t("step_unit"), t("step_done")];
+  const STEPS_OWNER = [t("step_account"), t("step_unit"), t("step_done")];
+  const STEPS_INVITE = [t("step_account"), t("step_claim_unit"), t("step_done")];
   const steps = inviteToken
     ? STEPS_INVITE
     : role === "admin" ? STEPS_ADMIN : STEPS_OWNER;
@@ -593,18 +611,28 @@ export default function RegisterPage() {
       description="Create your ABEM account and start managing your building's expenses in minutes."
     />
     <Box display="flex" alignItems="center" justifyContent="center"
-      minHeight="100vh" bgcolor="background.default" px={2} py={4}>
+      minHeight="100vh" px={2} py={4} position="relative"
+      sx={{
+        backgroundImage: 'url(/abem-hero-banner.svg)',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat',
+        bgcolor: 'background.default',
+      }}>
+      <Box sx={{ position: "absolute", top: 16, right: 16 }}>
+        <LanguageSwitcher />
+      </Box>
       <Card sx={{ width: "100%", maxWidth: 560 }}>
         <CardContent sx={{ p: 4 }}>
           <Stack alignItems="center" spacing={0.5} mb={3}>
             <Box component="img" src="/abem-logo-light.svg" alt="ABEM" sx={{ height: 40 }} />
-            <Typography variant="body2" color="text.secondary">Create your account</Typography>
+            <Typography variant="body2" color="text.secondary">{t("create_account")}</Typography>
           </Stack>
 
           {inviteToken && inviteError ? (
             <Alert severity="error" sx={{ mb: 2 }}>
               {inviteError}{" "}
-              <Link component={RouterLink} to="/register">Register without invite</Link>
+              <Link component={RouterLink} to="/register">{t("register_without_invite")}</Link>
             </Alert>
           ) : (
             <>

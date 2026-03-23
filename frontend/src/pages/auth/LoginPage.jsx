@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate, Link as RouterLink, useSearchParams } from "react-router-dom";
 import { useForm } from "react-hook-form";
+import { useTranslation } from "react-i18next";
 import {
   Alert,
   Box,
@@ -19,8 +20,10 @@ import { Visibility, VisibilityOff } from "@mui/icons-material";
 import { authApi } from "../../api/authApi";
 import { useAuthStore } from "../../contexts/authStore";
 import { PublicSEO } from "../../components/seo/SEO";
+import LanguageSwitcher from "../../components/LanguageSwitcher";
 
 export default function LoginPage() {
+  const { t, i18n } = useTranslation("auth");
   const navigate = useNavigate();
   const { login } = useAuthStore();
   const [searchParams] = useSearchParams();
@@ -47,6 +50,9 @@ export default function LoginPage() {
       const response = await authApi.login(data);
       const { access, refresh, user } = response.data;
       login(user, access, refresh);
+      if (user.preferred_language) {
+        i18n.changeLanguage(user.preferred_language);
+      }
       navigate("/dashboard", { replace: true });
     } catch (err) {
       const httpStatus = err.response?.status;
@@ -57,7 +63,7 @@ export default function LoginPage() {
         resData?.non_field_errors?.[0] ||
         resData?.email?.[0] ||
         resData?.password?.[0] ||
-        (httpStatus === 401 ? "Invalid email or password." : "An unexpected error occurred.");
+        (httpStatus === 401 ? t("incorrect_credentials", "Invalid email or password.") : t("errors:server_error", "An unexpected error occurred."));
 
       if (httpStatus === 423) {
         setLockoutUntil(err.response.data.locked_until);
@@ -81,25 +87,37 @@ export default function LoginPage() {
       alignItems="center"
       justifyContent="center"
       minHeight="100vh"
-      bgcolor="background.default"
       px={2}
+      position="relative"
+      sx={{
+        backgroundImage: 'url(/abem-hero-banner.svg)',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat',
+        bgcolor: 'background.default',
+      }}
     >
+      {/* Language switcher — top-right corner */}
+      <Box sx={{ position: "absolute", top: 16, right: 16 }}>
+        <LanguageSwitcher />
+      </Box>
+
       <Card sx={{ width: "100%", maxWidth: 420 }}>
         <CardContent sx={{ p: 4 }}>
           {/* Header */}
           <Stack alignItems="center" spacing={1} mb={4}>
             <Box component="img" src="/abem-logo-light.svg" alt="ABEM" sx={{ height: 48 }} />
             <Typography variant="body2" color="text.secondary">
-              Apartment & Building Expense Management
+              {t("apartment_building_expense")}
             </Typography>
           </Stack>
 
           {/* Lockout alert */}
           {lockoutUntil && (
             <Alert severity="error" sx={{ mb: 2 }}>
-              Account locked. Too many failed attempts.
+              {t("account_locked")}
               <br />
-              Try again after{" "}
+              {t("try_again_after", "Try again after")}{" "}
               <strong>{new Date(lockoutUntil).toLocaleTimeString()}</strong>.
             </Alert>
           )}
@@ -117,7 +135,7 @@ export default function LoginPage() {
                     component={RouterLink}
                     to={`/register?email=${encodeURIComponent(getValues("email"))}`}
                   >
-                    Create account
+                    {t("create_account")}
                   </Button>
                 ) : undefined
               }
@@ -130,7 +148,7 @@ export default function LoginPage() {
           <Box component="form" onSubmit={handleSubmit(onSubmit)} noValidate>
             <Stack spacing={2.5}>
               <TextField
-                label="Email address"
+                label={t("email_address")}
                 type="email"
                 fullWidth
                 autoComplete="email"
@@ -138,16 +156,16 @@ export default function LoginPage() {
                 error={!!errors.email}
                 helperText={errors.email?.message}
                 {...register("email", {
-                  required: "Email is required.",
+                  required: t("email_required"),
                   pattern: {
                     value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-                    message: "Enter a valid email address.",
+                    message: t("errors:invalid_email"),
                   },
                 })}
               />
 
               <TextField
-                label="Password"
+                label={t("password")}
                 type={showPassword ? "text" : "password"}
                 fullWidth
                 autoComplete="current-password"
@@ -167,7 +185,7 @@ export default function LoginPage() {
                     </InputAdornment>
                   ),
                 }}
-                {...register("password", { required: "Password is required." })}
+                {...register("password", { required: t("password_required") })}
               />
 
               <Button
@@ -178,13 +196,13 @@ export default function LoginPage() {
                 disabled={isLoading}
                 sx={{ mt: 1 }}
               >
-                {isLoading ? <CircularProgress size={24} color="inherit" /> : "Sign in"}
+                {isLoading ? <CircularProgress size={24} color="inherit" /> : t("sign_in")}
               </Button>
 
               <Typography variant="body2" align="center" color="text.secondary">
-                Don&apos;t have an account?{" "}
+                {t("dont_have_account")}{" "}
                 <Link component={RouterLink} to="/register" underline="hover">
-                  Create account
+                  {t("create_account")}
                 </Link>
               </Typography>
             </Stack>

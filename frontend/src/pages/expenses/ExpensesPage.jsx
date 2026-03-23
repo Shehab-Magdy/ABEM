@@ -44,15 +44,19 @@ import {
 import {
   Add as AddIcon,
   AttachFile as AttachFileIcon,
+  CheckCircle as CheckCircleIcon,
   Delete as DeleteIcon,
   Edit as EditIcon,
   FilterList as FilterIcon,
+  HourglassEmpty as HourglassIcon,
+  Cancel as CancelIcon,
   Repeat as RepeatIcon,
   Visibility as ViewIcon,
 } from "@mui/icons-material";
 import { expensesApi } from "../../api/expensesApi";
 import { buildingsApi } from "../../api/buildingsApi";
 import { useAuth } from "../../hooks/useAuth";
+import { useTranslation } from "react-i18next";
 import { PrivateSEO } from "../../components/seo/SEO";
 
 // Resolve relative media paths to absolute backend URLs so the browser
@@ -69,19 +73,6 @@ const mediaUrl = (url) => {
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
-const SPLIT_TYPES = [
-  { value: "equal_all", label: "Equal – All Units" },
-  { value: "equal_apartments", label: "Equal – Apartments Only" },
-  { value: "equal_stores", label: "Equal – Stores Only" },
-  { value: "custom", label: "Custom Subset" },
-];
-
-const FREQUENCIES = [
-  { value: "monthly", label: "Monthly" },
-  { value: "quarterly", label: "Quarterly" },
-  { value: "annual", label: "Annual" },
-];
-
 const EMPTY_FORM = {
   title: "",
   description: "",
@@ -97,16 +88,78 @@ const EMPTY_FORM = {
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
-function statusChip(expense) {
+function statusChip(expense, t, isAdmin) {
+  // Admin override: is_manually_paid always shows "Paid"
+  if (expense.is_manually_paid) {
+    return <Chip label={t("paid", "Paid")} size="small" color="success" />;
+  }
+
   const shares = expense.apartment_shares || [];
-  if (!shares.length) return <Chip label="No Split" size="small" color="default" />;
-  return <Chip label="Unpaid" size="small" color="error" />;
+  if (!shares.length) return <Chip label={t("no_split", "No Split")} size="small" color="default" />;
+
+  // Owner view: use the per-owner computed status from the API
+  if (!isAdmin && expense.my_payment_status) {
+    const statusMap = {
+      paid:    { label: t("status_paid", "Paid"),    color: "success" },
+      partial: { label: t("status_partial", "Partial"), color: "warning" },
+      unpaid:  { label: t("status_unpaid", "Unpaid"),  color: "error" },
+    };
+    const s = statusMap[expense.my_payment_status] || statusMap.unpaid;
+    return <Chip label={s.label} size="small" color={s.color} />;
+  }
+
+  // Admin view: derive an aggregate status from all per-unit statuses
+  if (isAdmin && shares.length > 0 && shares[0].payment_status) {
+    const allPaid = shares.every((s) => s.payment_status === "paid");
+    const anyPaid = shares.some((s) => s.payment_status === "paid" || s.payment_status === "partial");
+    if (allPaid) return <Chip label={t("status_paid", "Paid")} size="small" color="success" />;
+    if (anyPaid) return <Chip label={t("status_partial", "Partial")} size="small" color="warning" />;
+    return <Chip label={t("status_unpaid", "Unpaid")} size="small" color="error" />;
+  }
+
+  return <Chip label={t("status_unpaid", "Unpaid")} size="small" color="error" />;
 }
 
 // ── Main component ─────────────────────────────────────────────────────────────
 
 export default function ExpensesPage() {
+  const { t } = useTranslation("expenses");
+  const { t: tCat } = useTranslation("categories");
+  const SPLIT_TYPES = [
+    { value: "equal_all", label: t("split_equal_all", "Equal – All Units") },
+    { value: "equal_apartments", label: t("split_equal_apartments", "Equal – Apartments Only") },
+    { value: "equal_stores", label: t("split_equal_stores", "Equal – Stores Only") },
+    { value: "custom", label: t("split_custom", "Custom Subset") },
+  ];
+  const FREQUENCIES = [
+    { value: "monthly", label: t("freq_monthly", "Monthly") },
+    { value: "quarterly", label: t("freq_quarterly", "Quarterly") },
+    { value: "annual", label: t("freq_annual", "Annual") },
+  ];
   const { isAdmin } = useAuth();
+
+  // ── Category name translation mapping ───────────────────────────────────
+  const translateCategoryName = (name) => {
+    const keyMap = {
+      'Maintenance': 'cat_maintenance',
+      'Utilities': 'cat_utilities',
+      'Cleaning': 'cat_cleaning',
+      'Security': 'cat_security',
+      'Elevator': 'cat_elevator',
+      'Plumbing': 'cat_plumbing',
+      'Internet & Cable': 'cat_internet_cable',
+      'Parking': 'cat_parking',
+      'Landscaping': 'cat_landscaping',
+      'Pest Control': 'cat_pest_control',
+      'Fire Safety': 'cat_fire_safety',
+      'Waste Management': 'cat_waste_management',
+      'Insurance': 'cat_insurance',
+      'Management': 'cat_management',
+      'Other': 'cat_other',
+    };
+    const key = keyMap[name];
+    return key ? tCat(key) : name;
+  };
 
   const [buildings, setBuildings] = useState([]);
   const [expenses, setExpenses] = useState([]);
@@ -133,6 +186,23 @@ export default function ExpensesPage() {
   const [buildingApartments, setBuildingApartments] = useState([]);
   const [customWeights, setCustomWeights] = useState({});
 
+  // ── Build hierarchical (nested) category list ───────────────────────────
+  const sortedCategories = (() => {
+    const parents = categories.filter((c) => !c.parent_id);
+    const result = [];
+    parents.forEach((parent) => {
+      result.push(parent);
+      const children = categories.filter((c) => c.parent_id === parent.id);
+      children.forEach((child) => result.push(child));
+    });
+    // Include orphan subcategories whose parent is not in the current list
+    const ids = new Set(result.map((c) => c.id));
+    categories.forEach((c) => {
+      if (!ids.has(c.id)) result.push(c);
+    });
+    return result;
+  })();
+
   // ── Data fetching ──────────────────────────────────────────────────────────
 
   const loadBuildings = useCallback(async () => {
@@ -157,7 +227,7 @@ export default function ExpensesPage() {
       const res = await expensesApi.list(params);
       setExpenses(res.data.results ?? res.data);
     } catch {
-      setSnack({ open: true, msg: "Failed to load expenses", severity: "error" });
+      setSnack({ open: true, msg: t("load_error", "Failed to load expenses"), severity: "error" });
     } finally {
       setLoading(false);
     }
@@ -187,7 +257,7 @@ export default function ExpensesPage() {
   const loadBuildingApartments = useCallback(async (buildingId) => {
     if (!buildingId) return;
     try {
-      const res = await buildingsApi.apartments(buildingId, { page_size: 200 });
+      const res = await buildingsApi.apartments(buildingId, { page_size: 100 });
       setBuildingApartments(res.data?.results ?? res.data);
     } catch {
       setBuildingApartments([]);
@@ -234,10 +304,10 @@ export default function ExpensesPage() {
   };
 
   const handleFormSubmit = async () => {
-    if (!form.title.trim()) return setFormError("Title is required");
-    if (!form.amount || parseFloat(form.amount) <= 0) return setFormError("Amount must be > 0");
-    if (!form.expense_date) return setFormError("Date is required");
-    if (!form.category_id) return setFormError("Category is required");
+    if (!form.title.trim()) return setFormError(t("title_required", "Title is required"));
+    if (!form.amount || parseFloat(form.amount) <= 0) return setFormError(t("amount_required", "Amount must be > 0"));
+    if (!form.expense_date) return setFormError(t("date_required", "Date is required"));
+    if (!form.category_id) return setFormError(t("category_required", "Category is required"));
 
     // Use subcategory if selected, otherwise use the parent category
     const effectiveCategoryId = subcategoryId || form.category_id;
@@ -261,10 +331,10 @@ export default function ExpensesPage() {
     try {
       if (editTarget) {
         await expensesApi.update(editTarget.id, payload);
-        setSnack({ open: true, msg: "Expense updated", severity: "success" });
+        setSnack({ open: true, msg: t("expense_updated", "Expense updated"), severity: "success" });
       } else {
         await expensesApi.create(payload);
-        setSnack({ open: true, msg: "Expense created", severity: "success" });
+        setSnack({ open: true, msg: t("expense_created", "Expense created"), severity: "success" });
       }
       setFormOpen(false);
       loadExpenses();
@@ -272,8 +342,29 @@ export default function ExpensesPage() {
       const detail =
         err.response?.data?.detail ||
         JSON.stringify(err.response?.data) ||
-        "Error saving expense";
+        t("save_error", "Error saving expense");
       setFormError(detail);
+    }
+  };
+
+  // ── Mark as paid ───────────────────────────────────────────────────────────
+
+  const handleMarkPaid = async (expense) => {
+    try {
+      const res = await expensesApi.markPaid(expense.id);
+      const updated = res.data;
+      setExpenses((prev) =>
+        prev.map((e) => (e.id === updated.id ? updated : e))
+      );
+      setSnack({
+        open: true,
+        msg: updated.is_manually_paid
+          ? t("marked_paid", "Marked as Paid")
+          : t("mark_as_paid", "Mark as Paid"),
+        severity: "success",
+      });
+    } catch {
+      setSnack({ open: true, msg: t("save_error", "Error saving expense"), severity: "error" });
     }
   };
 
@@ -283,11 +374,11 @@ export default function ExpensesPage() {
     if (!deleteTarget) return;
     try {
       await expensesApi.remove(deleteTarget.id);
-      setSnack({ open: true, msg: "Expense deleted", severity: "success" });
+      setSnack({ open: true, msg: t("expense_deleted", "Expense deleted"), severity: "success" });
       setDeleteTarget(null);
       loadExpenses();
     } catch {
-      setSnack({ open: true, msg: "Failed to delete expense", severity: "error" });
+      setSnack({ open: true, msg: t("delete_error", "Failed to delete expense"), severity: "error" });
     }
   };
 
@@ -300,11 +391,11 @@ export default function ExpensesPage() {
     fd.append("file", file);
     try {
       await expensesApi.uploadBill(uploadTarget.id, fd);
-      setSnack({ open: true, msg: "Bill uploaded successfully", severity: "success" });
+      setSnack({ open: true, msg: t("bill_uploaded", "Bill uploaded successfully"), severity: "success" });
       setUploadTarget(null);
       loadExpenses();
     } catch (err) {
-      const detail = err.response?.data?.detail || "Upload failed";
+      const detail = err.response?.data?.detail || t("upload_failed", "Upload failed");
       setSnack({ open: true, msg: detail, severity: "error" });
     }
   };
@@ -318,11 +409,11 @@ export default function ExpensesPage() {
       {/* Header */}
       <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
         <Typography variant="h5" fontWeight={600}>
-          Expenses
+          {t("page_title")}
         </Typography>
         {isAdmin && (
           <Button id="add-expense-btn" variant="contained" startIcon={<AddIcon />} onClick={openCreate}>
-            Add Expense
+            {t("add_expense")}
           </Button>
         )}
       </Stack>
@@ -331,9 +422,9 @@ export default function ExpensesPage() {
       <Paper sx={{ p: 2, mb: 2 }}>
         <Stack direction="row" spacing={2} flexWrap="wrap" alignItems="center">
           <FormControl size="small" sx={{ minWidth: 220 }}>
-            <InputLabel>Building</InputLabel>
+            <InputLabel>{t("building")}</InputLabel>
             <Select
-              label="Building"
+              label={t("building")}
               value={selectedBuilding}
               onChange={(e) => setSelectedBuilding(e.target.value)}
             >
@@ -347,7 +438,7 @@ export default function ExpensesPage() {
 
           <TextField
             size="small"
-            label="Date From"
+            label={t("date_from")}
             type="date"
             value={filterDateFrom}
             onChange={(e) => setFilterDateFrom(e.target.value)}
@@ -355,7 +446,7 @@ export default function ExpensesPage() {
           />
           <TextField
             size="small"
-            label="Date To"
+            label={t("date_to")}
             type="date"
             value={filterDateTo}
             onChange={(e) => setFilterDateTo(e.target.value)}
@@ -363,23 +454,23 @@ export default function ExpensesPage() {
           />
 
           <FormControl size="small" sx={{ minWidth: 180 }}>
-            <InputLabel>Category</InputLabel>
+            <InputLabel>{t("category")}</InputLabel>
             <Select
-              label="Category"
+              label={t("category")}
               value={filterCategory}
               onChange={(e) => setFilterCategory(e.target.value)}
             >
-              <MenuItem value="">All Categories</MenuItem>
-              {categories.map((c) => (
-                <MenuItem key={c.id} value={c.id}>
-                  {c.name}
+              <MenuItem value="">{t("all_categories")}</MenuItem>
+              {sortedCategories.map((c) => (
+                <MenuItem key={c.id} value={c.id} sx={c.parent_id ? { pl: 4 } : undefined}>
+                  {c.parent_id ? "— " : ""}{translateCategoryName(c.name)}
                 </MenuItem>
               ))}
             </Select>
           </FormControl>
 
           <Button variant="outlined" startIcon={<FilterIcon />} onClick={loadExpenses}>
-            Apply
+            {t("apply")}
           </Button>
         </Stack>
       </Paper>
@@ -394,22 +485,22 @@ export default function ExpensesPage() {
           <Table size="small">
             <TableHead>
               <TableRow sx={{ bgcolor: "grey.100" }}>
-                <TableCell>Title</TableCell>
-                <TableCell>Amount</TableCell>
-                <TableCell>Date</TableCell>
-                <TableCell>Split</TableCell>
-                <TableCell>Status</TableCell>
-                <TableCell>Recurring</TableCell>
-                <TableCell align="center">Bill</TableCell>
-                <TableCell align="right">Actions</TableCell>
+                <TableCell>{t("title")}</TableCell>
+                <TableCell>{t("amount")}</TableCell>
+                <TableCell>{t("date")}</TableCell>
+                <TableCell>{t("split_type")}</TableCell>
+                <TableCell>{t("status")}</TableCell>
+                <TableCell>{t("recurring")}</TableCell>
+                <TableCell align="center">{t("bill")}</TableCell>
+                <TableCell align="right">{t("actions")}</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {expenses.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={8} align="center" sx={{ py: 4, color: "text.secondary" }}>
-                    No expenses found.{" "}
-                    {isAdmin && "Click 'Add Expense' to create one."}
+                    {t("no_expenses")}{" "}
+                    {isAdmin && t("no_expenses_hint")}
                   </TableCell>
                 </TableRow>
               ) : (
@@ -440,7 +531,7 @@ export default function ExpensesPage() {
                       </Typography>
                       {!isAdmin && exp.my_share_amount != null && (
                         <Typography variant="caption" color="text.secondary" display="block">
-                          your share
+                          {t("your_share")}
                         </Typography>
                       )}
                     </TableCell>
@@ -455,12 +546,16 @@ export default function ExpensesPage() {
                         variant="outlined"
                       />
                     </TableCell>
-                    <TableCell>{statusChip(exp)}</TableCell>
+                    <TableCell>{statusChip(exp, t, isAdmin)}</TableCell>
                     <TableCell>
                       {exp.is_recurring && (
                         <Chip
                           icon={<RepeatIcon fontSize="small" />}
-                          label={exp.recurring_config?.frequency ?? "recurring"}
+                          label={
+                            FREQUENCIES.find((f) => f.value === exp.recurring_config?.frequency)?.label ??
+                            exp.recurring_config?.frequency ??
+                            t("recurring")
+                          }
                           size="small"
                           color="info"
                           variant="outlined"
@@ -484,24 +579,33 @@ export default function ExpensesPage() {
                     </TableCell>
                     <TableCell align="right">
                       <Stack id="expense-actions-btn" direction="row" spacing={0.5} justifyContent="flex-end">
-                        <Tooltip title="View details">
+                        <Tooltip title={t("view_details")}>
                           <IconButton size="small" onClick={() => setDetailExpense(exp)}>
                             <ViewIcon fontSize="small" />
                           </IconButton>
                         </Tooltip>
                         {isAdmin && (
                           <>
-                            <Tooltip title="Edit">
+                            <Tooltip title={t("edit")}>
                               <IconButton size="small" onClick={() => openEdit(exp)}>
                                 <EditIcon fontSize="small" />
                               </IconButton>
                             </Tooltip>
-                            <Tooltip title="Upload bill">
+                            <Tooltip title={t("upload_bill")}>
                               <IconButton size="small" onClick={() => setUploadTarget(exp)}>
                                 <AttachFileIcon fontSize="small" />
                               </IconButton>
                             </Tooltip>
-                            <Tooltip title="Delete">
+                            <Tooltip title={exp.is_manually_paid ? t("marked_paid") : t("mark_as_paid")}>
+                              <IconButton
+                                size="small"
+                                color={exp.is_manually_paid ? "success" : "default"}
+                                onClick={() => handleMarkPaid(exp)}
+                              >
+                                <CheckCircleIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                            <Tooltip title={t("delete")}>
                               <IconButton
                                 size="small"
                                 color="error"
@@ -524,20 +628,20 @@ export default function ExpensesPage() {
 
       {/* ── Add / Edit Dialog ─────────────────────────────────────────────── */}
       <Dialog open={formOpen} onClose={() => setFormOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>{editTarget ? "Edit Expense" : "Add Expense"}</DialogTitle>
+        <DialogTitle>{editTarget ? t("edit_expense") : t("add_expense")}</DialogTitle>
         <DialogContent dividers>
           <Stack spacing={2} pt={1}>
             {formError && <Alert severity="error">{formError}</Alert>}
 
             <TextField
-              label="Title *"
+              label={`${t("title")} *`}
               value={form.title}
               onChange={handleFormChange("title")}
               size="small"
               fullWidth
             />
             <TextField
-              label="Description"
+              label={t("description")}
               value={form.description}
               onChange={handleFormChange("description")}
               size="small"
@@ -547,7 +651,7 @@ export default function ExpensesPage() {
             />
             <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
               <TextField
-                label="Amount *"
+                label={`${t("amount")} *`}
                 type="number"
                 inputProps={{ min: 0.01, step: 0.01 }}
                 value={form.amount}
@@ -556,7 +660,7 @@ export default function ExpensesPage() {
                 fullWidth
               />
               <TextField
-                label="Expense Date *"
+                label={`${t("expense_date")} *`}
                 type="date"
                 value={form.expense_date}
                 onChange={handleFormChange("expense_date")}
@@ -566,7 +670,7 @@ export default function ExpensesPage() {
               />
             </Stack>
             <TextField
-              label="Due Date"
+              label={t("due_date")}
               type="date"
               value={form.due_date}
               onChange={handleFormChange("due_date")}
@@ -576,48 +680,27 @@ export default function ExpensesPage() {
             />
 
             <FormControl size="small" fullWidth>
-              <InputLabel>Category *</InputLabel>
+              <InputLabel>{t("category")} *</InputLabel>
               <Select
-                label="Category *"
+                label={`${t("category")} *`}
                 value={form.category_id}
                 onChange={(e) => {
                   handleFormChange("category_id")(e);
                   setSubcategoryId("");
                 }}
               >
-                {categories.filter((c) => !c.parent_id).map((c) => (
-                  <MenuItem key={c.id} value={c.id}>
-                    {c.name}
+                {sortedCategories.map((c) => (
+                  <MenuItem key={c.id} value={c.id} sx={c.parent_id ? { pl: 4 } : undefined}>
+                    {c.parent_id ? "— " : ""}{translateCategoryName(c.name)}
                   </MenuItem>
                 ))}
               </Select>
             </FormControl>
 
-            {/* Show subcategory dropdown if the selected category has subcategories */}
-            {form.category_id && categories.some((c) => c.parent_id === form.category_id) && (
-              <FormControl size="small" fullWidth>
-                <InputLabel>Subcategory (optional)</InputLabel>
-                <Select
-                  label="Subcategory (optional)"
-                  value={subcategoryId}
-                  onChange={(e) => setSubcategoryId(e.target.value)}
-                >
-                  <MenuItem value="">— None —</MenuItem>
-                  {categories
-                    .filter((c) => c.parent_id === form.category_id)
-                    .map((c) => (
-                      <MenuItem key={c.id} value={c.id}>
-                        {c.name}
-                      </MenuItem>
-                    ))}
-                </Select>
-              </FormControl>
-            )}
-
             <FormControl size="small" fullWidth>
-              <InputLabel>Split Type</InputLabel>
+              <InputLabel>{t("split_type")}</InputLabel>
               <Select
-                label="Split Type"
+                label={t("split_type")}
                 value={form.split_type}
                 onChange={handleFormChange("split_type")}
               >
@@ -633,7 +716,7 @@ export default function ExpensesPage() {
             {form.split_type === "custom" && (
               <Box>
                 <Typography variant="caption" color="text.secondary" mb={0.5} display="block">
-                  Set weight per unit (1.0 = full share, 0.5 = half share). Uncheck to exclude.
+                  {t("custom_weight_hint")}
                 </Typography>
                 <Table size="small">
                   <TableHead>
@@ -654,9 +737,9 @@ export default function ExpensesPage() {
                           }}
                         />
                       </TableCell>
-                      <TableCell>Unit</TableCell>
-                      <TableCell>Type</TableCell>
-                      <TableCell width={100}>Weight</TableCell>
+                      <TableCell>{t("unit")}</TableCell>
+                      <TableCell>{t("type")}</TableCell>
+                      <TableCell width={100}>{t("weight")}</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
@@ -682,7 +765,7 @@ export default function ExpensesPage() {
                             />
                           </TableCell>
                           <TableCell>{apt.unit_number}</TableCell>
-                          <TableCell>{apt.type}</TableCell>
+                          <TableCell>{apt.type === "store" ? t("unit_type_store") : t("unit_type_apartment")}</TableCell>
                           <TableCell>
                             <TextField
                               size="small"
@@ -715,15 +798,15 @@ export default function ExpensesPage() {
                 onChange={handleFormChange("is_recurring")}
               />
               <label htmlFor="is_recurring">
-                <Typography variant="body2">Recurring expense</Typography>
+                <Typography variant="body2">{t("recurring_expense")}</Typography>
               </label>
             </Stack>
 
             {form.is_recurring && (
               <FormControl size="small" fullWidth>
-                <InputLabel>Frequency *</InputLabel>
+                <InputLabel>{t("frequency")} *</InputLabel>
                 <Select
-                  label="Frequency *"
+                  label={`${t("frequency")} *`}
                   value={form.frequency}
                   onChange={handleFormChange("frequency")}
                 >
@@ -738,9 +821,9 @@ export default function ExpensesPage() {
           </Stack>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setFormOpen(false)}>Cancel</Button>
+          <Button onClick={() => setFormOpen(false)}>{t("cancel")}</Button>
           <Button variant="contained" onClick={handleFormSubmit}>
-            {editTarget ? "Save Changes" : "Create Expense"}
+            {editTarget ? t("save_changes") : t("create_expense")}
           </Button>
         </DialogActions>
       </Dialog>
@@ -760,7 +843,11 @@ export default function ExpensesPage() {
                 {detailExpense.is_recurring && (
                   <Chip
                     icon={<RepeatIcon fontSize="small" />}
-                    label={detailExpense.recurring_config?.frequency ?? "Recurring"}
+                    label={
+                      FREQUENCIES.find((f) => f.value === detailExpense.recurring_config?.frequency)?.label ??
+                      detailExpense.recurring_config?.frequency ??
+                      t("recurring")
+                    }
                     size="small"
                     color="info"
                   />
@@ -771,7 +858,7 @@ export default function ExpensesPage() {
               <Stack spacing={1.5}>
                 <Stack direction="row" justifyContent="space-between">
                   <Typography variant="body2" color="text.secondary">
-                    Total Amount
+                    {t("total_amount")}
                   </Typography>
                   <Typography fontWeight={600}>
                     {parseFloat(detailExpense.amount).toLocaleString("en-US", {
@@ -781,13 +868,13 @@ export default function ExpensesPage() {
                 </Stack>
                 <Stack direction="row" justifyContent="space-between">
                   <Typography variant="body2" color="text.secondary">
-                    Date
+                    {t("date")}
                   </Typography>
                   <Typography>{detailExpense.expense_date}</Typography>
                 </Stack>
                 <Stack direction="row" justifyContent="space-between">
                   <Typography variant="body2" color="text.secondary">
-                    Split Type
+                    {t("split_type")}
                   </Typography>
                   <Chip
                     label={
@@ -801,7 +888,7 @@ export default function ExpensesPage() {
                 {detailExpense.description && (
                   <Stack direction="row" justifyContent="space-between">
                     <Typography variant="body2" color="text.secondary">
-                      Description
+                      {t("description")}
                     </Typography>
                     <Typography variant="body2" sx={{ maxWidth: "60%", textAlign: "right" }}>
                       {detailExpense.description}
@@ -812,40 +899,70 @@ export default function ExpensesPage() {
                 <Divider />
 
                 <Typography variant="subtitle2" fontWeight={600}>
-                  Per-Unit Breakdown ({(detailExpense.apartment_shares || []).length} units)
+                  {t("per_unit_breakdown", { count: (detailExpense.apartment_shares || []).length })}
                 </Typography>
                 {(detailExpense.apartment_shares || []).length === 0 ? (
                   <Typography variant="body2" color="text.secondary">
-                    No units assigned.
+                    {t("no_units_assigned")}
                   </Typography>
                 ) : (
                   <Table size="small">
                     <TableHead>
                       <TableRow>
-                        <TableCell>Unit</TableCell>
-                        <TableCell align="right">Share Amount</TableCell>
+                        <TableCell>{t("unit")}</TableCell>
+                        <TableCell align="right">{t("share_amount")}</TableCell>
+                        <TableCell align="right">{t("paid_amount")}</TableCell>
+                        <TableCell align="center">{t("status")}</TableCell>
                       </TableRow>
                     </TableHead>
                     <TableBody>
-                      {detailExpense.apartment_shares.map((s) => (
-                        <TableRow key={s.id}>
-                          <TableCell>{s.unit_number}</TableCell>
-                          <TableCell align="right" sx={{ fontWeight: 500 }}>
-                            {parseFloat(s.share_amount).toLocaleString("en-US", {
-                              minimumFractionDigits: 2,
-                            })}
-                          </TableCell>
-                        </TableRow>
-                      ))}
+                      {detailExpense.apartment_shares.map((s) => {
+                        const statusConfig = {
+                          paid:    { label: t("status_paid", "Paid"),    color: "success", icon: <CheckCircleIcon fontSize="small" color="success" /> },
+                          partial: { label: t("status_partial", "Partial"), color: "warning", icon: <HourglassIcon fontSize="small" color="warning" /> },
+                          unpaid:  { label: t("status_unpaid", "Unpaid"),  color: "error",   icon: <CancelIcon fontSize="small" color="error" /> },
+                        };
+                        const sc = statusConfig[s.payment_status] || statusConfig.unpaid;
+                        return (
+                          <TableRow key={s.id}>
+                            <TableCell>{s.unit_number}</TableCell>
+                            <TableCell align="right" sx={{ fontWeight: 500 }}>
+                              {parseFloat(s.share_amount).toLocaleString("en-US", {
+                                minimumFractionDigits: 2,
+                              })}
+                            </TableCell>
+                            <TableCell align="right" sx={{ fontWeight: 500 }}>
+                              {parseFloat(s.total_paid || 0).toLocaleString("en-US", {
+                                minimumFractionDigits: 2,
+                              })}
+                            </TableCell>
+                            <TableCell align="center">
+                              <Chip
+                                icon={sc.icon}
+                                label={sc.label}
+                                size="small"
+                                color={sc.color}
+                                variant="outlined"
+                              />
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
                     </TableBody>
                     <TableFooter>
                       <TableRow sx={{ "& td": { borderTop: "2px solid", borderColor: "divider" } }}>
-                        <TableCell sx={{ fontWeight: 700 }}>Total Shares</TableCell>
+                        <TableCell sx={{ fontWeight: 700 }}>{t("total_shares")}</TableCell>
                         <TableCell align="right" sx={{ fontWeight: 700 }}>
                           {detailExpense.apartment_shares
                             .reduce((sum, s) => sum + parseFloat(s.share_amount), 0)
                             .toLocaleString("en-US", { minimumFractionDigits: 2 })}
                         </TableCell>
+                        <TableCell align="right" sx={{ fontWeight: 700 }}>
+                          {detailExpense.apartment_shares
+                            .reduce((sum, s) => sum + parseFloat(s.total_paid || 0), 0)
+                            .toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                        </TableCell>
+                        <TableCell />
                       </TableRow>
                     </TableFooter>
                   </Table>
@@ -855,7 +972,7 @@ export default function ExpensesPage() {
                   <>
                     <Divider />
                     <Typography variant="subtitle2" fontWeight={600}>
-                      Attachments
+                      {t("attachments")}
                     </Typography>
                     {detailExpense.attachments.map((att) => (
                       <Stack key={att.id} direction="row" alignItems="center" spacing={1}>
@@ -876,7 +993,7 @@ export default function ExpensesPage() {
               </Stack>
             </DialogContent>
             <DialogActions>
-              <Button onClick={() => setDetailExpense(null)}>Close</Button>
+              <Button onClick={() => setDetailExpense(null)}>{t("close")}</Button>
             </DialogActions>
           </>
         )}
@@ -884,30 +1001,30 @@ export default function ExpensesPage() {
 
       {/* ── Delete confirmation ───────────────────────────────────────────── */}
       <Dialog open={Boolean(deleteTarget)} onClose={() => setDeleteTarget(null)}>
-        <DialogTitle>Delete Expense</DialogTitle>
+        <DialogTitle>{t("delete_expense")}</DialogTitle>
         <DialogContent>
           <Typography>
-            Are you sure you want to delete <strong>{deleteTarget?.title}</strong>?
+            {t("confirm_delete")}
           </Typography>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setDeleteTarget(null)}>Cancel</Button>
+          <Button onClick={() => setDeleteTarget(null)}>{t("cancel")}</Button>
           <Button variant="contained" color="error" onClick={handleDelete}>
-            Delete
+            {t("delete")}
           </Button>
         </DialogActions>
       </Dialog>
 
       {/* ── Bill upload dialog ────────────────────────────────────────────── */}
       <Dialog open={Boolean(uploadTarget)} onClose={() => setUploadTarget(null)}>
-        <DialogTitle>Upload Bill — "{uploadTarget?.title}"</DialogTitle>
+        <DialogTitle>{t("upload_bill_title", { title: uploadTarget?.title })}</DialogTitle>
         <DialogContent>
           <Stack spacing={2} pt={1}>
             <Typography variant="body2" color="text.secondary">
-              Accepted: JPEG, PNG, PDF · Max 10 MB
+              {t("accepted_formats")}
             </Typography>
             <Button variant="outlined" component="label" startIcon={<AttachFileIcon />}>
-              Choose File
+              {t("choose_file")}
               <input
                 hidden
                 accept="image/jpeg,image/png,application/pdf"
@@ -918,7 +1035,7 @@ export default function ExpensesPage() {
           </Stack>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setUploadTarget(null)}>Cancel</Button>
+          <Button onClick={() => setUploadTarget(null)}>{t("cancel")}</Button>
         </DialogActions>
       </Dialog>
 

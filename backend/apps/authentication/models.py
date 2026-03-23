@@ -45,12 +45,28 @@ class User(AbstractBaseUser, PermissionsMixin):
     # Forced password change (set after admin resets password)
     must_change_password = models.BooleanField(default=False)
 
+    # Language preference for i18n
+    preferred_language = models.CharField(
+        max_length=5,
+        choices=[("en", "English"), ("ar", "العربية")],
+        default="en",
+    )
+
     # Messaging restrictions (set by admins)
     messaging_blocked = models.BooleanField(default=False)
     individual_messaging_blocked = models.BooleanField(default=False)
 
     # Notification preferences (JSON flags)
     notification_preferences = models.JSONField(default=dict, blank=True)
+
+    # Track which admin created this user (FE-01 scoping)
+    created_by = models.ForeignKey(
+        'self',
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name='created_users',
+    )
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

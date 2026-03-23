@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
-import { useForm } from "react-hook-form";
+import { useTranslation } from "react-i18next";
+import { useForm, Controller } from "react-hook-form";
 import {
   Alert,
   Avatar,
@@ -8,19 +9,28 @@ import {
   Card,
   CardContent,
   CircularProgress,
+  FormControl,
   IconButton,
+  InputLabel,
+  MenuItem,
+  Select,
+  Snackbar,
   Stack,
   TextField,
   Tooltip,
   Typography,
 } from "@mui/material";
-import { CameraAlt } from "@mui/icons-material";
+import { CameraAlt, Translate } from "@mui/icons-material";
 import { authApi } from "../../api/authApi";
 import { useAuth } from "../../hooks/useAuth";
+import { useAuthStore } from "../../contexts/authStore";
 import { PrivateSEO } from "../../components/seo/SEO";
+import PhoneInput from "../../components/PhoneInput";
 
 export default function ProfilePage() {
+  const { t, i18n } = useTranslation("profile");
   const { user, setUser } = useAuth();
+  const storeSetUser = useAuthStore((s) => s.setUser);
   const [profileSuccess, setProfileSuccess] = useState(false);
   const [profileError, setProfileError] = useState(null);
   const [pwSuccess, setPwSuccess] = useState(false);
@@ -29,6 +39,8 @@ export default function ProfilePage() {
   const [savingPw, setSavingPw] = useState(false);
   const [uploadingPic, setUploadingPic] = useState(false);
   const [picError, setPicError] = useState(null);
+  const [langSaving, setLangSaving] = useState(false);
+  const [langSuccess, setLangSuccess] = useState(false);
   const fileInputRef = useRef(null);
 
   const profileForm = useForm({ defaultValues: { first_name: user?.first_name, last_name: user?.last_name, phone: user?.phone } });
@@ -44,7 +56,7 @@ export default function ProfilePage() {
       const res = await authApi.uploadProfilePicture(file);
       setUser(res.data);
     } catch {
-      setPicError("Could not upload photo. Please try again.");
+      setPicError(t("photo_upload_error", "Could not upload photo."));
     } finally {
       setUploadingPic(false);
       e.target.value = "";
@@ -66,7 +78,7 @@ export default function ProfilePage() {
       setUser(res.data);
       setProfileSuccess(true);
     } catch {
-      setProfileError("Failed to update profile. Please try again.");
+      setProfileError(t("profile_update_error", "Failed to update profile."));
     } finally {
       setSavingProfile(false);
     }
@@ -89,16 +101,47 @@ export default function ProfilePage() {
     }
   };
 
+  // ── Language preference ─────────────────────────────────────────────────────
+  const currentLang = (i18n.language || "en").startsWith("ar") ? "ar" : "en";
+
+  const handleLanguageChange = async (e) => {
+    const lang = e.target.value;
+    setLangSaving(true);
+    i18n.changeLanguage(lang);
+    try {
+      localStorage.setItem("abem_language", lang);
+      const res = await authApi.updateProfile({ preferred_language: lang });
+      storeSetUser(res.data);
+      setLangSuccess(true);
+    } catch {
+      // Revert on failure
+      i18n.changeLanguage(currentLang);
+    } finally {
+      setLangSaving(false);
+    }
+  };
+
   return (
     <>
       <PrivateSEO title="ABEM – Profile" />
+      <Snackbar
+        open={langSuccess}
+        autoHideDuration={3000}
+        onClose={() => setLangSuccess(false)}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        <Alert severity="success" onClose={() => setLangSuccess(false)}>
+          {t("language_updated")}
+        </Alert>
+      </Snackbar>
       <Box id="profile-card" maxWidth={640}>
-      <Typography variant="h5" mb={3}>My Profile</Typography>
+      <Box id="tutorial-profile-form">
+      <Typography variant="h5" mb={3}>{t("title")}</Typography>
 
       {/* Profile picture */}
       <Card sx={{ mb: 3 }}>
         <CardContent>
-          <Typography variant="h6" mb={2}>Profile Picture</Typography>
+          <Typography variant="h6" mb={2}>{t("profilePicture")}</Typography>
           {picError && <Alert severity="error" sx={{ mb: 2 }}>{picError}</Alert>}
           <Stack direction="row" spacing={3} alignItems="center">
             <Box sx={{ position: "relative", display: "inline-flex" }}>
@@ -108,7 +151,7 @@ export default function ProfilePage() {
               >
                 {!user?.profile_picture && (user?.first_name?.[0] ?? "?")}
               </Avatar>
-              <Tooltip title="Change photo">
+              <Tooltip title={t("changePhoto")}>
                 <IconButton
                   size="small"
                   onClick={() => fileInputRef.current?.click()}
@@ -142,10 +185,10 @@ export default function ProfilePage() {
                 {user?.first_name} {user?.last_name}
               </Typography>
               <Typography variant="caption" color="text.secondary">
-                Click the camera icon to upload a new photo.
+                {t("clickCameraToUpload")}
               </Typography>
               <Typography variant="caption" color="text.secondary">
-                Accepted: JPG, PNG, WEBP (max 5 MB).
+                {t("acceptedFormats")}
               </Typography>
             </Stack>
           </Stack>
@@ -155,47 +198,80 @@ export default function ProfilePage() {
       {/* Profile details */}
       <Card sx={{ mb: 3 }}>
         <CardContent>
-          <Typography variant="h6" mb={2}>Personal Information</Typography>
-          {profileSuccess && <Alert severity="success" sx={{ mb: 2 }}>Profile updated successfully.</Alert>}
+          <Typography variant="h6" mb={2}>{t("personalInformation")}</Typography>
+          {profileSuccess && <Alert severity="success" sx={{ mb: 2 }}>{t("profileUpdatedSuccess")}</Alert>}
           {profileError && <Alert severity="error" sx={{ mb: 2 }}>{profileError}</Alert>}
           <Box component="form" onSubmit={profileForm.handleSubmit(onSaveProfile)}>
             <Stack spacing={2.5}>
               <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
                 <TextField
-                  label="First name"
+                  label={t("firstName")}
                   fullWidth
                   error={!!profileForm.formState.errors.first_name}
                   helperText={profileForm.formState.errors.first_name?.message}
                   {...profileForm.register("first_name", { required: "Required." })}
                 />
                 <TextField
-                  label="Last name"
+                  label={t("lastName")}
                   fullWidth
                   error={!!profileForm.formState.errors.last_name}
                   helperText={profileForm.formState.errors.last_name?.message}
                   {...profileForm.register("last_name", { required: "Required." })}
                 />
               </Stack>
-              <TextField label="Phone number" fullWidth {...profileForm.register("phone")} />
-              <TextField label="Email" fullWidth disabled value={user?.email || ""} />
+              <Controller
+                name="phone"
+                control={profileForm.control}
+                render={({ field }) => (
+                  <PhoneInput
+                    label={t("phoneNumber")}
+                    value={field.value}
+                    onChange={field.onChange}
+                    fullWidth
+                  />
+                )}
+              />
+              <TextField label={t("email")} fullWidth disabled value={user?.email || ""} />
               <Button type="submit" variant="contained" disabled={savingProfile} sx={{ alignSelf: "flex-start" }}>
-                {savingProfile ? <CircularProgress size={20} color="inherit" /> : "Save Changes"}
+                {savingProfile ? <CircularProgress size={20} color="inherit" /> : t("saveChanges")}
               </Button>
             </Stack>
           </Box>
         </CardContent>
       </Card>
 
+      {/* Language & Region */}
+      <Card sx={{ mb: 3 }}>
+        <CardContent>
+          <Stack direction="row" alignItems="center" spacing={1} mb={2}>
+            <Translate color="action" />
+            <Typography variant="h6">{t("language_region")}</Typography>
+          </Stack>
+          <FormControl size="small" sx={{ minWidth: 200 }}>
+            <InputLabel>{t("language")}</InputLabel>
+            <Select
+              value={currentLang}
+              label={t("language")}
+              onChange={handleLanguageChange}
+              disabled={langSaving}
+            >
+              <MenuItem value="en">🇬🇧 {t("english")}</MenuItem>
+              <MenuItem value="ar">🇪🇬 {t("arabic")}</MenuItem>
+            </Select>
+          </FormControl>
+        </CardContent>
+      </Card>
+
       {/* Change password */}
       <Card>
         <CardContent>
-          <Typography variant="h6" mb={2}>Change Password</Typography>
-          {pwSuccess && <Alert severity="success" sx={{ mb: 2 }}>Password changed successfully.</Alert>}
+          <Typography variant="h6" mb={2}>{t("changePassword")}</Typography>
+          {pwSuccess && <Alert severity="success" sx={{ mb: 2 }}>{t("passwordChangedSuccess")}</Alert>}
           {pwError && <Alert severity="error" sx={{ mb: 2 }}>{pwError}</Alert>}
           <Box component="form" onSubmit={pwForm.handleSubmit(onChangePassword)}>
             <Stack spacing={2.5}>
               <TextField
-                label="Current password"
+                label={t("currentPassword")}
                 type="password"
                 fullWidth
                 error={!!pwForm.formState.errors.current_password}
@@ -203,15 +279,15 @@ export default function ProfilePage() {
                 {...pwForm.register("current_password", { required: "Required." })}
               />
               <TextField
-                label="New password"
+                label={t("newPassword")}
                 type="password"
                 fullWidth
                 error={!!pwForm.formState.errors.new_password}
                 helperText={pwForm.formState.errors.new_password?.message}
-                {...pwForm.register("new_password", { required: "Required.", minLength: { value: 8, message: "Min 8 characters." } })}
+                {...pwForm.register("new_password", { required: "Required.", minLength: { value: 8, message: t("min_8_chars", "Min 8 characters.") } })}
               />
               <TextField
-                label="Confirm new password"
+                label={t("confirmNewPassword")}
                 type="password"
                 fullWidth
                 error={!!pwForm.formState.errors.confirm_password}
@@ -222,12 +298,13 @@ export default function ProfilePage() {
                 })}
               />
               <Button type="submit" variant="contained" color="warning" disabled={savingPw} sx={{ alignSelf: "flex-start" }}>
-                {savingPw ? <CircularProgress size={20} color="inherit" /> : "Change Password"}
+                {savingPw ? <CircularProgress size={20} color="inherit" /> : t("changePassword")}
               </Button>
             </Stack>
           </Box>
         </CardContent>
       </Card>
+    </Box>
     </Box>
     </>
   );

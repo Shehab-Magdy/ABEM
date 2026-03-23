@@ -1,0 +1,12 @@
+{% extends "emails/base_en.html" %}
+{% block title %}Payment Due — {{ building_name }}{% endblock %}
+{% block content %}
+<p style="font-size:16px;color:#1F2937;margin:0 0 16px;">Dear {{ owner_name }},</p>
+<p style="font-size:15px;color:#4B5563;line-height:1.6;margin:0 0 8px;">
+  Your payment of <strong>{{ amount }}</strong> is due on <strong>{{ due_date }}</strong>.
+</p>
+<p style="font-size:15px;color:#4B5563;line-height:1.6;margin:0 0 24px;">
+  Please make the payment on time to avoid any late fees.
+</p>
+<p style="margin:0;"><a href="{{ payment_url }}" style="display:inline-block;background:#2563EB;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;">View Payment Details</a></p>
+{% endblock %}

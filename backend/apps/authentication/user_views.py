@@ -11,6 +11,7 @@ from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 from django_filters.rest_framework import DjangoFilterBackend
 
+from django.utils.translation import gettext_lazy as _
 from apps.audit.mixins import AuditLogMixin, log_action
 from .permissions import IsAdminRole
 from .serializers import (
@@ -53,10 +54,22 @@ class UserViewSet(AuditLogMixin, ModelViewSet):
         base = User.objects.filter(is_superuser=False)
 
         if building_id:
-            # Scoped to members of one specific building (used by invite-owner autocomplete)
-            return base.filter(buildings__id=building_id).distinct().order_by("-created_at")
+            # Members of this building PLUS owner-role users created by the
+            # requesting admin who have no building yet (so freshly admin-created
+            # owners appear in the invite / assign-owner autocomplete).
+            return base.filter(
+                Q(buildings__id=building_id)
+                | Q(
+                    role="owner",
+                    created_by=requesting_admin,
+                    buildings__isnull=True,
+                    administered_buildings__isnull=True,
+                    co_administered_buildings__isnull=True,
+                )
+            ).distinct().order_by("-created_at")
 
         # Default: scope to users in buildings this admin manages (as primary admin or co-admin)
+        # PLUS users this admin created (FE-01)
         managed_ids = Building.objects.filter(
             Q(admin=requesting_admin) | Q(co_admins=requesting_admin)
         ).values_list("id", flat=True)
@@ -65,6 +78,7 @@ class UserViewSet(AuditLogMixin, ModelViewSet):
             Q(buildings__id__in=managed_ids)
             | Q(administered_buildings__id__in=managed_ids)
             | Q(co_administered_buildings__id__in=managed_ids)
+            | Q(created_by=requesting_admin)
         ).distinct().order_by("-created_at")
 
     def get_serializer_class(self):
@@ -76,6 +90,35 @@ class UserViewSet(AuditLogMixin, ModelViewSet):
             return AdminResetPasswordSerializer
         return UserSerializer
 
+    def get_serializer_context(self):
+        """Ensure the request object is always available in serializer context."""
+        context = super().get_serializer_context()
+        context["request"] = self.request
+        return context
+
+    def perform_update(self, serializer):
+        """Override to handle non-model virtual fields in audit logging."""
+        # Collect old values only for real model fields (skip virtual fields)
+        skip_fields = {"buildings", "apartment_ids"}
+        model_fields = {
+            field: getattr(serializer.instance, field)
+            for field in serializer.validated_data
+            if field not in skip_fields and hasattr(serializer.instance, field)
+        }
+        instance = serializer.save()
+        changes = {
+            field: {"before": str(model_fields.get(field, "")), "after": str(getattr(instance, field, ""))}
+            for field in model_fields
+        }
+        log_action(
+            user=self.request.user,
+            action="update",
+            entity=self.audit_entity or instance.__class__.__name__.lower(),
+            entity_id=instance.pk,
+            changes=changes,
+            request=self.request,
+        )
+
     # ── Custom actions ────────────────────────────────────────────────────────
 
     @action(detail=True, methods=["post"], url_path="deactivate")
@@ -83,7 +126,7 @@ class UserViewSet(AuditLogMixin, ModelViewSet):
         user = self.get_object()
         if user == request.user:
             return Response(
-                {"detail": "You cannot deactivate your own account."},
+                {"detail": _("You cannot deactivate your own account.")},
                 status=status.HTTP_400_BAD_REQUEST,
             )
         user.is_active = False
@@ -95,7 +138,7 @@ class UserViewSet(AuditLogMixin, ModelViewSet):
             entity_id=user.id,
             request=request,
         )
-        return Response({"detail": f"User {user.email} deactivated."})
+        return Response({"detail": _("User %(email)s deactivated.") % {"email": user.email}})
 
     @action(detail=True, methods=["post"], url_path="activate")
     def activate(self, request, pk=None):
@@ -111,7 +154,7 @@ class UserViewSet(AuditLogMixin, ModelViewSet):
             entity_id=user.id,
             request=request,
         )
-        return Response({"detail": f"User {user.email} activated."})
+        return Response({"detail": _("User %(email)s activated.") % {"email": user.email}})
 
     @action(detail=True, methods=["post"], url_path="set-messaging-block")
     def set_messaging_block(self, request, pk=None):
@@ -132,7 +175,7 @@ class UserViewSet(AuditLogMixin, ModelViewSet):
 
         if not update_fields:
             return Response(
-                {"detail": "Provide messaging_blocked or individual_messaging_blocked."},
+                {"detail": _("Provide messaging_blocked or individual_messaging_blocked.")},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -164,4 +207,4 @@ class UserViewSet(AuditLogMixin, ModelViewSet):
             entity_id=user.id,
             request=request,
         )
-        return Response({"detail": f"Password reset for {user.email}."})
+        return Response({"detail": _("Password reset for %(email)s.") % {"email": user.email}})

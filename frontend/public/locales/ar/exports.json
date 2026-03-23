@@ -1,0 +1,8 @@
+{
+  "export_payments_csv": "تصدير المدفوعات (CSV)",
+  "export_payments_xlsx": "تصدير المدفوعات (Excel)",
+  "export_expenses": "تصدير المصروفات",
+  "downloading": "جاري التحميل...",
+  "download_complete": "اكتمل التحميل",
+  "export_error": "فشل التصدير. يرجى المحاولة مرة أخرى."
+}

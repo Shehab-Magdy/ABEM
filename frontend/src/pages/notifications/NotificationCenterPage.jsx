@@ -5,9 +5,11 @@
  * Admin users also see a Broadcast form.
  * All authenticated users can send messages to building members.
  */
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Alert,
+  Avatar,
   Box,
   Button,
   Card,
@@ -22,6 +24,7 @@ import {
   Select,
   Stack,
   TextField,
+  Tooltip,
   Typography,
 } from "@mui/material";
 import {
@@ -33,17 +36,8 @@ import {
 } from "@mui/icons-material";
 import axiosClient from "../../api/axiosClient";
 import { useAuth } from "../../hooks/useAuth";
+import { useNotificationStore } from "../../contexts/notificationStore";
 import { PrivateSEO } from "../../components/seo/SEO";
-
-const TYPE_LABELS = {
-  payment_due: "Payment Due",
-  payment_overdue: "Payment Overdue",
-  payment_confirmed: "Payment Confirmed",
-  expense_added: "Expense Added",
-  expense_updated: "Expense Updated",
-  user_registered: "User Registered",
-  announcement: "Announcement",
-};
 
 const TYPE_COLORS = {
   payment_due: "warning",
@@ -53,6 +47,7 @@ const TYPE_COLORS = {
   expense_updated: "info",
   user_registered: "default",
   announcement: "primary",
+  message: "secondary",
 };
 
 // ── Collapsible section header ─────────────────────────────────────────────
@@ -103,10 +98,103 @@ function SectionHeader({ icon, title, badge, open, onToggle, accent }) {
   );
 }
 
+// ── Read-by tooltip (lazy-loaded on hover, admin only) ────────────────────
+
+function ReadByTooltip({ notificationId, readCount, totalRecipients, t }) {
+  const [readers, setReaders] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const fetchedRef = useRef(false);
+
+  const handleOpen = () => {
+    if (fetchedRef.current || loading) return;
+    setLoading(true);
+    axiosClient
+      .get(`/notifications/${notificationId}/read-by/`)
+      .then((r) => {
+        setReaders(r.data.read_by ?? []);
+        fetchedRef.current = true;
+      })
+      .catch(() => {
+        setReaders([]);
+        fetchedRef.current = true;
+      })
+      .finally(() => setLoading(false));
+  };
+
+  const tooltipContent = (
+    <Box sx={{ p: 0.5, maxHeight: 240, overflowY: "auto" }}>
+      {loading && <CircularProgress size={16} sx={{ color: "inherit" }} />}
+      {!loading && readers && readers.length === 0 && (
+        <Typography variant="caption">—</Typography>
+      )}
+      {!loading &&
+        readers &&
+        readers.map((reader) => (
+          <Stack
+            key={reader.id}
+            direction="row"
+            spacing={1}
+            alignItems="center"
+            sx={{ py: 0.5 }}
+          >
+            <Avatar
+              src={reader.profile_picture}
+              sx={{ width: 24, height: 24, fontSize: 12 }}
+            >
+              {reader.first_name?.[0]}
+            </Avatar>
+            <Typography variant="caption" sx={{ whiteSpace: "nowrap" }}>
+              {reader.first_name} {reader.last_name}
+            </Typography>
+          </Stack>
+        ))}
+    </Box>
+  );
+
+  return (
+    <Tooltip
+      title={tooltipContent}
+      arrow
+      placement="top"
+      onOpen={handleOpen}
+      slotProps={{
+        tooltip: {
+          sx: { maxWidth: 260, bgcolor: "grey.900", p: 1 },
+        },
+      }}
+    >
+      <Typography
+        variant="caption"
+        color="text.secondary"
+        sx={{
+          cursor: "pointer",
+          textDecoration: "underline dotted",
+          "&:hover": { color: "primary.main" },
+        }}
+        data-testid="read-by-count"
+      >
+        {t("read_by_count", { read: readCount, total: totalRecipients })}
+      </Typography>
+    </Tooltip>
+  );
+}
+
 // ── Main component ─────────────────────────────────────────────────────────
 
 export default function NotificationCenterPage() {
+  const { t } = useTranslation("notifications");
+  const TYPE_LABELS = {
+    payment_due: t("type_payment_due", "Payment Due"),
+    payment_overdue: t("type_payment_overdue", "Payment Overdue"),
+    payment_confirmed: t("type_payment_confirmed", "Payment Confirmed"),
+    expense_added: t("type_expense_added", "Expense Added"),
+    expense_updated: t("type_expense_updated", "Expense Updated"),
+    user_registered: t("type_user_registered", "User Registered"),
+    announcement: t("type_announcement", "Announcement"),
+    message: t("type_message", "Message"),
+  };
   const { isAdmin } = useAuth();
+  const decrementUnread = useNotificationStore((s) => s.decrementUnread);
   const [notifications, setNotifications] = useState([]);
   const [filter, setFilter] = useState("all");
   const [loading, setLoading] = useState(false);
@@ -131,6 +219,7 @@ export default function NotificationCenterPage() {
   const [sendRecipientType, setSendRecipientType] = useState("all");
   const [sendingMsg, setSendingMsg] = useState(false);
   const [sendStatus, setSendStatus] = useState("");
+  const [sendSuccess, setSendSuccess] = useState(false);
   const [buildingMembers, setBuildingMembers] = useState([]);
   const [selectedMembers, setSelectedMembers] = useState([]);
 
@@ -144,7 +233,7 @@ export default function NotificationCenterPage() {
         const data = r.data;
         setNotifications(Array.isArray(data) ? data : (data.results ?? []));
       })
-      .catch(() => setError("Failed to load notifications."))
+      .catch(() => setError(t("load_error", "Failed to load notifications.")))
       .finally(() => setLoading(false));
   }, [filter]);
 
@@ -166,7 +255,7 @@ export default function NotificationCenterPage() {
       return;
     }
     axiosClient
-      .get("/users/", { params: { building_id: sendBuilding, page_size: 200 } })
+      .get("/users/", { params: { building_id: sendBuilding, page_size: 100 } })
       .then((r) => setBuildingMembers(r.data.results ?? r.data))
       .catch(() => setBuildingMembers([]));
   }, [sendBuilding, sendRecipientType]);
@@ -174,7 +263,10 @@ export default function NotificationCenterPage() {
   const handleMarkRead = (id) => {
     axiosClient
       .post(`/notifications/${id}/read/`)
-      .then(() => fetchNotifications())
+      .then(() => {
+        decrementUnread();
+        fetchNotifications();
+      })
       .catch(() => {});
   };
 
@@ -187,12 +279,12 @@ export default function NotificationCenterPage() {
         building_id: broadcastBuilding,
       })
       .then((r) => {
-        setBroadcastStatus(`Sent to ${r.data.created} owner(s).`);
+        setBroadcastStatus(t("message_sent", { count: r.data.created }));
         setBroadcastSubject("");
         setBroadcastMessage("");
         setBroadcastBuilding("");
       })
-      .catch(() => setBroadcastStatus("Broadcast failed."));
+      .catch(() => setBroadcastStatus(t("broadcast_failed", "Broadcast failed.")));
   };
 
   const handleSendMessage = async () => {
@@ -210,18 +302,20 @@ export default function NotificationCenterPage() {
         payload.recipient_ids = selectedMembers;
       }
       const r = await axiosClient.post("/notifications/send/", payload);
-      setSendStatus(`Message sent to ${r.data.created} recipient(s).`);
+      setSendSuccess(true);
+      setSendStatus(t("message_sent", { count: r.data.created }));
       setSendTitle("");
       setSendMessage("");
       setSendBuilding("");
       setSendRecipientType("all");
       setSelectedMembers([]);
     } catch (err) {
+      setSendSuccess(false);
       const detail = err.response?.data?.detail;
       if (err.response?.status === 403 && detail) {
         setSendStatus(`${detail} Please contact your building admin.`);
       } else {
-        setSendStatus("Failed to send message.");
+        setSendStatus(t("send_failed", "Failed to send message."));
       }
     } finally {
       setSendingMsg(false);
@@ -235,7 +329,7 @@ export default function NotificationCenterPage() {
       <PrivateSEO title="ABEM – Notifications" />
       <Box sx={{ p: 3, maxWidth: 1200 }}>
       <Typography variant="h4" fontWeight={700} sx={{ mb: 3 }}>
-        Notifications
+        {t("title")}
       </Typography>
 
       {/* ── Top compose row ── */}
@@ -258,7 +352,7 @@ export default function NotificationCenterPage() {
         >
           <SectionHeader
             icon={<Send fontSize="small" />}
-            title="Send Message"
+            title={t("sendMessage")}
             open={sendOpen}
             onToggle={() => setSendOpen((p) => !p)}
             accent="#6366F1"
@@ -269,10 +363,10 @@ export default function NotificationCenterPage() {
             <CardContent sx={{ pt: 2 }}>
               <Stack spacing={2}>
                 <FormControl size="small" fullWidth>
-                  <InputLabel>Building</InputLabel>
+                  <InputLabel>{t("building")}</InputLabel>
                   <Select
                     value={sendBuilding}
-                    label="Building"
+                    label={t("building")}
                     onChange={(e) => {
                       setSendBuilding(e.target.value);
                       setSelectedMembers([]);
@@ -285,29 +379,29 @@ export default function NotificationCenterPage() {
                 </FormControl>
 
                 <FormControl size="small" fullWidth>
-                  <InputLabel>Recipients</InputLabel>
+                  <InputLabel>{t("recipients")}</InputLabel>
                   <Select
                     value={sendRecipientType}
-                    label="Recipients"
+                    label={t("recipients")}
                     onChange={(e) => {
                       setSendRecipientType(e.target.value);
                       setSelectedMembers([]);
                     }}
                   >
-                    <MenuItem value="all">All members</MenuItem>
-                    <MenuItem value="admins">Admins only</MenuItem>
-                    <MenuItem value="owners">Owners only</MenuItem>
-                    <MenuItem value="individual">Specific person</MenuItem>
+                    <MenuItem value="all">{t("allMembers")}</MenuItem>
+                    <MenuItem value="admins">{t("adminsOnly")}</MenuItem>
+                    <MenuItem value="owners">{t("ownersOnly")}</MenuItem>
+                    <MenuItem value="individual">{t("specificPerson")}</MenuItem>
                   </Select>
                 </FormControl>
 
                 {sendRecipientType === "individual" && buildingMembers.length > 0 && (
                   <FormControl size="small" fullWidth>
-                    <InputLabel>Select recipient(s)</InputLabel>
+                    <InputLabel>{t("selectRecipients")}</InputLabel>
                     <Select
                       multiple
                       value={selectedMembers}
-                      label="Select recipient(s)"
+                      label={t("selectRecipients")}
                       onChange={(e) => setSelectedMembers(e.target.value)}
                       renderValue={(selected) =>
                         buildingMembers
@@ -327,14 +421,14 @@ export default function NotificationCenterPage() {
 
                 <TextField
                   size="small"
-                  label="Subject"
+                  label={t("subject")}
                   value={sendTitle}
                   onChange={(e) => setSendTitle(e.target.value)}
                   fullWidth
                 />
                 <TextField
                   size="small"
-                  label="Message"
+                  label={t("message")}
                   value={sendMessage}
                   onChange={(e) => setSendMessage(e.target.value)}
                   multiline
@@ -358,10 +452,10 @@ export default function NotificationCenterPage() {
                     fontWeight: 600,
                   }}
                 >
-                  {sendingMsg ? <CircularProgress size={20} color="inherit" /> : "Send Message"}
+                  {sendingMsg ? <CircularProgress size={20} color="inherit" /> : t("sendMessage")}
                 </Button>
                 {sendStatus && (
-                  <Alert severity={sendStatus.startsWith("Message sent") ? "success" : "error"}>
+                  <Alert severity={sendSuccess ? "success" : "error"}>
                     {sendStatus}
                   </Alert>
                 )}
@@ -382,7 +476,7 @@ export default function NotificationCenterPage() {
           >
             <SectionHeader
               icon={<Campaign fontSize="small" />}
-              title="Broadcast Announcement"
+              title={t("broadcastAnnouncement")}
               open={broadcastOpen}
               onToggle={() => setBroadcastOpen((p) => !p)}
               accent="#F59E0B"
@@ -394,10 +488,10 @@ export default function NotificationCenterPage() {
               <CardContent sx={{ pt: 2 }} data-testid="broadcast-form">
                 <Stack spacing={2}>
                   <FormControl size="small" fullWidth>
-                    <InputLabel>Building</InputLabel>
+                    <InputLabel>{t("building")}</InputLabel>
                     <Select
                       value={broadcastBuilding}
-                      label="Building"
+                      label={t("building")}
                       onChange={(e) => setBroadcastBuilding(e.target.value)}
                       inputProps={{ "data-testid": "broadcast-building" }}
                     >
@@ -410,7 +504,7 @@ export default function NotificationCenterPage() {
                   </FormControl>
                   <TextField
                     size="small"
-                    label="Subject"
+                    label={t("subject")}
                     value={broadcastSubject}
                     onChange={(e) => setBroadcastSubject(e.target.value)}
                     inputProps={{ "data-testid": "broadcast-subject" }}
@@ -418,7 +512,7 @@ export default function NotificationCenterPage() {
                   />
                   <TextField
                     size="small"
-                    label="Message"
+                    label={t("message")}
                     value={broadcastMessage}
                     onChange={(e) => setBroadcastMessage(e.target.value)}
                     inputProps={{ "data-testid": "broadcast-message" }}
@@ -439,7 +533,7 @@ export default function NotificationCenterPage() {
                       fontWeight: 600,
                     }}
                   >
-                    Send Broadcast
+                    {t("sendBroadcast")}
                   </Button>
                   {broadcastStatus && (
                     <Alert
@@ -467,7 +561,7 @@ export default function NotificationCenterPage() {
       >
         <SectionHeader
           icon={<NotificationsIcon fontSize="small" />}
-          title="Your Notifications"
+          title={t("yourNotifications")}
           badge={unreadCount}
           open={notifOpen}
           onToggle={() => setNotifOpen((p) => !p)}
@@ -480,7 +574,7 @@ export default function NotificationCenterPage() {
             {/* Filter chips */}
             <Stack direction="row" spacing={1} sx={{ mb: 2 }}>
               <Chip
-                label="All"
+                label={t("all")}
                 onClick={() => setFilter("all")}
                 color={filter === "all" ? "primary" : "default"}
                 variant={filter === "all" ? "filled" : "outlined"}
@@ -488,7 +582,7 @@ export default function NotificationCenterPage() {
                 data-testid="filter-all"
               />
               <Chip
-                label="Unread"
+                label={t("unread")}
                 onClick={() => setFilter("unread")}
                 color={filter === "unread" ? "primary" : "default"}
                 variant={filter === "unread" ? "filled" : "outlined"}
@@ -509,7 +603,7 @@ export default function NotificationCenterPage() {
               </Box>
             ) : notifications.length === 0 ? (
               <Alert severity="info" data-testid="empty-notifications">
-                No notifications yet.
+                {t("noNotificationsYet")}
               </Alert>
             ) : (
               <Stack id="notifications-list" spacing={1.5} data-testid="notification-list">
@@ -542,7 +636,7 @@ export default function NotificationCenterPage() {
                             data-testid="notification-type-chip"
                           />
                           {!n.is_read && (
-                            <Chip label="New" size="small" color="primary" variant="outlined" />
+                            <Chip label={t("new")} size="small" color="primary" variant="outlined" />
                           )}
                         </Box>
                         <Typography variant="subtitle2" fontWeight={600}>
@@ -551,7 +645,7 @@ export default function NotificationCenterPage() {
                         <Typography variant="body2" color="text.secondary">
                           {n.body}
                         </Typography>
-                        <Stack direction="row" spacing={1} alignItems="center" mt={0.5}>
+                        <Stack direction="row" spacing={1} alignItems="center" mt={0.5} flexWrap="wrap">
                           <Typography variant="caption" color="text.disabled">
                             {new Date(n.created_at).toLocaleString()}
                           </Typography>
@@ -560,6 +654,22 @@ export default function NotificationCenterPage() {
                               · From: {n.sender_name}
                             </Typography>
                           )}
+                          {isAdmin &&
+                            n.notification_type === "announcement" &&
+                            n.read_count != null &&
+                            n.total_recipients != null && (
+                              <>
+                                <Typography variant="caption" color="text.disabled">
+                                  ·
+                                </Typography>
+                                <ReadByTooltip
+                                  notificationId={n.id}
+                                  readCount={n.read_count}
+                                  totalRecipients={n.total_recipients}
+                                  t={t}
+                                />
+                              </>
+                            )}
                         </Stack>
                       </Box>
                       {!n.is_read && (
@@ -569,7 +679,7 @@ export default function NotificationCenterPage() {
                           onClick={() => handleMarkRead(n.id)}
                           data-testid="mark-read-btn"
                         >
-                          Mark as Read
+                          {t("markAsRead")}
                         </Button>
                       )}
                     </CardContent>
