@@ -60,6 +60,7 @@ class BuildingSerializer(serializers.ModelSerializer):
             "admin_id",
             "co_admin_ids",
             "photo",
+            "starting_balance",
             "is_active",
             "created_at",
             "updated_at",

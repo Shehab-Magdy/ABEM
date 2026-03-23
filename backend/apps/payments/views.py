@@ -466,4 +466,17 @@ class BuildingAssetViewSet(ModelViewSet):
             asset.is_sold = True
             asset.save(update_fields=["is_sold"])
 
+        log_action(
+            user=request.user,
+            action="asset.sale_income_recorded",
+            entity="building_asset",
+            entity_id=asset.pk,
+            changes={
+                "sale_price": {"before": None, "after": str(sale_price)},
+                "building_id": {"before": None, "after": str(asset.building_id)},
+                "buyer_name": {"before": None, "after": request.data.get("buyer_name", "")},
+            },
+            request=request,
+        )
+
         return Response(BuildingAssetSerializer(asset).data, status=201)

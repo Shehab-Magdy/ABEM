@@ -268,6 +268,7 @@ export default function AssetsPage() {
                 <TableCell><strong>{t("assets.acquired", "Acquired")}</strong></TableCell>
                 <TableCell><strong>{t("assets.acquisitionValue", "Acquisition Value")}</strong></TableCell>
                 <TableCell><strong>{t("status", "Status")}</strong></TableCell>
+                <TableCell><strong>{t("assets.salePrice", "Sale Price")}</strong></TableCell>
                 <TableCell align="right"><strong>{t("actions", "Actions")}</strong></TableCell>
               </TableRow>
             </TableHead>
@@ -306,6 +307,11 @@ export default function AssetsPage() {
                         size="small"
                         color={asset.is_sold ? "default" : "success"}
                       />
+                    </TableCell>
+                    <TableCell>
+                      {asset.sale?.sale_price != null
+                        ? parseFloat(asset.sale.sale_price).toLocaleString("en-US", { minimumFractionDigits: 2 })
+                        : "—"}
                     </TableCell>
                     <TableCell align="right">
                       {!asset.is_sold && (

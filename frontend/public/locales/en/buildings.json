@@ -83,5 +83,7 @@
   "unit_type_store": "Store",
   "save_unit_changes": "Save Changes",
   "upload_photo": "Upload Photo",
-  "remove": "Remove"
+  "remove": "Remove",
+  "starting_balance": "Starting Balance",
+  "starting_balance_helper": "Initial financial position before using the system (accepts negative for deficit)"
 }

@@ -1,5 +1,7 @@
 """Building and related domain models."""
 import uuid
+from decimal import Decimal
+
 from django.db import models
 from django.conf import settings
 
@@ -34,6 +36,10 @@ class Building(models.Model):
         through="BuildingCoAdmin",
         related_name="co_administered_buildings",
         blank=True,
+    )
+
+    starting_balance = models.DecimalField(
+        max_digits=12, decimal_places=2, default=Decimal("0.00"),
     )
 
     is_active = models.BooleanField(default=True)

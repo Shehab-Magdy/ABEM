@@ -104,6 +104,21 @@ class BuildingViewSet(ModelViewSet):
             changes=changes,
             request=self.request,
         )
+        # Dedicated audit entry when starting_balance is changed
+        if "starting_balance" in serializer.validated_data and old.get("starting_balance") != instance.starting_balance:
+            log_action(
+                user=self.request.user,
+                action="building.starting_balance_set",
+                entity="building",
+                entity_id=instance.pk,
+                changes={
+                    "starting_balance": {
+                        "before": str(old.get("starting_balance", "")),
+                        "after": str(instance.starting_balance),
+                    },
+                },
+                request=self.request,
+            )
 
     def perform_destroy(self, instance):
         log_action(

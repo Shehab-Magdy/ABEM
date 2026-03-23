@@ -13,7 +13,7 @@ from apps.authentication.permissions import IsAdminRole
 from apps.apartments.models import Apartment
 from apps.buildings.models import Building
 from apps.expenses.models import Expense
-from apps.payments.models import Payment
+from apps.payments.models import AssetSale, Payment
 
 
 class AdminDashboardView(APIView):
@@ -58,7 +58,18 @@ class AdminDashboardView(APIView):
             payment_qs = payment_qs.filter(payment_date__gte=date_from)
         if date_to:
             payment_qs = payment_qs.filter(payment_date__lte=date_to)
-        total_income = payment_qs.aggregate(s=Sum("amount_paid"))["s"] or Decimal("0.00")
+        payment_income = payment_qs.aggregate(s=Sum("amount_paid"))["s"] or Decimal("0.00")
+
+        asset_sale_qs = AssetSale.objects.filter(asset__building__in=buildings)
+        if date_from:
+            asset_sale_qs = asset_sale_qs.filter(sale_date__gte=date_from)
+        if date_to:
+            asset_sale_qs = asset_sale_qs.filter(sale_date__lte=date_to)
+        asset_sale_income = asset_sale_qs.aggregate(s=Sum("sale_price"))["s"] or Decimal("0.00")
+
+        starting_balance_total = buildings.aggregate(s=Sum("starting_balance"))["s"] or Decimal("0.00")
+
+        total_income = payment_income + asset_sale_income + starting_balance_total
 
         expense_qs = Expense.objects.filter(building__in=buildings, deleted_at__isnull=True)
         if date_from:
@@ -78,6 +89,12 @@ class AdminDashboardView(APIView):
                 payment_date__year=today.year,
                 payment_date__month=today.month,
             ).aggregate(s=Sum("amount_paid"))["s"] or Decimal("0.00")
+        ) + (
+            AssetSale.objects.filter(
+                asset__building__in=buildings,
+                sale_date__year=today.year,
+                sale_date__month=today.month,
+            ).aggregate(s=Sum("sale_price"))["s"] or Decimal("0.00")
         )
         prev_month_income = (
             Payment.objects.filter(
@@ -85,6 +102,12 @@ class AdminDashboardView(APIView):
                 payment_date__year=prev_year,
                 payment_date__month=prev_month,
             ).aggregate(s=Sum("amount_paid"))["s"] or Decimal("0.00")
+        ) + (
+            AssetSale.objects.filter(
+                asset__building__in=buildings,
+                sale_date__year=prev_year,
+                sale_date__month=prev_month,
+            ).aggregate(s=Sum("sale_price"))["s"] or Decimal("0.00")
         )
         income_change_pct = (
             round(float((curr_month_income - prev_month_income) / prev_month_income * 100), 1)
@@ -137,6 +160,13 @@ class AdminDashboardView(APIView):
                     payment_date__year=today.year,
                     payment_date__month=month_num,
                 ).aggregate(s=Sum("amount_paid"))["s"]
+                or Decimal("0.00")
+            ) + (
+                AssetSale.objects.filter(
+                    asset__building__in=buildings,
+                    sale_date__year=today.year,
+                    sale_date__month=month_num,
+                ).aggregate(s=Sum("sale_price"))["s"]
                 or Decimal("0.00")
             )
             m_expenses = (
@@ -230,6 +260,9 @@ class AdminDashboardView(APIView):
 
         return Response({
             "total_income":        str(total_income),
+            "payment_income":      str(payment_income),
+            "asset_sale_income":   str(asset_sale_income),
+            "starting_balance":    str(starting_balance_total),
             "income_change_pct":   income_change_pct,
             "total_expenses":      str(total_expenses),
             "expense_change_pct":  expense_change_pct,

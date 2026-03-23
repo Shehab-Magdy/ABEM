@@ -16,6 +16,7 @@ import {
   MenuItem,
   Paper,
   Select,
+  Stack,
   Table,
   TableBody,
   TableCell,
@@ -218,6 +219,21 @@ export default function AdminDashboardPage() {
                     {formatCurrency(data?.total_income ?? 0)}
                   </Typography>
                   <TrendBadge pct={data?.income_change_pct} invertColors={false} />
+                  <Stack spacing={0.25} sx={{ mt: 1 }}>
+                    {parseFloat(data?.starting_balance ?? 0) !== 0 && (
+                      <Typography variant="caption" color={parseFloat(data?.starting_balance ?? 0) < 0 ? "error.main" : "text.secondary"}>
+                        {parseFloat(data?.starting_balance ?? 0) < 0 ? t("opening_deficit") : t("starting_balance")}: {formatCurrency(data?.starting_balance ?? 0)}
+                      </Typography>
+                    )}
+                    <Typography variant="caption" color="text.secondary">
+                      {t("payments_income")}: {formatCurrency(data?.payment_income ?? 0)}
+                    </Typography>
+                    {parseFloat(data?.asset_sale_income ?? 0) > 0 && (
+                      <Typography variant="caption" color="text.secondary">
+                        {t("asset_sale_income")}: {formatCurrency(data?.asset_sale_income ?? 0)}
+                      </Typography>
+                    )}
+                  </Stack>
                 </CardContent>
               </Card>
             </Grid>

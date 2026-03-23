@@ -83,5 +83,7 @@
   "unit_type_store": "محل تجاري",
   "save_unit_changes": "حفظ التعديلات",
   "upload_photo": "رفع صورة",
-  "remove": "إزالة"
+  "remove": "إزالة",
+  "starting_balance": "الرصيد الافتتاحي",
+  "starting_balance_helper": "الوضع المالي المبدئي قبل استخدام النظام (يقبل قيمًا سالبة للعجز)"
 }

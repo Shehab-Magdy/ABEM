@@ -70,5 +70,9 @@
   "status_paid": "مدفوع",
   "status_unpaid": "غير مدفوع",
   "status_partial": "مدفوع جزئياً",
-  "status_overdue": "متأخر"
+  "status_overdue": "متأخر",
+  "payments_income": "إيرادات المدفوعات",
+  "asset_sale_income": "إيرادات بيع الأصول",
+  "starting_balance": "الرصيد الافتتاحي",
+  "opening_deficit": "عجز افتتاحي"
 }

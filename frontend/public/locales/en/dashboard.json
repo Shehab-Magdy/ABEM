@@ -70,5 +70,9 @@
   "status_paid": "Paid",
   "status_unpaid": "Unpaid",
   "status_partial": "Partial",
-  "status_overdue": "Overdue"
+  "status_overdue": "Overdue",
+  "payments_income": "Payments Income",
+  "asset_sale_income": "Asset Sales Income",
+  "starting_balance": "Starting Balance",
+  "opening_deficit": "Opening Deficit"
 }

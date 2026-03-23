@@ -139,7 +139,7 @@ export default function BuildingsPage() {
 
   const openCreate = () => {
     setEditTarget(null);
-    form.reset({ name: "", address: "", city: "", country: "", num_floors: 1, num_apartments: 0, num_stores: 0, admin_id: "" });
+    form.reset({ name: "", address: "", city: "", country: "", num_floors: 1, num_apartments: 0, num_stores: 0, admin_id: "", starting_balance: "" });
     setCoAdminIds([]);
     setPhotoFile(null);
     setPhotoPreview(null);
@@ -160,6 +160,7 @@ export default function BuildingsPage() {
       num_apartments: building.num_apartments ?? 0,
       num_stores: building.num_stores ?? 0,
       admin_id: building.admin_id || "",
+      starting_balance: building.starting_balance ?? "",
     });
     setCoAdminIds(building.co_admin_ids ?? []);
     setPhotoFile(null);
@@ -181,6 +182,7 @@ export default function BuildingsPage() {
         num_floors: parseInt(data.num_floors, 10),
         num_apartments: parseInt(data.num_apartments, 10) || 0,
         num_stores: parseInt(data.num_stores, 10) || 0,
+        starting_balance: data.starting_balance !== "" ? parseFloat(data.starting_balance) : 0,
       };
       if (data.admin_id) fields.admin_id = data.admin_id;
       if (coAdminIds.length) fields.co_admin_ids = coAdminIds;
@@ -573,6 +575,14 @@ export default function BuildingsPage() {
                   {...form.register("num_stores", { min: 0 })}
                 />
               </Stack>
+              <TextField
+                label={t("starting_balance")}
+                type="number"
+                inputProps={{ step: "0.01" }}
+                fullWidth
+                {...form.register("starting_balance")}
+                helperText={t("starting_balance_helper")}
+              />
               <FormControl fullWidth size="small">
                 <InputLabel>{t("building_admin")}</InputLabel>
                 <Select

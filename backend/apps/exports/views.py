@@ -10,7 +10,7 @@ from rest_framework.views import APIView
 
 from apps.authentication.permissions import IsAdminRole
 from apps.expenses.models import Expense
-from apps.payments.models import Payment
+from apps.payments.models import AssetSale, Payment
 
 
 class ExportPaymentsView(APIView):
@@ -28,24 +28,37 @@ class ExportPaymentsView(APIView):
 
     permission_classes = [IsAuthenticated, IsAdminRole]
 
-    _HEADERS = ["ID", "Apartment", "Amount", "Method", "Date", "Balance Before", "Balance After"]
+    _HEADERS = ["Row Type", "ID", "Apartment", "Amount", "Method", "Date", "Balance Before", "Balance After"]
 
     def get(self, request):
-        qs = Payment.objects.select_related("apartment").order_by("-payment_date", "-created_at")
+        qs = Payment.objects.select_related("apartment__building").order_by("-payment_date", "-created_at")
         p = request.query_params
 
+        building_id = p.get("building_id")
         if apt_id := p.get("apartment_id"):
             qs = qs.filter(apartment_id=apt_id)
+        if building_id:
+            qs = qs.filter(apartment__building_id=building_id)
         if d_from := p.get("date_from"):
             qs = qs.filter(payment_date__gte=d_from)
         if d_to := p.get("date_to"):
             qs = qs.filter(payment_date__lte=d_to)
 
-        return self._csv_response(qs)
+        # Asset sale rows
+        asset_qs = AssetSale.objects.select_related("asset__building").order_by("-sale_date")
+        if building_id:
+            asset_qs = asset_qs.filter(asset__building_id=building_id)
+        if d_from:
+            asset_qs = asset_qs.filter(sale_date__gte=d_from)
+        if d_to:
+            asset_qs = asset_qs.filter(sale_date__lte=d_to)
 
-    def _rows(self, qs):
+        return self._csv_response(qs, asset_qs)
+
+    def _rows(self, qs, asset_qs):
         for pay in qs:
             yield [
+                "Payment",
                 str(pay.id),
                 str(pay.apartment),
                 str(pay.amount_paid),
@@ -54,13 +67,24 @@ class ExportPaymentsView(APIView):
                 str(pay.balance_before),
                 str(pay.balance_after),
             ]
+        for sale in asset_qs:
+            yield [
+                "Asset Sale",
+                str(sale.id),
+                f"{sale.asset.building.name} – {sale.asset.name}",
+                str(sale.sale_price),
+                sale.buyer_name or "—",
+                str(sale.sale_date),
+                "",
+                "",
+            ]
 
-    def _csv_response(self, qs):
+    def _csv_response(self, qs, asset_qs):
         response = HttpResponse(content_type="text/csv")
         response["Content-Disposition"] = 'attachment; filename="payments.csv"'
         writer = csv.writer(response)
         writer.writerow(self._HEADERS)
-        for row in self._rows(qs):
+        for row in self._rows(qs, asset_qs):
             writer.writerow(row)
         return response
 
@@ -143,4 +167,47 @@ class ExportExpensesView(APIView):
             content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         )
         response["Content-Disposition"] = 'attachment; filename="expenses.xlsx"'
+        return response
+
+
+class ExportAssetSalesView(APIView):
+    """
+    GET /api/v1/exports/asset-sales/
+
+    Export asset sale records in CSV format.
+
+    Query params:
+      - building_id   UUID — filter by building
+      - date_from     ISO date
+      - date_to       ISO date
+    """
+
+    permission_classes = [IsAuthenticated, IsAdminRole]
+
+    _HEADERS = ["ID", "Asset Name", "Building", "Sale Date", "Sale Price", "Buyer Name", "Buyer Contact"]
+
+    def get(self, request):
+        qs = AssetSale.objects.select_related("asset__building").order_by("-sale_date")
+        p = request.query_params
+        if bld_id := p.get("building_id"):
+            qs = qs.filter(asset__building_id=bld_id)
+        if d_from := p.get("date_from"):
+            qs = qs.filter(sale_date__gte=d_from)
+        if d_to := p.get("date_to"):
+            qs = qs.filter(sale_date__lte=d_to)
+
+        response = HttpResponse(content_type="text/csv")
+        response["Content-Disposition"] = 'attachment; filename="asset_sales.csv"'
+        writer = csv.writer(response)
+        writer.writerow(self._HEADERS)
+        for sale in qs:
+            writer.writerow([
+                str(sale.id),
+                sale.asset.name,
+                sale.asset.building.name,
+                str(sale.sale_date),
+                str(sale.sale_price),
+                sale.buyer_name,
+                sale.buyer_contact,
+            ])
         return response
