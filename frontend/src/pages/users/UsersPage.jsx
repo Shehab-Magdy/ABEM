@@ -123,7 +123,7 @@ export default function UsersPage() {
   // ── Fetch buildings for role assignment ──────────────────────────────────────
   const fetchBuildings = useCallback(async () => {
     try {
-      const res = await buildingsApi.list({ page_size: 200 });
+      const res = await buildingsApi.list({ page_size: 100 });
       setBuildingsList(res.data.results || res.data || []);
     } catch {
       // silently ignore — buildings list is optional context

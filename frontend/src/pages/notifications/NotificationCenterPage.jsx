@@ -255,7 +255,7 @@ export default function NotificationCenterPage() {
       return;
     }
     axiosClient
-      .get("/users/", { params: { building_id: sendBuilding, page_size: 200 } })
+      .get("/users/", { params: { building_id: sendBuilding, page_size: 100 } })
       .then((r) => setBuildingMembers(r.data.results ?? r.data))
       .catch(() => setBuildingMembers([]));
   }, [sendBuilding, sendRecipientType]);

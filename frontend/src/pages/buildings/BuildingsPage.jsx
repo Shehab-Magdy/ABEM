@@ -123,7 +123,7 @@ export default function BuildingsPage() {
   // ── Create ──────────────────────────────────────────────────────────────────
   const loadAdminUsers = async () => {
     try {
-      const res = await usersApi.list({ role: "admin", page_size: 200 });
+      const res = await usersApi.list({ role: "admin", page_size: 100 });
       setAdminUsers(res.data.results ?? res.data);
     } catch {
       setAdminUsers([]);
@@ -241,7 +241,7 @@ export default function BuildingsPage() {
     setUnitsError(null);
     try {
       await apartmentsApi.claim(unit.id);
-      const res = await buildingsApi.apartments(unitsTarget.id, { page_size: 200 });
+      const res = await buildingsApi.apartments(unitsTarget.id, { page_size: 100 });
       setUnits(res.data?.results ?? res.data);
     } catch (err) {
       setUnitsError(err.response?.data?.detail || t("claim_error", "Failed to claim unit."));
@@ -267,8 +267,8 @@ export default function BuildingsPage() {
     setUnitsLoading(true);
     try {
       const [unitsRes, membersRes] = await Promise.all([
-        buildingsApi.apartments(building.id, { page_size: 200 }),
-        usersApi.list({ building_id: building.id, page_size: 200 }),
+        buildingsApi.apartments(building.id, { page_size: 100 }),
+        usersApi.list({ building_id: building.id, page_size: 100 }),
       ]);
       setUnits(unitsRes.data?.results ?? unitsRes.data);
       setBuildingMembers(membersRes.data?.results ?? membersRes.data ?? []);
@@ -291,7 +291,7 @@ export default function BuildingsPage() {
         )
       );
       setFloorEdits({});
-      const res = await buildingsApi.apartments(unitsTarget.id, { page_size: 200 });
+      const res = await buildingsApi.apartments(unitsTarget.id, { page_size: 100 });
       setUnits(res.data?.results ?? res.data);
     } catch (err) {
       setUnitsError(err.response?.data?.detail || t("floor_save_error", "Failed to save floor changes."));
@@ -306,7 +306,7 @@ export default function BuildingsPage() {
     setAssignError(null);
     setSelectedOwner("");
     try {
-      const res = await usersApi.list({ role: "owner", page_size: 200 });
+      const res = await usersApi.list({ role: "owner", page_size: 100 });
       setOwners(res.data.results ?? res.data);
     } catch {
       setOwners([]);

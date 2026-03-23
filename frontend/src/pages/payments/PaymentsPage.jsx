@@ -207,7 +207,7 @@ export default function PaymentsPage() {
     const apt = apartments.find((a) => a.id === selectedApartment);
     if (apt?.building_id) {
       try {
-        const res = await expensesApi.list({ building_id: apt.building_id, page_size: 200 });
+        const res = await expensesApi.list({ building_id: apt.building_id, page_size: 100 });
         setDialogExpenses(res.data?.results ?? res.data ?? []);
       } catch {
         setDialogExpenses([]);
