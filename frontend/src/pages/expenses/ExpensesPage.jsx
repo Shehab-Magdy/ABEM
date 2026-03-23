@@ -124,6 +124,7 @@ function statusChip(expense, t, isAdmin) {
 
 export default function ExpensesPage() {
   const { t } = useTranslation("expenses");
+  const { t: tCat } = useTranslation("categories");
   const SPLIT_TYPES = [
     { value: "equal_all", label: t("split_equal_all", "Equal – All Units") },
     { value: "equal_apartments", label: t("split_equal_apartments", "Equal – Apartments Only") },
@@ -136,6 +137,29 @@ export default function ExpensesPage() {
     { value: "annual", label: t("freq_annual", "Annual") },
   ];
   const { isAdmin } = useAuth();
+
+  // ── Category name translation mapping ───────────────────────────────────
+  const translateCategoryName = (name) => {
+    const keyMap = {
+      'Maintenance': 'cat_maintenance',
+      'Utilities': 'cat_utilities',
+      'Cleaning': 'cat_cleaning',
+      'Security': 'cat_security',
+      'Elevator': 'cat_elevator',
+      'Plumbing': 'cat_plumbing',
+      'Internet & Cable': 'cat_internet_cable',
+      'Parking': 'cat_parking',
+      'Landscaping': 'cat_landscaping',
+      'Pest Control': 'cat_pest_control',
+      'Fire Safety': 'cat_fire_safety',
+      'Waste Management': 'cat_waste_management',
+      'Insurance': 'cat_insurance',
+      'Management': 'cat_management',
+      'Other': 'cat_other',
+    };
+    const key = keyMap[name];
+    return key ? tCat(key) : name;
+  };
 
   const [buildings, setBuildings] = useState([]);
   const [expenses, setExpenses] = useState([]);
@@ -161,6 +185,23 @@ export default function ExpensesPage() {
   // Custom split — building apartments + per-unit weights
   const [buildingApartments, setBuildingApartments] = useState([]);
   const [customWeights, setCustomWeights] = useState({});
+
+  // ── Build hierarchical (nested) category list ───────────────────────────
+  const sortedCategories = (() => {
+    const parents = categories.filter((c) => !c.parent_id);
+    const result = [];
+    parents.forEach((parent) => {
+      result.push(parent);
+      const children = categories.filter((c) => c.parent_id === parent.id);
+      children.forEach((child) => result.push(child));
+    });
+    // Include orphan subcategories whose parent is not in the current list
+    const ids = new Set(result.map((c) => c.id));
+    categories.forEach((c) => {
+      if (!ids.has(c.id)) result.push(c);
+    });
+    return result;
+  })();
 
   // ── Data fetching ──────────────────────────────────────────────────────────
 
@@ -420,9 +461,9 @@ export default function ExpensesPage() {
               onChange={(e) => setFilterCategory(e.target.value)}
             >
               <MenuItem value="">{t("all_categories")}</MenuItem>
-              {categories.map((c) => (
-                <MenuItem key={c.id} value={c.id}>
-                  {t(`categories:${c.name}`, c.name)}
+              {sortedCategories.map((c) => (
+                <MenuItem key={c.id} value={c.id} sx={c.parent_id ? { pl: 4 } : undefined}>
+                  {c.parent_id ? "— " : ""}{translateCategoryName(c.name)}
                 </MenuItem>
               ))}
             </Select>
@@ -510,7 +551,11 @@ export default function ExpensesPage() {
                       {exp.is_recurring && (
                         <Chip
                           icon={<RepeatIcon fontSize="small" />}
-                          label={exp.recurring_config?.frequency ?? "recurring"}
+                          label={
+                            FREQUENCIES.find((f) => f.value === exp.recurring_config?.frequency)?.label ??
+                            exp.recurring_config?.frequency ??
+                            t("recurring")
+                          }
                           size="small"
                           color="info"
                           variant="outlined"
@@ -644,34 +689,13 @@ export default function ExpensesPage() {
                   setSubcategoryId("");
                 }}
               >
-                {categories.filter((c) => !c.parent_id).map((c) => (
-                  <MenuItem key={c.id} value={c.id}>
-                    {t(`categories:${c.name}`, c.name)}
+                {sortedCategories.map((c) => (
+                  <MenuItem key={c.id} value={c.id} sx={c.parent_id ? { pl: 4 } : undefined}>
+                    {c.parent_id ? "— " : ""}{translateCategoryName(c.name)}
                   </MenuItem>
                 ))}
               </Select>
             </FormControl>
-
-            {/* Show subcategory dropdown if the selected category has subcategories */}
-            {form.category_id && categories.some((c) => c.parent_id === form.category_id) && (
-              <FormControl size="small" fullWidth>
-                <InputLabel>{t("subcategory_optional")}</InputLabel>
-                <Select
-                  label={t("subcategory_optional")}
-                  value={subcategoryId}
-                  onChange={(e) => setSubcategoryId(e.target.value)}
-                >
-                  <MenuItem value="">{t("none_subcategory")}</MenuItem>
-                  {categories
-                    .filter((c) => c.parent_id === form.category_id)
-                    .map((c) => (
-                      <MenuItem key={c.id} value={c.id}>
-                        {t(`categories:${c.name}`, c.name)}
-                      </MenuItem>
-                    ))}
-                </Select>
-              </FormControl>
-            )}
 
             <FormControl size="small" fullWidth>
               <InputLabel>{t("split_type")}</InputLabel>
@@ -741,7 +765,7 @@ export default function ExpensesPage() {
                             />
                           </TableCell>
                           <TableCell>{apt.unit_number}</TableCell>
-                          <TableCell>{apt.type}</TableCell>
+                          <TableCell>{apt.type === "store" ? t("unit_type_store") : t("unit_type_apartment")}</TableCell>
                           <TableCell>
                             <TextField
                               size="small"
@@ -819,7 +843,11 @@ export default function ExpensesPage() {
                 {detailExpense.is_recurring && (
                   <Chip
                     icon={<RepeatIcon fontSize="small" />}
-                    label={detailExpense.recurring_config?.frequency ?? "Recurring"}
+                    label={
+                      FREQUENCIES.find((f) => f.value === detailExpense.recurring_config?.frequency)?.label ??
+                      detailExpense.recurring_config?.frequency ??
+                      t("recurring")
+                    }
                     size="small"
                     color="info"
                   />
