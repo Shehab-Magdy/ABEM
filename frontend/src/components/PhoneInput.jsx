@@ -66,7 +66,11 @@ export default function PhoneInput({
   };
 
   const handleLocalChange = (e) => {
-    const local = e.target.value.replace(/[^\d\s\-()]/g, "");
+    // Convert Eastern Arabic-Indic digits (٠-٩) to ASCII before filtering
+    const normalized = e.target.value.replace(/[٠-٩]/g, (d) =>
+      String(d.codePointAt(0) - 0x0660),
+    );
+    const local = normalized.replace(/[^\d\s\-()]/g, "");
     setLocalNumber(local);
     const full = local ? `${countryCode} ${local}` : "";
     onChange(full);
