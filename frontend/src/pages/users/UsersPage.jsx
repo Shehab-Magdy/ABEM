@@ -137,7 +137,7 @@ export default function UsersPage() {
     if (!buildingId) return;
     if (apartmentsByBuilding[buildingId]) return; // already cached
     try {
-      const res = await apartmentsApi.list({ building_id: buildingId, page_size: 500 });
+      const res = await apartmentsApi.list({ building_id: buildingId, page_size: 100 });
       const apts = res.data.results || res.data || [];
       setApartmentsByBuilding((prev) => ({ ...prev, [buildingId]: apts }));
     } catch {
@@ -174,7 +174,7 @@ export default function UsersPage() {
       for (const bld of buildingsList) {
         if (!apartmentsByBuilding[bld.id]) {
           try {
-            const res = await apartmentsApi.list({ building_id: bld.id, page_size: 500 });
+            const res = await apartmentsApi.list({ building_id: bld.id, page_size: 100 });
             const apts = res.data.results || res.data || [];
             setApartmentsByBuilding((prev) => ({ ...prev, [bld.id]: apts }));
             if (apts.some((a) => apartmentIds.includes(a.id))) {
