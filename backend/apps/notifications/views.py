@@ -62,7 +62,7 @@ class NotificationViewSet(ReadOnlyModelViewSet):
     def broadcast(self, request):
         """
         POST /api/v1/notifications/broadcast/
-        Admin sends an announcement to all owners of apartments in a building.
+        Admin sends an announcement to all members of a building (excluding sender).
         """
         serializer = BroadcastSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -73,20 +73,20 @@ class NotificationViewSet(ReadOnlyModelViewSet):
             deleted_at__isnull=True,
         )
 
-        # All owner-role members of this building
-        owners = (
+        # All building members (admins + owners) except the sender
+        recipients = (
             User.objects.filter(
                 userbuilding__building=building,
-                role="owner",
             )
+            .exclude(pk=request.user.pk)
             .distinct()
         )
 
         group_id = uuid.uuid4()
         created = 0
-        for owner in owners:
+        for recipient in recipients:
             notify_user(
-                user=owner,
+                user=recipient,
                 notification_type=NotificationType.ANNOUNCEMENT,
                 title=serializer.validated_data["subject"],
                 body=serializer.validated_data["message"],
@@ -95,6 +95,20 @@ class NotificationViewSet(ReadOnlyModelViewSet):
                 broadcast_group=group_id,
             )
             created += 1
+
+        # Create a pre-read copy for the sender so the admin can track
+        # read-by statistics in their own notification list.
+        sender_notif = notify_user(
+            user=request.user,
+            notification_type=NotificationType.ANNOUNCEMENT,
+            title=serializer.validated_data["subject"],
+            body=serializer.validated_data["message"],
+            metadata={"building_id": str(building.id)},
+            sender=request.user,
+            broadcast_group=group_id,
+        )
+        sender_notif.is_read = True
+        sender_notif.save(update_fields=["is_read"])
 
         return Response(
             {"created": created, "building_id": str(building.id)},
