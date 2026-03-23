@@ -79,5 +79,15 @@
   "type": "Type",
   "mark_as_paid": "Mark as Paid",
   "marked_paid": "Marked as Paid",
-  "paid": "Paid"
+  "paid": "Paid",
+  "status_overdue": "Overdue",
+  "split_equal_all": "Equal – All Units",
+  "split_equal_apartments": "Equal – Apartments Only",
+  "split_equal_stores": "Equal – Stores Only",
+  "split_custom": "Custom Subset",
+  "freq_monthly": "Monthly",
+  "freq_quarterly": "Quarterly",
+  "freq_annual": "Annual",
+  "unit_type_apartment": "Apartment",
+  "unit_type_store": "Store"
 }

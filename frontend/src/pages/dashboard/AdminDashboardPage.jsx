@@ -60,7 +60,8 @@ function TrendBadge({ pct, invertColors }) {
 }
 
 export default function AdminDashboardPage() {
-  const { t } = useTranslation("dashboard");
+  const { t, i18n } = useTranslation("dashboard");
+  const isRtl = (i18n.language || "en").startsWith("ar");
   const { isAdmin } = useAuth();
   const navigate = useNavigate();
 
@@ -133,6 +134,21 @@ export default function AdminDashboardPage() {
     <>
     <PrivateSEO title="ABEM – Dashboard" />
     <Box sx={{ p: 3 }}>
+      {/* ── Dashboard header banner ── */}
+      <Box sx={{ mb: 3 }}>
+        <img
+          src="/abem-dashboard-header.svg"
+          alt=""
+          style={{
+            width: '100%',
+            height: 'auto',
+            borderRadius: 8,
+            display: 'block',
+            transform: isRtl ? 'scaleX(-1)' : 'none',
+          }}
+        />
+      </Box>
+
       <Typography variant="h4" fontWeight={700} gutterBottom>
         {t("admin_dashboard")}
       </Typography>
@@ -349,9 +365,16 @@ export default function AdminDashboardPage() {
                                 'Unpaid': t('status_unpaid'),
                                 'Partial': t('status_partial'),
                                 'Overdue': t('status_overdue'),
+                                'paid': t('status_paid'),
+                                'unpaid': t('status_unpaid'),
+                                'partial': t('status_partial'),
+                                'overdue': t('status_overdue'),
                               }[row.status] || row.status}
                               size="small"
-                              color={row.status === "Overdue" ? "error" : row.status === "Paid" ? "success" : "warning"}
+                              color={
+                                row.status === "Overdue" || row.status === "overdue" ? "error" :
+                                row.status === "Paid" || row.status === "paid" ? "success" : "warning"
+                              }
                             />
                           </TableCell>
                         </TableRow>

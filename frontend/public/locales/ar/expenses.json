@@ -79,5 +79,15 @@
   "type": "النوع",
   "mark_as_paid": "تحديد كمدفوع",
   "marked_paid": "تم التحديد كمدفوع",
-  "paid": "مدفوع"
+  "paid": "مدفوع",
+  "status_overdue": "متأخر",
+  "split_equal_all": "توزيع متساوٍ على الجميع",
+  "split_equal_apartments": "الشقق السكنية فقط",
+  "split_equal_stores": "المحلات التجارية فقط",
+  "split_custom": "توزيع مخصص",
+  "freq_monthly": "شهري",
+  "freq_quarterly": "ربع سنوي",
+  "freq_annual": "سنوي",
+  "unit_type_apartment": "شقة سكنية",
+  "unit_type_store": "محل تجاري"
 }
