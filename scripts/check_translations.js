@@ -81,10 +81,23 @@ for (const file of commonFiles) {
       errors++;
     }
   }
+  // i18next Arabic pluralization uses _zero, _one, _two, _few, _many, _other
+  // English only needs _one and _other, so Arabic may have extra plural keys
+  // that are valid and expected.  Only flag a key as extra if it is NOT an
+  // Arabic plural variant of an English base key.
+  const PLURAL_SUFFIXES = ["_zero", "_one", "_two", "_few", "_many", "_other"];
   for (const key of arKeys) {
     if (!enKeys.has(key)) {
-      console.error(`EXTRA KEY: ar/${file} has extra "${key}" (not in en/)`);
-      errors++;
+      const isArabicPlural = PLURAL_SUFFIXES.some((suffix) => {
+        if (!key.endsWith(suffix)) return false;
+        const base = key.slice(0, -suffix.length);
+        // Accept if en/ has ANY plural form of the same base
+        return PLURAL_SUFFIXES.some((s) => enKeys.has(base + s));
+      });
+      if (!isArabicPlural) {
+        console.error(`EXTRA KEY: ar/${file} has extra "${key}" (not in en/)`);
+        errors++;
+      }
     }
   }
 }
