@@ -14,6 +14,7 @@ import { useAuthStore } from "../contexts/authStore";
 import axios from "axios";
 
 const WARNING_SECONDS = 30;
+const IDLE_THRESHOLD_MS = 60_000; // 60 seconds
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || "/api/v1";
 
 /**
@@ -31,12 +32,17 @@ function getTokenExpiry(token) {
 }
 
 /**
- * NF-05 -- Session expiry warning modal.
+ * NF-05 / BF-07 -- Session expiry warning modal with idle detection.
  *
- * 30 seconds before the JWT access token expires a non-dismissible dialog is
- * shown with a live countdown.  The user can extend the session (refresh the
- * token) or log out immediately.  When the countdown reaches 0 the user is
- * automatically logged out and redirected to /login.
+ * 30 seconds before the JWT access token expires the component checks whether
+ * the user has been idle (no mousemove / keydown / click / navigation) for at
+ * least 60 seconds.
+ *
+ * - Idle >= 60 s  → show a non-dismissible countdown dialog.  The user can
+ *   extend the session (refresh the token) or log out.  When the countdown
+ *   reaches 0 the user is automatically logged out and redirected to /login.
+ * - Active (idle < 60 s) → silently refresh the token in the background
+ *   without showing any modal.
  *
  * Rendered as a React portal on document.body so it sits above every other
  * layer, including the tutorial overlay.
@@ -50,6 +56,27 @@ export default function SessionExpiryModal() {
 
   const timerRef = useRef(null);
   const countdownRef = useRef(null);
+  const lastActivityRef = useRef(Date.now());
+
+  // ── Activity tracking ──────────────────────────────────────────────────
+
+  useEffect(() => {
+    const markActive = () => {
+      lastActivityRef.current = Date.now();
+    };
+
+    globalThis.addEventListener("mousemove", markActive, { passive: true });
+    globalThis.addEventListener("keydown", markActive, { passive: true });
+    globalThis.addEventListener("click", markActive, { passive: true });
+    globalThis.addEventListener("popstate", markActive);
+
+    return () => {
+      globalThis.removeEventListener("mousemove", markActive);
+      globalThis.removeEventListener("keydown", markActive);
+      globalThis.removeEventListener("click", markActive);
+      globalThis.removeEventListener("popstate", markActive);
+    };
+  }, []);
 
   // ── Handlers ─────────────────────────────────────────────────────────────
 
@@ -95,13 +122,27 @@ export default function SessionExpiryModal() {
         handleLogout();
         return;
       }
-      const remaining = Math.max(0, Math.ceil((expiry - now) / 1000));
-      setSecondsLeft(remaining);
-      setShowModal(true);
+      const isIdle =
+        Date.now() - lastActivityRef.current >= IDLE_THRESHOLD_MS;
+      if (isIdle) {
+        const remaining = Math.max(0, Math.ceil((expiry - now) / 1000));
+        setSecondsLeft(remaining);
+        setShowModal(true);
+      } else {
+        // User is active — silently refresh the token.
+        handleExtend();
+      }
     } else {
       timerRef.current = setTimeout(() => {
-        setSecondsLeft(WARNING_SECONDS);
-        setShowModal(true);
+        const isIdle =
+          Date.now() - lastActivityRef.current >= IDLE_THRESHOLD_MS;
+        if (isIdle) {
+          setSecondsLeft(WARNING_SECONDS);
+          setShowModal(true);
+        } else {
+          // User is active — silently refresh the token.
+          handleExtend();
+        }
       }, msUntilWarning);
     }
 
@@ -109,7 +150,7 @@ export default function SessionExpiryModal() {
       clearTimeout(timerRef.current);
       clearInterval(countdownRef.current);
     };
-  }, [accessToken, handleLogout]);
+  }, [accessToken, handleLogout, handleExtend]);
 
   // ── Countdown tick ───────────────────────────────────────────────────────
 
