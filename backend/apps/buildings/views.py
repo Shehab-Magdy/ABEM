@@ -134,7 +134,7 @@ class BuildingViewSet(ModelViewSet):
         serializer.is_valid(raise_exception=True)
 
         user = User.objects.get(pk=serializer.validated_data["user_id"])
-        _, created = UserBuilding.objects.get_or_create(user=user, building=building)
+        ub, created = UserBuilding.objects.get_or_create(user=user, building=building)
 
         log_action(
             user=request.user,

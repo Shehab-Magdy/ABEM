@@ -320,6 +320,7 @@ export default function BuildingsPage() {
     try {
       await buildingsApi.assignUser(assignTarget.id, selectedOwner);
       setAssignTarget(null);
+      fetchBuildings();
     } catch (err) {
       setAssignError(err.response?.data?.detail || t("assign_error", "Assignment failed."));
     } finally {
