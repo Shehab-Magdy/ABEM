@@ -1,0 +1,7 @@
+<svg width="430" height="932" viewBox="0 0 430 932" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="430" height="932" fill="#FFFFFF"/>
+  <rect x="135" y="300" width="160" height="160" rx="32" fill="#1A6B5A"/>
+  <rect x="165" y="330" width="54" height="110" rx="12" stroke="white" stroke-width="10"/>
+  <rect x="231" y="352" width="54" height="88" rx="12" stroke="white" stroke-width="10"/>
+  <text x="215" y="520" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="40" font-weight="700" fill="#1A6B5A" letter-spacing="-1">ABEM</text>
+</svg>

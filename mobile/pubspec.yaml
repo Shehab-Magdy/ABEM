@@ -15,7 +15,6 @@ dependencies:
 
   # HTTP & Networking
   dio: ^5.7.0
-  pretty_dio_logger: ^1.4.0
   dio_cache_interceptor: ^3.5.0
   dio_cache_interceptor_hive_store: ^3.2.1
 
@@ -96,17 +95,21 @@ dev_dependencies:
 flutter_launcher_icons:
   android: true
   ios: true
-  image_path: "assets/images/abem-app-icon.svg"
+  image_path: "assets/images/abem-app-icon-ios.svg"
+  adaptive_icon_foreground: "assets/images/abem-app-icon-foreground.svg"
   adaptive_icon_background: "#1A6B5A"
 
 # Splash screen configuration
 flutter_native_splash:
-  color: "#1A6B5A"
+  color: "#FFFFFF"
   color_dark: "#141A18"
-  image: assets/images/abem-splash.svg
+  image: assets/images/abem-splash-light.svg
+  image_dark: assets/images/abem-splash-dark.svg
   android_12:
-    image: assets/images/abem-splash.svg
-    icon_background_color: "#1A6B5A"
+    image: assets/images/abem-splash-light.svg
+    image_dark: assets/images/abem-splash-dark.svg
+    icon_background_color: "#FFFFFF"
+    icon_background_color_dark: "#141A18"
   fullscreen: true
 
 flutter:
