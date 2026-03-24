@@ -1,9 +1,11 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/api/apartments_api.dart';
+import '../../../core/api/api_endpoints.dart';
 import '../../../core/api/buildings_api.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../injection.dart';
@@ -193,7 +195,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       return _DoneStep(
         key: const ValueKey('done-admin'),
         role: _role,
-        onFinish: () => context.go('/home'),
+        onFinish: () => context.go('/admin/dashboard'),
       );
     }
     // Owner: Unit(1) → Done(2)
@@ -208,7 +210,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     return _DoneStep(
       key: const ValueKey('done-owner'),
       role: _role,
-      onFinish: () => context.go('/home'),
+      onFinish: () => context.go('/owner/dashboard'),
     );
   }
 }
@@ -254,7 +256,7 @@ class _AccountStepState extends State<_AccountStep> {
       _error = null;
     });
     try {
-      final repo = context.read<AuthRepository>();
+      final repo = getIt<AuthRepository>();
       await repo.selfRegister({
         'first_name': _firstNameCtrl.text.trim(),
         'last_name': _lastNameCtrl.text.trim(),
@@ -1023,6 +1025,479 @@ class _DoneStep extends StatelessWidget {
               style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
         ),
       ],
+    );
+  }
+}
+
+// ── Path C: Invite Code Registration ─────────────────────────────────────────
+
+/// Standalone screen for invite-code-based registration.
+///
+/// Flow: Enter 8-char code → validate → show unit preview → account form
+/// (email pre-filled + locked) → register → use invite → done.
+class InviteCodeScreen extends StatefulWidget {
+  const InviteCodeScreen({super.key});
+
+  @override
+  State<InviteCodeScreen> createState() => _InviteCodeScreenState();
+}
+
+class _InviteCodeScreenState extends State<InviteCodeScreen> {
+  int _step = 0; // 0: code entry, 1: account form, 2: done
+  Map<String, dynamic>? _inviteData; // Validated invite response
+  String? _prefilledEmail;
+
+  List<String> get _labels => ['Enter Code', 'Account', 'Done'];
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+
+    return Scaffold(
+      key: const ValueKey('tc_s1_mob_invite_screen'),
+      backgroundColor: scheme.surfaceContainerLowest,
+      appBar: AppBar(
+        title: const Text('Join via Invite'),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: _step == 0
+            ? IconButton(
+                icon: const Icon(Icons.arrow_back),
+                onPressed: () => context.go('/login'),
+              )
+            : null,
+      ),
+      body: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 480),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Icon(Icons.mark_email_read_outlined,
+                      size: 48, color: scheme.primary),
+                  const SizedBox(height: 8),
+                  Text('ABEM',
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.headlineSmall?.copyWith(
+                          fontWeight: FontWeight.w800, color: scheme.primary)),
+                  const SizedBox(height: 24),
+                  _StepIndicator(currentStep: _step, labels: _labels),
+                  const SizedBox(height: 28),
+                  Card(
+                    elevation: 2,
+                    child: Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 250),
+                        child: _buildInviteStep(),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInviteStep() {
+    if (_step == 0) {
+      return _InviteCodeEntryStep(
+        key: const ValueKey('invite-code-entry'),
+        onValidated: (data) {
+          setState(() {
+            _inviteData = data;
+            _prefilledEmail = data['email'] as String?;
+            _step = 1;
+          });
+        },
+      );
+    }
+    if (_step == 1) {
+      return _InviteAccountStep(
+        key: const ValueKey('invite-account'),
+        prefilledEmail: _prefilledEmail,
+        inviteData: _inviteData!,
+        onDone: () => setState(() => _step = 2),
+      );
+    }
+    return _DoneStep(
+      key: const ValueKey('done-invite'),
+      role: 'owner',
+      onFinish: () => context.go('/owner/dashboard'),
+    );
+  }
+}
+
+/// Step 0 of invite flow: enter the 8-char code and validate it.
+class _InviteCodeEntryStep extends StatefulWidget {
+  final void Function(Map<String, dynamic> data) onValidated;
+  const _InviteCodeEntryStep({super.key, required this.onValidated});
+
+  @override
+  State<_InviteCodeEntryStep> createState() => _InviteCodeEntryStepState();
+}
+
+class _InviteCodeEntryStepState extends State<_InviteCodeEntryStep> {
+  final _codeCtrl = TextEditingController();
+  bool _loading = false;
+  String? _error;
+
+  @override
+  void dispose() {
+    _codeCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _validate() async {
+    final code = _codeCtrl.text.trim();
+    if (code.length < 8) {
+      setState(() => _error = 'Enter the full 8-character code.');
+      return;
+    }
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final dio = getIt<Dio>();
+      final response = await dio.get(
+        ApiEndpoints.inviteValidate,
+        queryParameters: {'code': code},
+      );
+      widget.onValidated(response.data as Map<String, dynamic>);
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      setState(() => _error =
+          (data is Map ? data['detail'] : null)?.toString() ??
+              'Invalid or expired code.');
+    } catch (_) {
+      setState(() => _error = 'Could not validate code. Try again.');
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text('Enter Invite Code',
+            style: theme.textTheme.titleMedium
+                ?.copyWith(fontWeight: FontWeight.w600)),
+        const SizedBox(height: 8),
+        Text('Your building manager sent you an 8-character registration code.',
+            style: theme.textTheme.bodySmall
+                ?.copyWith(color: scheme.onSurfaceVariant)),
+        const SizedBox(height: 20),
+        if (_error != null) ...[
+          _ErrorCard(message: _error!),
+          const SizedBox(height: 12),
+        ],
+        TextFormField(
+          key: const ValueKey('tc_s1_mob_invite_code_field'),
+          controller: _codeCtrl,
+          textCapitalization: TextCapitalization.characters,
+          maxLength: 8,
+          inputFormatters: [
+            FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z0-9]')),
+            UpperCaseTextFormatter(),
+          ],
+          style: const TextStyle(
+              fontSize: 24, fontWeight: FontWeight.w700, letterSpacing: 6),
+          textAlign: TextAlign.center,
+          decoration: InputDecoration(
+            hintText: 'ABCD1234',
+            counterText: '',
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        ),
+        const SizedBox(height: 24),
+        FilledButton(
+          key: const ValueKey('tc_s1_mob_validate_code_btn'),
+          onPressed: _loading ? null : _validate,
+          style: FilledButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 14)),
+          child: _loading
+              ? const SizedBox(
+                  height: 20,
+                  width: 20,
+                  child: CircularProgressIndicator(
+                      strokeWidth: 2, color: Colors.white))
+              : const Text('Validate Code',
+                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
+        ),
+        const SizedBox(height: 16),
+        GestureDetector(
+          onTap: () => context.go('/register'),
+          child: Text('No code? Register normally',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                  color: scheme.primary, fontSize: 13)),
+        ),
+      ],
+    );
+  }
+}
+
+/// Step 1 of invite flow: account form with email pre-filled and locked.
+class _InviteAccountStep extends StatefulWidget {
+  final String? prefilledEmail;
+  final Map<String, dynamic> inviteData;
+  final VoidCallback onDone;
+  const _InviteAccountStep({
+    super.key,
+    this.prefilledEmail,
+    required this.inviteData,
+    required this.onDone,
+  });
+
+  @override
+  State<_InviteAccountStep> createState() => _InviteAccountStepState();
+}
+
+class _InviteAccountStepState extends State<_InviteAccountStep> {
+  final _formKey = GlobalKey<FormState>();
+  late final TextEditingController _emailCtrl;
+  final _firstNameCtrl = TextEditingController();
+  final _lastNameCtrl = TextEditingController();
+  final _phoneCtrl = TextEditingController();
+  final _passwordCtrl = TextEditingController();
+  final _confirmCtrl = TextEditingController();
+  bool _obscure = true;
+  bool _loading = false;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _emailCtrl = TextEditingController(text: widget.prefilledEmail ?? '');
+  }
+
+  @override
+  void dispose() {
+    _emailCtrl.dispose();
+    _firstNameCtrl.dispose();
+    _lastNameCtrl.dispose();
+    _phoneCtrl.dispose();
+    _passwordCtrl.dispose();
+    _confirmCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    if (_formKey.currentState?.validate() != true) return;
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      // 1. Self-register
+      final repo = getIt<AuthRepository>();
+      await repo.selfRegister({
+        'first_name': _firstNameCtrl.text.trim(),
+        'last_name': _lastNameCtrl.text.trim(),
+        'email': _emailCtrl.text.trim(),
+        'phone': _phoneCtrl.text.trim(),
+        'role': 'owner',
+        'password': _passwordCtrl.text,
+        'confirm_password': _confirmCtrl.text,
+      });
+
+      // 2. Use the invite code
+      final dio = getIt<Dio>();
+      final code = widget.inviteData['code'] ?? widget.inviteData['token'];
+      await dio.post(ApiEndpoints.inviteUse, data: {'code': code});
+
+      if (mounted) {
+        context.read<AuthBloc>().add(const AuthCheckRequested());
+        widget.onDone();
+      }
+    } on DioException catch (e) {
+      setState(() => _error = _extractError(e));
+    } catch (_) {
+      setState(() => _error = 'Registration failed. Please try again.');
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final invite = widget.inviteData;
+
+    return Form(
+      key: _formKey,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text('Complete Your Account',
+              style: theme.textTheme.titleMedium
+                  ?.copyWith(fontWeight: FontWeight.w600)),
+          const SizedBox(height: 12),
+
+          // Unit preview card
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: scheme.primary.withAlpha(20),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: scheme.primary.withAlpha(50)),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.apartment, color: scheme.primary, size: 32),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        invite['building_name']?.toString() ?? 'Building',
+                        style: const TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                      Text(
+                        'Unit ${invite['unit_number'] ?? '?'} • Floor ${invite['floor'] ?? '?'}',
+                        style: TextStyle(
+                            fontSize: 13, color: scheme.onSurfaceVariant),
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(Icons.check_circle, color: scheme.primary),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+
+          if (_error != null) ...[
+            _ErrorCard(message: _error!),
+            const SizedBox(height: 16),
+          ],
+
+          Row(children: [
+            Expanded(
+                child: TextFormField(
+              controller: _firstNameCtrl,
+              textInputAction: TextInputAction.next,
+              decoration: const InputDecoration(labelText: 'First name *'),
+              validator: (v) => (v == null || v.isEmpty) ? 'Required.' : null,
+            )),
+            const SizedBox(width: 12),
+            Expanded(
+                child: TextFormField(
+              controller: _lastNameCtrl,
+              textInputAction: TextInputAction.next,
+              decoration: const InputDecoration(labelText: 'Last name *'),
+              validator: (v) => (v == null || v.isEmpty) ? 'Required.' : null,
+            )),
+          ]),
+          const SizedBox(height: 16),
+
+          // Email — pre-filled and locked
+          TextFormField(
+            controller: _emailCtrl,
+            readOnly: widget.prefilledEmail != null,
+            decoration: InputDecoration(
+              labelText: 'Email *',
+              prefixIcon: const Icon(Icons.email_outlined),
+              suffixIcon: widget.prefilledEmail != null
+                  ? const Icon(Icons.lock_outline, size: 18)
+                  : null,
+            ),
+            validator: (v) {
+              if (v == null || v.isEmpty) return 'Required.';
+              if (!RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(v)) {
+                return 'Invalid email.';
+              }
+              return null;
+            },
+          ),
+          const SizedBox(height: 16),
+
+          TextFormField(
+            controller: _phoneCtrl,
+            keyboardType: TextInputType.phone,
+            textInputAction: TextInputAction.next,
+            decoration: const InputDecoration(
+                labelText: 'Phone (optional)',
+                prefixIcon: Icon(Icons.phone_outlined)),
+          ),
+          const SizedBox(height: 16),
+
+          TextFormField(
+            controller: _passwordCtrl,
+            obscureText: _obscure,
+            textInputAction: TextInputAction.next,
+            decoration: InputDecoration(
+              labelText: 'Password *',
+              prefixIcon: const Icon(Icons.lock_outline),
+              suffixIcon: IconButton(
+                icon: Icon(_obscure
+                    ? Icons.visibility_outlined
+                    : Icons.visibility_off_outlined),
+                onPressed: () => setState(() => _obscure = !_obscure),
+              ),
+            ),
+            validator: (v) => (v == null || v.isEmpty) ? 'Required.' : null,
+          ),
+          const SizedBox(height: 16),
+
+          TextFormField(
+            controller: _confirmCtrl,
+            obscureText: _obscure,
+            textInputAction: TextInputAction.done,
+            onFieldSubmitted: (_) => _submit(),
+            decoration: const InputDecoration(
+                labelText: 'Confirm password *',
+                prefixIcon: Icon(Icons.lock_outline)),
+            validator: (v) {
+              if (v == null || v.isEmpty) return 'Required.';
+              if (v != _passwordCtrl.text) return 'Passwords do not match.';
+              return null;
+            },
+          ),
+          const SizedBox(height: 24),
+
+          FilledButton(
+            onPressed: _loading ? null : _submit,
+            style: FilledButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 14)),
+            child: _loading
+                ? const SizedBox(
+                    height: 20,
+                    width: 20,
+                    child: CircularProgressIndicator(
+                        strokeWidth: 2, color: Colors.white))
+                : const Text('Create Account & Claim Unit',
+                    style:
+                        TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Uppercase text input formatter for invite codes.
+class UpperCaseTextFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+      TextEditingValue oldValue, TextEditingValue newValue) {
+    return TextEditingValue(
+      text: newValue.text.toUpperCase(),
+      selection: newValue.selection,
     );
   }
 }
