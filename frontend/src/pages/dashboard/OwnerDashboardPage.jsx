@@ -135,7 +135,7 @@ export default function OwnerDashboardPage() {
       <Box sx={{ mb: 3 }}>
         <img
           src="/abem-dashboard-header.svg"
-          alt=""
+          alt="ABEM Dashboard"
           style={{
             width: '100%',
             height: 'auto',
@@ -346,3 +346,4 @@ export default function OwnerDashboardPage() {
     </>
   );
 }
+

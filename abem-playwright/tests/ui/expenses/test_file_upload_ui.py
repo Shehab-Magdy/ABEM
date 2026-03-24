@@ -8,7 +8,7 @@ from config.settings import settings
 @pytest.mark.file_upload
 class TestFileUploadUI:
     def test_upload_button_visible_admin(self, admin_page, admin_api, seeded_expense):
-        eid = seeded_expense["expense"]["id"]
+        eid = seeded_expense.get("expense", seeded_expense).get("id", seeded_expense.get("id"))
         admin_page.goto(f"{settings.BASE_URL}/expenses")
         admin_page.wait_for_load_state("networkidle")
         # Upload button may appear on row or detail view

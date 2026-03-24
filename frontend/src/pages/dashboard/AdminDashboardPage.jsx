@@ -136,11 +136,11 @@ export default function AdminDashboardPage() {
     <>
     <PrivateSEO title="ABEM – Dashboard" />
     <Box sx={{ p: 3 }}>
-      {/* ── Dashboard header banner ── */}
+      {/* Dashboard header banner */}
       <Box sx={{ mb: 3 }}>
         <img
           src="/abem-dashboard-header.svg"
-          alt=""
+          alt="ABEM Dashboard"
           style={{
             width: '100%',
             height: 'auto',
@@ -493,3 +493,4 @@ export default function AdminDashboardPage() {
     </>
   );
 }
+
