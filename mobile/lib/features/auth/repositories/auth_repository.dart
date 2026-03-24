@@ -2,7 +2,9 @@ import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../../../core/api/api_client.dart';
+
+import '../../../core/api/api_endpoints.dart';
+import '../../../core/auth/token_storage.dart';
 
 class AccountLockedException implements Exception {
   final String message;
@@ -11,22 +13,25 @@ class AccountLockedException implements Exception {
 }
 
 class AuthRepository {
-  final ApiClient apiClient;
+  final Dio _dio;
+  final TokenStorage _tokenStorage;
   static const String _userKey = 'abem_user';
 
-  AuthRepository({required this.apiClient});
+  AuthRepository({required Dio dio, required TokenStorage tokenStorage})
+      : _dio = dio,
+        _tokenStorage = tokenStorage;
 
   /// Login and persist tokens + user profile locally.
   Future<Map<String, dynamic>> login(String email, String password) async {
     try {
-      final response = await apiClient.dio.post(
-        '/auth/login/',
+      final response = await _dio.post(
+        ApiEndpoints.login,
         data: {'email': email, 'password': password},
       );
       final data = response.data as Map<String, dynamic>;
-      await apiClient.saveTokens(
-        data['access'] as String,
-        data['refresh'] as String,
+      await _tokenStorage.saveTokens(
+        access: data['access'] as String,
+        refresh: data['refresh'] as String,
       );
       await _storeUser(data['user'] as Map<String, dynamic>);
       return data;
@@ -48,14 +53,11 @@ class AuthRepository {
   /// Self-register (public) — caller chooses role (admin | owner).
   /// Persists tokens + user profile locally, same as login.
   Future<Map<String, dynamic>> selfRegister(Map<String, dynamic> payload) async {
-    final response = await apiClient.dio.post(
-      '/auth/self-register/',
-      data: payload,
-    );
+    final response = await _dio.post(ApiEndpoints.selfRegister, data: payload);
     final data = response.data as Map<String, dynamic>;
-    await apiClient.saveTokens(
-      data['access'] as String,
-      data['refresh'] as String,
+    await _tokenStorage.saveTokens(
+      access: data['access'] as String,
+      refresh: data['refresh'] as String,
     );
     await _storeUser(data['user'] as Map<String, dynamic>);
     return data;
@@ -64,19 +66,19 @@ class AuthRepository {
   /// Logout: blacklist refresh token on server, clear local storage.
   Future<void> logout() async {
     try {
-      final refresh = await apiClient.getRefreshToken();
+      final refresh = await _tokenStorage.refreshToken;
       if (refresh != null) {
-        await apiClient.dio.post('/auth/logout/', data: {'refresh': refresh});
+        await _dio.post(ApiEndpoints.logout, data: {'refresh': refresh});
       }
     } catch (_) {
       // Best-effort – always clear local data even if server call fails.
     } finally {
-      await apiClient.clearTokens();
+      await _tokenStorage.clearAll();
       await _clearUser();
     }
   }
 
-  Future<String?> getStoredAccessToken() => apiClient.getAccessToken();
+  Future<String?> getStoredAccessToken() => _tokenStorage.accessToken;
 
   /// Read persisted user profile from shared_preferences.
   Future<Map<String, dynamic>?> getStoredUser() async {
@@ -108,8 +110,8 @@ class AuthRepository {
         filename: imageFile.name,
       ),
     });
-    final response = await apiClient.dio.patch(
-      '/auth/profile/',
+    final response = await _dio.patch(
+      ApiEndpoints.profile,
       data: formData,
       options: Options(contentType: 'multipart/form-data'),
     );
@@ -120,7 +122,7 @@ class AuthRepository {
 
   /// Update profile fields (first_name, last_name, phone) and persist locally.
   Future<Map<String, dynamic>> updateProfile(Map<String, dynamic> fields) async {
-    final response = await apiClient.dio.patch('/auth/profile/', data: fields);
+    final response = await _dio.patch(ApiEndpoints.profile, data: fields);
     final data = response.data as Map<String, dynamic>;
     await _storeUser(data);
     return data;

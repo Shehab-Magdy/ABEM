@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:dio/dio.dart';
 import 'package:intl/intl.dart';
 
-import '../../../core/api/api_client.dart';
 import '../../../core/api/expenses_api.dart';
+import '../../../injection.dart';
 
 class ExpensesScreen extends StatefulWidget {
   const ExpensesScreen({super.key});
@@ -23,7 +23,7 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
     _loadExpenses();
   }
 
-  ExpensesApi get _api => ExpensesApi(apiClient: context.read<ApiClient>());
+  ExpensesApi get _api => ExpensesApi(dio: getIt<Dio>());
 
   Future<void> _loadExpenses() async {
     setState(() {

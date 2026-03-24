@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:dio/dio.dart';
 import 'package:intl/intl.dart';
 
-import '../../../core/api/api_client.dart';
 import '../../../core/api/payments_api.dart';
+import '../../../injection.dart';
 
 class PaymentsScreen extends StatefulWidget {
   const PaymentsScreen({super.key});
@@ -23,7 +23,7 @@ class _PaymentsScreenState extends State<PaymentsScreen> {
     _loadPayments();
   }
 
-  PaymentsApi get _api => PaymentsApi(apiClient: context.read<ApiClient>());
+  PaymentsApi get _api => PaymentsApi(dio: getIt<Dio>());
 
   Future<void> _loadPayments() async {
     setState(() {

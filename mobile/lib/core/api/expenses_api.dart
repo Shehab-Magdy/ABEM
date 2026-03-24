@@ -1,12 +1,14 @@
-import 'api_client.dart';
+import 'package:dio/dio.dart';
+
+import 'api_endpoints.dart';
 
 class ExpensesApi {
-  final ApiClient apiClient;
-  ExpensesApi({required this.apiClient});
+  final Dio _dio;
+  ExpensesApi({required Dio dio}) : _dio = dio;
 
   Future<List<Map<String, dynamic>>> fetchExpenses({String? buildingId}) async {
-    final response = await apiClient.dio.get(
-      '/expenses/',
+    final response = await _dio.get(
+      ApiEndpoints.expenses,
       queryParameters: buildingId != null ? {'building_id': buildingId} : null,
     );
     final data = response.data;

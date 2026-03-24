@@ -3,10 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../core/api/api_client.dart';
 import '../../../core/api/apartments_api.dart';
 import '../../../core/api/buildings_api.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../injection.dart';
 import '../bloc/auth_bloc.dart';
 import '../repositories/auth_repository.dart';
 
@@ -549,7 +549,7 @@ class _AdminBuildingsStepState extends State<_AdminBuildingsStep> {
       _error = null;
     });
     try {
-      final api = BuildingsApi(apiClient: context.read<ApiClient>());
+      final api = BuildingsApi(dio: getIt<Dio>());
       for (final b in _buildings) {
         final name = b['name']!.text.trim();
         if (name.isEmpty) continue;
@@ -765,7 +765,7 @@ class _ClaimUnitStepState extends State<_ClaimUnitStep> {
   @override
   void initState() {
     super.initState();
-    _api = ApartmentsApi(apiClient: context.read<ApiClient>());
+    _api = ApartmentsApi(dio: getIt<Dio>());
     _loadBuildings();
   }
 

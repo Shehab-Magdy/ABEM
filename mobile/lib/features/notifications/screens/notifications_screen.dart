@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:dio/dio.dart';
 
-import '../../../core/api/api_client.dart';
 import '../../../core/api/notifications_api.dart';
+import '../../../injection.dart';
 
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
@@ -22,8 +22,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     _loadNotifications();
   }
 
-  NotificationsApi get _api =>
-      NotificationsApi(apiClient: context.read<ApiClient>());
+  NotificationsApi get _api => NotificationsApi(dio: getIt<Dio>());
 
   Future<void> _loadNotifications() async {
     setState(() {

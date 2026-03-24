@@ -2,14 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:firebase_core/firebase_core.dart';
 
-import 'core/api/api_client.dart';
 import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
 import 'features/auth/bloc/auth_bloc.dart';
 import 'features/auth/repositories/auth_repository.dart';
+import 'injection.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
   // Firebase is optional — skip gracefully when google-services.json / plist
   // is not yet configured (e.g. local development without FCM).
   try {
@@ -17,6 +18,10 @@ Future<void> main() async {
   } catch (_) {
     // Firebase not configured — push notifications disabled.
   }
+
+  // Initialize dependency injection container
+  await configureDependencies();
+
   runApp(const AbemApp());
 }
 
@@ -25,27 +30,19 @@ class AbemApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MultiRepositoryProvider(
+    return MultiBlocProvider(
       providers: [
-        RepositoryProvider(create: (_) => ApiClient()),
-        RepositoryProvider(
-          create: (ctx) => AuthRepository(apiClient: ctx.read<ApiClient>()),
+        BlocProvider(
+          create: (_) => AuthBloc(
+            authRepository: getIt<AuthRepository>(),
+          )..add(const AuthCheckRequested()),
         ),
       ],
-      child: MultiBlocProvider(
-        providers: [
-          BlocProvider(
-            create: (ctx) => AuthBloc(
-              authRepository: ctx.read<AuthRepository>(),
-            )..add(const AuthCheckRequested()),
-          ),
-        ],
-        child: MaterialApp.router(
-          title: 'ABEM',
-          debugShowCheckedModeBanner: false,
-          theme: AppTheme.light,
-          routerConfig: AppRouter.router,
-        ),
+      child: MaterialApp.router(
+        title: 'ABEM',
+        debugShowCheckedModeBanner: false,
+        theme: AppTheme.light,
+        routerConfig: AppRouter.router,
       ),
     );
   }

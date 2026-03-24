@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:dio/dio.dart';
 
-import '../../../core/api/api_client.dart';
 import '../../../core/api/buildings_api.dart';
+import '../../../injection.dart';
 import '../../auth/bloc/auth_bloc.dart';
 
 class BuildingsScreen extends StatefulWidget {
@@ -23,8 +24,7 @@ class _BuildingsScreenState extends State<BuildingsScreen> {
     _loadBuildings();
   }
 
-  BuildingsApi get _api =>
-      BuildingsApi(apiClient: context.read<ApiClient>());
+  BuildingsApi get _api => BuildingsApi(dio: getIt<Dio>());
 
   Future<void> _loadBuildings() async {
     setState(() {
