@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+
 import '../bloc/auth_bloc.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -10,17 +11,35 @@ class LoginScreen extends StatefulWidget {
   State<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
+  }
+
+  /// On app resume, dispatch token refresh check.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      final authState = context.read<AuthBloc>().state;
+      if (authState is AuthAuthenticated) {
+        context.read<AuthBloc>().add(const AuthTokenRefreshRequested());
+      }
+    }
   }
 
   void _submit() {
@@ -39,11 +58,15 @@ class _LoginScreenState extends State<LoginScreen> {
     final colorScheme = theme.colorScheme;
 
     return Scaffold(
+      key: const ValueKey('tc_s1_mob_001'),
       backgroundColor: colorScheme.surfaceContainerLowest,
       body: BlocConsumer<AuthBloc, AuthState>(
         listener: (context, state) {
           if (state is AuthAuthenticated) {
-            // Router redirect handles navigation via go_router
+            // GoRouter redirect handles navigation
+          }
+          if (state is AuthLocked) {
+            _showLockoutSheet(context, state);
           }
         },
         builder: (context, state) {
@@ -59,7 +82,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      // ── Logo ───────────────────────────────────────────────
+                      // ── Logo ────────────────────────────────────────────
                       Icon(Icons.apartment_rounded,
                           size: 64, color: colorScheme.primary),
                       const SizedBox(height: 16),
@@ -80,16 +103,17 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       const SizedBox(height: 40),
 
-                      // ── Error / lockout banners ────────────────────────────
+                      // ── Error banners ───────────────────────────────────
                       if (state is AuthError) ...[
                         _ErrorBanner(
+                          key: const ValueKey('tc_s1_mob_error_banner'),
                           message: state.message,
                           isLocked: state.isLocked,
                         ),
                         const SizedBox(height: 16),
                       ],
 
-                      // ── Form card ──────────────────────────────────────────
+                      // ── Form card ───────────────────────────────────────
                       Card(
                         elevation: 2,
                         child: Padding(
@@ -109,6 +133,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                                 // Email
                                 TextFormField(
+                                  key: const ValueKey('tc_s1_mob_email_field'),
                                   controller: _emailController,
                                   keyboardType: TextInputType.emailAddress,
                                   textInputAction: TextInputAction.next,
@@ -121,8 +146,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                     if (val == null || val.isEmpty) {
                                       return 'Email is required.';
                                     }
-                                    final emailRegex = RegExp(
-                                        r'^[^\s@]+@[^\s@]+\.[^\s@]+$');
+                                    final emailRegex =
+                                        RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$');
                                     if (!emailRegex.hasMatch(val)) {
                                       return 'Enter a valid email address.';
                                     }
@@ -133,6 +158,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                                 // Password
                                 TextFormField(
+                                  key: const ValueKey('tc_s1_mob_password_field'),
                                   controller: _passwordController,
                                   obscureText: _obscurePassword,
                                   textInputAction: TextInputAction.done,
@@ -141,40 +167,37 @@ class _LoginScreenState extends State<LoginScreen> {
                                     labelText: 'Password',
                                     prefixIcon: const Icon(Icons.lock_outline),
                                     suffixIcon: IconButton(
+                                      key: const ValueKey('tc_s1_mob_toggle_password'),
                                       icon: Icon(
                                         _obscurePassword
                                             ? Icons.visibility_outlined
                                             : Icons.visibility_off_outlined,
                                       ),
                                       onPressed: () => setState(
-                                          () => _obscurePassword =
-                                              !_obscurePassword),
+                                          () => _obscurePassword = !_obscurePassword),
                                     ),
                                   ),
-                                  validator: (val) =>
-                                      (val == null || val.isEmpty)
-                                          ? 'Password is required.'
-                                          : null,
+                                  validator: (val) => (val == null || val.isEmpty)
+                                      ? 'Password is required.'
+                                      : null,
                                 ),
                                 const SizedBox(height: 28),
 
                                 // Submit button
                                 FilledButton(
+                                  key: const ValueKey('tc_s1_mob_sign_in_btn'),
                                   onPressed: isLoading ? null : _submit,
                                   style: FilledButton.styleFrom(
-                                    padding: const EdgeInsets.symmetric(
-                                        vertical: 14),
+                                    padding: const EdgeInsets.symmetric(vertical: 14),
                                     shape: RoundedRectangleBorder(
-                                        borderRadius:
-                                            BorderRadius.circular(10)),
+                                        borderRadius: BorderRadius.circular(10)),
                                   ),
                                   child: isLoading
                                       ? const SizedBox(
                                           height: 20,
                                           width: 20,
                                           child: CircularProgressIndicator(
-                                              strokeWidth: 2,
-                                              color: Colors.white),
+                                              strokeWidth: 2, color: Colors.white),
                                         )
                                       : const Text('Sign In',
                                           style: TextStyle(
@@ -184,6 +207,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                                 const SizedBox(height: 16),
                                 GestureDetector(
+                                  key: const ValueKey('tc_s1_mob_register_link'),
                                   onTap: () => context.push('/register'),
                                   child: Text(
                                     "Don't have an account? Create account",
@@ -209,13 +233,68 @@ class _LoginScreenState extends State<LoginScreen> {
       ),
     );
   }
+
+  /// Show lockout bottom sheet with countdown when account is locked.
+  void _showLockoutSheet(BuildContext context, AuthLocked state) {
+    showModalBottomSheet(
+      context: context,
+      isDismissible: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) {
+        final colorScheme = Theme.of(ctx).colorScheme;
+        return Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.lock_clock_outlined,
+                  size: 48, color: colorScheme.error),
+              const SizedBox(height: 16),
+              Text(
+                'Account Locked',
+                style: Theme.of(ctx).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: colorScheme.error,
+                    ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                state.message,
+                textAlign: TextAlign.center,
+                style: Theme.of(ctx).textTheme.bodyMedium,
+              ),
+              if (state.lockedUntil != null) ...[
+                const SizedBox(height: 8),
+                Text(
+                  'Locked until: ${state.lockedUntil}',
+                  style: Theme.of(ctx).textTheme.bodySmall?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                ),
+              ],
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text('OK'),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
 }
 
 class _ErrorBanner extends StatelessWidget {
   final String message;
   final bool isLocked;
 
-  const _ErrorBanner({required this.message, this.isLocked = false});
+  const _ErrorBanner({super.key, required this.message, this.isLocked = false});
 
   @override
   Widget build(BuildContext context) {

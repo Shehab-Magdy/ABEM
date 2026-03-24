@@ -2,19 +2,26 @@ import 'package:dio/dio.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
+
+import '../../../core/auth/jwt_decoder.dart';
+import '../../../core/auth/token_storage.dart';
+import '../../../injection.dart';
 import '../repositories/auth_repository.dart';
 
 // ── Events ────────────────────────────────────────────────────────────────────
+
 abstract class AuthEvent extends Equatable {
   const AuthEvent();
   @override
   List<Object?> get props => [];
 }
 
+/// Dispatched on app launch — checks stored tokens and restores session.
 class AuthCheckRequested extends AuthEvent {
   const AuthCheckRequested();
 }
 
+/// Dispatched when user submits the login form.
 class AuthLoginRequested extends AuthEvent {
   final String email;
   final String password;
@@ -24,10 +31,27 @@ class AuthLoginRequested extends AuthEvent {
   List<Object?> get props => [email, password];
 }
 
+/// Dispatched when user taps logout or session expires.
 class AuthLogoutRequested extends AuthEvent {
   const AuthLogoutRequested();
 }
 
+/// Dispatched when the backend returns HTTP 423 (account locked).
+class AuthAccountLocked extends AuthEvent {
+  final String message;
+  final String? lockedUntil;
+  const AuthAccountLocked({required this.message, this.lockedUntil});
+
+  @override
+  List<Object?> get props => [message, lockedUntil];
+}
+
+/// Dispatched on app resume to silently refresh the access token if needed.
+class AuthTokenRefreshRequested extends AuthEvent {
+  const AuthTokenRefreshRequested();
+}
+
+/// Dispatched when user updates their profile fields.
 class AuthProfileUpdateRequested extends AuthEvent {
   final Map<String, dynamic> fields;
   const AuthProfileUpdateRequested(this.fields);
@@ -35,6 +59,7 @@ class AuthProfileUpdateRequested extends AuthEvent {
   List<Object?> get props => [fields];
 }
 
+/// Dispatched when user uploads a new profile picture.
 class AuthProfilePictureUpdateRequested extends AuthEvent {
   final XFile imageFile;
   const AuthProfilePictureUpdateRequested(this.imageFile);
@@ -43,6 +68,7 @@ class AuthProfilePictureUpdateRequested extends AuthEvent {
 }
 
 // ── States ────────────────────────────────────────────────────────────────────
+
 abstract class AuthState extends Equatable {
   const AuthState();
   @override
@@ -61,12 +87,28 @@ class AuthAuthenticated extends AuthState {
   final Map<String, dynamic> user;
   const AuthAuthenticated({required this.user});
 
+  /// Convenience: extract the user role (admin | owner).
+  String get role => (user['role'] as String?) ?? 'owner';
+
+  /// Convenience: check if the user is an admin.
+  bool get isAdmin => role == 'admin';
+
   @override
   List<Object?> get props => [user];
 }
 
 class AuthUnauthenticated extends AuthState {
   const AuthUnauthenticated();
+}
+
+/// Account locked by the backend (HTTP 423).
+class AuthLocked extends AuthState {
+  final String message;
+  final String? lockedUntil;
+  const AuthLocked({required this.message, this.lockedUntil});
+
+  @override
+  List<Object?> get props => [message, lockedUntil];
 }
 
 class AuthError extends AuthState {
@@ -79,6 +121,7 @@ class AuthError extends AuthState {
 }
 
 // ── BLoC ──────────────────────────────────────────────────────────────────────
+
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final AuthRepository authRepository;
 
@@ -86,23 +129,63 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<AuthCheckRequested>(_onCheckRequested);
     on<AuthLoginRequested>(_onLoginRequested);
     on<AuthLogoutRequested>(_onLogoutRequested);
+    on<AuthAccountLocked>(_onAccountLocked);
+    on<AuthTokenRefreshRequested>(_onTokenRefreshRequested);
     on<AuthProfileUpdateRequested>(_onProfileUpdateRequested);
     on<AuthProfilePictureUpdateRequested>(_onProfilePictureUpdateRequested);
   }
 
+  /// Check stored tokens on app start. If the access token is expired but a
+  /// refresh token exists, attempt a silent refresh.
   Future<void> _onCheckRequested(
     AuthCheckRequested event,
     Emitter<AuthState> emit,
   ) async {
-    final token = await authRepository.getStoredAccessToken();
-    if (token != null) {
+    final tokenStorage = getIt<TokenStorage>();
+    final accessToken = await tokenStorage.accessToken;
+
+    if (accessToken == null || accessToken.isEmpty) {
+      emit(const AuthUnauthenticated());
+      return;
+    }
+
+    // If the access token is still valid, restore from cached user
+    if (!JwtDecoder.isExpired(accessToken)) {
       final user = await authRepository.getStoredUser();
       if (user != null) {
         emit(AuthAuthenticated(user: user));
         return;
       }
     }
-    emit(const AuthUnauthenticated());
+
+    // Access token expired — try silent refresh
+    final refreshToken = await tokenStorage.refreshToken;
+    if (refreshToken == null || refreshToken.isEmpty) {
+      emit(const AuthUnauthenticated());
+      return;
+    }
+
+    try {
+      // The RefreshInterceptor will handle the actual refresh when we make
+      // any API call. But for startup, we do it explicitly here.
+      final dio = getIt<Dio>();
+      final response = await dio.post(
+        '/auth/refresh/',
+        data: {'refresh': refreshToken},
+      );
+      final newAccess = response.data['access'] as String;
+      await tokenStorage.saveTokens(access: newAccess, refresh: refreshToken);
+
+      final user = await authRepository.getStoredUser();
+      if (user != null) {
+        emit(AuthAuthenticated(user: user));
+      } else {
+        emit(const AuthUnauthenticated());
+      }
+    } catch (_) {
+      await tokenStorage.clearAll();
+      emit(const AuthUnauthenticated());
+    }
   }
 
   Future<void> _onLoginRequested(
@@ -114,7 +197,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       final result = await authRepository.login(event.email, event.password);
       emit(AuthAuthenticated(user: result['user'] as Map<String, dynamic>));
     } on AccountLockedException catch (e) {
-      emit(AuthError(message: e.message, isLocked: true));
+      emit(AuthLocked(message: e.message, lockedUntil: e.lockedUntil));
     } on DioException catch (e) {
       final detail =
           (e.response?.data as Map<String, dynamic>?)?['detail'] as String?;
@@ -130,6 +213,46 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   ) async {
     await authRepository.logout();
     emit(const AuthUnauthenticated());
+  }
+
+  void _onAccountLocked(
+    AuthAccountLocked event,
+    Emitter<AuthState> emit,
+  ) {
+    emit(AuthLocked(message: event.message, lockedUntil: event.lockedUntil));
+  }
+
+  /// Silently refresh the access token. If it fails, log out.
+  Future<void> _onTokenRefreshRequested(
+    AuthTokenRefreshRequested event,
+    Emitter<AuthState> emit,
+  ) async {
+    final tokenStorage = getIt<TokenStorage>();
+    final accessToken = await tokenStorage.accessToken;
+
+    // Only refresh if the current token is expiring soon
+    if (accessToken != null && !JwtDecoder.isExpiringSoon(accessToken)) {
+      return; // Token still valid, nothing to do
+    }
+
+    final refreshToken = await tokenStorage.refreshToken;
+    if (refreshToken == null || refreshToken.isEmpty) {
+      emit(const AuthUnauthenticated());
+      return;
+    }
+
+    try {
+      final dio = getIt<Dio>();
+      final response = await dio.post(
+        '/auth/refresh/',
+        data: {'refresh': refreshToken},
+      );
+      final newAccess = response.data['access'] as String;
+      await tokenStorage.saveTokens(access: newAccess, refresh: refreshToken);
+    } catch (_) {
+      await authRepository.logout();
+      emit(const AuthUnauthenticated());
+    }
   }
 
   Future<void> _onProfileUpdateRequested(
