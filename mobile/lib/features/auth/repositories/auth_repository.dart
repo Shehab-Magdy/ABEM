@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:dio/dio.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../core/api/api_endpoints.dart';
 import '../../../core/auth/token_storage.dart';
@@ -82,8 +82,7 @@ class AuthRepository {
 
   /// Read persisted user profile from shared_preferences.
   Future<Map<String, dynamic>?> getStoredUser() async {
-    final prefs = await SharedPreferences.getInstance();
-    final raw = prefs.getString(_userKey);
+    final raw = await _tokenStorage.readSecure(_userKey);
     if (raw == null) return null;
     try {
       return jsonDecode(raw) as Map<String, dynamic>;
@@ -93,13 +92,11 @@ class AuthRepository {
   }
 
   Future<void> _storeUser(Map<String, dynamic> user) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_userKey, jsonEncode(user));
+    await _tokenStorage.writeSecure(_userKey, jsonEncode(user));
   }
 
   Future<void> _clearUser() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_userKey);
+    await _tokenStorage.deleteSecure(_userKey);
   }
 
   /// Upload a new profile picture and persist the updated user locally.

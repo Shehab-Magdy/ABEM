@@ -9,6 +9,8 @@ import 'features/apartments/data/datasources/apartment_remote_data_source.dart';
 import 'features/apartments/data/repositories/apartment_repository.dart';
 import 'features/buildings/data/datasources/building_remote_data_source.dart';
 import 'features/buildings/data/repositories/building_repository.dart';
+import 'features/expenses/data/datasources/expense_remote_data_source.dart';
+import 'features/expenses/data/repositories/expense_repository.dart';
 
 /// Global service locator instance.
 final getIt = GetIt.instance;
@@ -57,8 +59,15 @@ Future<void> configureDependencies() async {
     () => ApartmentRepository(getIt<ApartmentRemoteDataSource>()),
   );
 
+  getIt.registerLazySingleton<ExpenseRemoteDataSource>(
+    () => ExpenseRemoteDataSource(getIt<Dio>()),
+  );
+
+  getIt.registerLazySingleton<ExpenseRepository>(
+    () => ExpenseRepository(getIt<ExpenseRemoteDataSource>()),
+  );
+
   // Future feature repositories:
-  // getIt.registerLazySingleton<ExpenseRepository>(() => ...);
   // getIt.registerLazySingleton<PaymentRepository>(() => ...);
   // getIt.registerLazySingleton<DashboardRepository>(() => ...);
   // getIt.registerLazySingleton<NotificationRepository>(() => ...);

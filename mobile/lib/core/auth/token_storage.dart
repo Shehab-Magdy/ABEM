@@ -15,6 +15,13 @@ class TokenStorage {
   Future<String?> get accessToken => _storage.read(key: _accessKey);
   Future<String?> get refreshToken => _storage.read(key: _refreshKey);
 
+  Future<String?> readSecure(String key) => _storage.read(key: key);
+
+  Future<void> writeSecure(String key, String value) =>
+      _storage.write(key: key, value: value);
+
+  Future<void> deleteSecure(String key) => _storage.delete(key: key);
+
   Future<void> saveTokens({
     required String access,
     required String refresh,
