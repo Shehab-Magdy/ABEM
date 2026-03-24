@@ -10,14 +10,32 @@ import '../../features/apartments/data/repositories/apartment_repository.dart';
 import '../../features/apartments/presentation/bloc/apartment_detail_cubit.dart';
 import '../../features/apartments/presentation/screens/apartment_detail_screen.dart';
 import '../../features/buildings/data/repositories/building_repository.dart';
+import '../../features/buildings/presentation/bloc/building_detail_cubit.dart';
+import '../../features/buildings/presentation/bloc/building_form_cubit.dart';
 import '../../features/buildings/presentation/bloc/building_list_cubit.dart';
+import '../../features/buildings/presentation/bloc/building_units_cubit.dart';
+import '../../features/buildings/presentation/screens/building_detail_screen.dart';
 import '../../features/buildings/presentation/screens/building_list_screen.dart';
-import '../../injection.dart';
-import '../../features/expenses/screens/expenses_screen.dart';
+import '../../features/buildings/presentation/screens/building_units_screen.dart';
+import '../../features/dashboard/presentation/bloc/admin_dashboard_cubit.dart';
+import '../../features/dashboard/presentation/bloc/owner_dashboard_cubit.dart';
+import '../../features/dashboard/presentation/screens/admin_dashboard_screen.dart';
+import '../../features/dashboard/presentation/screens/owner_dashboard_screen.dart';
+import '../../features/expenses/presentation/bloc/expense_detail_cubit.dart';
+import '../../features/expenses/presentation/bloc/expense_form_cubit.dart';
+import '../../features/expenses/presentation/bloc/expense_list_cubit.dart';
+import '../../features/expenses/presentation/screens/expense_create_screen.dart';
+import '../../features/expenses/presentation/screens/expense_detail_screen.dart';
+import '../../features/expenses/presentation/screens/expense_list_screen.dart';
 import '../../features/home/screens/home_screen.dart';
 import '../../features/notifications/screens/notifications_screen.dart';
 import '../../features/payments/screens/payments_screen.dart';
 import '../../features/profile/screens/profile_screen.dart';
+import '../../injection.dart';
+import '../features/expenses/data/repositories/expense_repository.dart';
+import 'routes.dart';
+import 'shells/admin_shell.dart';
+import 'shells/owner_shell.dart';
 
 /// Public routes that do not require authentication.
 const _publicRoutes = {'/splash', '/login', '/register', '/register/invite'};
@@ -86,156 +104,8 @@ class AppRouter {
         builder: (_, __) => const _PlaceholderScreen(title: 'Settings'),
       ),
 
-      // ── Admin routes ───────────────────────────────────────
-      GoRoute(
-        path: '/admin/dashboard',
-        builder: (_, __) => const HomeScreen(),
-      ),
-      GoRoute(
-        path: '/admin/buildings',
-        builder: (_, __) => BlocProvider(
-          create: (_) =>
-              BuildingListCubit(getIt<BuildingRepository>())..loadBuildings(),
-          child: const BuildingListScreen(),
-        ),
-      ),
-      GoRoute(
-        path: '/admin/buildings/:id',
-        builder: (_, state) => _PlaceholderScreen(
-          title: 'Building ${state.pathParameters['id']}',
-        ),
-      ),
-      GoRoute(
-        path: '/admin/buildings/:id/units',
-        builder: (_, state) => _PlaceholderScreen(
-          title: 'Units — ${state.pathParameters['id']}',
-        ),
-      ),
-      GoRoute(
-        path: '/admin/apartments/:id',
-        builder: (_, state) {
-          final id = state.pathParameters['id']!;
-          return BlocProvider(
-            create: (_) =>
-                ApartmentDetailCubit(getIt<ApartmentRepository>())..load(id),
-            child: ApartmentDetailScreen(apartmentId: id),
-          );
-        },
-      ),
-      GoRoute(
-        path: '/admin/expenses',
-        builder: (_, __) => const ExpensesScreen(),
-      ),
-      GoRoute(
-        path: '/admin/expenses/create',
-        builder: (_, __) => const _PlaceholderScreen(title: 'Create Expense'),
-      ),
-      GoRoute(
-        path: '/admin/expenses/:id',
-        builder: (_, state) => _PlaceholderScreen(
-          title: 'Expense ${state.pathParameters['id']}',
-        ),
-      ),
-      GoRoute(
-        path: '/admin/payments',
-        builder: (_, __) => const PaymentsScreen(),
-      ),
-      GoRoute(
-        path: '/admin/payments/record',
-        builder: (_, __) =>
-            const _PlaceholderScreen(title: 'Record Payment'),
-      ),
-      GoRoute(
-        path: '/admin/payments/:id/receipt',
-        builder: (_, state) => _PlaceholderScreen(
-          title: 'Receipt ${state.pathParameters['id']}',
-        ),
-      ),
-      GoRoute(
-        path: '/admin/users',
-        builder: (_, __) => const _PlaceholderScreen(title: 'Users'),
-      ),
-      GoRoute(
-        path: '/admin/users/create',
-        builder: (_, __) => const _PlaceholderScreen(title: 'Create User'),
-      ),
-      GoRoute(
-        path: '/admin/users/:id',
-        builder: (_, state) => _PlaceholderScreen(
-          title: 'User ${state.pathParameters['id']}',
-        ),
-      ),
-      GoRoute(
-        path: '/admin/assets',
-        builder: (_, __) => const _PlaceholderScreen(title: 'Assets'),
-      ),
-      GoRoute(
-        path: '/admin/assets/create',
-        builder: (_, __) =>
-            const _PlaceholderScreen(title: 'Add Asset'),
-      ),
-      GoRoute(
-        path: '/admin/notifications',
-        builder: (_, __) => const NotificationsScreen(),
-      ),
-      GoRoute(
-        path: '/admin/audit',
-        builder: (_, __) => const _PlaceholderScreen(title: 'Audit Log'),
-      ),
-      GoRoute(
-        path: '/admin/settings',
-        builder: (_, __) => const _PlaceholderScreen(title: 'Settings'),
-      ),
-
-      // ── Owner routes ───────────────────────────────────────
-      GoRoute(
-        path: '/owner/dashboard',
-        builder: (_, __) => const HomeScreen(),
-      ),
-      GoRoute(
-        path: '/owner/expenses',
-        builder: (_, __) => const ExpensesScreen(),
-      ),
-      GoRoute(
-        path: '/owner/expenses/:id',
-        builder: (_, state) => _PlaceholderScreen(
-          title: 'Expense ${state.pathParameters['id']}',
-        ),
-      ),
-      GoRoute(
-        path: '/owner/payments',
-        builder: (_, __) => const PaymentsScreen(),
-      ),
-      GoRoute(
-        path: '/owner/payments/:id/receipt',
-        builder: (_, state) => _PlaceholderScreen(
-          title: 'Receipt ${state.pathParameters['id']}',
-        ),
-      ),
-      GoRoute(
-        path: '/owner/notifications',
-        builder: (_, __) => const NotificationsScreen(),
-      ),
-      GoRoute(
-        path: '/owner/profile',
-        builder: (_, __) => const ProfileScreen(),
-      ),
-      GoRoute(
-        path: '/owner/settings',
-        builder: (_, __) => const _PlaceholderScreen(title: 'Settings'),
-      ),
-
-      // ── Legacy fallback (redirect /home to role-based dashboard) ──
-      GoRoute(
-        path: '/home',
-        redirect: (context, _) {
-          final authState = context.read<AuthBloc>().state;
-          if (authState is AuthAuthenticated) {
-            return authState.isAdmin ? '/admin/dashboard' : '/owner/dashboard';
-          }
-          return '/login';
-        },
-      ),
+      _buildAdminShell(),
+      _buildOwnerShell(),
     ],
   );
 }
@@ -244,6 +114,261 @@ class AppRouter {
 ///
 /// Shows the route title so you can verify navigation works before
 /// building the real screen.
+StatefulShellRoute _buildAdminShell() {
+  return StatefulShellRoute.indexedStack(
+    builder: (context, state, navigationShell) => AdminShell(
+      navigationShell: navigationShell,
+    ),
+    branches: [
+      StatefulShellBranch(
+        routes: [
+          GoRoute(
+            path: Routes.adminDashboard,
+            builder: (_, __) => BlocProvider(
+              create: (_) => AdminDashboardCubit(getIt())..load(),
+              child: const AdminDashboardScreen(),
+            ),
+          ),
+        ],
+      ),
+      StatefulShellBranch(
+        routes: [
+          GoRoute(
+            path: Routes.adminBuildings,
+            builder: (_, __) => MultiBlocProvider(
+              providers: [
+                BlocProvider(
+                  create: (_) =>
+                      BuildingListCubit(getIt<BuildingRepository>())..loadBuildings(),
+                ),
+                BlocProvider(
+                  create: (_) => BuildingFormCubit(getIt<BuildingRepository>()),
+                ),
+              ],
+              child: const BuildingListScreen(),
+            ),
+          ),
+          GoRoute(
+            path: Routes.adminBuildingDetail(':id'),
+            builder: (_, state) {
+              final id = state.pathParameters['id']!;
+              return MultiBlocProvider(
+                providers: [
+                  BlocProvider(
+                    create: (_) =>
+                        BuildingDetailCubit(getIt<BuildingRepository>())..load(id),
+                  ),
+                  BlocProvider(
+                    create: (_) => BuildingFormCubit(getIt<BuildingRepository>()),
+                  ),
+                ],
+                child: BuildingDetailScreen(buildingId: id),
+              );
+            },
+          ),
+          GoRoute(
+            path: Routes.adminBuildingUnits(':id'),
+            builder: (_, state) {
+              final id = state.pathParameters['id']!;
+              final extra = state.extra;
+              String? buildingName;
+              if (extra is Map<String, dynamic>) {
+                buildingName = extra['buildingName'] as String?;
+              }
+              return BlocProvider(
+                create: (_) =>
+                    BuildingUnitsCubit(getIt<BuildingRepository>())..load(id),
+                child: BuildingUnitsScreen(
+                  buildingId: id,
+                  buildingName: buildingName,
+                ),
+              );
+            },
+          ),
+          GoRoute(
+            path: Routes.adminApartmentDetail(':id'),
+            builder: (_, state) {
+              final id = state.pathParameters['id']!;
+              return BlocProvider(
+                create: (_) =>
+                    ApartmentDetailCubit(getIt<ApartmentRepository>())..load(id),
+                child: ApartmentDetailScreen(apartmentId: id),
+              );
+            },
+          ),
+        ],
+      ),
+      StatefulShellBranch(
+        routes: [
+          GoRoute(
+            path: Routes.adminExpenses,
+            builder: (_, __) => BlocProvider(
+              create: (_) => ExpenseListCubit(getIt<ExpenseRepository>()),
+              child: const ExpenseListScreen(),
+            ),
+          ),
+          GoRoute(
+            path: Routes.adminExpenseCreate,
+            builder: (_, __) => BlocProvider(
+              create: (_) => ExpenseFormCubit(getIt<ExpenseRepository>())
+                ..loadCategories(),
+              child: const ExpenseCreateScreen(),
+            ),
+          ),
+          GoRoute(
+            path: Routes.adminExpenseDetail(':id'),
+            builder: (_, state) {
+              final id = state.pathParameters['id']!;
+              return BlocProvider(
+                create: (_) => ExpenseDetailCubit(getIt<ExpenseRepository>())
+                  ..load(id),
+                child: ExpenseDetailScreen(expenseId: id),
+              );
+            },
+          ),
+        ],
+      ),
+      StatefulShellBranch(
+        routes: [
+          GoRoute(
+            path: Routes.adminPayments,
+            builder: (_, __) => const PaymentsScreen(),
+          ),
+          GoRoute(
+            path: Routes.adminPaymentRecord,
+            builder: (_, __) => const _PlaceholderScreen(title: 'Record Payment'),
+          ),
+          GoRoute(
+            path: Routes.adminPaymentReceipt(':id'),
+            builder: (_, state) => _PlaceholderScreen(
+              title: 'Receipt ${state.pathParameters['id']}',
+            ),
+          ),
+        ],
+      ),
+      StatefulShellBranch(
+        routes: [
+          GoRoute(
+            path: Routes.adminMore,
+            builder: (_, __) => const _PlaceholderScreen(title: 'More'),
+          ),
+          GoRoute(
+            path: Routes.adminUsers,
+            builder: (_, __) => const _PlaceholderScreen(title: 'Users'),
+          ),
+          GoRoute(
+            path: Routes.adminUserCreate,
+            builder: (_, __) => const _PlaceholderScreen(title: 'Create User'),
+          ),
+          GoRoute(
+            path: Routes.adminUserDetail(':id'),
+            builder: (_, state) => _PlaceholderScreen(
+              title: 'User ${state.pathParameters['id']}',
+            ),
+          ),
+          GoRoute(
+            path: Routes.adminAssets,
+            builder: (_, __) => const _PlaceholderScreen(title: 'Assets'),
+          ),
+          GoRoute(
+            path: Routes.adminAssetCreate,
+            builder: (_, __) => const _PlaceholderScreen(title: 'Add Asset'),
+          ),
+          GoRoute(
+            path: Routes.adminNotifications,
+            builder: (_, __) => const NotificationsScreen(),
+          ),
+          GoRoute(
+            path: Routes.adminAudit,
+            builder: (_, __) => const _PlaceholderScreen(title: 'Audit Log'),
+          ),
+          GoRoute(
+            path: Routes.adminSettings,
+            builder: (_, __) => const _PlaceholderScreen(title: 'Settings'),
+          ),
+        ],
+      ),
+    ],
+  );
+}
+
+StatefulShellRoute _buildOwnerShell() {
+  return StatefulShellRoute.indexedStack(
+    builder: (context, state, navigationShell) => OwnerShell(
+      navigationShell: navigationShell,
+    ),
+    branches: [
+      StatefulShellBranch(
+        routes: [
+          GoRoute(
+            path: Routes.ownerDashboard,
+            builder: (_, __) => BlocProvider(
+              create: (_) => OwnerDashboardCubit(getIt())..load(),
+              child: const OwnerDashboardScreen(),
+            ),
+          ),
+        ],
+      ),
+      StatefulShellBranch(
+        routes: [
+          GoRoute(
+            path: Routes.ownerExpenses,
+            builder: (_, __) => BlocProvider(
+              create: (_) => ExpenseListCubit(getIt<ExpenseRepository>()),
+              child: const ExpenseListScreen(),
+            ),
+          ),
+          GoRoute(
+            path: Routes.ownerExpenseDetail(':id'),
+            builder: (_, state) {
+              final id = state.pathParameters['id']!;
+              return BlocProvider(
+                create: (_) => ExpenseDetailCubit(getIt<ExpenseRepository>())
+                  ..load(id),
+                child: ExpenseDetailScreen(expenseId: id),
+              );
+            },
+          ),
+        ],
+      ),
+      StatefulShellBranch(
+        routes: [
+          GoRoute(
+            path: Routes.ownerPayments,
+            builder: (_, __) => const PaymentsScreen(),
+          ),
+          GoRoute(
+            path: Routes.ownerPaymentReceipt(':id'),
+            builder: (_, state) => _PlaceholderScreen(
+              title: 'Receipt ${state.pathParameters['id']}',
+            ),
+          ),
+        ],
+      ),
+      StatefulShellBranch(
+        routes: [
+          GoRoute(
+            path: Routes.ownerNotifications,
+            builder: (_, __) => const NotificationsScreen(),
+          ),
+        ],
+      ),
+      StatefulShellBranch(
+        routes: [
+          GoRoute(
+            path: Routes.ownerProfile,
+            builder: (_, __) => const ProfileScreen(),
+          ),
+          GoRoute(
+            path: Routes.ownerSettings,
+            builder: (_, __) => const _PlaceholderScreen(title: 'Settings'),
+          ),
+        ],
+      ),
+    ],
+  );
+}
+
 class _PlaceholderScreen extends StatelessWidget {
   final String title;
   const _PlaceholderScreen({required this.title});
