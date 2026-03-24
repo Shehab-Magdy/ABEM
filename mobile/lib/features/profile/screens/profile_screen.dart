@@ -1,8 +1,10 @@
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../../core/api/api_endpoints.dart';
 import '../../auth/bloc/auth_bloc.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -47,8 +49,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Future<void> _pickAndUpload() async {
     final picker = ImagePicker();
-    final picked =
-        await picker.pickImage(source: ImageSource.gallery, imageQuality: 85);
+    final picked = await picker.pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 800,
+      maxHeight: 800,
+      imageQuality: 85,
+    );
     if (picked == null || !mounted) return;
 
     setState(() => _uploadingPicture = true);
@@ -63,6 +69,132 @@ class _ProfileScreenState extends State<ProfileScreen> {
           'last_name': _lastNameCtrl.text.trim(),
           'phone': _phoneCtrl.text.trim(),
         }));
+  }
+
+  void _showChangePasswordSheet() {
+    final currentPwCtrl = TextEditingController();
+    final newPwCtrl = TextEditingController();
+    final confirmPwCtrl = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+    bool submitting = false;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSheetState) => Padding(
+          padding: EdgeInsets.fromLTRB(
+            24,
+            24,
+            24,
+            24 + MediaQuery.of(ctx).viewInsets.bottom,
+          ),
+          child: Form(
+            key: formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Change Password',
+                  key: const ValueKey('tc_s1_mob_change_password'),
+                  style: Theme.of(ctx)
+                      .textTheme
+                      .titleLarge
+                      ?.copyWith(fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: currentPwCtrl,
+                  obscureText: true,
+                  decoration:
+                      const InputDecoration(labelText: 'Current Password'),
+                  validator: (v) =>
+                      (v == null || v.isEmpty) ? 'Required' : null,
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: newPwCtrl,
+                  obscureText: true,
+                  decoration:
+                      const InputDecoration(labelText: 'New Password'),
+                  validator: (v) {
+                    if (v == null || v.isEmpty) return 'Required';
+                    if (v.length < 8) return 'At least 8 characters';
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: confirmPwCtrl,
+                  obscureText: true,
+                  decoration:
+                      const InputDecoration(labelText: 'Confirm Password'),
+                  validator: (v) {
+                    if (v == null || v.isEmpty) return 'Required';
+                    if (v != newPwCtrl.text) return 'Passwords do not match';
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton(
+                    onPressed: submitting
+                        ? null
+                        : () async {
+                            if (!formKey.currentState!.validate()) return;
+                            setSheetState(() => submitting = true);
+                            try {
+                              final dio = context.read<Dio>();
+                              await dio.post(
+                                ApiEndpoints.changePassword,
+                                data: {
+                                  'current_password': currentPwCtrl.text,
+                                  'new_password': newPwCtrl.text,
+                                },
+                              );
+                              if (!ctx.mounted) return;
+                              Navigator.pop(ctx);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content:
+                                      Text('Password changed successfully'),
+                                ),
+                              );
+                            } on DioException catch (e) {
+                              setSheetState(() => submitting = false);
+                              final msg = e.response?.data?['detail']
+                                      ?.toString() ??
+                                  'Failed to change password';
+                              if (!ctx.mounted) return;
+                              ScaffoldMessenger.of(ctx).showSnackBar(
+                                SnackBar(
+                                  content: Text(msg),
+                                  backgroundColor:
+                                      Theme.of(ctx).colorScheme.error,
+                                ),
+                              );
+                            }
+                          },
+                    child: submitting
+                        ? const SizedBox(
+                            height: 18,
+                            width: 18,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : const Text('Change Password'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   @override
@@ -95,10 +227,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
       builder: (context, state) {
         final user = state is AuthAuthenticated ? state.user : _currentUser;
         final pictureUrl = user?['profile_picture'] as String?;
-        final initials =
-            ((user?['first_name'] as String? ?? '?')[0]).toUpperCase();
+        final firstName = user?['first_name'] as String? ?? '';
+        final lastName = user?['last_name'] as String? ?? '';
+        final initials = [
+          if (firstName.isNotEmpty) firstName[0],
+          if (lastName.isNotEmpty) lastName[0],
+        ].join().toUpperCase();
+        final email = user?['email'] as String? ?? '';
 
         return Scaffold(
+          key: const ValueKey('tc_s1_mob_profile_screen'),
           appBar: AppBar(
             title: const Text('My Profile'),
             centerTitle: false,
@@ -121,7 +259,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               : null,
                       child: (pictureUrl == null || pictureUrl.isEmpty)
                           ? Text(
-                              initials,
+                              initials.isNotEmpty ? initials : '?',
                               style: TextStyle(
                                 fontSize: 36,
                                 color: theme.colorScheme.onPrimaryContainer,
@@ -165,7 +303,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                 const SizedBox(height: 8),
                 Text(
-                  user?['email'] as String? ?? '',
+                  email,
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
                   ),
@@ -221,6 +359,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             labelText: 'Phone (optional)'),
                         keyboardType: TextInputType.phone,
                       ),
+                      const SizedBox(height: 16),
+                      // ── Email (read-only) ───────────────────────────────────
+                      TextFormField(
+                        initialValue: email,
+                        decoration: InputDecoration(
+                          labelText: 'Email',
+                          suffixIcon: Icon(
+                            Icons.lock_outline,
+                            size: 18,
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                        readOnly: true,
+                        enabled: false,
+                      ),
                       const SizedBox(height: 24),
                       SizedBox(
                         width: double.infinity,
@@ -240,6 +393,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ),
                     ],
                   ),
+                ),
+
+                const SizedBox(height: 16),
+                const Divider(),
+                const SizedBox(height: 8),
+
+                // ── Change Password tile ──────────────────────────────────
+                ListTile(
+                  leading: Icon(
+                    Icons.lock_reset,
+                    color: theme.colorScheme.primary,
+                  ),
+                  title: const Text('Change Password'),
+                  subtitle: const Text('Update your account password'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: _showChangePasswordSheet,
                 ),
               ],
             ),
