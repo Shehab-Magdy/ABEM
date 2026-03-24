@@ -16,17 +16,17 @@ class TestBuildingsApartments:
         assert "/buildings" in admin_page.url
 
     def test_add_building_button_visible_admin(self, admin_page):
-        """Admin sees Add Building button."""
+        """Admin sees New Building button."""
         bp = BuildingsPage(admin_page)
         bp.navigate()
         bp.wait_for_load()
-        assert bp.is_button_visible("Add Building")
+        assert bp.is_button_visible("New Building")
 
     def test_owner_no_add_building(self, owner_page):
-        """Owner cannot see Add Building button."""
+        """Owner cannot see New Building button."""
         owner_page.goto(f"{settings.BASE_URL}/buildings")
         owner_page.wait_for_load_state("networkidle")
-        assert not owner_page.locator("button:has-text('Add Building')").is_visible(timeout=2000)
+        assert not owner_page.locator("button:has-text('New Building')").is_visible(timeout=2000)
 
     def test_building_list_has_columns(self, admin_page):
         """Building list table has expected columns."""
@@ -35,12 +35,12 @@ class TestBuildingsApartments:
         bp.wait_for_load()
 
     def test_create_building_form_opens(self, admin_page):
-        """Clicking Add Building opens form dialog."""
+        """Clicking New Building opens form dialog."""
         bp = BuildingsPage(admin_page)
         bp.navigate()
         bp.wait_for_load()
-        if bp.is_button_visible("Add Building"):
-            bp.click_button("Add Building")
+        if bp.is_button_visible("New Building"):
+            bp.click_button("New Building")
             admin_page.wait_for_timeout(500)
             assert admin_page.locator("[role='dialog']").is_visible(timeout=3000)
 
