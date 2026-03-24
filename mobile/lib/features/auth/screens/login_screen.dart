@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
 import '../bloc/auth_bloc.dart';
@@ -83,8 +84,12 @@ class _LoginScreenState extends State<LoginScreen> with WidgetsBindingObserver {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       // ── Logo ────────────────────────────────────────────
-                      Icon(Icons.apartment_rounded,
-                          size: 64, color: colorScheme.primary),
+                      SvgPicture.asset(
+                        Theme.of(context).brightness == Brightness.dark
+                            ? 'assets/images/abem-logo-dark.svg'
+                            : 'assets/images/abem-logo-light.svg',
+                        height: 56,
+                      ),
                       const SizedBox(height: 16),
                       Text(
                         'ABEM',
