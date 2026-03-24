@@ -6,7 +6,10 @@ import '../../features/auth/bloc/auth_bloc.dart';
 import '../../features/auth/screens/login_screen.dart';
 import '../../features/auth/screens/register_screen.dart';
 import '../../features/auth/screens/splash_screen.dart';
-import '../../features/buildings/screens/buildings_screen.dart';
+import '../../features/buildings/data/repositories/building_repository.dart';
+import '../../features/buildings/presentation/bloc/building_list_cubit.dart';
+import '../../features/buildings/presentation/screens/building_list_screen.dart';
+import '../../injection.dart';
 import '../../features/expenses/screens/expenses_screen.dart';
 import '../../features/home/screens/home_screen.dart';
 import '../../features/notifications/screens/notifications_screen.dart';
@@ -87,7 +90,11 @@ class AppRouter {
       ),
       GoRoute(
         path: '/admin/buildings',
-        builder: (_, __) => const BuildingsScreen(),
+        builder: (_, __) => BlocProvider(
+          create: (_) =>
+              BuildingListCubit(getIt<BuildingRepository>())..loadBuildings(),
+          child: const BuildingListScreen(),
+        ),
       ),
       GoRoute(
         path: '/admin/buildings/:id',

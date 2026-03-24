@@ -5,6 +5,8 @@ import 'package:get_it/get_it.dart';
 import 'core/api/dio_client.dart';
 import 'core/auth/token_storage.dart';
 import 'features/auth/repositories/auth_repository.dart';
+import 'features/buildings/data/datasources/building_remote_data_source.dart';
+import 'features/buildings/data/repositories/building_repository.dart';
 
 /// Global service locator instance.
 final getIt = GetIt.instance;
@@ -37,8 +39,15 @@ Future<void> configureDependencies() async {
     ),
   );
 
-  // Feature repositories will be registered here as they are built:
-  // getIt.registerLazySingleton<BuildingRepository>(() => ...);
+  getIt.registerLazySingleton<BuildingRemoteDataSource>(
+    () => BuildingRemoteDataSource(getIt<Dio>()),
+  );
+
+  getIt.registerLazySingleton<BuildingRepository>(
+    () => BuildingRepository(getIt<BuildingRemoteDataSource>()),
+  );
+
+  // Future feature repositories:
   // getIt.registerLazySingleton<ExpenseRepository>(() => ...);
   // getIt.registerLazySingleton<PaymentRepository>(() => ...);
   // getIt.registerLazySingleton<DashboardRepository>(() => ...);
