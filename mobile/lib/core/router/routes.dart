@@ -34,6 +34,7 @@ class Routes {
   static const String adminNotifications = '/admin/notifications';
   static const String adminAudit = '/admin/audit';
   static const String adminSettings = '/admin/settings';
+  static const String adminMore = '/admin/more';
 
   // ── Owner shell ────────────────────────────────────────────
   static const String ownerDashboard = '/owner/dashboard';
