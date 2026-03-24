@@ -156,12 +156,17 @@ class _BalanceCard extends StatelessWidget {
   Widget build(BuildContext context) {
     if (balance == null) return const SizedBox.shrink();
     final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     final currentBalance =
         double.tryParse(balance!['balance']?.toString() ?? '0') ?? 0;
     final totalOwed =
         double.tryParse(balance!['total_owed']?.toString() ?? '0') ?? 0;
     final totalPaid =
         double.tryParse(balance!['total_paid']?.toString() ?? '0') ?? 0;
+    final overdueAmount =
+        double.tryParse(balance!['overdue_amount']?.toString() ?? '0') ?? 0;
+    final upcomingAmount =
+        double.tryParse(balance!['upcoming_amount']?.toString() ?? '0') ?? 0;
 
     Color chipColor;
     String chipLabel;
@@ -189,18 +194,13 @@ class _BalanceCard extends StatelessWidget {
                 Text('Balance Summary',
                     style: theme.textTheme.titleMedium
                         ?.copyWith(fontWeight: FontWeight.w600)),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: chipColor.withAlpha(30),
-                    borderRadius: BorderRadius.circular(8),
+                Chip(
+                  label: Text(chipLabel),
+                  labelStyle: TextStyle(
+                    color: chipColor,
+                    fontWeight: FontWeight.w600,
                   ),
-                  child: Text(chipLabel,
-                      style: TextStyle(
-                          color: chipColor,
-                          fontWeight: FontWeight.w600,
-                          fontSize: 13)),
+                  backgroundColor: chipColor.withOpacity(0.1),
                 ),
               ],
             ),
@@ -230,6 +230,27 @@ class _BalanceCard extends StatelessWidget {
                 ),
               ],
             ),
+            const SizedBox(height: 16),
+            Container(
+              decoration: BoxDecoration(
+                color: colorScheme.surfaceVariant,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Reminder',
+                      style: theme.textTheme.labelLarge
+                          ?.copyWith(fontWeight: FontWeight.w600)),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Overdue: ${formatCurrency(overdueAmount)} · Upcoming: ${formatCurrency(upcomingAmount)}',
+                    style: TextStyle(color: colorScheme.onSurfaceVariant),
+                  ),
+                ],
+              ),
+            ),
           ],
         ),
       ),
@@ -241,8 +262,7 @@ class _BalanceStat extends StatelessWidget {
   final String label;
   final String value;
   final Color color;
-  const _BalanceStat(
-      {required this.label, required this.value, required this.color});
+  const _BalanceStat({required this.label, required this.value, required this.color});
 
   @override
   Widget build(BuildContext context) {
@@ -278,9 +298,18 @@ class _OwnerSection extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Owner(s)',
-                style: theme.textTheme.titleMedium
-                    ?.copyWith(fontWeight: FontWeight.w600)),
+            Row(
+              children: [
+                Text('Owner(s)',
+                    style: theme.textTheme.titleMedium
+                        ?.copyWith(fontWeight: FontWeight.w600)),
+                const SizedBox(width: 8),
+                Chip(
+                  label: Text(status.toUpperCase()),
+                  visualDensity: VisualDensity.compact,
+                ),
+              ],
+            ),
             const SizedBox(height: 12),
             if (ownerNames.isEmpty)
               Row(
@@ -294,25 +323,32 @@ class _OwnerSection extends StatelessWidget {
                 ],
               )
             else
-              ...ownerNames.map((name) => Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: Row(
-                      children: [
-                        CircleAvatar(
-                          radius: 16,
-                          backgroundColor: theme.colorScheme.primaryContainer,
-                          child: Text(
-                            name.isNotEmpty ? name[0].toUpperCase() : '?',
-                            style: TextStyle(
-                                color: theme.colorScheme.onPrimaryContainer,
-                                fontWeight: FontWeight.w600),
-                          ),
+              Wrap(
+                spacing: 12,
+                runSpacing: 12,
+                children: ownerNames.map((name) {
+                  final initials = name.isNotEmpty
+                      ? name
+                          .split(' ')
+                          .take(2)
+                          .map((w) => w.isNotEmpty ? w[0].toUpperCase() : '')
+                          .join()
+                      : '?';
+                  return Chip(
+                    avatar: CircleAvatar(
+                      backgroundColor: theme.colorScheme.primary,
+                      child: Text(
+                        initials,
+                        style: TextStyle(
+                          color: theme.colorScheme.onPrimary,
+                          fontWeight: FontWeight.w700,
                         ),
-                        const SizedBox(width: 10),
-                        Text(name),
-                      ],
+                      ),
                     ),
-                  )),
+                    label: Text(name),
+                  );
+                }).toList(),
+              ),
           ],
         ),
       ),
