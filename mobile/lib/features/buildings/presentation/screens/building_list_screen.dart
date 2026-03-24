@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../../../core/router/routes.dart';
 import '../../../auth/bloc/auth_bloc.dart';
+import '../bloc/building_form_cubit.dart';
 import '../bloc/building_list_cubit.dart';
+import '../widgets/building_form_sheet.dart';
 
 /// Admin building list screen with search, pull-to-refresh, and CRUD actions.
 class BuildingListScreen extends StatelessWidget {
@@ -81,6 +85,16 @@ class BuildingListScreen extends StatelessWidget {
                         .read<BuildingListCubit>()
                         .toggleActive(id, isCurrentlyActive: active);
                   },
+                  onEdit: () => _openFormSheet(
+                    context,
+                    building: state.buildings[i],
+                  ),
+                  onViewDetail: () {
+                    final id = state.buildings[i]['id']?.toString();
+                    if (id != null) {
+                      context.push(Routes.adminBuildingDetail(id));
+                    }
+                  },
                 ),
               ),
             );
@@ -89,13 +103,36 @@ class BuildingListScreen extends StatelessWidget {
         },
       ),
       floatingActionButton: isAdmin
-          ? FloatingActionButton(
+          ? FloatingActionButton.extended(
               key: const ValueKey('tc_s2_mob_add_building_fab'),
-              onPressed: () => _showCreateDialog(context),
-              child: const Icon(Icons.add),
+              onPressed: () => _openFormSheet(context),
+              icon: const Icon(Icons.add),
+              label: const Text('Add Building'),
             )
           : null,
     );
+  }
+
+  Future<void> _openFormSheet(BuildContext context,
+      {Map<String, dynamic>? building}) async {
+    final formCubit = context.read<BuildingFormCubit>()..reset();
+    final result = await showModalBottomSheet<Map<String, dynamic>>(
+      context: context,
+      isScrollControlled: true,
+      builder: (_) => BlocProvider.value(
+        value: formCubit,
+        child: BuildingFormSheet(initialBuilding: building),
+      ),
+    );
+
+    if (result != null) {
+      if (!context.mounted) return;
+      final snackText =
+          building == null ? 'Building created' : 'Building updated';
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(snackText)));
+      context.read<BuildingListCubit>().loadBuildings();
+    }
   }
 
   void _confirmDelete(
@@ -129,117 +166,6 @@ class BuildingListScreen extends StatelessWidget {
     );
   }
 
-  void _showCreateDialog(BuildContext context) {
-    final nameCtrl = TextEditingController();
-    final addressCtrl = TextEditingController();
-    final cityCtrl = TextEditingController();
-    final countryCtrl = TextEditingController();
-    final floorsCtrl = TextEditingController(text: '1');
-    final aptsCtrl = TextEditingController(text: '0');
-    final storesCtrl = TextEditingController(text: '0');
-    final formKey = GlobalKey<FormState>();
-
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('New Building'),
-        content: Form(
-          key: formKey,
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextFormField(
-                  controller: nameCtrl,
-                  decoration: const InputDecoration(labelText: 'Name *'),
-                  validator: (v) =>
-                      (v == null || v.isEmpty) ? 'Required' : null,
-                ),
-                const SizedBox(height: 8),
-                TextFormField(
-                  controller: addressCtrl,
-                  decoration: const InputDecoration(labelText: 'Address *'),
-                  validator: (v) =>
-                      (v == null || v.isEmpty) ? 'Required' : null,
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextFormField(
-                        controller: cityCtrl,
-                        decoration:
-                            const InputDecoration(labelText: 'City *'),
-                        validator: (v) =>
-                            (v == null || v.isEmpty) ? 'Required' : null,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: TextFormField(
-                        controller: countryCtrl,
-                        decoration:
-                            const InputDecoration(labelText: 'Country'),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextFormField(
-                        controller: floorsCtrl,
-                        keyboardType: TextInputType.number,
-                        decoration:
-                            const InputDecoration(labelText: 'Floors *'),
-                        validator: (v) {
-                          final n = int.tryParse(v ?? '');
-                          return (n == null || n < 1) ? '≥ 1' : null;
-                        },
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: TextFormField(
-                        controller: aptsCtrl,
-                        keyboardType: TextInputType.number,
-                        decoration:
-                            const InputDecoration(labelText: '# Apts'),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: TextFormField(
-                        controller: storesCtrl,
-                        keyboardType: TextInputType.number,
-                        decoration:
-                            const InputDecoration(labelText: '# Stores'),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () {
-              if (!formKey.currentState!.validate()) return;
-              Navigator.pop(ctx);
-              context.read<BuildingListCubit>().loadBuildings();
-            },
-            child: const Text('Create'),
-          ),
-        ],
-      ),
-    );
-  }
 }
 
 class _BuildingCard extends StatelessWidget {
@@ -247,12 +173,16 @@ class _BuildingCard extends StatelessWidget {
   final bool isAdmin;
   final VoidCallback onDelete;
   final VoidCallback onToggleActive;
+  final VoidCallback onEdit;
+  final VoidCallback onViewDetail;
 
   const _BuildingCard({
     required this.building,
     required this.isAdmin,
     required this.onDelete,
     required this.onToggleActive,
+    required this.onEdit,
+    required this.onViewDetail,
   });
 
   @override
@@ -270,10 +200,9 @@ class _BuildingCard extends StatelessWidget {
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: InkWell(
+        key: ValueKey('tc_s2_mob_building_card_${building['id']}'),
         borderRadius: BorderRadius.circular(16),
-        onTap: () {
-          // Navigate to building detail (placeholder)
-        },
+        onTap: onViewDetail,
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Row(
@@ -343,14 +272,23 @@ class _BuildingCard extends StatelessWidget {
                     switch (action) {
                       case 'toggle':
                         onToggleActive();
+                        break;
+                      case 'edit':
+                        onEdit();
+                        break;
                       case 'delete':
                         onDelete();
+                        break;
                     }
                   },
                   itemBuilder: (_) => [
                     PopupMenuItem(
                       value: 'toggle',
                       child: Text(isActive ? 'Deactivate' : 'Activate'),
+                    ),
+                    const PopupMenuItem(
+                      value: 'edit',
+                      child: Text('Edit'),
                     ),
                     PopupMenuItem(
                       value: 'delete',
@@ -427,8 +365,8 @@ class _EmptyView extends StatelessWidget {
               style: theme.textTheme.titleMedium?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant)),
           if (isAdmin) ...[
-            const SizedBox(height: 8),
-            Text('Tap + to add your first building.',
+            const SizedBox(height: 12),
+            Text('Tap the + button to add your first building.',
                 style: TextStyle(color: theme.colorScheme.onSurfaceVariant)),
           ],
         ],

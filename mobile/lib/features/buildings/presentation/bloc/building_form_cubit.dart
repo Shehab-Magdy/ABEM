@@ -1,6 +1,7 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../shared/domain/failures/failures.dart';
 import '../../data/repositories/building_repository.dart';
 
 // ── State ─────────────────────────────────────────────────────────────────────
@@ -46,13 +47,12 @@ class BuildingFormCubit extends Cubit<BuildingFormState> {
     emit(const BuildingFormSubmitting());
     final result = await _repo.createBuilding(payload);
     result.fold(
-      (failure) {
-        if (failure is! Exception) {
-          emit(BuildingFormError(failure.message));
-        } else {
-          emit(BuildingFormError(failure.message));
-        }
-      },
+      (failure) => emit(
+        BuildingFormError(
+          failure.message,
+          fieldErrors: failure is ServerFailure ? failure.fieldErrors : null,
+        ),
+      ),
       (building) => emit(BuildingFormSuccess(building)),
     );
   }
@@ -61,7 +61,12 @@ class BuildingFormCubit extends Cubit<BuildingFormState> {
     emit(const BuildingFormSubmitting());
     final result = await _repo.updateBuilding(id, payload);
     result.fold(
-      (failure) => emit(BuildingFormError(failure.message)),
+      (failure) => emit(
+        BuildingFormError(
+          failure.message,
+          fieldErrors: failure is ServerFailure ? failure.fieldErrors : null,
+        ),
+      ),
       (building) => emit(BuildingFormSuccess(building)),
     );
   }
