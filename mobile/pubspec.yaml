@@ -58,6 +58,9 @@ dependencies:
   hive: ^2.2.3
   hive_flutter: ^1.1.0
 
+  # Sharing
+  share_plus: any
+
   # UI
   fl_chart: ^0.69.0
   flutter_svg: any

@@ -5,6 +5,8 @@ import 'package:get_it/get_it.dart';
 import 'core/api/dio_client.dart';
 import 'core/auth/token_storage.dart';
 import 'features/auth/repositories/auth_repository.dart';
+import 'features/apartments/data/datasources/apartment_remote_data_source.dart';
+import 'features/apartments/data/repositories/apartment_repository.dart';
 import 'features/buildings/data/datasources/building_remote_data_source.dart';
 import 'features/buildings/data/repositories/building_repository.dart';
 
@@ -45,6 +47,14 @@ Future<void> configureDependencies() async {
 
   getIt.registerLazySingleton<BuildingRepository>(
     () => BuildingRepository(getIt<BuildingRemoteDataSource>()),
+  );
+
+  getIt.registerLazySingleton<ApartmentRemoteDataSource>(
+    () => ApartmentRemoteDataSource(getIt<Dio>()),
+  );
+
+  getIt.registerLazySingleton<ApartmentRepository>(
+    () => ApartmentRepository(getIt<ApartmentRemoteDataSource>()),
   );
 
   // Future feature repositories:

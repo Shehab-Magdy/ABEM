@@ -6,6 +6,9 @@ import '../../features/auth/bloc/auth_bloc.dart';
 import '../../features/auth/screens/login_screen.dart';
 import '../../features/auth/screens/register_screen.dart';
 import '../../features/auth/screens/splash_screen.dart';
+import '../../features/apartments/data/repositories/apartment_repository.dart';
+import '../../features/apartments/presentation/bloc/apartment_detail_cubit.dart';
+import '../../features/apartments/presentation/screens/apartment_detail_screen.dart';
 import '../../features/buildings/data/repositories/building_repository.dart';
 import '../../features/buildings/presentation/bloc/building_list_cubit.dart';
 import '../../features/buildings/presentation/screens/building_list_screen.dart';
@@ -110,9 +113,14 @@ class AppRouter {
       ),
       GoRoute(
         path: '/admin/apartments/:id',
-        builder: (_, state) => _PlaceholderScreen(
-          title: 'Apartment ${state.pathParameters['id']}',
-        ),
+        builder: (_, state) {
+          final id = state.pathParameters['id']!;
+          return BlocProvider(
+            create: (_) =>
+                ApartmentDetailCubit(getIt<ApartmentRepository>())..load(id),
+            child: ApartmentDetailScreen(apartmentId: id),
+          );
+        },
       ),
       GoRoute(
         path: '/admin/expenses',
