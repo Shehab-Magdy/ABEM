@@ -66,7 +66,7 @@
   "status_unpaid": "غير مدفوع",
   "status_partial": "مدفوع جزئياً",
   "paid_amount": "المدفوع",
-  "weight": "الوزن",
+  "weight": "النسبة",
   "custom_weight_hint": "حدد الوزن لكل وحدة (1.0 = حصة كاملة، 0.5 = نصف حصة). أزل التحديد للاستبعاد.",
   "your_share": "حصتك",
   "expense_date": "تاريخ المصروف",
