@@ -40,12 +40,15 @@ class AbemApp extends StatelessWidget {
             )..add(const AuthCheckRequested()),
           ),
         ],
-        child: MaterialApp.router(
-          title: 'ABEM',
-          debugShowCheckedModeBanner: false,
-          theme: AppTheme.light,
-          routerConfig: AppRouter.router,
-        ),
+        child: Builder(builder: (context) {
+          final authBloc = context.read<AuthBloc>();
+          return MaterialApp.router(
+            title: 'ABEM',
+            debugShowCheckedModeBanner: false,
+            theme: AppTheme.light,
+            routerConfig: AppRouter.router(authBloc),
+          );
+        }),
       ),
     );
   }

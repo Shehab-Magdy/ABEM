@@ -9,5 +9,8 @@
     "tests",
     "--no-header",
     "-p", "no:warnings"
+  ],
+  "cSpell.words": [
+    "ABEM"
   ]
 }
