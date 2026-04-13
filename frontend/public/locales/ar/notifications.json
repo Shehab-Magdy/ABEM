@@ -20,6 +20,9 @@
   "message_sent": "تم إرسال الرسالة بنجاح",
   "all_members": "جميع أعضاء المبنى",
   "specific_members": "أعضاء محددين",
+  "recipient_load_failed": "فشل تحميل المستلمين.",
+  "noRecipientsAvailable": "لم يتم العثور على مستلمين مؤهلين.",
+  "individualMessageBlocked": "تم حظر الرسائل الفردية لحسابك.",
 
   "title": "الإشعارات",
   "sendMessage": "إرسال رسالة",

@@ -15,6 +15,7 @@ from django.utils.translation import gettext_lazy as _
 from apps.audit.mixins import log_action
 from apps.authentication.models import User
 from apps.authentication.permissions import IsAdminRole
+from apps.authentication.serializers import UserSerializer
 
 from .models import Building, UserBuilding
 from .serializers import AssignUserSerializer, BuildingSerializer
@@ -256,4 +257,28 @@ class BuildingViewSet(ModelViewSet):
         )
         if page is not None:
             return self.get_paginated_response(serializer.data)
+        return Response(serializer.data)
+
+    @action(
+        detail=True,
+        methods=["get"],
+        url_path="members",
+        permission_classes=[IsAuthenticated],
+    )
+    def members(self, request, pk=None):
+        """
+        GET /buildings/{id}/members/
+        Returns active admin and owner users belonging to the building.
+        """
+        building = self.get_object()
+        recipients = (
+            User.objects.filter(
+                userbuilding__building=building,
+                is_active=True,
+                role__in=["admin", "owner"],
+            )
+            .order_by("first_name", "last_name")
+            .distinct()
+        )
+        serializer = UserSerializer(recipients, many=True, context={"request": request})
         return Response(serializer.data)

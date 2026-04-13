@@ -20,6 +20,9 @@
   "message_sent": "Message sent successfully",
   "all_members": "All building members",
   "specific_members": "Specific members",
+  "recipient_load_failed": "Failed to load recipients.",
+  "noRecipientsAvailable": "No eligible recipients found.",
+  "individualMessageBlocked": "Individual messaging is blocked for your account.",
 
   "title": "Notifications",
   "sendMessage": "Send Message",

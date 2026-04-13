@@ -9,6 +9,7 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Alert,
+  Autocomplete,
   Avatar,
   Box,
   Button,
@@ -193,7 +194,7 @@ export default function NotificationCenterPage() {
     announcement: t("type_announcement", "Announcement"),
     message: t("type_message", "Message"),
   };
-  const { isAdmin } = useAuth();
+  const { isAdmin, user } = useAuth();
   const decrementUnread = useNotificationStore((s) => s.decrementUnread);
   const [notifications, setNotifications] = useState([]);
   const [filter, setFilter] = useState("all");
@@ -222,6 +223,8 @@ export default function NotificationCenterPage() {
   const [sendSuccess, setSendSuccess] = useState(false);
   const [buildingMembers, setBuildingMembers] = useState([]);
   const [selectedMembers, setSelectedMembers] = useState([]);
+  const [recipientLoading, setRecipientLoading] = useState(false);
+  const [recipientError, setRecipientError] = useState("");
 
   const fetchNotifications = useCallback(() => {
     setLoading(true);
@@ -252,13 +255,28 @@ export default function NotificationCenterPage() {
     if (!sendBuilding || sendRecipientType !== "individual") {
       setBuildingMembers([]);
       setSelectedMembers([]);
+      setRecipientError("");
       return;
     }
+
+    setRecipientLoading(true);
+    setRecipientError("");
     axiosClient
-      .get("/users/", { params: { building_id: sendBuilding, page_size: 100 } })
-      .then((r) => setBuildingMembers(r.data.results ?? r.data))
-      .catch(() => setBuildingMembers([]));
-  }, [sendBuilding, sendRecipientType]);
+      .get(`/buildings/${sendBuilding}/members/`)
+      .then((r) => {
+        const members = Array.isArray(r.data) ? r.data : r.data.results ?? [];
+        setBuildingMembers(members);
+        setSelectedMembers((current) =>
+          current.filter((member) => members.some((m) => m.id === member.id))
+        );
+      })
+      .catch(() => {
+        setBuildingMembers([]);
+        setSelectedMembers([]);
+        setRecipientError(t("recipient_load_failed", "Failed to load recipients."));
+      })
+      .finally(() => setRecipientLoading(false));
+  }, [sendBuilding, sendRecipientType, t]);
 
   const handleMarkRead = (id) => {
     axiosClient
@@ -299,7 +317,7 @@ export default function NotificationCenterPage() {
         recipient_type: sendRecipientType,
       };
       if (sendRecipientType === "individual") {
-        payload.recipient_ids = selectedMembers;
+        payload.recipient_ids = selectedMembers.map((member) => member.id);
       }
       const r = await axiosClient.post("/notifications/send/", payload);
       setSendSuccess(true);
@@ -391,32 +409,70 @@ export default function NotificationCenterPage() {
                     <MenuItem value="all">{t("allMembers")}</MenuItem>
                     <MenuItem value="admins">{t("adminsOnly")}</MenuItem>
                     <MenuItem value="owners">{t("ownersOnly")}</MenuItem>
-                    <MenuItem value="individual">{t("specificPerson")}</MenuItem>
+                    <MenuItem value="individual" disabled={user?.individual_messaging_blocked}>
+                      {t("specificPerson")}
+                    </MenuItem>
                   </Select>
                 </FormControl>
 
-                {sendRecipientType === "individual" && buildingMembers.length > 0 && (
-                  <FormControl size="small" fullWidth>
-                    <InputLabel>{t("selectRecipients")}</InputLabel>
-                    <Select
-                      multiple
-                      value={selectedMembers}
-                      label={t("selectRecipients")}
-                      onChange={(e) => setSelectedMembers(e.target.value)}
-                      renderValue={(selected) =>
-                        buildingMembers
-                          .filter((m) => selected.includes(m.id))
-                          .map((m) => `${m.first_name} ${m.last_name}`.trim() || m.email)
-                          .join(", ")
-                      }
-                    >
-                      {buildingMembers.map((m) => (
-                        <MenuItem key={m.id} value={m.id}>
-                          {m.first_name} {m.last_name} — {m.email}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
+                {sendRecipientType === "individual" && (
+                  <Autocomplete
+                    multiple
+                    options={buildingMembers}
+                    disableCloseOnSelect
+                    filterSelectedOptions
+                    getOptionLabel={(option) => {
+                      const name = `${option.first_name || ""} ${option.last_name || ""}`.trim() || option.email;
+                      const roleLabel = option.role === "admin" ? t("adminsOnly") : t("ownersOnly");
+                      const buildingName = buildings.find((b) => b.id === sendBuilding)?.name || "";
+                      return `${name} (${roleLabel}${buildingName ? ` - ${buildingName}` : ""})`;
+                    }}
+                    value={selectedMembers}
+                    isOptionEqualToValue={(option, value) => option.id === value.id}
+                    onChange={(_, value) => setSelectedMembers(value)}
+                    disabled={recipientLoading || user?.individual_messaging_blocked}
+                    renderInput={(params) => (
+                      <TextField
+                        {...params}
+                        size="small"
+                        label={t("selectRecipients")}
+                        helperText={
+                          recipientError ||
+                          (!recipientLoading && buildingMembers.length === 0
+                            ? t("noRecipientsAvailable", "No eligible recipients found.")
+                            : "")
+                        }
+                        InputProps={{
+                          ...params.InputProps,
+                          endAdornment: (
+                            <>
+                              {recipientLoading ? (
+                                <CircularProgress color="inherit" size={20} />
+                              ) : null}
+                              {params.InputProps.endAdornment}
+                            </>
+                          ),
+                        }}
+                      />
+                    )}
+                    renderTags={(value, getTagProps) =>
+                      value.map((option, index) => (
+                        <Chip
+                          label={`${option.first_name || ""} ${option.last_name || ""}`.trim() || option.email}
+                          {...getTagProps({ index })}
+                          key={option.id}
+                        />
+                      ))
+                    }
+                  />
+                )}
+                {user?.individual_messaging_blocked && sendRecipientType === "individual" && (
+                  <Alert severity="warning">
+                    {t(
+                      "individualMessageBlocked",
+                      "Individual messaging is blocked for your account."
+                    )}
+                  </Alert>
                 )}
 
                 <TextField
