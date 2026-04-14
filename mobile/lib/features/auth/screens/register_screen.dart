@@ -321,8 +321,9 @@ class _AccountStepState extends State<_AccountStep> {
                 labelText: 'Email *', prefixIcon: Icon(Icons.email_outlined)),
             validator: (v) {
               if (v == null || v.isEmpty) return 'Required.';
-              if (!RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(v))
+              if (!RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(v)) {
                 return 'Invalid email.';
+              }
               return null;
             },
           ),

@@ -5,7 +5,7 @@ import 'package:pretty_dio_logger/pretty_dio_logger.dart';
 /// Centralized Dio HTTP client with JWT interceptor.
 class ApiClient {
   static const String _baseUrl =
-      String.fromEnvironment('API_BASE_URL', defaultValue: 'http://10.0.2.2:8000/api/v1');
+      String.fromEnvironment('API_BASE_URL', defaultValue: 'http://127.0.0.1:8000/api/v1');
 
   late final Dio _dio;
   final FlutterSecureStorage _storage = const FlutterSecureStorage();

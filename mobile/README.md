@@ -1,6 +1,6 @@
 # abem_mobile
 
-A new Flutter project.
+ABEM – Apartment & Building Expense Management (Flutter Mobile)
 
 ## Getting Started
 
@@ -15,3 +15,30 @@ A few resources to get you started if this is your first Flutter project:
 For help getting started with Flutter development, view the
 [online documentation](https://docs.flutter.dev/), which offers tutorials,
 samples, guidance on mobile development, and a full API reference.
+
+## Prerequisites
+
+- Flutter SDK installed
+- Dart SDK
+- Xcode (for iOS development) or Android Studio (for Android development)
+
+Run `flutter doctor` to check your environment.
+
+## Running the App Manually
+
+1. Navigate to the mobile directory:
+   ```
+   cd mobile
+   ```
+
+2. Install dependencies:
+   ```
+   flutter pub get
+   ```
+
+3. Run the app:
+   ```
+   flutter run
+   ```
+
+4. Choose the target device when prompted (e.g., macOS, Chrome, iOS Simulator, Android Emulator).
