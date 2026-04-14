@@ -62,10 +62,13 @@ flutter:
 
 flutter_icons:
   android: true
-  ios: true
-  image_path: "assets/images/abem-app-icon.svg"
+  ios: false
+  image_path: "assets/images/abem-app-icon.png"
   adaptive_icon_background: "#FFFFFF"
-  adaptive_icon_foreground: "assets/images/abem-app-icon.svg"
+  adaptive_icon_foreground: "assets/images/abem-app-icon.png"
 
 flutter_native_splash:
   color: "#FFFFFF"
+  image: assets/images/abem-splash.png
+  android: true
+  ios: false
