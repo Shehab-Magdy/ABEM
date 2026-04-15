@@ -2,11 +2,26 @@
 ABEM – Production settings.
 """
 from .base import *  # noqa: F401, F403
+import os
 import sentry_sdk
 from sentry_sdk.integrations.django import DjangoIntegration
 from decouple import config
+import dj_database_url
 
 DEBUG = False
+
+BASE_DIR = Path(__file__).resolve().parent.parent
+
+SECRET_KEY = config("DJANGO_SECRET_KEY")
+
+ALLOWED_HOSTS = config("DJANGO_ALLOWED_HOSTS", cast=lambda v: v.split(",") if v else [])
+
+DATABASES = {
+    "default": dj_database_url.config(
+        default=config("DATABASE_URL"),
+    )
+}
+
 
 # Security hardening
 SECURE_SSL_REDIRECT = True
@@ -18,6 +33,7 @@ CSRF_COOKIE_SECURE = True
 SECURE_BROWSER_XSS_FILTER = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
 X_FRAME_OPTIONS = "DENY"
+
 
 # Content Security Policy
 SECURE_REFERRER_POLICY = "strict-origin-when-cross-origin"
