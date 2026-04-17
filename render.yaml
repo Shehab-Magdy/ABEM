@@ -1,0 +1,53 @@
+services:
+  - type: web_service
+    name: abem-backend
+    env: docker
+    region: ord
+    branch: main
+    path: backend
+    dockerfilePath: backend/Dockerfile
+    startCommand: gunicorn config.wsgi:application --bind 0.0.0.0:$PORT --workers 4 --timeout 120
+    envVars:
+      - key: DJANGO_SETTINGS_MODULE
+        value: config.settings.production
+      - key: DJANGO_DEBUG
+        value: "False"
+      - key: DATABASE_URL
+        sync: false
+      - key: REDIS_URL
+        fromService: abem-redis
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false
+
+  - type: worker_service
+    name: abem-celery-worker
+    env: docker
+    region: ord
+    branch: main
+    path: backend
+    dockerfilePath: backend/Dockerfile
+    startCommand: celery -A config worker --loglevel=info
+    envVars:
+      - key: DJANGO_SETTINGS_MODULE
+        value: config.settings.production
+      - key: DJANGO_DEBUG
+        value: "False"
+      - key: DATABASE_URL
+        sync: false
+      - key: REDIS_URL
+        fromService: abem-redis
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false
+
+  - type: redis
+    name: abem-redis
+    plan: starter
+    region: ord

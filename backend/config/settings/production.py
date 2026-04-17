@@ -18,10 +18,14 @@ ALLOWED_HOSTS = config("DJANGO_ALLOWED_HOSTS", cast=lambda v: v.split(",") if v 
 
 DATABASES = {
     "default": dj_database_url.config(
-        default=config("DATABASE_URL"),
+        default=config("DATABASE_URL", default=config("POSTGRES_URL", default="")),
     )
 }
 
+# These headers are required when Django is behind Render's HTTPS and proxy layer.
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+USE_X_FORWARDED_HOST = True
+CSRF_TRUSTED_ORIGINS = [f"https://{host}" for host in ALLOWED_HOSTS if host]
 
 # Security hardening
 SECURE_SSL_REDIRECT = True
