@@ -14,7 +14,7 @@ services:
   - key: REDIS_URL
     fromService:
       type: keyvalue
-      name: sidekiq-keyvalue
+      name: abem-redis
       property: connectionString
 
 - type: worker
@@ -32,7 +32,7 @@ services:
   - key: REDIS_URL
     fromService:
       type: keyvalue
-      name: sidekiq-keyvalue
+      name: abem-redis
       property: connectionString
 
 - type: redis
