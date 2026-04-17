@@ -6,7 +6,6 @@ services:
   branch: main
   rootDir: backend
   dockerfilePath: backend/Dockerfile
-  startCommand: gunicorn config.wsgi:application --bind 0.0.0.0:$PORT --workers 4 --timeout 120
   envVars:
   - key: DJANGO_SETTINGS_MODULE
     value: config.settings.production
@@ -14,8 +13,9 @@ services:
     value: "False"
   - key: REDIS_URL
     fromService:
-      serviceName: abem-redis
-      field: REDIS_URL
+      name: abem-redis
+      type: redis
+      property: REDIS_URL
 
 - type: worker
   name: abem-celery-worker
@@ -24,7 +24,6 @@ services:
   branch: main
   rootDir: backend
   dockerfilePath: backend/Dockerfile
-  startCommand: celery -A config worker --loglevel=info
   envVars:
   - key: DJANGO_SETTINGS_MODULE
     value: config.settings.production
@@ -32,10 +31,13 @@ services:
     value: "False"
   - key: REDIS_URL
     fromService:
-      serviceName: abem-redis
-      field: REDIS_URL
+      name: abem-redis
+      type: redis
+      property: REDIS_URL
 
 - type: redis
   name: abem-redis
   plan: free
   region: frankfurt
+  allowList:
+  - 0.0.0.0/0
