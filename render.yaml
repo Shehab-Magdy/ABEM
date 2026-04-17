@@ -1,41 +1,41 @@
 services:
-  - type: web
-    name: abem-backend
-    env: docker
-    region: ord
-    branch: main
-    root: backend
-    dockerfilePath: backend/Dockerfile
-    startCommand: gunicorn config.wsgi:application --bind 0.0.0.0:$PORT --workers 4 --timeout 120
-    envVars:
-      - key: DJANGO_SETTINGS_MODULE
-        value: config.settings.production
-      - key: DJANGO_DEBUG
-        value: "False"
-      - key: REDIS_URL
-        fromService:
-          serviceName: abem-redis
-          field: REDIS_URL
+- type: web
+  name: abem-backend
+  env: docker
+  region: frankfurt
+  branch: main
+  rootDir: backend
+  dockerfilePath: backend/Dockerfile
+  startCommand: gunicorn config.wsgi:application --bind 0.0.0.0:$PORT --workers 4 --timeout 120
+  envVars:
+  - key: DJANGO_SETTINGS_MODULE
+    value: config.settings.production
+  - key: DJANGO_DEBUG
+    value: "False"
+  - key: REDIS_URL
+    fromService:
+      serviceName: abem-redis
+      field: REDIS_URL
 
-  - type: worker
-    name: abem-celery-worker
-    env: docker
-    region: ord
-    branch: main
-    root: backend
-    dockerfilePath: backend/Dockerfile
-    startCommand: celery -A config worker --loglevel=info
-    envVars:
-      - key: DJANGO_SETTINGS_MODULE
-        value: config.settings.production
-      - key: DJANGO_DEBUG
-        value: "False"
-      - key: REDIS_URL
-        fromService:
-          serviceName: abem-redis
-          field: REDIS_URL
+- type: worker
+  name: abem-celery-worker
+  env: docker
+  region: frankfurt
+  branch: main
+  rootDir: backend
+  dockerfilePath: backend/Dockerfile
+  startCommand: celery -A config worker --loglevel=info
+  envVars:
+  - key: DJANGO_SETTINGS_MODULE
+    value: config.settings.production
+  - key: DJANGO_DEBUG
+    value: "False"
+  - key: REDIS_URL
+    fromService:
+      serviceName: abem-redis
+      field: REDIS_URL
 
-  - type: redis
-    name: abem-redis
-    plan: starter
-    region: ord
+- type: redis
+  name: abem-redis
+  plan: free
+  region: frankfurt
