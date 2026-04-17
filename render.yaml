@@ -39,5 +39,5 @@ services:
   name: abem-redis
   plan: free
   region: frankfurt
-  allowList:
+  ipAllowList:
   - 0.0.0.0/0
