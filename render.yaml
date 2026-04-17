@@ -40,4 +40,4 @@ services:
   plan: free
   region: frankfurt
   ipAllowList:
-  - 0.0.0.0/0
+  - source: 0.0.0.0/0
