@@ -13,9 +13,9 @@ services:
     value: "False"
   - key: REDIS_URL
     fromService:
-      name: abem-redis
-      type: redis
-      property: REDIS_URL
+      type: keyvalue
+      name: sidekiq-keyvalue
+      property: connectionString
 
 - type: worker
   name: abem-celery-worker
@@ -31,9 +31,9 @@ services:
     value: "False"
   - key: REDIS_URL
     fromService:
-      name: abem-redis
-      type: redis
-      property: REDIS_URL
+      type: keyvalue
+      name: sidekiq-keyvalue
+      property: connectionString
 
 - type: redis
   name: abem-redis
