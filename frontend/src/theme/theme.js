@@ -44,7 +44,7 @@ const darkPalette = {
   success: { main: "#10B981" },
   background: {
     default: "#0F172A", // Deep Charcoal
-    paper: "#1E293B", // Slate Navy
+    paper: "#0F172A", // Changed to match
   },
   text: {
     primary: "#F8FAFC", // Off-White
@@ -85,6 +85,17 @@ const sharedComponents = (mode) => ({
       root: {
         backdropFilter: "blur(10px)",
         backgroundColor: mode === 'dark' ? "rgba(30, 41, 59, 0.8)" : "rgba(255, 255, 255, 0.8)",
+      },
+    },
+  },
+  MuiTableHead: {
+    styleOverrides: {
+      root: {
+        backgroundColor: mode === 'dark' ? '#0F172A' : '#FFFFFF',
+        '& .MuiTableCell-head': {
+          color: mode === 'dark' ? "#F8FAFC" : "#1E293B",
+          fontWeight: 600,
+        },
       },
     },
   },

@@ -26,6 +26,7 @@ import { useAuth } from "../../hooks/useAuth";
 import { useAuthStore } from "../../contexts/authStore";
 import { PrivateSEO } from "../../components/seo/SEO";
 import PhoneInput from "../../components/PhoneInput";
+import ThemeSwitcher from "../../components/ThemeSwitcher";
 
 export default function ProfilePage() {
   const { t, i18n } = useTranslation("profile");
@@ -41,6 +42,8 @@ export default function ProfilePage() {
   const [picError, setPicError] = useState(null);
   const [langSaving, setLangSaving] = useState(false);
   const [langSuccess, setLangSuccess] = useState(false);
+  const [themeSaving, setThemeSaving] = useState(false);
+  const [themeSuccess, setThemeSuccess] = useState(false);
   const fileInputRef = useRef(null);
 
   const profileForm = useForm({ defaultValues: { first_name: user?.first_name, last_name: user?.last_name, phone: user?.phone } });
@@ -101,23 +104,19 @@ export default function ProfilePage() {
     }
   };
 
-  // ── Language preference ─────────────────────────────────────────────────────
-  const currentLang = (i18n.language || "en").startsWith("ar") ? "ar" : "en";
+  // ── Theme preference ─────────────────────────────────────────────────────
 
-  const handleLanguageChange = async (e) => {
-    const lang = e.target.value;
-    setLangSaving(true);
-    i18n.changeLanguage(lang);
+  const handleThemeChange = async (e) => {
+    const newTheme = e.target.value;
+    setThemeSaving(true);
     try {
-      localStorage.setItem("abem_language", lang);
-      const res = await authApi.updateProfile({ preferred_language: lang });
+      const res = await authApi.updateProfile({ theme_preference: newTheme });
       storeSetUser(res.data);
-      setLangSuccess(true);
+      setThemeSuccess(true);
     } catch {
       // Revert on failure
-      i18n.changeLanguage(currentLang);
     } finally {
-      setLangSaving(false);
+      setThemeSaving(false);
     }
   };
 
@@ -132,6 +131,16 @@ export default function ProfilePage() {
       >
         <Alert severity="success" onClose={() => setLangSuccess(false)}>
           {t("language_updated")}
+        </Alert>
+      </Snackbar>
+      <Snackbar
+        open={themeSuccess}
+        autoHideDuration={3000}
+        onClose={() => setThemeSuccess(false)}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        <Alert severity="success" onClose={() => setThemeSuccess(false)}>
+          {t("theme_updated", "Theme updated")}
         </Alert>
       </Snackbar>
       <Box id="profile-card" maxWidth={640}>
@@ -257,6 +266,28 @@ export default function ProfilePage() {
             >
               <MenuItem value="en">🇬🇧 {t("english")}</MenuItem>
               <MenuItem value="ar">🇪🇬 {t("arabic")}</MenuItem>
+            </Select>
+          </FormControl>
+        </CardContent>
+      </Card>
+
+      {/* Theme Preference */}
+      <Card sx={{ mb: 3 }}>
+        <CardContent>
+          <Stack direction="row" alignItems="center" spacing={1} mb={2}>
+            <ThemeSwitcher />
+            <Typography variant="h6">{t("theme_preference", "Theme Preference")}</Typography>
+          </Stack>
+          <FormControl size="small" sx={{ minWidth: 200 }}>
+            <InputLabel>{t("theme")}</InputLabel>
+            <Select
+              value={user?.theme_preference || 'light'}
+              label={t("theme")}
+              onChange={handleThemeChange}
+              disabled={themeSaving}
+            >
+              <MenuItem value="light">☀️ {t("light")}</MenuItem>
+              <MenuItem value="dark">🌙 {t("dark")}</MenuItem>
             </Select>
           </FormControl>
         </CardContent>

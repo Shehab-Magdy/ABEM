@@ -111,6 +111,7 @@ export default function DashboardLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
   const [anchorEl, setAnchorEl] = useState(null);
   const { unreadCount, setUnreadCount } = useNotificationStore();
+  const { theme: userTheme } = useAuthStore();
 
   usePreferredLanguage();
 
@@ -152,8 +153,6 @@ export default function DashboardLayout() {
     { to: "/notifications", icon: <Notifications />, label: t("common:notifications", "Notifications"), show: true },
   ].filter((i) => i.show);
 
-  const bottomNavItems = mainItems.slice(0, 5); // Limit to 5 for bottom nav
-
   const adminItems = [
     { to: "/users", icon: <People />, label: t("common:users", "Users"), show: isAdmin },
     { to: "/expense-categories", icon: <Category />, label: t("common:categories", "Categories"), show: isAdmin },
@@ -164,8 +163,10 @@ export default function DashboardLayout() {
     { to: "/profile", icon: <AccountCircle />, label: t("common:profile", "Profile"), show: true },
   ];
 
-  const drawerContent = (
-    <Box sx={{ height: "100%", bgcolor: "primary.dark", display: "flex", flexDirection: "column" }}>
+  const bottomNavItems = [...mainItems, ...adminItems, ...accountItems]; // Include all nav items for mobile
+
+  const drawerContent = (mode) => (
+    <Box sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
       {/* Header with close button */}
       <Box sx={{ p: 2.5, pb: 2, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <Box>
@@ -198,19 +199,36 @@ export default function DashboardLayout() {
 
   return (
     <Box sx={{ display: "flex", height: "100vh", flexDirection: "column" }}>
-      {/* Sidebar — only on desktop */}
-      {!isMobile && sidebarOpen && (
-        <Box
-          component="nav"
-          sx={{
-            width: DRAWER_WIDTH,
-            flexShrink: 0,
-            height: "100vh",
-            overflow: "hidden",
-          }}
-        >
-          {drawerContent}
-        </Box>
+      {/* Sidebar */}
+      {sidebarOpen && (
+        isMobile ? (
+          <Drawer
+            anchor={isRtl ? "right" : "left"}
+            open={sidebarOpen}
+            onClose={() => setSidebarOpen(false)}
+            sx={{
+              '& .MuiDrawer-paper': {
+                width: DRAWER_WIDTH,
+                bgcolor: userTheme === 'dark' ? "#2a0b3b" : "#0c5c41",
+              },
+            }}
+          >
+            {drawerContent(userTheme)}
+          </Drawer>
+        ) : (
+          <Box
+            component="nav"
+            sx={{
+              width: DRAWER_WIDTH,
+              flexShrink: 0,
+              height: "100vh",
+              overflow: "hidden",
+              bgcolor: userTheme === 'dark' ? "#2a0b3b" : "#0c5c41",
+            }}
+          >
+            {drawerContent(userTheme)}
+          </Box>
+        )
       )}
 
       {/* Main area */}
@@ -218,17 +236,15 @@ export default function DashboardLayout() {
         {/* Top AppBar */}
         <AppBar position="static" color="inherit" elevation={0} sx={{ borderBottom: "1px solid", borderColor: "divider" }}>
           <Toolbar>
-            {/* Burger icon — only on desktop */}
-            {!isMobile && (
-              <IconButton
-                edge="start"
-                onClick={toggleSidebar}
-                sx={{ mr: 1 }}
-                aria-label={sidebarOpen ? t("common:close") : t("common:dashboard")}
-              >
-                <MenuIcon />
-              </IconButton>
-            )}
+            {/* Burger icon */}
+            <IconButton
+              edge="start"
+              onClick={toggleSidebar}
+              sx={{ mr: 1 }}
+              aria-label={sidebarOpen ? t("common:close") : t("common:dashboard")}
+            >
+              <MenuIcon />
+            </IconButton>
             <Box flex={1} />
             <ThemeSwitcher />
             <TutorialButton />
@@ -294,7 +310,7 @@ export default function DashboardLayout() {
               navigate(bottomNavItems[newValue].to);
             }}
             showLabels
-            sx={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 1000 }}
+            sx={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 1400 }}
           >
             {bottomNavItems.map((item, index) => (
               <BottomNavigationAction key={item.to} label={item.label} icon={item.icon} />
@@ -311,9 +327,9 @@ export default function DashboardLayout() {
           open={sidebarOpen}
           onClose={() => setSidebarOpen(false)}
           ModalProps={{ keepMounted: true }}
-          sx={{ "& .MuiDrawer-paper": { width: DRAWER_WIDTH, boxSizing: "border-box" } }}
+          sx={{ "& .MuiDrawer-paper": { width: DRAWER_WIDTH, boxSizing: "border-box" }, zIndex: 1300 }}
         >
-          {drawerContent}
+          {drawerContent(userTheme)}
         </Drawer>
       )}
     </Box>
