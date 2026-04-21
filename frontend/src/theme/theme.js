@@ -2,48 +2,93 @@ import { createTheme } from "@mui/material/styles";
 import { arEG as coreArEG } from "@mui/material/locale";
 import { arSD as gridArSD } from "@mui/x-data-grid/locales";
 
-const sharedPalette = {
+const lightPalette = {
   mode: "light",
   primary: {
-    main: "#2563EB",
-    light: "#DBEAFE",
-    dark: "#1D4ED8",
+    main: "#1E3A8A", // Deep Cobalt
+    light: "#3B82F6",
+    dark: "#1E40AF",
+  },
+  secondary: {
+    main: "#10B981", // Mint Green
+    light: "#34D399",
+    dark: "#059669",
+  },
+  error: { main: "#EF4444" }, // Alert Crimson
+  warning: { main: "#F59E0B" },
+  success: { main: "#10B981" },
+  background: {
+    default: "#F3F4F6", // Soft Light Gray
+    paper: "#FFFFFF", // Pure White
+  },
+  text: {
+    primary: "#1E293B", // Slate Gray
+    secondary: "#64748B",
+  },
+};
+
+const darkPalette = {
+  mode: "dark",
+  primary: {
+    main: "#3B82F6", // Electric Blue
+    light: "#60A5FA",
+    dark: "#2563EB",
   },
   secondary: {
     main: "#10B981",
-    light: "#D1FAE5",
+    light: "#34D399",
     dark: "#059669",
   },
   error: { main: "#EF4444" },
   warning: { main: "#F59E0B" },
   success: { main: "#10B981" },
   background: {
-    default: "#F9FAFB",
-    paper: "#FFFFFF",
+    default: "#0F172A", // Deep Charcoal
+    paper: "#1E293B", // Slate Navy
   },
   text: {
-    primary: "#1F2937",
-    secondary: "#6B7280",
+    primary: "#F8FAFC", // Off-White
+    secondary: "#CBD5E1",
   },
 };
 
-const sharedComponents = {
+const sharedComponents = (mode) => ({
   MuiButton: {
     styleOverrides: {
-      root: { textTransform: "none", fontWeight: 600 },
+      root: { 
+        textTransform: "none", 
+        fontWeight: 600,
+        minHeight: 44, // Touch target
+        minWidth: 44,
+      },
     },
   },
   MuiCard: {
     styleOverrides: {
-      root: { boxShadow: "0 2px 12px rgba(0,0,0,0.08)" },
+      root: { 
+        boxShadow: mode === 'dark' ? "0 2px 12px rgba(0,0,0,0.3)" : "0 2px 12px rgba(0,0,0,0.08)",
+        minHeight: 44, // Touch target
+      },
     },
   },
   MuiAppBar: {
     styleOverrides: {
-      root: { boxShadow: "0 1px 4px rgba(0,0,0,0.12)" },
+      root: { 
+        boxShadow: mode === 'dark' ? "0 1px 4px rgba(0,0,0,0.5)" : "0 1px 4px rgba(0,0,0,0.12)",
+        backdropFilter: "blur(10px)",
+        backgroundColor: mode === 'dark' ? "rgba(30, 41, 59, 0.8)" : "rgba(255, 255, 255, 0.8)",
+      },
     },
   },
-};
+  MuiBottomNavigation: {
+    styleOverrides: {
+      root: {
+        backdropFilter: "blur(10px)",
+        backgroundColor: mode === 'dark' ? "rgba(30, 41, 59, 0.8)" : "rgba(255, 255, 255, 0.8)",
+      },
+    },
+  },
+});
 
 const sharedShape = { borderRadius: 10 };
 
@@ -63,29 +108,25 @@ const rtlTypography = {
   subtitle1: { fontWeight: 500 },
 };
 
-export const ltrTheme = createTheme({
+export const createLTRTheme = (mode) => createTheme({
   direction: "ltr",
-  palette: sharedPalette,
+  palette: mode === 'dark' ? darkPalette : lightPalette,
   typography: ltrTypography,
   shape: sharedShape,
-  components: sharedComponents,
+  components: sharedComponents(mode),
 });
 
-// RTL theme merges MUI Arabic locale packs for:
-// - Core components (TablePagination "Rows per page", etc.)
-// - DataGrid (column menu, filter, pagination labels)
-// - DatePicker (month/day names)
-export const rtlTheme = createTheme(
+export const createRTLTheme = (mode) => createTheme(
   {
     direction: "rtl",
-    palette: sharedPalette,
+    palette: mode === 'dark' ? darkPalette : lightPalette,
     typography: rtlTypography,
     shape: sharedShape,
-    components: sharedComponents,
+    components: sharedComponents(mode),
   },
   coreArEG,
   gridArSD,
 );
 
 // Default export for backward compatibility
-export default ltrTheme;
+export default createLTRTheme('light');

@@ -1,37 +1,40 @@
 import 'package:flutter/material.dart';
 
 class AppColors {
-  static const primary = Color(0xFF2563EB);
-  static const primaryDark = Color(0xFF1D4ED8);
-  static const primaryLight = Color(0xFFDBEAFE);
-  static const secondary = Color(0xFF10B981);
-  static const secondaryDark = Color(0xFF059669);
-  static const secondaryLight = Color(0xFFD1FAE5);
-  static const accent = Color(0xFFF59E0B);
-  static const accentDark = Color(0xFFD97706);
-  static const accentLight = Color(0xFFFEF3C7);
-  static const neutralDark = Color(0xFF1F2937);
-  static const neutralMid = Color(0xFF6B7280);
-  static const background = Color(0xFFF9FAFB);
-  static const danger = Color(0xFFEF4444);
-  static const purple = Color(0xFF7C3AED);
-  static const orange = Color(0xFFEA580C);
+  // Light mode
+  static const primaryLight = Color(0xFF1E3A8A); // Deep Cobalt
+  static const secondaryLight = Color(0xFF10B981); // Mint Green
+  static const backgroundLight = Color(0xFFF3F4F6); // Soft Light Gray
+  static const surfaceLight = Color(0xFFFFFFFF); // Pure White
+  static const textLight = Color(0xFF1E293B); // Slate Gray
+
+  // Dark mode
+  static const primaryDark = Color(0xFF3B82F6); // Electric Blue
+  static const secondaryDark = Color(0xFF10B981);
+  static const backgroundDark = Color(0xFF0F172A); // Deep Charcoal
+  static const surfaceDark = Color(0xFF1E293B); // Slate Navy
+  static const textDark = Color(0xFFF8FAFC); // Off-White
+
+  static const danger = Color(0xFFEF4444); // Alert Crimson
 }
 
 class AppTheme {
   static ThemeData get light => ThemeData(
         useMaterial3: true,
         colorScheme: ColorScheme.fromSeed(
-          seedColor: AppColors.primary,
-          secondary: AppColors.secondary,
+          seedColor: AppColors.primaryLight,
+          secondary: AppColors.secondaryLight,
           error: AppColors.danger,
-          surface: Colors.white,
+          surface: AppColors.surfaceLight,
+          brightness: Brightness.light,
         ),
-        scaffoldBackgroundColor: AppColors.background,
+        scaffoldBackgroundColor: AppColors.backgroundLight,
         fontFamily: 'Inter',
-        appBarTheme: const AppBarTheme(
+        appBarTheme: AppBarTheme(
           centerTitle: false,
           elevation: 1,
+          backgroundColor: AppColors.surfaceLight.withOpacity(0.8),
+          shadowColor: Colors.transparent,
         ),
         cardTheme: const CardThemeData(
           elevation: 2,
@@ -42,6 +45,43 @@ class AppTheme {
         inputDecorationTheme: InputDecorationTheme(
           filled: true,
           border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+        ),
+        bottomNavigationBarTheme: BottomNavigationBarThemeData(
+          backgroundColor: AppColors.surfaceLight.withOpacity(0.8),
+          elevation: 0,
+        ),
+      );
+
+  static ThemeData get dark => ThemeData(
+        useMaterial3: true,
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: AppColors.primaryDark,
+          secondary: AppColors.secondaryDark,
+          error: AppColors.danger,
+          surface: AppColors.surfaceDark,
+          brightness: Brightness.dark,
+        ),
+        scaffoldBackgroundColor: AppColors.backgroundDark,
+        fontFamily: 'Inter',
+        appBarTheme: AppBarTheme(
+          centerTitle: false,
+          elevation: 1,
+          backgroundColor: AppColors.surfaceDark.withOpacity(0.8),
+          shadowColor: Colors.transparent,
+        ),
+        cardTheme: const CardThemeData(
+          elevation: 2,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.all(Radius.circular(12)),
+          ),
+        ),
+        inputDecorationTheme: InputDecorationTheme(
+          filled: true,
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+        ),
+        bottomNavigationBarTheme: BottomNavigationBarThemeData(
+          backgroundColor: AppColors.surfaceDark.withOpacity(0.8),
+          elevation: 0,
         ),
       );
 }

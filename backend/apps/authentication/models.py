@@ -52,6 +52,13 @@ class User(AbstractBaseUser, PermissionsMixin):
         default="en",
     )
 
+    # Theme preference for UI
+    theme_preference = models.CharField(
+        max_length=10,
+        choices=[("light", "Light"), ("dark", "Dark")],
+        default="light",
+    )
+
     # Messaging restrictions (set by admins)
     messaging_blocked = models.BooleanField(default=False)
     individual_messaging_blocked = models.BooleanField(default=False)

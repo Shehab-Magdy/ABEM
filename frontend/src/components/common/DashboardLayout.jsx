@@ -10,6 +10,8 @@ import {
   Avatar,
   Badge,
   Box,
+  BottomNavigation,
+  BottomNavigationAction,
   Divider,
   Drawer,
   IconButton,
@@ -49,6 +51,7 @@ import { usePreferredLanguage } from "../../hooks/usePreferredLanguage";
 import axiosClient from "../../api/axiosClient";
 import { useNotificationStore } from "../../contexts/notificationStore";
 import { TutorialButton } from "../../tutorial/TutorialOverlay";
+import ThemeSwitcher from "../ThemeSwitcher";
 import Footer from "./Footer";
 
 const DRAWER_WIDTH = 240;
@@ -149,6 +152,8 @@ export default function DashboardLayout() {
     { to: "/notifications", icon: <Notifications />, label: t("common:notifications", "Notifications"), show: true },
   ].filter((i) => i.show);
 
+  const bottomNavItems = mainItems.slice(0, 5); // Limit to 5 for bottom nav
+
   const adminItems = [
     { to: "/users", icon: <People />, label: t("common:users", "Users"), show: isAdmin },
     { to: "/expense-categories", icon: <Category />, label: t("common:categories", "Categories"), show: isAdmin },
@@ -192,33 +197,20 @@ export default function DashboardLayout() {
   );
 
   return (
-    <Box sx={{ display: "flex", height: "100vh" }}>
-      {/* Sidebar — uses Drawer for overlay on mobile, fixed Box on desktop */}
-      {isMobile ? (
-        <Drawer
-          variant="temporary"
-          anchor={isRtl ? "right" : "left"}
-          open={sidebarOpen}
-          onClose={() => setSidebarOpen(false)}
-          ModalProps={{ keepMounted: true }}
-          sx={{ "& .MuiDrawer-paper": { width: DRAWER_WIDTH, boxSizing: "border-box" } }}
+    <Box sx={{ display: "flex", height: "100vh", flexDirection: "column" }}>
+      {/* Sidebar — only on desktop */}
+      {!isMobile && sidebarOpen && (
+        <Box
+          component="nav"
+          sx={{
+            width: DRAWER_WIDTH,
+            flexShrink: 0,
+            height: "100vh",
+            overflow: "hidden",
+          }}
         >
           {drawerContent}
-        </Drawer>
-      ) : (
-        sidebarOpen && (
-          <Box
-            component="nav"
-            sx={{
-              width: DRAWER_WIDTH,
-              flexShrink: 0,
-              height: "100vh",
-              overflow: "hidden",
-            }}
-          >
-            {drawerContent}
-          </Box>
-        )
+        </Box>
       )}
 
       {/* Main area */}
@@ -226,16 +218,19 @@ export default function DashboardLayout() {
         {/* Top AppBar */}
         <AppBar position="static" color="inherit" elevation={0} sx={{ borderBottom: "1px solid", borderColor: "divider" }}>
           <Toolbar>
-            {/* Burger icon — always visible */}
-            <IconButton
-              edge="start"
-              onClick={toggleSidebar}
-              sx={{ mr: 1 }}
-              aria-label={sidebarOpen ? t("common:close") : t("common:dashboard")}
-            >
-              <MenuIcon />
-            </IconButton>
+            {/* Burger icon — only on desktop */}
+            {!isMobile && (
+              <IconButton
+                edge="start"
+                onClick={toggleSidebar}
+                sx={{ mr: 1 }}
+                aria-label={sidebarOpen ? t("common:close") : t("common:dashboard")}
+              >
+                <MenuIcon />
+              </IconButton>
+            )}
             <Box flex={1} />
+            <ThemeSwitcher />
             <TutorialButton />
             <Tooltip title={t("common:notifications")}>
               <IconButton
@@ -285,12 +280,42 @@ export default function DashboardLayout() {
 
         {/* Page content */}
         <Box component="main" sx={{ flex: 1, overflow: "auto", bgcolor: "background.default", display: "flex", flexDirection: "column" }}>
-          <Box sx={{ flex: 1, p: 3 }}>
+          <Box sx={{ flex: 1, p: isMobile ? 2 : 3 }}>
             <Outlet />
           </Box>
           <Footer />
         </Box>
+
+        {/* Bottom Navigation on mobile */}
+        {isMobile && (
+          <BottomNavigation
+            value={bottomNavItems.findIndex(item => location.pathname.startsWith(item.to))}
+            onChange={(event, newValue) => {
+              navigate(bottomNavItems[newValue].to);
+            }}
+            showLabels
+            sx={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 1000 }}
+          >
+            {bottomNavItems.map((item, index) => (
+              <BottomNavigationAction key={item.to} label={item.label} icon={item.icon} />
+            ))}
+          </BottomNavigation>
+        )}
       </Box>
+
+      {/* Drawer for mobile hamburger menu */}
+      {isMobile && (
+        <Drawer
+          variant="temporary"
+          anchor={isRtl ? "right" : "left"}
+          open={sidebarOpen}
+          onClose={() => setSidebarOpen(false)}
+          ModalProps={{ keepMounted: true }}
+          sx={{ "& .MuiDrawer-paper": { width: DRAWER_WIDTH, boxSizing: "border-box" } }}
+        >
+          {drawerContent}
+        </Drawer>
+      )}
     </Box>
   );
 }
