@@ -72,5 +72,10 @@
   "totalAllocated": "إجمالي المخصص",
   "allocationExceedsPayment": "إجمالي المخصص ({{sum}}) لا يمكن أن يتجاوز المبلغ المدفوع ({{amount}})",
   "creditRemainder": "رصيد متبقي",
-  "allocation": "التخصيص"
+  "allocation": "التخصيص",
+  "receipt_load_error": "لم يتمكن من تحميل الإيصال.",
+  "receipt_timeout": "استغرق إنشاء الإيصال وقتاً طويلاً جداً.",
+  "receipt_forbidden": "ليس لديك الإذن لعرض هذا الإيصال.",
+  "receipt_not_found": "لم يتم العثور على إيصال الدفع.",
+  "receipt_generation_error": "فشل إنشاء ملف PDF. يرجى المحاولة مرة أخرى لاحقاً."
 }

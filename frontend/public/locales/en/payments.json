@@ -72,5 +72,10 @@
   "totalAllocated": "Total Allocated",
   "allocationExceedsPayment": "Total allocated ({{sum}}) cannot exceed amount paid ({{amount}})",
   "creditRemainder": "Credit Remainder",
-  "allocation": "Allocation"
+  "allocation": "Allocation",
+  "receipt_load_error": "Could not load receipt.",
+  "receipt_timeout": "Receipt generation is taking too long.",
+  "receipt_forbidden": "You do not have permission to view this receipt.",
+  "receipt_not_found": "Payment receipt not found.",
+  "receipt_generation_error": "PDF generation failed. Please try again later."
 }

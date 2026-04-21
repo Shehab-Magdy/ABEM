@@ -221,16 +221,30 @@ class PaymentViewSet(ModelViewSet):
         only payments for their own apartments.
         Uses WeasyPrint (HTML → PDF) so Arabic and all Unicode text renders correctly.
         """
-        from weasyprint import HTML
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.info(f"Receipt requested for payment {pk} by user {request.user.id} (role: {request.user.role})")
+        
+        try:
+            from weasyprint import HTML
+        except ImportError as e:
+            logger.error(f"WeasyPrint import failed: {e}")
+            return Response(
+                {"detail": "PDF generation library not available. Please contact support. (WeasyPrint not installed)"},
+                status=503,
+            )
 
         payment = self.get_object()
+        logger.info(f"Payment found: {payment.id}, apartment: {payment.apartment.id}")
 
         # Owners may only view receipts for their own apartments
         apt = payment.apartment
         if request.user.role != "admin":
             is_owner = (apt.owner == request.user) or apt.owners.filter(pk=request.user.pk).exists()
+            logger.info(f"User authorization check: is_admin=False, is_owner={is_owner}, apt.owner={apt.owner}, user={request.user}")
             if not is_owner:
                 from rest_framework.exceptions import PermissionDenied
+                logger.warning(f"Permission denied for user {request.user.id} viewing payment {payment.id}")
                 raise PermissionDenied(_("You do not have permission to view this receipt."))
 
         # Determine language from user preference

@@ -485,15 +485,39 @@ export default function PaymentsPage() {
                           if (newTab) newTab.close();
                           const isTimeout = err?.code === "ECONNABORTED" || err?.message?.includes("timeout");
                           let msg = t("receipt_load_error", "Could not load receipt.");
+                          
                           if (isTimeout) {
                             msg = t("receipt_timeout", "Receipt generation is taking too long.");
-                          } else if (err?.response?.data instanceof Blob) {
+                          } else if (err?.response?.status === 403) {
+                            msg = t("receipt_forbidden", "You do not have permission to view this receipt.");
+                          } else if (err?.response?.status === 404) {
+                            msg = t("receipt_not_found", "Payment receipt not found.");
+                          } else if (err?.response?.status === 503) {
+                            msg = t("receipt_generation_error", "PDF generation failed. Please try again later.");
+                          } else if (err?.response?.data) {
+                            // Try to extract error detail from response
                             try {
-                              const text = await err.response.data.text();
-                              const json = JSON.parse(text);
-                              if (json.detail) msg = json.detail;
-                            } catch { /* keep default msg */ }
+                              let errorData = err.response.data;
+                              
+                              // If response is a Blob, convert to text first
+                              if (errorData instanceof Blob) {
+                                const text = await errorData.text();
+                                errorData = JSON.parse(text);
+                              }
+                              
+                              // Extract detail message from error object
+                              if (typeof errorData === "string") {
+                                msg = errorData;
+                              } else if (errorData?.detail) {
+                                msg = errorData.detail;
+                              } else if (errorData?.error) {
+                                msg = errorData.error;
+                              }
+                            } catch { 
+                              // keep default msg if parsing fails
+                            }
                           }
+                          
                           setSnackbar({ open: true, message: msg, severity: "error" });
                         } finally {
                           setLoadingReceipt(null);
