@@ -39,7 +39,6 @@ ALLOWED_HOSTS = [
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
-    ...
 ]
 
 STATIC_URL = "/static/"
