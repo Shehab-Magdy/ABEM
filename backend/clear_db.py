@@ -125,5 +125,5 @@ else:
 
 banner("Done")
 print(f"  Expense category backup → {backup_path}")
-print(f"  Re-create buildings to get fresh default categories.")
+print("  Re-create buildings to get fresh default categories.")
 print(SEP)

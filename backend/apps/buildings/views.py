@@ -165,7 +165,11 @@ class BuildingViewSet(ModelViewSet):
 
         http_status = status.HTTP_201_CREATED if created else status.HTTP_200_OK
         return Response(
-            {"detail": _("User '%(email)s' assigned to building '%(name)s'.") % {"email": user.email, "name": building.name}},
+            {
+                \"detail\": _(
+                    \"User '%(email)s' assigned to building '%(name)s'.\"
+                ) % {\"email\": user.email, \"name\": building.name}
+            },
             status=http_status,
         )
 

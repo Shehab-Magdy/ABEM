@@ -244,7 +244,12 @@ class ForceChangePasswordView(APIView):
         )
 
         return Response(
-            {"detail": _("Password changed successfully."), "user": UserSerializer(request.user, context={"request": request}).data}
+            {
+                \"detail\": _(\"Password changed successfully.\"),
+                \"user\": UserSerializer(
+                    request.user, context={\"request\": request}
+                ).data,
+            }
         )
 
 

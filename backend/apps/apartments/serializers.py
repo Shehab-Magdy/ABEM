@@ -75,8 +75,10 @@ class ApartmentSerializer(serializers.ModelSerializer):
             if floor > building.num_floors:
                 raise serializers.ValidationError(
                     {
-                        "floor": _("Floor %(floor)s exceeds the building's maximum "
-                                    "of %(num_floors)s floor(s).") % {
+                        \"floor\": _(
+                            \"Floor %(floor)s exceeds the building's maximum \"
+                            \"of %(num_floors)s floor(s).\"
+                        ) % {
                             "floor": floor,
                             "num_floors": building.num_floors,
                         }

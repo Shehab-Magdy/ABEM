@@ -13,7 +13,6 @@ from .models import (
     MediaFile,
     RecurringConfig,
     RecurringFrequency,
-    SplitType,
 )
 
 

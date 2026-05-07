@@ -320,7 +320,9 @@ class ApartmentViewSet(ModelViewSet):
         """
         apt = self.get_object()
 
-        if request.user.role != "admin" and apt.owner != request.user and not apt.owners.filter(pk=request.user.pk).exists():
+        if request.user.role != \"admin\" and apt.owner != request.user and not apt.owners.filter(
+            pk=request.user.pk
+        ).exists():
             return Response(
                 {"detail": _("You do not have permission to view this apartment's balance.")},
                 status=403,

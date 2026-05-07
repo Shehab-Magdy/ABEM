@@ -149,7 +149,9 @@ class PaymentSerializer(serializers.ModelSerializer):
                 ).exists()
                 if not assigned:
                     raise serializers.ValidationError(
-                        _("Expense '%(title)s' has not been assigned to the specified apartment.") % {"title": expense.title}
+                        _(
+                            "Expense '%(title)s' has not been assigned to the specified apartment."
+                        ) % {"title": expense.title}
                     )
 
         # Validate allocations against amount_paid
