@@ -15,7 +15,7 @@ from apps.apartments.models import Apartment
 from apps.audit.mixins import log_action
 from apps.authentication.permissions import IsAdminRole
 
-from .models import AssetSale, BuildingAsset, Payment, PaymentExpense
+from .models import AssetSale, BuildingAsset, Payment, PaymentExpense, PaymentMethod
 from .serializers import BuildingAssetSerializer, PaymentSerializer
 
 
@@ -128,19 +128,15 @@ class PaymentViewSet(ModelViewSet):
             ).distinct()
 
         params = self.request.query_params
-        apt_id = params.get("apartment_id")
-        date_from = params.get("date_from")
-        date_to = params.get("date_to")
-        method = params.get("payment_method")
+        apt_id     = params.get("apartment_id")
+        date_from  = params.get("date_from")
+        date_to    = params.get("date_to")
+        method     = params.get("payment_method")
 
-        if apt_id:
-            qs = qs.filter(apartment_id=apt_id)
-        if date_from:
-            qs = qs.filter(payment_date__gte=date_from)
-        if date_to:
-            qs = qs.filter(payment_date__lte=date_to)
-        if method:
-            qs = qs.filter(payment_method=method)
+        if apt_id:    qs = qs.filter(apartment_id=apt_id)
+        if date_from: qs = qs.filter(payment_date__gte=date_from)
+        if date_to:   qs = qs.filter(payment_date__lte=date_to)
+        if method:    qs = qs.filter(payment_method=method)
 
         return qs
 
@@ -227,10 +223,8 @@ class PaymentViewSet(ModelViewSet):
         """
         import logging
         logger = logging.getLogger(__name__)
-        logger.info(
-            f"Receipt requested for payment {pk} by user {request.user.id} (role: {request.user.role})"
-        )
-
+        logger.info(f"Receipt requested for payment {pk} by user {request.user.id} (role: {request.user.role})")
+        
         try:
             from weasyprint import HTML
         except ImportError as e:
@@ -246,21 +240,12 @@ class PaymentViewSet(ModelViewSet):
         # Owners may only view receipts for their own apartments
         apt = payment.apartment
         if request.user.role != "admin":
-            is_owner = (apt.owner == request.user) or apt.owners.filter(
-                pk=request.user.pk
-            ).exists()
-            logger.info(
-                f"User authorization check: is_admin=False, is_owner={is_owner}, "
-                f"apt.owner={apt.owner}, user={request.user}"
-            )
+            is_owner = (apt.owner == request.user) or apt.owners.filter(pk=request.user.pk).exists()
+            logger.info(f"User authorization check: is_admin=False, is_owner={is_owner}, apt.owner={apt.owner}, user={request.user}")
             if not is_owner:
                 from rest_framework.exceptions import PermissionDenied
-                logger.warning(
-                    f"Permission denied for user {request.user.id} viewing payment {payment.id}"
-                )
-                raise PermissionDenied(
-                    _("You do not have permission to view this receipt.")
-                )
+                logger.warning(f"Permission denied for user {request.user.id} viewing payment {payment.id}")
+                raise PermissionDenied(_("You do not have permission to view this receipt."))
 
         # Determine language from user preference
         lang = getattr(request.user, "preferred_language", None) or "en"
@@ -431,16 +416,9 @@ class PaymentViewSet(ModelViewSet):
             pdf_bytes = HTML(string=html_content).write_pdf()
         except Exception as exc:
             import logging
-            logging.getLogger(__name__).error(
-                "WeasyPrint PDF generation failed: %s", exc, exc_info=True
-            )
+            logging.getLogger(__name__).error("WeasyPrint PDF generation failed: %s", exc, exc_info=True)
             return Response(
-                {
-                    "detail": (
-                        f"PDF generation failed: {exc}. Ensure WeasyPrint and "
-                        "its system libraries are installed (rebuild the Docker container if needed)."
-                    )
-                },
+                {"detail": f"PDF generation failed: {exc}. Ensure WeasyPrint and its system libraries are installed (rebuild the Docker container if needed)."},
                 status=503,
             )
 

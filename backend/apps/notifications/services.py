@@ -6,6 +6,8 @@ Email / push integrations are no-ops in development.
 """
 from __future__ import annotations
 
+from django.utils import translation
+
 from .models import Notification, NotificationType
 
 # ── Bilingual notification content ───────────────────────────────────────────

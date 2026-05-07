@@ -13,21 +13,21 @@ from apps.expenses.models import ExpenseCategory
 
 # (name, description, Material icon name, hex color)
 DEFAULT_CATEGORIES = [
-    ("Maintenance", "General repairs and structural upkeep", "build", "#2563EB"),
-    ("Utilities", "Electricity, water, gas, and fuel", "bolt", "#F59E0B"),
-    ("Cleaning", "Cleaning and janitorial services", "cleaning_services", "#10B981"),
-    ("Security", "Guards, cameras, and access control systems", "security", "#7C3AED"),
-    ("Elevator", "Elevator servicing, repairs, and inspection", "elevator", "#EA580C"),
+    ("Maintenance",      "General repairs and structural upkeep",        "build",                "#2563EB"),
+    ("Utilities",        "Electricity, water, gas, and fuel",            "bolt",                 "#F59E0B"),
+    ("Cleaning",         "Cleaning and janitorial services",             "cleaning_services",    "#10B981"),
+    ("Security",         "Guards, cameras, and access control systems",  "security",             "#7C3AED"),
+    ("Elevator",         "Elevator servicing, repairs, and inspection",  "elevator",             "#EA580C"),
     ("Plumbing",         "Plumbing repairs and water system maintenance","plumbing",             "#0EA5E9"),
-    ("Internet & Cable", "Shared internet, satellite, and cable TV", "wifi", "#6366F1"),
-    ("Parking", "Parking area maintenance and management", "local_parking", "#64748B"),
-    ("Landscaping", "Gardens, green areas, and outdoor spaces", "yard", "#16A34A"),
-    ("Pest Control", "Pest and rodent extermination services", "pest_control", "#DC2626"),
-    ("Fire Safety", "Fire extinguishers, alarms, and inspections", "fire_extinguisher", "#EF4444"),
-    ("Waste Management", "Waste collection and recycling services", "delete_sweep", "#78716C"),
-    ("Insurance", "Building and common area insurance premiums", "shield", "#0369A1"),
-    ("Management", "Administrative and property management fees", "admin_panel_settings", "#1F2937"),
-    ("Other", "Miscellaneous and one-off expenses", "category", "#6B7280"),
+    ("Internet & Cable", "Shared internet, satellite, and cable TV",     "wifi",                 "#6366F1"),
+    ("Parking",          "Parking area maintenance and management",      "local_parking",        "#64748B"),
+    ("Landscaping",      "Gardens, green areas, and outdoor spaces",     "yard",                 "#16A34A"),
+    ("Pest Control",     "Pest and rodent extermination services",       "pest_control",         "#DC2626"),
+    ("Fire Safety",      "Fire extinguishers, alarms, and inspections",  "fire_extinguisher",    "#EF4444"),
+    ("Waste Management", "Waste collection and recycling services",      "delete_sweep",         "#78716C"),
+    ("Insurance",        "Building and common area insurance premiums",  "shield",               "#0369A1"),
+    ("Management",       "Administrative and property management fees",  "admin_panel_settings", "#1F2937"),
+    ("Other",            "Miscellaneous and one-off expenses",           "category",             "#6B7280"),
 ]
 
 

@@ -1,5 +1,6 @@
 """Expense domain models – category, expense, split, recurring config, media."""
 import uuid
+from decimal import Decimal
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 from apps.buildings.models import Building
