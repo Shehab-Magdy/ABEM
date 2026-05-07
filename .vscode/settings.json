@@ -11,6 +11,8 @@
     "-p", "no:warnings"
   ],
   "cSpell.words": [
-    "ABEM"
+    "ABEM",
+    "userbuilding",
+    "viewsets"
   ]
 }

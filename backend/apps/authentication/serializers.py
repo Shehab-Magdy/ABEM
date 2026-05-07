@@ -81,7 +81,7 @@ class RegisterUserSerializer(serializers.ModelSerializer):
         if role == "admin" and buildings is not None and len(buildings) == 0:
             raise serializers.ValidationError(
                 {"buildings": _("At least one building must be assigned to an admin user.")}
-            )
+)
         # Validate that all building UUIDs belong to buildings the requesting admin manages
         if buildings:
             from apps.buildings.models import Building

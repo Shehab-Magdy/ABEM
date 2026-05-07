@@ -22,6 +22,7 @@ class ApartmentStatus(models.TextChoices):
 
 
 class Apartment(models.Model):
+    objects: models.Manager["Apartment"]
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     building = models.ForeignKey(Building, on_delete=models.CASCADE, related_name="apartments")
     # Primary owner (kept for backward compatibility and single-owner fast queries)
@@ -65,6 +66,8 @@ class Apartment(models.Model):
 
 class UnitInvitation(models.Model):
     """One-time invite token linking an email to a specific unit."""
+    objects: models.Manager["UnitInvitation"]
+    
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     token = models.UUIDField(unique=True, default=uuid.uuid4, editable=False)
     apartment = models.ForeignKey(Apartment, on_delete=models.CASCADE, related_name="invitations")

@@ -152,7 +152,7 @@ class ApartmentViewSet(ModelViewSet):
         """
         try:
             apartment = Apartment.objects.select_related("building").get(pk=pk)
-        except Apartment.DoesNotExist:
+        except Apartment.DoesNotExist: # type: ignore[attr-defined]
             return Response({"detail": _("Apartment not found.")}, status=404)
 
         if apartment.owner is not None:

@@ -24,7 +24,8 @@ class ApartmentSerializer(serializers.ModelSerializer):
     # Expose FK IDs directly instead of nested objects
     building_id = serializers.PrimaryKeyRelatedField(
         source="building",
-        queryset=Building.objects.filter(is_active=True, deleted_at__isnull=True),
+        # queryset=Building.objects.filter(is_active=True, deleted_at__isnull=True),
+        queryset=Building.objects.filter(is_active=True),
     )
     owner_id = serializers.PrimaryKeyRelatedField(
         source="owner",
@@ -78,7 +79,7 @@ class ApartmentSerializer(serializers.ModelSerializer):
                         "floor": _("Floor %(floor)s exceeds the building's maximum "
                                     "of %(num_floors)s floor(s).") % {
                             "floor": floor,
-                            "num_floors": building.num_floors,
+                            "num_floors": building.num_floors
                         }
                     }
                 )

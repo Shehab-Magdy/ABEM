@@ -17,6 +17,8 @@ class PaymentMethod(models.TextChoices):
 
 
 class Payment(models.Model):
+    objects: models.Manager["Payment"]
+    
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     apartment = models.ForeignKey(Apartment, on_delete=models.CASCADE, related_name="payments")
     expenses = models.ManyToManyField(Expense, through="PaymentExpense", blank=True, related_name="payments")
@@ -52,6 +54,8 @@ class Payment(models.Model):
 
 class PaymentExpense(models.Model):
     """Explicit through table for Payment <-> Expense with per-expense allocation."""
+    objects: models.Manager["PaymentExpense"]
+    
     payment = models.ForeignKey(Payment, on_delete=models.CASCADE, related_name="payment_expenses")
     expense = models.ForeignKey(Expense, on_delete=models.CASCADE, related_name="payment_expenses")
     allocated_amount = models.DecimalField(
@@ -76,6 +80,8 @@ class AssetType(models.TextChoices):
 
 
 class BuildingAsset(models.Model):
+    objects: models.Manager["BuildingAsset"]
+    
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     building = models.ForeignKey(
         "buildings.Building", on_delete=models.CASCADE, related_name="assets"
@@ -99,6 +105,8 @@ class BuildingAsset(models.Model):
 
 
 class AssetSale(models.Model):
+    objects: models.Manager["AssetSale"]
+    
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     asset = models.OneToOneField(BuildingAsset, on_delete=models.CASCADE, related_name="sale")
     sale_date = models.DateField()

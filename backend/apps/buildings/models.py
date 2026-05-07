@@ -7,6 +7,9 @@ from django.conf import settings
 
 
 class Building(models.Model):
+    """A building entity representing a managed property."""
+    objects: models.Manager["Building"]
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     # tenant_id IS the building UUID (each building is a tenant)
     name = models.CharField(max_length=255)
@@ -51,12 +54,13 @@ class Building(models.Model):
         ordering = ["name"]
         indexes = [models.Index(fields=["admin"])]
 
-    def __str__(self):
-        return self.name
-
+    def __str__(self) -> str:
+        return str(self.name)
 
 class UserBuilding(models.Model):
     """Explicit junction table for User ↔ Building M2M."""
+    objects: models.Manager["UserBuilding"]
+    
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     building = models.ForeignKey(Building, on_delete=models.CASCADE)
     joined_at = models.DateTimeField(auto_now_add=True)
@@ -68,6 +72,8 @@ class UserBuilding(models.Model):
 
 class BuildingCoAdmin(models.Model):
     """Explicit junction table for additional building admins."""
+    objects: models.Manager["BuildingCoAdmin"]
+    
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     building = models.ForeignKey(Building, on_delete=models.CASCADE)
     added_at = models.DateTimeField(auto_now_add=True)

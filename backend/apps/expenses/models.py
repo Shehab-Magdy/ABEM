@@ -9,6 +9,8 @@ from apps.apartments.models import Apartment
 
 class ExpenseCategory(models.Model):
     """Configurable expense categories per building."""
+    objects: models.Manager["ExpenseCategory"]
+    
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     building = models.ForeignKey(Building, on_delete=models.CASCADE, related_name="expense_categories")
     name = models.CharField(max_length=100)
@@ -49,6 +51,8 @@ class RecurringFrequency(models.TextChoices):
 
 
 class Expense(models.Model):
+    objects: models.Manager["Expense"]
+    
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     building = models.ForeignKey(Building, on_delete=models.CASCADE, related_name="expenses")
     category = models.ForeignKey(
@@ -95,6 +99,8 @@ class Expense(models.Model):
 
 class RecurringConfig(models.Model):
     """Recurring schedule for an expense."""
+    objects: models.Manager["RecurringConfig"]
+    
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     expense = models.OneToOneField(Expense, on_delete=models.CASCADE, related_name="recurring_config")
     frequency = models.CharField(max_length=10, choices=RecurringFrequency.choices)
@@ -107,6 +113,8 @@ class RecurringConfig(models.Model):
 
 class ApartmentExpense(models.Model):
     """Individual share of an expense assigned to one apartment."""
+    objects: models.Manager["ApartmentExpense"]
+    
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     apartment = models.ForeignKey(Apartment, on_delete=models.CASCADE, related_name="apartment_expenses")
     expense = models.ForeignKey(Expense, on_delete=models.CASCADE, related_name="apartment_expenses")
@@ -126,6 +134,8 @@ class ApartmentExpense(models.Model):
 
 class MediaFile(models.Model):
     """Central registry for bill images and other media."""
+    objects: models.Manager["MediaFile"]
+    
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     # Polymorphic: entity_type = 'expense', entity_id = expense UUID
     entity_type = models.CharField(max_length=50)
