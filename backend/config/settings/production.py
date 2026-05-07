@@ -33,7 +33,7 @@ if SENTRY_DSN:
     )
 
 ALLOWED_HOSTS = [
-    "abem-5.onrender.com",
+    "https://abem-5.onrender.com",
 ]
 
 MIDDLEWARE = [
