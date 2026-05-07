@@ -23,7 +23,12 @@ class TestAPIInfrastructure:
 
     def test_health_endpoint_returns_200(self, env_config):
         """GET /api/health/ must respond 200 with an 'ok' status."""
-        root = env_config.api_url.rstrip("/").rsplit("/api/v1", 1)[0]
+        # root = env_config.api_url.rstrip("/").rsplit("/api/v1", 1)[0]
+        if "." in env_config:
+            root = env_config.api_url.rstrip("/").rsplit("/api/v1", 1)[0]
+        else:
+            root = env_config
+            
         resp = requests.get(f"{root}/api/health/", timeout=10)
         assert resp.status_code == 200, (
             f"Health check failed: {resp.status_code} — {resp.text}"
@@ -42,7 +47,12 @@ class TestAPIInfrastructure:
 
     def test_openapi_schema_is_accessible(self, env_config):
         """GET /api/schema/ should return 200 (drf-spectacular, not under /v1)."""
-        root = env_config.api_url.rstrip("/").rsplit("/api/v1", 1)[0]
+        # root = env_config.api_url.rstrip("/").rsplit("/api/v1", 1)[0]
+        if "." in env_config:
+            root = env_config.api_url.rstrip("/").rsplit("/api/v1", 1)[0]
+        else:
+            root = env_config
+            
         resp = requests.get(f"{root}/api/schema/", timeout=10)
         assert resp.status_code in (200, 301, 302), (
             f"OpenAPI schema not accessible: {resp.status_code}"
