@@ -83,7 +83,7 @@ export default function AdminDashboardPage() {
 
   // Fetch building list for the selector
   useEffect(() => {
-    axiosClient.get("/buildings/").then((r) => setBuildings(r.data.results ?? r.data)).catch(() => {});
+    axiosClient.get("/buildings/").then((r) => setBuildings(r.data.results ?? r.data)).catch(() => { });
   }, []);
 
   const fetchDashboard = useCallback(() => {
@@ -134,362 +134,364 @@ export default function AdminDashboardPage() {
 
   return (
     <>
-    <PrivateSEO title="ABEM – Dashboard" />
-    <Box sx={{ p: 3 }}>
-      {/* Dashboard header banner */}
-      <Box sx={{ mb: 3 }}>
-        <img
-          src="/abem-dashboard-header.svg"
-          alt="ABEM Dashboard"
-          style={{
-            width: '100%',
-            height: 'auto',
-            borderRadius: 8,
-            display: 'block',
-            transform: isRtl ? 'scaleX(-1)' : 'none',
-          }}
-        />
-      </Box>
-
-      <Typography variant="h4" fontWeight={700} gutterBottom>
-        {t("admin_dashboard")}
-      </Typography>
-
-      {/* ── Filters ── */}
-      <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap", mb: 3 }}>
-        <FormControl size="small" sx={{ minWidth: 200 }}>
-          <InputLabel id="building-select-label">{t("building_filter")}</InputLabel>
-          <Select
-            labelId="building-select-label"
-            label={t("building_filter")}
-            value={selectedBuilding}
-            onChange={(e) => setSelectedBuilding(e.target.value)}
-            inputProps={{ "data-testid": "building-selector" }}
-          >
-            <MenuItem value="">{t("all_buildings")}</MenuItem>
-            {buildings.map((b) => (
-              <MenuItem key={b.id} value={b.id}>
-                {b.name}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-
-        <TextField
-          size="small"
-          label={t("date_from")}
-          type="date"
-          value={dateFrom}
-          onChange={(e) => setDateFrom(e.target.value)}
-          InputLabelProps={{ shrink: true }}
-          inputProps={{ "data-testid": "date-from" }}
-        />
-        <TextField
-          size="small"
-          label={t("date_to")}
-          type="date"
-          value={dateTo}
-          onChange={(e) => setDateTo(e.target.value)}
-          InputLabelProps={{ shrink: true }}
-          inputProps={{ "data-testid": "date-to" }}
-        />
-      </Box>
-
-      {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
-
-      {loading ? (
-        <Box sx={{ display: "flex", justifyContent: "center", mt: 6 }}>
-          <CircularProgress />
+      <PrivateSEO title="ABEM – Dashboard" />
+      <Box sx={{ p: 3 }}>
+        {/* Dashboard header banner */}
+        <Box sx={{ mb: 3 }}>
+          <img
+            src="/abem-dashboard-header.svg"
+            alt="ABEM Dashboard"
+            style={{
+              width: '100%',
+              height: 'auto',
+              borderRadius: 8,
+              display: 'block',
+              transform: isRtl ? 'scaleX(-1)' : 'none',
+            }}
+          />
         </Box>
-      ) : !hasData ? (
-        <Alert severity="info" data-testid="empty-state">
-          {t("no_data_available")}
-        </Alert>
-      ) : (
-        <>
-          {/* ── Top KPI cards (4 columns) ── */}
-          <Grid container spacing={3} sx={{ mb: 3 }}>
 
-            {/* Total Income */}
-            <Grid item xs={12} sm={6} md={3}>
-              <Card>
-                <CardContent>
-                  <Typography variant="overline" color="text.secondary">{t("total_income")}</Typography>
-                  <Typography variant="h5" fontWeight={700} color="success.main" data-testid="total-income">
-                    {formatCurrency(data?.total_income ?? 0)}
-                  </Typography>
-                  <TrendBadge pct={data?.income_change_pct} invertColors={false} />
-                  <Stack spacing={0.25} sx={{ mt: 1 }}>
-                    {parseFloat(data?.starting_balance ?? 0) !== 0 && (
-                      <Typography variant="caption" color={parseFloat(data?.starting_balance ?? 0) < 0 ? "error.main" : "text.secondary"}>
-                        {parseFloat(data?.starting_balance ?? 0) < 0 ? t("opening_deficit") : t("starting_balance")}: {formatCurrency(data?.starting_balance ?? 0)}
-                      </Typography>
-                    )}
-                    <Typography variant="caption" color="text.secondary">
-                      {t("payments_income")}: {formatCurrency(data?.payment_income ?? 0)}
+        <Typography variant="h4" fontWeight={700} gutterBottom>
+          {t("admin_dashboard")}
+        </Typography>
+
+        {/* ── Filters ── */}
+        <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap", mb: 3 }}>
+          <FormControl size="small" sx={{ minWidth: 200 }}>
+            <InputLabel id="building-select-label">{t("building_filter")}</InputLabel>
+            <Select
+              labelId="building-select-label"
+              label={t("building_filter")}
+              value={selectedBuilding}
+              onChange={(e) => setSelectedBuilding(e.target.value)}
+              inputProps={{ "data-testid": "building-selector" }}
+            >
+              <MenuItem value="">{t("all_buildings")}</MenuItem>
+              {buildings.map((b) => (
+                <MenuItem key={b.id} value={b.id}>
+                  {b.name}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+
+          <TextField
+            size="small"
+            label={t("date_from")}
+            type="date"
+            value={dateFrom}
+            onChange={(e) => setDateFrom(e.target.value)}
+            InputLabelProps={{ shrink: true }}
+            inputProps={{ "data-testid": "date-from" }}
+          />
+          <TextField
+            size="small"
+            label={t("date_to")}
+            type="date"
+            value={dateTo}
+            onChange={(e) => setDateTo(e.target.value)}
+            InputLabelProps={{ shrink: true }}
+            inputProps={{ "data-testid": "date-to" }}
+          />
+        </Box>
+
+        {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+
+        {loading ? (
+          <Box sx={{ display: "flex", justifyContent: "center", mt: 6 }}>
+            <CircularProgress />
+          </Box>
+        ) : !hasData ? (
+          <Alert severity="info" data-testid="empty-state">
+            {t("no_data_available")}
+          </Alert>
+        ) : (
+          <>
+            {/* ── Top KPI cards (4 columns) ── */}
+            <Grid container spacing={3} sx={{ mb: 3 }}>
+
+              {/* Total Income */}
+              <Grid item xs={12} sm={6} md={3}>
+                <Card>
+                  <CardContent>
+                    <Typography variant="overline" color="text.secondary">{t("total_income")}</Typography>
+                    <Typography variant="h5" fontWeight={700} color="success.main" data-testid="total-income">
+                      {formatCurrency(data?.total_income ?? 0)}
                     </Typography>
-                    {parseFloat(data?.asset_sale_income ?? 0) > 0 && (
+                    <TrendBadge pct={data?.income_change_pct} invertColors={false} />
+                    <Stack spacing={0.25} sx={{ mt: 1 }}>
+                      {parseFloat(data?.starting_balance ?? 0) !== 0 && (
+                        <Typography variant="caption" color={parseFloat(data?.starting_balance ?? 0) < 0 ? "error.main" : "text.secondary"}>
+                          {parseFloat(data?.starting_balance ?? 0) < 0 ? t("opening_deficit") : t("starting_balance")}: {formatCurrency(data?.starting_balance ?? 0)}
+                        </Typography>
+                      )}
                       <Typography variant="caption" color="text.secondary">
-                        {t("asset_sale_income")}: {formatCurrency(data?.asset_sale_income ?? 0)}
+                        {t("payments_income")}: {formatCurrency(data?.payment_income ?? 0)}
                       </Typography>
+                      {parseFloat(data?.asset_sale_income ?? 0) > 0 && (
+                        <Typography variant="caption" color="text.secondary">
+                          {t("asset_sale_income")}: {formatCurrency(data?.asset_sale_income ?? 0)}
+                        </Typography>
+                      )}
+                    </Stack>
+                  </CardContent>
+                </Card>
+              </Grid>
+
+              {/* Total Expenses */}
+              <Grid item xs={12} sm={6} md={3}>
+                <Card>
+                  <CardContent>
+                    <Typography variant="overline" color="text.secondary">{t("total_expenses")}</Typography>
+                    <Typography variant="h5" fontWeight={700} color="warning.main" data-testid="total-expenses">
+                      {formatCurrency(data?.total_expenses ?? 0)}
+                    </Typography>
+                    <TrendBadge pct={data?.expense_change_pct} invertColors={true} />
+                  </CardContent>
+                </Card>
+              </Grid>
+
+              {/* Overdue Units */}
+              <Grid item xs={12} sm={6} md={3}>
+                <Card
+                  sx={{
+                    cursor: data?.overdue_units_count > 0 ? "pointer" : "default",
+                    border: data?.overdue_units_count > 0 ? "2px solid" : undefined,
+                    borderColor: data?.overdue_units_count > 0 ? "error.main" : undefined,
+                  }}
+                  onClick={() => data?.overdue_units_count > 0 && navigate("/payments")}
+                  data-testid="overdue-units-card"
+                >
+                  <CardContent>
+                    <Typography variant="overline" color="text.secondary">{t("overdue_units")}</Typography>
+                    <Typography
+                      variant="h5"
+                      fontWeight={700}
+                      color={data?.overdue_units_count > 0 ? "error.main" : "success.main"}
+                      data-testid="overdue-units-count"
+                    >
+                      {data?.overdue_units_count ?? 0}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {t("units_past_due")}
+                    </Typography>
+                    {data?.overdue_units_count > 0 && (
+                      <Box sx={{ mt: 0.5 }}>
+                        <Chip label={t("view_payments")} size="small" color="error" />
+                      </Box>
                     )}
-                  </Stack>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+              </Grid>
+
+              {/* Buildings */}
+              <Grid item xs={12} sm={6} md={3}>
+                <Card
+                  sx={{ cursor: "pointer" }}
+                  onClick={() => navigate("/buildings")}
+                  data-testid="buildings-card"
+                >
+                  <CardContent>
+                    <Typography variant="overline" color="text.secondary">{t("buildings_label")}</Typography>
+                    <Typography variant="h5" fontWeight={700} color="primary.main">
+                      {data?.building_summary?.total_buildings ?? 0}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary" display="block">
+                      {t("total_units", { count: data?.building_summary?.total_units ?? 0 })}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary" display="block">
+                      {t("occupied_units", { count: data?.building_summary?.occupied ?? 0 })}
+                    </Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
             </Grid>
 
-            {/* Total Expenses */}
-            <Grid item xs={12} sm={6} md={3}>
-              <Card>
+            {/* ── Payment collection progress ── */}
+            {data?.payment_coverage && (
+              <Card sx={{ mb: 3 }}>
                 <CardContent>
-                  <Typography variant="overline" color="text.secondary">{t("total_expenses")}</Typography>
-                  <Typography variant="h5" fontWeight={700} color="warning.main" data-testid="total-expenses">
-                    {formatCurrency(data?.total_expenses ?? 0)}
+                  <Typography variant="h6" gutterBottom>
+                    {t("payment_collection_progress")}
                   </Typography>
-                  <TrendBadge pct={data?.expense_change_pct} invertColors={true} />
-                </CardContent>
-              </Card>
-            </Grid>
-
-            {/* Overdue Units */}
-            <Grid item xs={12} sm={6} md={3}>
-              <Card
-                sx={{
-                  cursor: data?.overdue_units_count > 0 ? "pointer" : "default",
-                  border: data?.overdue_units_count > 0 ? "2px solid" : undefined,
-                  borderColor: data?.overdue_units_count > 0 ? "error.main" : undefined,
-                }}
-                onClick={() => data?.overdue_units_count > 0 && navigate("/payments")}
-                data-testid="overdue-units-card"
-              >
-                <CardContent>
-                  <Typography variant="overline" color="text.secondary">{t("overdue_units")}</Typography>
-                  <Typography
-                    variant="h5"
-                    fontWeight={700}
-                    color={data?.overdue_units_count > 0 ? "error.main" : "success.main"}
-                    data-testid="overdue-units-count"
-                  >
-                    {data?.overdue_units_count ?? 0}
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                    {t("payment_collection_desc")}
                   </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    {t("units_past_due")}
-                  </Typography>
-                  {data?.overdue_units_count > 0 && (
-                    <Box sx={{ mt: 0.5 }}>
-                      <Chip label={t("view_payments")} size="small" color="error" />
-                    </Box>
+                  {data.payment_coverage.total_billed === 0 ? (
+                    <Typography variant="body2" color="text.secondary">{t("no_billed_units")}</Typography>
+                  ) : (
+                    <>
+                      <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 0.5 }}>
+                        <Box sx={{ flex: 1 }}>
+                          <Tooltip
+                            title={`${data.payment_coverage.paid} of ${data.payment_coverage.total_billed} units settled`}
+                          >
+                            <LinearProgress
+                              variant="determinate"
+                              value={(data.payment_coverage.paid / data.payment_coverage.total_billed) * 100}
+                              color={data.payment_coverage.paid === data.payment_coverage.total_billed ? "success" : "primary"}
+                              sx={{ height: 12, borderRadius: 6 }}
+                            />
+                          </Tooltip>
+                        </Box>
+                        <Typography variant="body2" fontWeight={600} sx={{ minWidth: 80 }}>
+                          {data.payment_coverage.paid} / {data.payment_coverage.total_billed}
+                        </Typography>
+                        {data.payment_coverage.paid === data.payment_coverage.total_billed && (
+                          <Chip label={t("all_paid")} color="success" size="small" />
+                        )}
+                      </Box>
+                      <Typography variant="caption" color="text.secondary">
+                        {t("units_outstanding", { count: data.payment_coverage.total_billed - data.payment_coverage.paid })}
+                      </Typography>
+                    </>
                   )}
                 </CardContent>
               </Card>
-            </Grid>
+            )}
 
-            {/* Buildings */}
-            <Grid item xs={12} sm={6} md={3}>
-              <Card
-                sx={{ cursor: "pointer" }}
-                onClick={() => navigate("/buildings")}
-                data-testid="buildings-card"
-              >
-                <CardContent>
-                  <Typography variant="overline" color="text.secondary">{t("buildings_label")}</Typography>
-                  <Typography variant="h5" fontWeight={700} color="primary.main">
-                    {data?.building_summary?.total_buildings ?? 0}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary" display="block">
-                    {t("total_units", { count: data?.building_summary?.total_units ?? 0 })}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary" display="block">
-                    {t("occupied_units", { count: data?.building_summary?.occupied ?? 0 })}
-                  </Typography>
-                </CardContent>
-              </Card>
-            </Grid>
-          </Grid>
-
-          {/* ── Payment collection progress ── */}
-          {data?.payment_coverage && (
+            {/* ── Recent Expenses (last 30 days) ── */}
             <Card sx={{ mb: 3 }}>
               <CardContent>
-                <Typography variant="h6" gutterBottom>
-                  {t("payment_collection_progress")}
-                </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                  {t("payment_collection_desc")}
-                </Typography>
-                {data.payment_coverage.total_billed === 0 ? (
-                  <Typography variant="body2" color="text.secondary">{t("no_billed_units")}</Typography>
+                <Typography variant="h6" gutterBottom>{t("recent_expenses_30_days")}</Typography>
+                {(data?.recent_expenses ?? []).length === 0 ? (
+                  <Typography variant="body2" color="text.secondary">{t("no_expenses_30_days")}</Typography>
                 ) : (
-                  <>
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 0.5 }}>
-                      <Box sx={{ flex: 1 }}>
-                        <Tooltip
-                          title={`${data.payment_coverage.paid} of ${data.payment_coverage.total_billed} units settled`}
-                        >
-                          <LinearProgress
-                            variant="determinate"
-                            value={(data.payment_coverage.paid / data.payment_coverage.total_billed) * 100}
-                            color={data.payment_coverage.paid === data.payment_coverage.total_billed ? "success" : "primary"}
-                            sx={{ height: 12, borderRadius: 6 }}
-                          />
-                        </Tooltip>
-                      </Box>
-                      <Typography variant="body2" fontWeight={600} sx={{ minWidth: 80 }}>
-                        {data.payment_coverage.paid} / {data.payment_coverage.total_billed}
-                      </Typography>
-                      {data.payment_coverage.paid === data.payment_coverage.total_billed && (
-                        <Chip label={t("all_paid")} color="success" size="small" />
-                      )}
-                    </Box>
-                    <Typography variant="caption" color="text.secondary">
-                      {t("units_outstanding", { count: data.payment_coverage.total_billed - data.payment_coverage.paid })}
-                    </Typography>
-                  </>
+                  <TableContainer component={Paper} variant="outlined">
+                    <Table size="small">
+                      <TableHead>
+                        {/* <TableRow sx={{ bgcolor: "grey.100" }}> */}
+                        <TableRow>
+                          <TableCell><strong>{t("expense")}</strong></TableCell>
+                          <TableCell><strong>{t("category")}</strong></TableCell>
+                          <TableCell align="right"><strong>{t("amount_egp")}</strong></TableCell>
+                          <TableCell align="center"><strong>{t("status")}</strong></TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {(data?.recent_expenses ?? []).map((row, i) => (
+                          <TableRow key={i} hover>
+                            <TableCell>{row.title}</TableCell>
+                            <TableCell>{t(`categories:${row.category}`, row.category)}</TableCell>
+                            <TableCell align="right">
+                              {parseFloat(row.amount).toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                            </TableCell>
+                            <TableCell align="center">
+                              <Chip
+                                label={{
+                                  'Paid': t('status_paid'),
+                                  'Unpaid': t('status_unpaid'),
+                                  'Partial': t('status_partial'),
+                                  'Overdue': t('status_overdue'),
+                                  'paid': t('status_paid'),
+                                  'unpaid': t('status_unpaid'),
+                                  'partial': t('status_partial'),
+                                  'overdue': t('status_overdue'),
+                                }[row.status] || row.status}
+                                size="small"
+                                color={
+                                  row.status === "Overdue" || row.status === "overdue" ? "error" :
+                                    row.status === "Paid" || row.status === "paid" ? "success" : "warning"
+                                }
+                              />
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
                 )}
               </CardContent>
             </Card>
-          )}
 
-          {/* ── Recent Expenses (last 30 days) ── */}
-          <Card sx={{ mb: 3 }}>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>{t("recent_expenses_30_days")}</Typography>
-              {(data?.recent_expenses ?? []).length === 0 ? (
-                <Typography variant="body2" color="text.secondary">{t("no_expenses_30_days")}</Typography>
-              ) : (
-                <TableContainer component={Paper} variant="outlined">
-                  <Table size="small">
-                    <TableHead>
-                      <TableRow sx={{ bgcolor: "grey.100" }}>
-                        <TableCell><strong>{t("expense")}</strong></TableCell>
-                        <TableCell><strong>{t("category")}</strong></TableCell>
-                        <TableCell align="right"><strong>{t("amount_egp")}</strong></TableCell>
-                        <TableCell align="center"><strong>{t("status")}</strong></TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {(data?.recent_expenses ?? []).map((row, i) => (
-                        <TableRow key={i} hover>
-                          <TableCell>{row.title}</TableCell>
-                          <TableCell>{t(`categories:${row.category}`, row.category)}</TableCell>
+            {/* ── Unpaid dues table ── */}
+            {data?.unpaid_units?.length > 0 && (
+              <Card sx={{ mb: 3 }}>
+                <CardContent>
+                  <Typography variant="h6" gutterBottom>
+                    {t("outstanding_balances")}
+                  </Typography>
+                  <TableContainer component={Paper} variant="outlined">
+                    <Table size="small">
+                      <TableHead>
+                        {/* <TableRow sx={{ bgcolor: "grey.100" }}> */}
+                        <TableRow>
+                          {[
+                            { label: t("unit_col"), field: "unit_number" },
+                            { label: t("building_col"), field: "building_name" },
+                            { label: t("owner_col"), field: "owner_name" },
+                            { label: t("email_col"), field: "owner_email" },
+                          ].map(({ label, field }) => (
+                            <TableCell key={field}>
+                              <TableSortLabel
+                                active={balanceSort.field === field}
+                                direction={balanceSort.field === field ? balanceSort.order : "asc"}
+                                onClick={() => handleBalanceSort(field)}
+                              >
+                                <strong>{label}</strong>
+                              </TableSortLabel>
+                            </TableCell>
+                          ))}
                           <TableCell align="right">
-                            {parseFloat(row.amount).toLocaleString("en-US", { minimumFractionDigits: 2 })}
-                          </TableCell>
-                          <TableCell align="center">
-                            <Chip
-                              label={{
-                                'Paid': t('status_paid'),
-                                'Unpaid': t('status_unpaid'),
-                                'Partial': t('status_partial'),
-                                'Overdue': t('status_overdue'),
-                                'paid': t('status_paid'),
-                                'unpaid': t('status_unpaid'),
-                                'partial': t('status_partial'),
-                                'overdue': t('status_overdue'),
-                              }[row.status] || row.status}
-                              size="small"
-                              color={
-                                row.status === "Overdue" || row.status === "overdue" ? "error" :
-                                row.status === "Paid" || row.status === "paid" ? "success" : "warning"
-                              }
-                            />
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </TableContainer>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* ── Unpaid dues table ── */}
-          {data?.unpaid_units?.length > 0 && (
-            <Card sx={{ mb: 3 }}>
-              <CardContent>
-                <Typography variant="h6" gutterBottom>
-                  {t("outstanding_balances")}
-                </Typography>
-                <TableContainer component={Paper} variant="outlined">
-                  <Table size="small">
-                    <TableHead>
-                      <TableRow sx={{ bgcolor: "grey.100" }}>
-                        {[
-                          { label: t("unit_col"), field: "unit_number" },
-                          { label: t("building_col"), field: "building_name" },
-                          { label: t("owner_col"), field: "owner_name" },
-                          { label: t("email_col"), field: "owner_email" },
-                        ].map(({ label, field }) => (
-                          <TableCell key={field}>
                             <TableSortLabel
-                              active={balanceSort.field === field}
-                              direction={balanceSort.field === field ? balanceSort.order : "asc"}
-                              onClick={() => handleBalanceSort(field)}
+                              active={balanceSort.field === "balance"}
+                              direction={balanceSort.field === "balance" ? balanceSort.order : "asc"}
+                              onClick={() => handleBalanceSort("balance")}
                             >
-                              <strong>{label}</strong>
+                              <strong>{t("balance_due_egp")}</strong>
                             </TableSortLabel>
                           </TableCell>
-                        ))}
-                        <TableCell align="right">
-                          <TableSortLabel
-                            active={balanceSort.field === "balance"}
-                            direction={balanceSort.field === "balance" ? balanceSort.order : "asc"}
-                            onClick={() => handleBalanceSort("balance")}
-                          >
-                            <strong>{t("balance_due_egp")}</strong>
-                          </TableSortLabel>
-                        </TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {sortedUnpaidUnits.map((row, i) => (
-                        <TableRow key={i} hover>
-                          <TableCell>{row.unit_number}</TableCell>
-                          <TableCell>{row.building_name}</TableCell>
-                          <TableCell>{row.owner_name}</TableCell>
-                          <TableCell>{row.owner_email}</TableCell>
-                          <TableCell align="right" sx={{ color: "error.main", fontWeight: 600 }}>
-                            {parseFloat(row.balance).toLocaleString("en-US", { minimumFractionDigits: 2 })}
-                          </TableCell>
                         </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </TableContainer>
+                      </TableHead>
+                      <TableBody>
+                        {sortedUnpaidUnits.map((row, i) => (
+                          <TableRow key={i} hover>
+                            <TableCell>{row.unit_number}</TableCell>
+                            <TableCell>{row.building_name}</TableCell>
+                            <TableCell>{row.owner_name}</TableCell>
+                            <TableCell>{row.owner_email}</TableCell>
+                            <TableCell align="right" sx={{ color: "error.main", fontWeight: 600 }}>
+                              {parseFloat(row.balance).toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* ── Monthly trend chart ── */}
+            <Card>
+              <CardContent>
+                <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 1 }}>
+                  <Typography variant="h6">{t("monthly_income_vs_expenses")}</Typography>
+                  <Button size="small" variant="outlined" data-testid="download-report"
+                    onClick={() => window.print()}>
+                    {t("download_report")}
+                  </Button>
+                </Box>
+                <Box
+                  aria-label="Monthly income and expenses trend bar chart"
+                  role="img"
+                  data-testid="monthly-trend-chart"
+                >
+                  <BarChart
+                    series={[
+                      { data: incomeValues, label: t("income"), color: "#10B981" },
+                      { data: expenseValues, label: t("expenses"), color: "#F59E0B" },
+                    ]}
+                    xAxis={[{ data: MONTH_LABELS, scaleType: "band" }]}
+                    height={300}
+                    tooltip={{ trigger: "item" }}
+                  />
+                </Box>
               </CardContent>
             </Card>
-          )}
-
-          {/* ── Monthly trend chart ── */}
-          <Card>
-            <CardContent>
-              <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 1 }}>
-                <Typography variant="h6">{t("monthly_income_vs_expenses")}</Typography>
-                <Button size="small" variant="outlined" data-testid="download-report"
-                  onClick={() => window.print()}>
-                  {t("download_report")}
-                </Button>
-              </Box>
-              <Box
-                aria-label="Monthly income and expenses trend bar chart"
-                role="img"
-                data-testid="monthly-trend-chart"
-              >
-                <BarChart
-                  series={[
-                    { data: incomeValues, label: t("income"), color: "#10B981" },
-                    { data: expenseValues, label: t("expenses"), color: "#F59E0B" },
-                  ]}
-                  xAxis={[{ data: MONTH_LABELS, scaleType: "band" }]}
-                  height={300}
-                  tooltip={{ trigger: "item" }}
-                />
-              </Box>
-            </CardContent>
-          </Card>
-        </>
-      )}
-    </Box>
+          </>
+        )}
+      </Box >
     </>
   );
 }

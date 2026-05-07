@@ -86,7 +86,8 @@ function SectionHeader({ icon, title, badge, open, onToggle, accent }) {
       >
         {icon}
       </Box>
-      <Typography variant="subtitle1" fontWeight={700} sx={{ flex: 1, color: "#1F2937" }}>
+      {/* <Typography variant="subtitle1" fontWeight={700} sx={{ flex: 1, color: "#F8FAFC" }}> */}
+      <Typography variant="subtitle1" fontWeight={700} sx={{ flex: 1 }}>
         {title}
       </Typography>
       {badge !== undefined && badge > 0 && (
@@ -248,7 +249,7 @@ export default function NotificationCenterPage() {
     axiosClient
       .get("/buildings/")
       .then((r) => setBuildings(r.data.results ?? r.data))
-      .catch(() => {});
+      .catch(() => { });
   }, []);
 
   useEffect(() => {
@@ -285,7 +286,7 @@ export default function NotificationCenterPage() {
         decrementUnread();
         fetchNotifications();
       })
-      .catch(() => {});
+      .catch(() => { });
   };
 
   const handleBroadcast = () => {
@@ -346,407 +347,407 @@ export default function NotificationCenterPage() {
     <>
       <PrivateSEO title="ABEM – Notifications" />
       <Box sx={{ p: 3, maxWidth: 1200 }}>
-      <Typography variant="h4" fontWeight={700} sx={{ mb: 3 }}>
-        {t("title")}
-      </Typography>
+        <Typography variant="h4" fontWeight={700} sx={{ mb: 3 }}>
+          {t("title")}
+        </Typography>
 
-      {/* ── Top compose row ── */}
-      <Box
-        sx={{
-          display: "grid",
-          gridTemplateColumns: isAdmin ? "1fr 1fr" : "1fr",
-          gap: 2,
-          mb: 3,
-        }}
-      >
-        {/* Send Message panel */}
-        <Card
-          variant="outlined"
+        {/* ── Top compose row ── */}
+        <Box
           sx={{
-            borderRadius: "12px",
-            borderColor: sendOpen ? "#6366F1" : "#E5E7EB",
-            transition: "border-color 0.2s",
+            display: "grid",
+            gridTemplateColumns: isAdmin ? "1fr 1fr" : "1fr",
+            gap: 2,
+            mb: 3,
           }}
         >
-          <SectionHeader
-            icon={<Send fontSize="small" />}
-            title={t("sendMessage")}
-            open={sendOpen}
-            onToggle={() => setSendOpen((p) => !p)}
-            accent="#6366F1"
-          />
-
-          <Collapse in={sendOpen}>
-            <Divider />
-            <CardContent sx={{ pt: 2 }}>
-              <Stack spacing={2}>
-                <FormControl size="small" fullWidth>
-                  <InputLabel>{t("building")}</InputLabel>
-                  <Select
-                    value={sendBuilding}
-                    label={t("building")}
-                    onChange={(e) => {
-                      setSendBuilding(e.target.value);
-                      setSelectedMembers([]);
-                    }}
-                  >
-                    {buildings.map((b) => (
-                      <MenuItem key={b.id} value={b.id}>{b.name}</MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-
-                <FormControl size="small" fullWidth>
-                  <InputLabel>{t("recipients")}</InputLabel>
-                  <Select
-                    value={sendRecipientType}
-                    label={t("recipients")}
-                    onChange={(e) => {
-                      setSendRecipientType(e.target.value);
-                      setSelectedMembers([]);
-                    }}
-                  >
-                    <MenuItem value="all">{t("allMembers")}</MenuItem>
-                    <MenuItem value="admins">{t("adminsOnly")}</MenuItem>
-                    <MenuItem value="owners">{t("ownersOnly")}</MenuItem>
-                    <MenuItem value="individual" disabled={user?.individual_messaging_blocked}>
-                      {t("specificPerson")}
-                    </MenuItem>
-                  </Select>
-                </FormControl>
-
-                {sendRecipientType === "individual" && (
-                  <Autocomplete
-                    multiple
-                    options={buildingMembers}
-                    disableCloseOnSelect
-                    filterSelectedOptions
-                    getOptionLabel={(option) => {
-                      const name = `${option.first_name || ""} ${option.last_name || ""}`.trim() || option.email;
-                      const roleLabel = option.role === "admin" ? t("adminsOnly") : t("ownersOnly");
-                      const buildingName = buildings.find((b) => b.id === sendBuilding)?.name || "";
-                      return `${name} (${roleLabel}${buildingName ? ` - ${buildingName}` : ""})`;
-                    }}
-                    value={selectedMembers}
-                    isOptionEqualToValue={(option, value) => option.id === value.id}
-                    onChange={(_, value) => setSelectedMembers(value)}
-                    disabled={recipientLoading || user?.individual_messaging_blocked}
-                    renderInput={(params) => (
-                      <TextField
-                        {...params}
-                        size="small"
-                        label={t("selectRecipients")}
-                        helperText={
-                          recipientError ||
-                          (!recipientLoading && buildingMembers.length === 0
-                            ? t("noRecipientsAvailable", "No eligible recipients found.")
-                            : "")
-                        }
-                        InputProps={{
-                          ...params.InputProps,
-                          endAdornment: (
-                            <>
-                              {recipientLoading ? (
-                                <CircularProgress color="inherit" size={20} />
-                              ) : null}
-                              {params.InputProps.endAdornment}
-                            </>
-                          ),
-                        }}
-                      />
-                    )}
-                    renderTags={(value, getTagProps) =>
-                      value.map((option, index) => (
-                        <Chip
-                          label={`${option.first_name || ""} ${option.last_name || ""}`.trim() || option.email}
-                          {...getTagProps({ index })}
-                          key={option.id}
-                        />
-                      ))
-                    }
-                  />
-                )}
-                {user?.individual_messaging_blocked && sendRecipientType === "individual" && (
-                  <Alert severity="warning">
-                    {t(
-                      "individualMessageBlocked",
-                      "Individual messaging is blocked for your account."
-                    )}
-                  </Alert>
-                )}
-
-                <TextField
-                  size="small"
-                  label={t("subject")}
-                  value={sendTitle}
-                  onChange={(e) => setSendTitle(e.target.value)}
-                  fullWidth
-                />
-                <TextField
-                  size="small"
-                  label={t("message")}
-                  value={sendMessage}
-                  onChange={(e) => setSendMessage(e.target.value)}
-                  multiline
-                  rows={3}
-                  fullWidth
-                />
-                <Button
-                  variant="contained"
-                  onClick={handleSendMessage}
-                  disabled={
-                    sendingMsg ||
-                    !sendBuilding ||
-                    !sendTitle ||
-                    !sendMessage ||
-                    (sendRecipientType === "individual" && selectedMembers.length === 0)
-                  }
-                  sx={{
-                    bgcolor: "#6366F1",
-                    "&:hover": { bgcolor: "#4F46E5" },
-                    textTransform: "none",
-                    fontWeight: 600,
-                  }}
-                >
-                  {sendingMsg ? <CircularProgress size={20} color="inherit" /> : t("sendMessage")}
-                </Button>
-                {sendStatus && (
-                  <Alert severity={sendSuccess ? "success" : "error"}>
-                    {sendStatus}
-                  </Alert>
-                )}
-              </Stack>
-            </CardContent>
-          </Collapse>
-        </Card>
-
-        {/* Broadcast panel (admin only) */}
-        {isAdmin && (
+          {/* Send Message panel */}
           <Card
             variant="outlined"
             sx={{
               borderRadius: "12px",
-              borderColor: broadcastOpen ? "#F59E0B" : "#E5E7EB",
+              borderColor: sendOpen ? "#6366F1" : "#E5E7EB",
               transition: "border-color 0.2s",
             }}
           >
             <SectionHeader
-              icon={<Campaign fontSize="small" />}
-              title={t("broadcastAnnouncement")}
-              open={broadcastOpen}
-              onToggle={() => setBroadcastOpen((p) => !p)}
-              accent="#F59E0B"
-              data-testid="broadcast-toggle"
+              icon={<Send fontSize="small" />}
+              title={t("sendMessage")}
+              open={sendOpen}
+              onToggle={() => setSendOpen((p) => !p)}
+              accent="#6366F1"
             />
 
-            <Collapse in={broadcastOpen}>
+            <Collapse in={sendOpen}>
               <Divider />
-              <CardContent sx={{ pt: 2 }} data-testid="broadcast-form">
+              <CardContent sx={{ pt: 2 }}>
                 <Stack spacing={2}>
                   <FormControl size="small" fullWidth>
                     <InputLabel>{t("building")}</InputLabel>
                     <Select
-                      value={broadcastBuilding}
+                      value={sendBuilding}
                       label={t("building")}
-                      onChange={(e) => setBroadcastBuilding(e.target.value)}
-                      inputProps={{ "data-testid": "broadcast-building" }}
+                      onChange={(e) => {
+                        setSendBuilding(e.target.value);
+                        setSelectedMembers([]);
+                      }}
                     >
                       {buildings.map((b) => (
-                        <MenuItem key={b.id} value={b.id}>
-                          {b.name}
-                        </MenuItem>
+                        <MenuItem key={b.id} value={b.id}>{b.name}</MenuItem>
                       ))}
                     </Select>
                   </FormControl>
+
+                  <FormControl size="small" fullWidth>
+                    <InputLabel>{t("recipients")}</InputLabel>
+                    <Select
+                      value={sendRecipientType}
+                      label={t("recipients")}
+                      onChange={(e) => {
+                        setSendRecipientType(e.target.value);
+                        setSelectedMembers([]);
+                      }}
+                    >
+                      <MenuItem value="all">{t("allMembers")}</MenuItem>
+                      <MenuItem value="admins">{t("adminsOnly")}</MenuItem>
+                      <MenuItem value="owners">{t("ownersOnly")}</MenuItem>
+                      <MenuItem value="individual" disabled={user?.individual_messaging_blocked}>
+                        {t("specificPerson")}
+                      </MenuItem>
+                    </Select>
+                  </FormControl>
+
+                  {sendRecipientType === "individual" && (
+                    <Autocomplete
+                      multiple
+                      options={buildingMembers}
+                      disableCloseOnSelect
+                      filterSelectedOptions
+                      getOptionLabel={(option) => {
+                        const name = `${option.first_name || ""} ${option.last_name || ""}`.trim() || option.email;
+                        const roleLabel = option.role === "admin" ? t("adminsOnly") : t("ownersOnly");
+                        const buildingName = buildings.find((b) => b.id === sendBuilding)?.name || "";
+                        return `${name} (${roleLabel}${buildingName ? ` - ${buildingName}` : ""})`;
+                      }}
+                      value={selectedMembers}
+                      isOptionEqualToValue={(option, value) => option.id === value.id}
+                      onChange={(_, value) => setSelectedMembers(value)}
+                      disabled={recipientLoading || user?.individual_messaging_blocked}
+                      renderInput={(params) => (
+                        <TextField
+                          {...params}
+                          size="small"
+                          label={t("selectRecipients")}
+                          helperText={
+                            recipientError ||
+                            (!recipientLoading && buildingMembers.length === 0
+                              ? t("noRecipientsAvailable", "No eligible recipients found.")
+                              : "")
+                          }
+                          InputProps={{
+                            ...params.InputProps,
+                            endAdornment: (
+                              <>
+                                {recipientLoading ? (
+                                  <CircularProgress color="inherit" size={20} />
+                                ) : null}
+                                {params.InputProps.endAdornment}
+                              </>
+                            ),
+                          }}
+                        />
+                      )}
+                      renderTags={(value, getTagProps) =>
+                        value.map((option, index) => (
+                          <Chip
+                            label={`${option.first_name || ""} ${option.last_name || ""}`.trim() || option.email}
+                            {...getTagProps({ index })}
+                            key={option.id}
+                          />
+                        ))
+                      }
+                    />
+                  )}
+                  {user?.individual_messaging_blocked && sendRecipientType === "individual" && (
+                    <Alert severity="warning">
+                      {t(
+                        "individualMessageBlocked",
+                        "Individual messaging is blocked for your account."
+                      )}
+                    </Alert>
+                  )}
+
                   <TextField
                     size="small"
                     label={t("subject")}
-                    value={broadcastSubject}
-                    onChange={(e) => setBroadcastSubject(e.target.value)}
-                    inputProps={{ "data-testid": "broadcast-subject" }}
+                    value={sendTitle}
+                    onChange={(e) => setSendTitle(e.target.value)}
                     fullWidth
                   />
                   <TextField
                     size="small"
                     label={t("message")}
-                    value={broadcastMessage}
-                    onChange={(e) => setBroadcastMessage(e.target.value)}
-                    inputProps={{ "data-testid": "broadcast-message" }}
+                    value={sendMessage}
+                    onChange={(e) => setSendMessage(e.target.value)}
                     multiline
                     rows={3}
                     fullWidth
                   />
                   <Button
                     variant="contained"
-                    onClick={handleBroadcast}
-                    data-testid="broadcast-send"
-                    disabled={!broadcastBuilding || !broadcastSubject || !broadcastMessage}
+                    onClick={handleSendMessage}
+                    disabled={
+                      sendingMsg ||
+                      !sendBuilding ||
+                      !sendTitle ||
+                      !sendMessage ||
+                      (sendRecipientType === "individual" && selectedMembers.length === 0)
+                    }
                     sx={{
-                      bgcolor: "#F59E0B",
-                      color: "white",
-                      "&:hover": { bgcolor: "#D97706" },
+                      bgcolor: "#6366F1",
+                      "&:hover": { bgcolor: "#4F46E5" },
                       textTransform: "none",
                       fontWeight: 600,
                     }}
                   >
-                    {t("sendBroadcast")}
+                    {sendingMsg ? <CircularProgress size={20} color="inherit" /> : t("sendMessage")}
                   </Button>
-                  {broadcastStatus && (
-                    <Alert
-                      severity={broadcastStatus.includes("failed") ? "error" : "success"}
-                      data-testid="broadcast-status"
-                    >
-                      {broadcastStatus}
+                  {sendStatus && (
+                    <Alert severity={sendSuccess ? "success" : "error"}>
+                      {sendStatus}
                     </Alert>
                   )}
                 </Stack>
               </CardContent>
             </Collapse>
           </Card>
-        )}
-      </Box>
 
-      {/* ── Notifications list ── */}
-      <Card
-        variant="outlined"
-        sx={{
-          borderRadius: "12px",
-          borderColor: notifOpen ? "#10B981" : "#E5E7EB",
-          transition: "border-color 0.2s",
-        }}
-      >
-        <SectionHeader
-          icon={<NotificationsIcon fontSize="small" />}
-          title={t("yourNotifications")}
-          badge={unreadCount}
-          open={notifOpen}
-          onToggle={() => setNotifOpen((p) => !p)}
-          accent="#10B981"
-        />
-
-        <Collapse in={notifOpen}>
-          <Divider />
-          <CardContent sx={{ pt: 2 }}>
-            {/* Filter chips */}
-            <Stack direction="row" spacing={1} sx={{ mb: 2 }}>
-              <Chip
-                label={t("all")}
-                onClick={() => setFilter("all")}
-                color={filter === "all" ? "primary" : "default"}
-                variant={filter === "all" ? "filled" : "outlined"}
-                clickable
-                data-testid="filter-all"
+          {/* Broadcast panel (admin only) */}
+          {isAdmin && (
+            <Card
+              variant="outlined"
+              sx={{
+                borderRadius: "12px",
+                borderColor: broadcastOpen ? "#F59E0B" : "#E5E7EB",
+                transition: "border-color 0.2s",
+              }}
+            >
+              <SectionHeader
+                icon={<Campaign fontSize="small" />}
+                title={t("broadcastAnnouncement")}
+                open={broadcastOpen}
+                onToggle={() => setBroadcastOpen((p) => !p)}
+                accent="#F59E0B"
+                data-testid="broadcast-toggle"
               />
-              <Chip
-                label={t("unread")}
-                onClick={() => setFilter("unread")}
-                color={filter === "unread" ? "primary" : "default"}
-                variant={filter === "unread" ? "filled" : "outlined"}
-                clickable
-                data-testid="filter-unread"
-              />
-            </Stack>
 
-            {error && (
-              <Alert severity="error" sx={{ mb: 2 }}>
-                {error}
-              </Alert>
-            )}
-
-            {loading ? (
-              <Box sx={{ display: "flex", justifyContent: "center", mt: 4, mb: 2 }}>
-                <CircularProgress />
-              </Box>
-            ) : notifications.length === 0 ? (
-              <Alert severity="info" data-testid="empty-notifications">
-                {t("noNotificationsYet")}
-              </Alert>
-            ) : (
-              <Stack id="notifications-list" spacing={1.5} data-testid="notification-list">
-                {notifications.map((n) => (
-                  <Card
-                    key={n.id}
-                    variant="outlined"
-                    data-testid="notification-item"
-                    sx={{
-                      opacity: n.is_read ? 0.7 : 1,
-                      borderLeft: n.is_read ? undefined : "4px solid",
-                      borderLeftColor: n.is_read ? undefined : "primary.main",
-                    }}
-                  >
-                    <CardContent
+              <Collapse in={broadcastOpen}>
+                <Divider />
+                <CardContent sx={{ pt: 2 }} data-testid="broadcast-form">
+                  <Stack spacing={2}>
+                    <FormControl size="small" fullWidth>
+                      <InputLabel>{t("building")}</InputLabel>
+                      <Select
+                        value={broadcastBuilding}
+                        label={t("building")}
+                        onChange={(e) => setBroadcastBuilding(e.target.value)}
+                        inputProps={{ "data-testid": "broadcast-building" }}
+                      >
+                        {buildings.map((b) => (
+                          <MenuItem key={b.id} value={b.id}>
+                            {b.name}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                    <TextField
+                      size="small"
+                      label={t("subject")}
+                      value={broadcastSubject}
+                      onChange={(e) => setBroadcastSubject(e.target.value)}
+                      inputProps={{ "data-testid": "broadcast-subject" }}
+                      fullWidth
+                    />
+                    <TextField
+                      size="small"
+                      label={t("message")}
+                      value={broadcastMessage}
+                      onChange={(e) => setBroadcastMessage(e.target.value)}
+                      inputProps={{ "data-testid": "broadcast-message" }}
+                      multiline
+                      rows={3}
+                      fullWidth
+                    />
+                    <Button
+                      variant="contained"
+                      onClick={handleBroadcast}
+                      data-testid="broadcast-send"
+                      disabled={!broadcastBuilding || !broadcastSubject || !broadcastMessage}
                       sx={{
-                        display: "flex",
-                        alignItems: "flex-start",
-                        gap: 2,
-                        py: 1.5,
-                        "&:last-child": { pb: 1.5 },
+                        bgcolor: "#F59E0B",
+                        color: "white",
+                        "&:hover": { bgcolor: "#D97706" },
+                        textTransform: "none",
+                        fontWeight: 600,
                       }}
                     >
-                      <Box sx={{ flex: 1 }}>
-                        <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 0.5 }}>
-                          <Chip
-                            label={TYPE_LABELS[n.notification_type] ?? n.notification_type}
-                            color={TYPE_COLORS[n.notification_type] ?? "default"}
-                            size="small"
-                            data-testid="notification-type-chip"
-                          />
-                          {!n.is_read && (
-                            <Chip label={t("new")} size="small" color="primary" variant="outlined" />
-                          )}
-                        </Box>
-                        <Typography variant="subtitle2" fontWeight={600}>
-                          {n.title}
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary">
-                          {n.body}
-                        </Typography>
-                        <Stack direction="row" spacing={1} alignItems="center" mt={0.5} flexWrap="wrap">
-                          <Typography variant="caption" color="text.disabled">
-                            {new Date(n.created_at).toLocaleString()}
-                          </Typography>
-                          {n.sender_name && (
-                            <Typography variant="caption" color="text.disabled">
-                              · From: {n.sender_name}
-                            </Typography>
-                          )}
-                          {isAdmin &&
-                            n.notification_type === "announcement" &&
-                            n.read_count != null &&
-                            n.total_recipients != null && (
-                              <>
-                                <Typography variant="caption" color="text.disabled">
-                                  ·
-                                </Typography>
-                                <ReadByTooltip
-                                  notificationId={n.id}
-                                  readCount={n.read_count}
-                                  totalRecipients={n.total_recipients}
-                                  t={t}
-                                />
-                              </>
-                            )}
-                        </Stack>
-                      </Box>
-                      {!n.is_read && (
-                        <Button
-                          size="small"
-                          variant="outlined"
-                          onClick={() => handleMarkRead(n.id)}
-                          data-testid="mark-read-btn"
-                        >
-                          {t("markAsRead")}
-                        </Button>
-                      )}
-                    </CardContent>
-                  </Card>
-                ))}
+                      {t("sendBroadcast")}
+                    </Button>
+                    {broadcastStatus && (
+                      <Alert
+                        severity={broadcastStatus.includes("failed") ? "error" : "success"}
+                        data-testid="broadcast-status"
+                      >
+                        {broadcastStatus}
+                      </Alert>
+                    )}
+                  </Stack>
+                </CardContent>
+              </Collapse>
+            </Card>
+          )}
+        </Box>
+
+        {/* ── Notifications list ── */}
+        <Card
+          variant="outlined"
+          sx={{
+            borderRadius: "12px",
+            borderColor: notifOpen ? "#10B981" : "#E5E7EB",
+            transition: "border-color 0.2s",
+          }}
+        >
+          <SectionHeader
+            icon={<NotificationsIcon fontSize="small" />}
+            title={t("yourNotifications")}
+            badge={unreadCount}
+            open={notifOpen}
+            onToggle={() => setNotifOpen((p) => !p)}
+            accent="#10B981"
+          />
+
+          <Collapse in={notifOpen}>
+            <Divider />
+            <CardContent sx={{ pt: 2 }}>
+              {/* Filter chips */}
+              <Stack direction="row" spacing={1} sx={{ mb: 2 }}>
+                <Chip
+                  label={t("all")}
+                  onClick={() => setFilter("all")}
+                  color={filter === "all" ? "primary" : "default"}
+                  variant={filter === "all" ? "filled" : "outlined"}
+                  clickable
+                  data-testid="filter-all"
+                />
+                <Chip
+                  label={t("unread")}
+                  onClick={() => setFilter("unread")}
+                  color={filter === "unread" ? "primary" : "default"}
+                  variant={filter === "unread" ? "filled" : "outlined"}
+                  clickable
+                  data-testid="filter-unread"
+                />
               </Stack>
-            )}
-          </CardContent>
-        </Collapse>
-      </Card>
-    </Box>
+
+              {error && (
+                <Alert severity="error" sx={{ mb: 2 }}>
+                  {error}
+                </Alert>
+              )}
+
+              {loading ? (
+                <Box sx={{ display: "flex", justifyContent: "center", mt: 4, mb: 2 }}>
+                  <CircularProgress />
+                </Box>
+              ) : notifications.length === 0 ? (
+                <Alert severity="info" data-testid="empty-notifications">
+                  {t("noNotificationsYet")}
+                </Alert>
+              ) : (
+                <Stack id="notifications-list" spacing={1.5} data-testid="notification-list">
+                  {notifications.map((n) => (
+                    <Card
+                      key={n.id}
+                      variant="outlined"
+                      data-testid="notification-item"
+                      sx={{
+                        opacity: n.is_read ? 0.7 : 1,
+                        borderLeft: n.is_read ? undefined : "4px solid",
+                        borderLeftColor: n.is_read ? undefined : "primary.main",
+                      }}
+                    >
+                      <CardContent
+                        sx={{
+                          display: "flex",
+                          alignItems: "flex-start",
+                          gap: 2,
+                          py: 1.5,
+                          "&:last-child": { pb: 1.5 },
+                        }}
+                      >
+                        <Box sx={{ flex: 1 }}>
+                          <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 0.5 }}>
+                            <Chip
+                              label={TYPE_LABELS[n.notification_type] ?? n.notification_type}
+                              color={TYPE_COLORS[n.notification_type] ?? "default"}
+                              size="small"
+                              data-testid="notification-type-chip"
+                            />
+                            {!n.is_read && (
+                              <Chip label={t("new")} size="small" color="primary" variant="outlined" />
+                            )}
+                          </Box>
+                          <Typography variant="subtitle2" fontWeight={600}>
+                            {n.title}
+                          </Typography>
+                          <Typography variant="body2" color="text.secondary">
+                            {n.body}
+                          </Typography>
+                          <Stack direction="row" spacing={1} alignItems="center" mt={0.5} flexWrap="wrap">
+                            <Typography variant="caption" color="text.disabled">
+                              {new Date(n.created_at).toLocaleString()}
+                            </Typography>
+                            {n.sender_name && (
+                              <Typography variant="caption" color="text.disabled">
+                                · From: {n.sender_name}
+                              </Typography>
+                            )}
+                            {isAdmin &&
+                              n.notification_type === "announcement" &&
+                              n.read_count != null &&
+                              n.total_recipients != null && (
+                                <>
+                                  <Typography variant="caption" color="text.disabled">
+                                    ·
+                                  </Typography>
+                                  <ReadByTooltip
+                                    notificationId={n.id}
+                                    readCount={n.read_count}
+                                    totalRecipients={n.total_recipients}
+                                    t={t}
+                                  />
+                                </>
+                              )}
+                          </Stack>
+                        </Box>
+                        {!n.is_read && (
+                          <Button
+                            size="small"
+                            variant="outlined"
+                            onClick={() => handleMarkRead(n.id)}
+                            data-testid="mark-read-btn"
+                          >
+                            {t("markAsRead")}
+                          </Button>
+                        )}
+                      </CardContent>
+                    </Card>
+                  ))}
+                </Stack>
+              )}
+            </CardContent>
+          </Collapse>
+        </Card>
+      </Box>
     </>
   );
 }

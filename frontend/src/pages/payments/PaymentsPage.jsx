@@ -405,7 +405,8 @@ export default function PaymentsPage() {
       <TableContainer id="payments-table" component={Paper}>
         <Table size="small">
           <TableHead>
-            <TableRow sx={{ backgroundColor: "primary.main" }}>
+            {/* <TableRow sx={{ backgroundColor: "primary.main" }}> */}
+            <TableRow>
               {[
                 { key: "colDate", label: t("colDate") },
                 { key: "colAmount", label: t("colAmount") },

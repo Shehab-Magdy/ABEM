@@ -33,7 +33,7 @@ class AppTheme {
         appBarTheme: AppBarTheme(
           centerTitle: false,
           elevation: 1,
-          backgroundColor: AppColors.surfaceLight.withOpacity(0.8),
+          backgroundColor: AppColors.surfaceLight.withValues(alpha: 0.8),
           shadowColor: Colors.transparent,
         ),
         cardTheme: const CardThemeData(
@@ -47,7 +47,7 @@ class AppTheme {
           border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
         ),
         bottomNavigationBarTheme: BottomNavigationBarThemeData(
-          backgroundColor: AppColors.surfaceLight.withOpacity(0.8),
+          backgroundColor: AppColors.surfaceLight.withValues(alpha: 0.8),
           elevation: 0,
         ),
       );
@@ -66,7 +66,7 @@ class AppTheme {
         appBarTheme: AppBarTheme(
           centerTitle: false,
           elevation: 1,
-          backgroundColor: AppColors.surfaceDark.withOpacity(0.8),
+          backgroundColor: AppColors.surfaceDark.withValues(alpha: 0.8),
           shadowColor: Colors.transparent,
         ),
         cardTheme: const CardThemeData(
@@ -80,7 +80,7 @@ class AppTheme {
           border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
         ),
         bottomNavigationBarTheme: BottomNavigationBarThemeData(
-          backgroundColor: AppColors.surfaceDark.withOpacity(0.8),
+          backgroundColor: AppColors.surfaceDark.withValues(alpha: 0.8),
           elevation: 0,
         ),
       );

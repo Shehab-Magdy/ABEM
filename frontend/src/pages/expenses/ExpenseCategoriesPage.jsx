@@ -237,15 +237,15 @@ export default function ExpenseCategoriesPage() {
           <CircularProgress />
         </Box>
       ) : (
-        <TableContainer id="categories-table" component={Paper} variant="outlined">
+        // <TableContainer id="categories-table" component={Paper} variant="outlined">
           <Table size="small">
             <TableHead>
               <TableRow>
-                <TableCell><strong>{t("icon_color")}</strong></TableCell>
-                <TableCell><strong>{t("name")}</strong></TableCell>
-                <TableCell><strong>{t("description")}</strong></TableCell>
-                <TableCell><strong>{t("subcategory_of")}</strong></TableCell>
-                <TableCell align="right"><strong>{t("actions")}</strong></TableCell>
+                <TableCell>{t("icon_color")}</TableCell>
+                <TableCell>{t("name")}</TableCell>
+                <TableCell>{t("description")}</TableCell>
+                <TableCell>{t("subcategory_of")}</TableCell>
+                <TableCell align="right">{t("actions")}</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -309,7 +309,7 @@ export default function ExpenseCategoriesPage() {
               )}
             </TableBody>
           </Table>
-        </TableContainer>
+        // </TableContainer>
       )}
 
       {/* Add category dialog */}

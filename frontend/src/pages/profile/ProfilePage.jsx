@@ -104,6 +104,24 @@ export default function ProfilePage() {
     }
   };
 
+  // ── Language preference ──────────────────────────────────────────────────
+  const currentLang = i18n.language?.split("-")[0] || "en";
+
+  const handleLanguageChange = async (e) => {
+    const newLang = e.target.value;
+    setLangSaving(true);
+    try {
+      await i18n.changeLanguage(newLang);
+      const res = await authApi.updateProfile({ language_preference: newLang });
+      storeSetUser(res.data);
+      setLangSuccess(true);
+    } catch {
+      // Revert on failure
+      await i18n.changeLanguage(currentLang);
+    } finally {
+      setLangSaving(false);
+    }
+  };
   // ── Theme preference ─────────────────────────────────────────────────────
 
   const handleThemeChange = async (e) => {

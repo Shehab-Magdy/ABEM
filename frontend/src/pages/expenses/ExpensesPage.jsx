@@ -484,7 +484,8 @@ export default function ExpensesPage() {
         <TableContainer id="expenses-table" component={Paper}>
           <Table size="small">
             <TableHead>
-              <TableRow sx={{ bgcolor: "grey.100" }}>
+              {/* <TableRow sx={{ bgcolor: "grey.100" }}> */}
+              <TableRow>
                 <TableCell>{t("title")}</TableCell>
                 <TableCell>{t("amount")}</TableCell>
                 <TableCell>{t("date")}</TableCell>

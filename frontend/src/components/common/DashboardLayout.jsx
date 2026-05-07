@@ -117,10 +117,10 @@ export default function DashboardLayout() {
 
   const isRtl = (i18n.language || "en").startsWith("ar");
 
-  // Close sidebar on mobile when navigating
+  // Close sidebar on any navigation (mobile and desktop)
   useEffect(() => {
-    if (isMobile) setSidebarOpen(false);
-  }, [location.pathname, isMobile]);
+    setSidebarOpen(false);
+  }, [location.pathname]);
 
   useEffect(() => {
     axiosClient
@@ -197,38 +197,45 @@ export default function DashboardLayout() {
     </Box>
   );
 
+const sidebarBg = userTheme === "dark" ? "#2a0b3b" : "#0c5c41";
+
   return (
-    <Box sx={{ display: "flex", height: "100vh", flexDirection: "column" }}>
-      {/* Sidebar */}
-      {sidebarOpen && (
-        isMobile ? (
-          <Drawer
-            anchor={isRtl ? "right" : "left"}
-            open={sidebarOpen}
-            onClose={() => setSidebarOpen(false)}
-            sx={{
-              '& .MuiDrawer-paper': {
-                width: DRAWER_WIDTH,
-                bgcolor: userTheme === 'dark' ? "#2a0b3b" : "#0c5c41",
-              },
-            }}
-          >
-            {drawerContent(userTheme)}
-          </Drawer>
-        ) : (
-          <Box
-            component="nav"
-            sx={{
+    <Box sx={{ display: "flex", height: "100vh", flexDirection: "row" }}>
+      {/* Desktop: persistent inline sidebar */}
+      {!isMobile && (
+        <Box
+          component="nav"
+          sx={{
+            width: sidebarOpen ? DRAWER_WIDTH : 0,
+            flexShrink: 0,
+            height: "100vh",
+            overflow: "hidden",
+            bgcolor: sidebarBg,
+            transition: "width 0.2s ease",
+          }}
+        >
+          {drawerContent(userTheme)}
+        </Box>
+      )}
+
+      {/* Mobile: temporary drawer — always mounted, toggled via open prop */}
+      {isMobile && (
+        <Drawer
+          variant="temporary"
+          anchor={isRtl ? "right" : "left"}
+          open={sidebarOpen}
+          onClose={() => setSidebarOpen(false)}
+          ModalProps={{ keepMounted: true }}
+          sx={{
+            "& .MuiDrawer-paper": {
               width: DRAWER_WIDTH,
-              flexShrink: 0,
-              height: "100vh",
-              overflow: "hidden",
-              bgcolor: userTheme === 'dark' ? "#2a0b3b" : "#0c5c41",
-            }}
-          >
-            {drawerContent(userTheme)}
-          </Box>
-        )
+              boxSizing: "border-box",
+              bgcolor: sidebarBg,
+            },
+          }}
+        >
+          {drawerContent(userTheme)}
+        </Drawer>
       )}
 
       {/* Main area */}
@@ -319,19 +326,6 @@ export default function DashboardLayout() {
         )}
       </Box>
 
-      {/* Drawer for mobile hamburger menu */}
-      {isMobile && (
-        <Drawer
-          variant="temporary"
-          anchor={isRtl ? "right" : "left"}
-          open={sidebarOpen}
-          onClose={() => setSidebarOpen(false)}
-          ModalProps={{ keepMounted: true }}
-          sx={{ "& .MuiDrawer-paper": { width: DRAWER_WIDTH, boxSizing: "border-box" }, zIndex: 1300 }}
-        >
-          {drawerContent(userTheme)}
-        </Drawer>
-      )}
     </Box>
   );
 }
