@@ -31,3 +31,20 @@ if SENTRY_DSN:
         traces_sample_rate=0.1,
         send_default_pii=False,
     )
+
+ALLOWED_HOSTS = [
+    "abem-5.onrender.com",
+]
+
+MIDDLEWARE = [
+    "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
+    ...
+]
+
+STATIC_URL = "/static/"
+STATIC_ROOT = BASE_DIR / "staticfiles"
+
+STATICFILES_STORAGE = (
+    "whitenoise.storage.CompressedManifestStaticFilesStorage"
+)
