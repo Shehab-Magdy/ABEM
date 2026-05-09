@@ -60,3 +60,4 @@ Babel==2.17.0
 gunicorn==21.2.0
 django-celery-beat==2.5.0
 flask==3.0.0
+sentry_sdk==1.5.0
