@@ -35,12 +35,12 @@ if SENTRY_DSN:
 INSTALLED_APPS = [
     "corsheaders",
 ]
-MIDDLEWARE = [
-    "corsheaders.middleware.CorsMiddleware",
-]
-CORS_ALLOWED_ORIGINS = [
-    "https://abem-nine.vercel.app/",
-]
-CSRF_TRUSTED_ORIGINS = [
-    "https://abem-nine.vercel.app/",
-]
+# MIDDLEWARE = [
+#     "corsheaders.middleware.CorsMiddleware",
+# ]
+# CORS_ALLOWED_ORIGINS = [
+#     "https://abem-nine.vercel.app/",
+# ]
+# CSRF_TRUSTED_ORIGINS = [
+#     "https://abem-nine.vercel.app/",
+# ]
