@@ -31,3 +31,16 @@ if SENTRY_DSN:
         traces_sample_rate=0.1,
         send_default_pii=False,
     )
+
+INSTALLED_APPS = [
+    "corsheaders",
+]
+MIDDLEWARE = [
+    "corsheaders.middleware.CorsMiddleware",
+]
+CORS_ALLOWED_ORIGINS = [
+    "https://abem-nine.vercel.app/",
+]
+CSRF_TRUSTED_ORIGINS = [
+    "https://abem-nine.vercel.app/",
+]
