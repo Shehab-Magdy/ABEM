@@ -32,15 +32,6 @@ if SENTRY_DSN:
         send_default_pii=False,
     )
 
-# INSTALLED_APPS = [
-#     "corsheaders",
-# ]
-# MIDDLEWARE = [
-#     "corsheaders.middleware.CorsMiddleware",
-# ]
-# CORS_ALLOWED_ORIGINS = [
-#     "https://abem-nine.vercel.app/",
-# ]
-# CSRF_TRUSTED_ORIGINS = [
-#     "https://abem-nine.vercel.app/",
-# ]
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    r"https://abem-.*\.vercel\.app",
+]
