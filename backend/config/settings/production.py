@@ -32,9 +32,9 @@ if SENTRY_DSN:
         send_default_pii=False,
     )
 
-INSTALLED_APPS = [
-    "corsheaders",
-]
+# INSTALLED_APPS = [
+#     "corsheaders",
+# ]
 # MIDDLEWARE = [
 #     "corsheaders.middleware.CorsMiddleware",
 # ]
