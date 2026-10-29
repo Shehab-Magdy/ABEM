@@ -269,7 +269,7 @@ export default function BuildingsPage() {
     setUnitsError(null);
     try {
       await apartmentsApi.claim(unit.id);
-      const res = await buildingsApi.apartments(unitsTarget.id, { page_size: 100 });
+      const res = await buildingsApi.apartments(unitsTarget.id, { page_size: 500 });
       setUnits(res.data?.results ?? res.data);
     } catch (err) {
       setUnitsError(err.response?.data?.detail || t("claim_error", "Failed to claim unit."));
@@ -306,7 +306,7 @@ export default function BuildingsPage() {
     setUnitsLoading(true);
     try {
       const [unitsRes, membersRes] = await Promise.all([
-        buildingsApi.apartments(building.id, { page_size: 100 }),
+        buildingsApi.apartments(building.id, { page_size: 500 }),
         usersApi.list({ building_id: building.id, page_size: 100 }),
       ]);
       setUnits(unitsRes.data?.results ?? unitsRes.data);
@@ -335,7 +335,7 @@ export default function BuildingsPage() {
       );
       setFloorEdits({});
       setSizeEdits({});
-      const res = await buildingsApi.apartments(unitsTarget.id, { page_size: 100 });
+      const res = await buildingsApi.apartments(unitsTarget.id, { page_size: 500 });
       setUnits(res.data?.results ?? res.data);
     } catch (err) {
       setUnitsError(err.response?.data?.detail || t("unit_save_error", "Failed to save unit changes."));
