@@ -44,7 +44,7 @@ export default function TreasuryCard() {
             {t("treasury_title")} — {row.name}
           </Typography>
           <Typography variant="body2" sx={{ opacity: 0.85 }}>{t("treasury_balance")}</Typography>
-          <Typography variant="h3" fontWeight={800} data-testid="treasury-balance">
+          <Typography variant="h3" fontWeight={800} data-testid="treasury-balance" sx={{ fontVariantNumeric: "tabular-nums" }}>
             {formatCurrency(row.balance)}
           </Typography>
           <Stack direction="row" spacing={3} flexWrap="wrap" useFlexGap sx={{ mt: 1, mb: pct === null ? 0 : 2 }}>
@@ -59,7 +59,7 @@ export default function TreasuryCard() {
               <LinearProgress
                 variant="determinate"
                 value={pct}
-                sx={{ height: 12, borderRadius: 6, bgcolor: "rgba(255,255,255,0.3)", "& .MuiLinearProgress-bar": { bgcolor: "#fff" } }}
+                sx={{ height: 12, borderRadius: 6, bgcolor: "rgba(255,255,255,0.25)", "& .MuiLinearProgress-bar": { bgcolor: "#4ADE80" } }}
               />
             </>
           )}

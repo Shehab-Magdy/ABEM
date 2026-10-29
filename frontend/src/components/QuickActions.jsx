@@ -17,6 +17,7 @@ export default function QuickActions() {
       <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5} sx={{ mb: 3 }}>
         <Button
           variant="contained"
+          color="secondary"
           size="large"
           startIcon={<Payments />}
           onClick={() => setPayOpen(true)}
