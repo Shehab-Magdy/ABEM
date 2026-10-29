@@ -14,6 +14,7 @@ from django.utils.translation import gettext_lazy as _
 from apps.apartments.models import Apartment
 from apps.audit.mixins import log_action
 from apps.authentication.permissions import IsAdminRole
+from apps.buildings.scoping import ensure_manages, managed_buildings
 
 from .models import AssetSale, BuildingAsset, Payment, PaymentExpense, PaymentMethod
 from .serializers import BuildingAssetSerializer, PaymentSerializer
@@ -120,7 +121,9 @@ class PaymentViewSet(ModelViewSet):
             "expenses", "payment_expenses", "payment_expenses__expense",
         )
 
-        if self.request.user.role != "admin":
+        if self.request.user.role == "admin":
+            qs = qs.filter(apartment__building__in=managed_buildings(self.request.user))
+        else:
             # Owners see payments for any apartment they are primary or co-owner of
             from django.db.models import Q
             qs = qs.filter(
@@ -162,6 +165,7 @@ class PaymentViewSet(ModelViewSet):
         from decimal import Decimal
 
         apartment = serializer.validated_data["apartment"]
+        ensure_manages(self.request.user, apartment.building_id)
         amount_paid = serializer.validated_data["amount_paid"]
         raw_allocations = self.request.data.get("allocations", [])
 
@@ -442,13 +446,16 @@ class BuildingAssetViewSet(ModelViewSet):
     permission_classes = [IsAuthenticated, IsAdminRole]
 
     def get_queryset(self):
-        qs = BuildingAsset.objects.select_related("building", "sale")
+        qs = BuildingAsset.objects.select_related("building", "sale").filter(
+            building__in=managed_buildings(self.request.user)
+        )
         building_id = self.request.query_params.get("building_id")
         if building_id:
             qs = qs.filter(building_id=building_id)
         return qs
 
     def perform_create(self, serializer):
+        ensure_manages(self.request.user, serializer.validated_data["building"])
         serializer.save(created_by=self.request.user)
 
     @action(detail=True, methods=["post"], url_path="sell")

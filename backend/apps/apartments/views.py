@@ -18,6 +18,8 @@ from django.utils.translation import gettext_lazy as _
 from apps.audit.mixins import log_action
 from apps.authentication.permissions import IsAdminRole
 
+from apps.buildings.scoping import ensure_manages, managed_buildings
+
 from .models import Apartment, UnitInvitation
 from .serializers import ApartmentSerializer
 
@@ -47,7 +49,8 @@ class ApartmentViewSet(ModelViewSet):
         qs = Apartment.objects.select_related("building", "owner")
 
         if self.request.user.role == "admin":
-            # Admin may optionally filter by building_id query param
+            # Admins only see units in buildings they manage
+            qs = qs.filter(building__in=managed_buildings(self.request.user))
             building_id = self.request.query_params.get("building_id")
             if building_id:
                 qs = qs.filter(building_id=building_id)
@@ -72,6 +75,7 @@ class ApartmentViewSet(ModelViewSet):
     # ── Write helpers ──────────────────────────────────────────────────────────
 
     def perform_create(self, serializer):
+        ensure_manages(self.request.user, serializer.validated_data["building"])
         instance = serializer.save()
         # If an owner was set on creation, auto-link them to the building
         if instance.owner is not None:

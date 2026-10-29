@@ -49,11 +49,12 @@ class BuildingViewSet(ModelViewSet):
         # Owners only see active buildings; admins see active + inactive (so they can reactivate)
         if not self.request.user.role == "admin":
             qs = qs.filter(is_active=True)
-        return qs.filter(
-            models.Q(admin=self.request.user)
-            | models.Q(co_admins=self.request.user)
-            | models.Q(members=self.request.user)
-        ).distinct()
+        if self.request.user.role == "admin":
+            # Admins only manage buildings they administer (primary admin or co-admin)
+            return qs.filter(
+                models.Q(admin=self.request.user) | models.Q(co_admins=self.request.user)
+            ).distinct()
+        return qs.filter(members=self.request.user).distinct()
 
     # ── Permissions ────────────────────────────────────────────────────────────
 
