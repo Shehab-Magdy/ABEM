@@ -13,7 +13,7 @@ Version 2.0 | February 2026
 | Attribute | Detail |
 |---|---|
 | Document Type | QA Strategy & Master Test Plan |
-| Framework | pytest · Selenium 4 · Appium 3 |
+| Framework | pytest · Selenium 4 · Playwright |
 | Language | Python 3.12 |
 | Scope | Sprint 0 through Sprint 10 (all sprints) |
 | Total Test Cases | 480+ across API, Web UI & Mobile |
@@ -35,7 +35,7 @@ Quality is built into every sprint. Tests are written alongside the feature in t
 |---|---|---|---|
 | API | pytest + requests | Business logic, auth, RBAC, data integrity, security | Every commit to any branch |
 | Web UI | Selenium 4 + POM pattern | User flows, rendering, form validation, accessibility | Every commit |
-| Mobile | Appium 3 (Flutter / Dart) | Role-based UI, device APIs, secure storage, UX | Every pull request |
+| Mobile (PWA) | Playwright device emulation + Lighthouse | Role-based UI on Android/iOS viewports, installability, offline, UX | Every pull request |
 | Performance | Locust 2.x | P95 response times, concurrent user load | Nightly + pre-release |
 | Security | pytest + PyJWT + custom | OWASP Top 10, injection, CORS, headers | Every sprint |
 
@@ -62,7 +62,7 @@ Every test case follows a consistent ID format used in pytest markers, reports, 
 | 4 | Payment Management | 35 | 20 | 15 | 70 | **Planned** |
 | 5 | Dashboards (Web Only) | 15 | 22 | — | 37 | **Planned** |
 | 6 | Notifications | 20 | 15 | 15 | 50 | **Planned** |
-| 7 | Flutter Finalization | 10 | — | 28 | 38 | **Planned** |
+| 7 | Mobile (PWA) Finalization | 10 | — | 28 | 38 | **Planned** |
 | 8 | Audit & Data Exports | 18 | 14 | 8 | 40 | **Planned** |
 | 9 | Performance & Security | 20 | 10 | 5 | 35 | **Planned** |
 | 10 | Regression & Deployment | — | — | — | Full Suite | **Planned** |
@@ -623,9 +623,11 @@ Notification accuracy is critical for owner engagement. Tests validate correct t
 
 ---
 
-### Sprint 7 — Flutter Mobile Finalization (38 Cases)
+### Sprint 7 — Mobile (PWA) Finalization (38 Cases)
 
-Sprint 7 polishes and hardenes the mobile app end-to-end. Tests focus on device compatibility, native API integration, offline handling, and app-store readiness.
+> **Scope change:** the Flutter app was dropped; mobile is the installable PWA. Cases below are executed with Playwright device emulation, Lighthouse and real-device checks. Native-only cases (Android API levels, hardware back button, ANR, app-store readiness) must be re-scoped to browser/PWA equivalents before execution.
+
+Sprint 7 polishes and hardenes the mobile experience end-to-end. Tests focus on device compatibility, native API integration, offline handling, and app-store readiness.
 
 *Run command: pytest -m sprint7 -v*
 
@@ -871,7 +873,7 @@ At the start of each sprint, the QA engineer follows this process:
 | Test Runner | pytest 8.1 | Core framework — markers, fixtures, plugins, reporting |
 | API Testing | requests + httpx | Sync and async HTTP calls with response logging |
 | Web UI | Selenium 4 + WebDriver Mgr | Browser automation with automatic driver management |
-| Mobile | Appium 3 (Python client) | Flutter app automation on Android and iOS |
+| Mobile (PWA) | Playwright (Python) device emulation, Lighthouse | PWA checks on emulated Android and iOS devices |
 | Page Objects | Custom POM classes | All UI selectors isolated in page classes |
 | Test Data | Faker 25 | Realistic randomized data — zero hardcoded values |
 | Reports | pytest-html + Allure | HTML reports with screenshots on failure |

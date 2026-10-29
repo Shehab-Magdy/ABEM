@@ -10,15 +10,6 @@ environments:
     headless: true
     implicit_wait: 10
     explicit_wait: 15
-    mobile:
-      platform_name: "Android"
-      device_name: "emulator-5554"
-      platform_version: "13.0"
-      app_package: "com.abem.mobile"
-      app_activity: ".MainActivity"
-      automation_name: "UiAutomator2"
-      appium_url: "http://localhost:4723"
-      no_reset: true
 
   staging:
     base_url: "${STAGING_BASE_URL}"
@@ -31,15 +22,6 @@ environments:
     headless: true
     implicit_wait: 15
     explicit_wait: 20
-    mobile:
-      platform_name: "Android"
-      device_name: "${STAGING_DEVICE_NAME}"
-      platform_version: "${STAGING_PLATFORM_VERSION}"
-      app_package: "com.abem.mobile"
-      app_activity: ".MainActivity"
-      automation_name: "UiAutomator2"
-      appium_url: "${APPIUM_URL}"
-      no_reset: false
 
   prod:
     base_url: "${PROD_BASE_URL}"
@@ -52,12 +34,3 @@ environments:
     headless: true
     implicit_wait: 20
     explicit_wait: 30
-    mobile:
-      platform_name: "Android"
-      device_name: "${PROD_DEVICE_NAME}"
-      platform_version: "${PROD_PLATFORM_VERSION}"
-      app_package: "com.abem.mobile"
-      app_activity: ".MainActivity"
-      automation_name: "UiAutomator2"
-      appium_url: "${APPIUM_URL}"
-      no_reset: false

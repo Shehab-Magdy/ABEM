@@ -10,7 +10,7 @@ Multi-tenant financial management platform for managing buildings, apartments, s
 |---|---|
 | Backend API | Django 4.2 + DRF + PostgreSQL 16 |
 | Web Frontend | React.js + Material UI (Vite) |
-| Mobile App | Flutter 3.x (Android & iOS) |
+| Mobile (Android & iOS) | Installable PWA (the React web app) |
 | Task Queue | Celery + Redis 7 |
 | File Storage | Cloudinary |
 | Auth | JWT (djangorestframework-simplejwt) |
@@ -45,16 +45,12 @@ ABEM/
 │       ├── pages/              # Page components per sprint
 │       ├── routes/             # Protected route setup
 │       └── theme/              # MUI theme
-├── mobile/                     # Flutter app (BLoC pattern)
-│   └── lib/
-│       ├── core/               # API client, theme, router
-│       └── features/           # auth, buildings, expenses, payments, notifications
 ├── abem-automation/            # Pytest automation suite (480+ tests)
 │   ├── tests/                  # Sprint-based test folders (sprint_0 – sprint_10)
 │   ├── api/                    # Typed API wrappers
-│   ├── core/                   # APIClient, WebDriver, MobileDriver
+│   ├── core/                   # APIClient, WebDriver
 │   └── utils/                  # Test data factories, logger
-├── .github/workflows/          # CI pipelines (backend, frontend, mobile)
+├── .github/workflows/          # CI pipelines (backend, frontend)
 ├── DEPLOYMENT.md               # Step-by-step production deployment guide
 ├── docker-compose.yml          # Development stack
 └── docker-compose.prod.yml     # Production stack
@@ -143,7 +139,7 @@ All endpoints require **Bearer JWT** authentication (except `/auth/login/` and `
 | 4 | Payment Management | 70 | ✅ Done |
 | 5 | Dashboards (Web) | 40 | ✅ Done |
 | 6 | Notifications | 50 | ✅ Done |
-| 7 | Flutter Finalization | 35 | ✅ Done |
+| 7 | Mobile-client (PWA) API compatibility | 35 | ✅ Done |
 | 8 | Audit & Exports | 40 | ✅ Done |
 | 9 | Performance & Security | 35 | ✅ Done |
 | 10 | Deployment & Launch | 15 | ✅ Done |
@@ -187,21 +183,19 @@ cd backend && pytest
 # Frontend linting
 cd frontend && npm run lint
 
-# Mobile tests
-cd mobile && flutter test
+# Mobile (PWA): emulate Android/iOS devices with Playwright; see abem-playwright
 ```
 
 ---
 
 ## CI/CD
 
-Three GitHub Actions workflows run on push/PR to `main` or `develop`:
+Two GitHub Actions workflows run on push/PR to `main` or `develop`:
 
 | Workflow | Checks |
 |---|---|
 | `backend-ci.yml` | flake8, black, pytest (≥70% coverage), Docker build |
 | `frontend-ci.yml` | ESLint, Vite production build |
-| `mobile-ci.yml` | dart analyze, flutter test |
 
 ---
 
@@ -214,7 +208,7 @@ See **[DEPLOYMENT.md](DEPLOYMENT.md)** for the complete step-by-step production 
 - Database setup & migrations
 - Nginx + Let's Encrypt TLS configuration
 - Celery worker configuration
-- Mobile app release (Play Store / App Store)
+- PWA hosting and install requirements (HTTPS, manifest, service worker)
 - Monitoring with Sentry
 - Rollback procedure
 - Security hardening checklist

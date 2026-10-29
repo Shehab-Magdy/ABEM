@@ -12,7 +12,7 @@ verifying:
   - The OpenAPI documentation is being served
 
 All 15 tests run in the default (dev) environment and require only a running
-Django backend — no browser or Appium device needed.
+Django backend — no browser needed.
 """
 from __future__ import annotations
 

@@ -74,27 +74,3 @@ class BaseAPITest(BaseTest):
     via fixtures in conftest.py. This base only provides the logger.
     """
 
-
-class BaseMobileTest(BaseTest):
-    """
-    Base class for Appium mobile tests.
-
-    Accept `mobile_driver` as a fixture argument in each test method.
-    """
-
-    driver = None  # set by test method
-
-    def teardown_method(self, method):
-        if self.driver:
-            try:
-                # Capture a screenshot on every mobile teardown for audit
-                from datetime import datetime
-                from pathlib import Path
-
-                Path("screenshots").mkdir(exist_ok=True)
-                ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-                path = f"screenshots/mobile_{method.__name__}_{ts}.png"
-                self.driver.save_screenshot(path)
-            except Exception:
-                pass
-        super().teardown_method(method)

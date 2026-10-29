@@ -32,18 +32,6 @@ frontend/dist/
 frontend/.env
 .npm
 
-# ── Flutter / Dart ─────────────────────────────────────────────────────────────
-mobile/.dart_tool/
-mobile/build/
-mobile/.flutter-plugins
-mobile/.flutter-plugins-dependencies
-mobile/pubspec.lock
-mobile/android/.gradle/
-mobile/android/local.properties
-mobile/ios/Pods/
-mobile/ios/.symlinks/
-mobile/ios/Flutter/Flutter.framework
-mobile/ios/Flutter/Flutter.podspec
 *.iml
 
 # ── Docker ─────────────────────────────────────────────────────────────────────
@@ -67,3 +55,4 @@ abem-automation/reports/
 
 # ── Claude Code ────────────────────────────────────────────────────────────────
 .claude/
+_agents_workspace/
