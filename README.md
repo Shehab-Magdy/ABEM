@@ -11,7 +11,7 @@ Multi-tenant financial management platform for managing buildings, apartments, s
 | Backend API | Django 4.2 + DRF + PostgreSQL 16 |
 | Web Frontend | React.js + Material UI (Vite) |
 | Mobile (Android & iOS) | Installable PWA (the React web app) |
-| Task Queue | Celery + Redis 7 |
+| Scheduled jobs | Django management command run daily by the host scheduler (no Celery/Redis) |
 | File Storage | Cloudinary |
 | Auth | JWT (djangorestframework-simplejwt) |
 | Push Notifications | Firebase FCM |
@@ -36,7 +36,7 @@ Multi-tenant financial management platform for managing buildings, apartments, s
 │   │   ├── audit/              # Immutable audit log
 │   │   ├── exports/            # CSV/XLSX data exports
 │   │   └── core/               # Health check, exception handler
-│   ├── config/                 # Settings (base / dev / prod), URLs, Celery
+│   ├── config/                 # Settings (base / dev / prod), URLs
 │   └── requirements/           # base.txt / development.txt / production.txt
 ├── frontend/                   # React.js + MUI web app
 │   └── src/
@@ -207,7 +207,7 @@ See **[DEPLOYMENT.md](DEPLOYMENT.md)** for the complete step-by-step production 
 - Docker production deployment
 - Database setup & migrations
 - Nginx + Let's Encrypt TLS configuration
-- Celery worker configuration
+- Daily scheduled job (recurring expenses)
 - PWA hosting and install requirements (HTTPS, manifest, service worker)
 - Monitoring with Sentry
 - Rollback procedure

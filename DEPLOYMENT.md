@@ -1,7 +1,7 @@
 # 3maracom — Production Deployment Guide
 
 > **Audience:** DevOps engineers and developers responsible for deploying the 3maracom platform to production.
-> **Stack:** Django 4.2 · PostgreSQL 16 · Redis 7 · Celery · React (Nginx, also the installable PWA for Android/iOS)
+> **Stack:** Django 4.2 · PostgreSQL 16 · React (Nginx, also the installable PWA for Android/iOS)
 
 ---
 
@@ -18,7 +18,7 @@
 9. [Superuser Creation](#9-superuser-creation)
 10. [Static & Media Files](#10-static--media-files)
 11. [Nginx & TLS / HTTPS](#11-nginx--tls--https)
-12. [Celery (Background Tasks)](#12-celery-background-tasks)
+12. [Scheduled Jobs](#12-scheduled-jobs)
 13. [Frontend Build & Deployment](#13-frontend-build--deployment)
 14. [Mobile (PWA) Release](#14-mobile-pwa-release)
 15. [CI/CD — GitHub Actions](#15-cicd--github-actions)
@@ -95,8 +95,6 @@ Every component below is free, self-hosted, and requires no external account.
 | Django 4.2 | BSD-3 | Backend API framework |
 | Django REST Framework | BSD-2 | REST layer |
 | PostgreSQL 16 | PostgreSQL License | Primary database |
-| Redis 7 | BSD-3 | Celery broker & cache |
-| Celery 5 | BSD-3 | Background task queue |
 | Nginx 1.27 | BSD-2 | Reverse proxy & SPA server |
 | React + Vite | MIT | Web frontend |
 | vite-plugin-pwa (Workbox) | MIT | PWA manifest and service worker (Android & iOS install) |
@@ -220,7 +218,7 @@ volumes:
   ntfy_data:
 ```
 
-#### Send a notification from Django (Celery task)
+#### Send a notification from Django
 
 ```python
 import requests
@@ -349,20 +347,19 @@ There are no unavoidable app-store costs: mobile is delivered as a PWA.
 
 ### 3.1 Free & Trial Hosting (start here)
 
-The 3maracom stack requires: **compute** (Django + Celery), **PostgreSQL**, and **Redis**.
-All three can be covered for free using the combinations below.
+The 3maracom stack requires: **compute** (Django) and **PostgreSQL**.
+Both can be covered for free using the combinations below.
 
 #### Option A — Railway (recommended for beginners)
 
 [Railway](https://railway.app/) is the easiest platform for a full Docker-based deployment.
-It supports all three services (app, Postgres, Redis) from one dashboard.
+It supports both services (app and Postgres) from one dashboard.
 
 | What | How |
 |------|-----|
 | **Free credit** | $5 of usage credit/month (no card required for trial) |
 | **Included subdomain** | `yourapp.up.railway.app` (HTTPS, free) |
 | **Postgres** | One-click Railway Postgres plugin |
-| **Redis** | One-click Railway Redis plugin |
 | **Deploy** | Connect GitHub repo → Railway auto-detects `Dockerfile` |
 
 ```bash
@@ -388,7 +385,6 @@ railway up            # deploy using the Dockerfile
 |---------|-----------|
 | Web Service (Django via Gunicorn) | Free — spins down after 15 min inactivity |
 | PostgreSQL | Free — expires after 90 days, then $7/mo |
-| Redis | **Not free** — use [Upstash Redis](#free-redis--upstash) instead |
 | Subdomain | `yourapp.onrender.com` (HTTPS, free) |
 
 **Reference:** [Render Django deployment guide](https://render.com/docs/deploy-django)
@@ -441,27 +437,6 @@ tier — no expiry, no credit card required after sign-up.
 > 3maracom stack comfortably.
 
 **Reference:** [Oracle Cloud free tier overview](https://docs.oracle.com/en-us/iaas/Content/FreeTier/freetier_topic-Always_Free_Resources.htm) · [Oracle Cloud sign-up](https://signup.cloud.oracle.com/)
-
----
-
-#### Free Redis — Upstash
-
-When your hosting provider does not include Redis (e.g. Render free tier),
-use [Upstash](https://upstash.com/) — serverless Redis with a free tier.
-
-| Free allowance | Details |
-|----------------|---------|
-| Commands | 10,000/day |
-| Storage | 256 MB |
-| Connections | Unlimited |
-
-Set the Upstash connection URL as `REDIS_URL` in `.env.prod`:
-
-```bash
-REDIS_URL=rediss://default:<password>@<host>.upstash.io:6379
-```
-
-**Reference:** [Upstash Redis docs](https://docs.upstash.com/redis)
 
 ---
 
@@ -531,7 +506,6 @@ For getting 3maracom running at no cost:
 ```
 Hosting:    Railway (free $5/mo credit)
 Postgres:   Railway Postgres plugin  OR  Neon free tier
-Redis:      Railway Redis plugin     OR  Upstash free tier
 Domain:     yourapp.up.railway.app   OR  yourname.duckdns.org
 TLS/HTTPS:  Included free on Railway / DuckDNS + Certbot
 Media:      MinIO on the same VM     OR  Cloudinary free tier (25 GB)
@@ -603,9 +577,6 @@ POSTGRES_PASSWORD=<strong-random-password>
 POSTGRES_HOST=db               # service name in docker-compose.prod.yml
 POSTGRES_PORT=5432
 
-# ── Redis ──────────────────────────────────────────────────────────────────────
-REDIS_URL=redis://redis:6379/0
-
 # ── JWT ───────────────────────────────────────────────────────────────────────
 # (uses Django SECRET_KEY by default — no extra var needed unless overriding)
 
@@ -621,7 +592,6 @@ CLOUDINARY_API_SECRET=<your-api-secret>
 # AWS_S3_ENDPOINT_URL=http://minio:9000
 
 # ── Email ─── pick ONE (see Section 2.6 for Postfix setup) ────────────────────
-CELERY_BROKER_URL=redis://redis:6379/0
 # Option A — Gmail SMTP (Google free tier, 500 msgs/day)
 EMAIL_HOST=smtp.gmail.com
 EMAIL_PORT=587
@@ -679,10 +649,7 @@ Expected output:
 ```
 NAME                    IMAGE         STATUS         PORTS
 abem-backend-1          abem-backend  Up             8000/tcp
-abem-celery_worker-1    abem-backend  Up
-abem-celery_beat-1      abem-backend  Up
 abem-db-1               postgres:16   Up (healthy)   5432/tcp
-abem-redis-1            redis:7       Up (healthy)   6379/tcp
 abem-frontend-1         abem-frontend Up             0.0.0.0:80->80/tcp
 ```
 
@@ -998,70 +965,23 @@ sudo systemctl reload nginx
 
 ---
 
-## 12. Celery (Background Tasks)
+## 12. Scheduled Jobs
 
-Celery processes email notifications, push notifications (FCM), and scheduled tasks.
-
-### 12.1 Docker (Automatic)
-
-The `celery_worker` and `celery_beat` services start automatically with `docker compose up`.
-
-### 12.2 systemd Services (Non-Docker)
-
-**Worker:**
+There is no background-worker service. The one scheduled job — creating recurring expenses when they fall due — is a management command that the host runs once a day:
 
 ```bash
-sudo nano /etc/systemd/system/abem-celery-worker.service
+python manage.py generate_recurring_expenses
 ```
 
-```ini
-[Unit]
-Description=3maracom Celery Worker
-After=network.target
+Run it from whatever scheduler your host provides (it is safe to run more than once a day; it only creates what is due and catches up on missed periods):
 
-[Service]
-User=www-data
-Group=www-data
-WorkingDirectory=/opt/abem/backend
-EnvironmentFile=/opt/abem/.env.prod
-ExecStart=/opt/abem/backend/.venv/bin/celery \
-          -A config worker -l warning --concurrency 4
-Restart=on-failure
+| Host | How |
+|------|-----|
+| Docker on a VPS | `crontab -e` → `5 2 * * * cd /opt/abem && docker compose -f docker-compose.prod.yml exec -T backend python manage.py generate_recurring_expenses` |
+| Render / Railway | Add a **Cron Job** that runs the command daily |
+| Anything else | GitHub Actions `schedule`, systemd timer, or a cloud scheduler calling the same command |
 
-[Install]
-WantedBy=multi-user.target
-```
-
-**Beat (scheduler):**
-
-```bash
-sudo nano /etc/systemd/system/abem-celery-beat.service
-```
-
-```ini
-[Unit]
-Description=3maracom Celery Beat Scheduler
-After=network.target
-
-[Service]
-User=www-data
-Group=www-data
-WorkingDirectory=/opt/abem/backend
-EnvironmentFile=/opt/abem/.env.prod
-ExecStart=/opt/abem/backend/.venv/bin/celery \
-          -A config beat -l warning
-Restart=on-failure
-
-[Install]
-WantedBy=multi-user.target
-```
-
-```bash
-sudo systemctl daemon-reload
-sudo systemctl enable --now abem-celery-worker abem-celery-beat
-```
-
-**Reference:** [Celery daemonization guide](https://docs.celeryq.dev/en/stable/userguide/daemonizing.html)
+Emails and push notifications are sent while the request is handled, so no queue is needed.
 
 ---
 
@@ -1249,14 +1169,14 @@ docker compose -f docker-compose.prod.yml exec backend \
 
 ```bash
 # Stop services
-docker compose -f docker-compose.prod.yml stop backend celery_worker
+docker compose -f docker-compose.prod.yml stop backend
 
 # Restore from backup
 docker compose -f docker-compose.prod.yml exec -T db \
   psql -U abem_user abem_prod < backup_YYYYMMDD_HHMMSS.sql
 
 # Restart
-docker compose -f docker-compose.prod.yml start backend celery_worker
+docker compose -f docker-compose.prod.yml start backend
 ```
 
 ---
@@ -1294,8 +1214,6 @@ docker compose -f docker-compose.prod.yml start backend celery_worker
 | SimpleJWT | https://django-rest-framework-simplejwt.readthedocs.io/en/latest/ |
 | Docker Compose reference | https://docs.docker.com/compose/compose-file/ |
 | PostgreSQL 16 docs | https://www.postgresql.org/docs/16/ |
-| Redis documentation | https://redis.io/docs/ |
-| Celery documentation | https://docs.celeryq.dev/en/stable/ |
 | WhiteNoise | https://whitenoise.readthedocs.io/en/stable/ |
 | Certbot (Let's Encrypt) | https://certbot.eff.org/ |
 | Nginx documentation | https://nginx.org/en/docs/ |

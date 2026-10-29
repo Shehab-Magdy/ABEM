@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # restart.sh — Restart the backend API and frontend web app.
-# Restarts: backend, celery_worker, celery_beat, frontend
-# Leaves:   db and redis untouched (no data loss)
+# Restarts: backend, frontend
+# Leaves:   db untouched (no data loss)
 #
 # Usage:
 #   ./restart.sh            Restart services only
@@ -46,7 +46,7 @@ done
 # ── Restart services ──────────────────────────────────────────
 if [ "$SKIP_RESTART" = false ]; then
   echo "Restarting backend and frontend services..."
-  docker compose restart backend celery_worker celery_beat frontend
+  docker compose restart backend frontend
 
   # Wait for backend to be healthy
   echo ""

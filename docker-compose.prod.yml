@@ -19,10 +19,6 @@ services:
       timeout: 5s
       retries: 5
 
-  redis:
-    image: redis:7-alpine
-    restart: always
-
   backend:
     build:
       context: ./backend
@@ -33,42 +29,11 @@ services:
     environment:
       DJANGO_SETTINGS_MODULE: config.settings.production
       POSTGRES_HOST: db
-      REDIS_URL: redis://redis:6379/0
     depends_on:
       db:
         condition: service_healthy
     expose:
       - "8000"
-
-  celery_worker:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    restart: always
-    env_file:
-      - .env.prod
-    environment:
-      DJANGO_SETTINGS_MODULE: config.settings.production
-      POSTGRES_HOST: db
-      REDIS_URL: redis://redis:6379/0
-    depends_on:
-      - backend
-    command: celery -A config worker -l warning --concurrency 4
-
-  celery_beat:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    restart: always
-    env_file:
-      - .env.prod
-    environment:
-      DJANGO_SETTINGS_MODULE: config.settings.production
-      POSTGRES_HOST: db
-      REDIS_URL: redis://redis:6379/0
-    depends_on:
-      - backend
-    command: celery -A config beat -l warning
 
   frontend:
     build:

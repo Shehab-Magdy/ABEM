@@ -1,5 +1,4 @@
-"""Scheduled expense jobs."""
-from celery import shared_task
+"""Recurring expenses: create the next copy of each one that is due."""
 from dateutil.relativedelta import relativedelta
 from django.db import transaction
 from django.utils import timezone
@@ -14,7 +13,6 @@ _STEP = {
 }
 
 
-@shared_task
 def generate_recurring_expenses() -> int:
     """Create the next copy of every recurring expense that is due. Returns how many were created.
 

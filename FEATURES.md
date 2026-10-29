@@ -56,7 +56,7 @@ Last updated: 2026-03-23 · Covers: Web Frontend, REST API, Django Backend
 |---------|-------------|
 | **Expense Records** | Title, description, amount, expense date, due date, category, split type, bill attachment. Soft-delete with `deleted_at` timestamp. |
 | **Split Engine** | Distributes expense amount across units. Four modes: Equal All, Equal Apartments Only, Equal Stores Only, Custom Weighted. Shares rounded up to nearest 5 EGP. |
-| **Recurring Expenses** | Optional recurring config with frequency (Monthly, Quarterly, Annual) and `next_due` date. Celery Beat schedules auto-generation. |
+| **Recurring Expenses** | Optional recurring config with frequency (Monthly, Quarterly, Annual) and `next_due` date. A daily `generate_recurring_expenses` command creates each due copy. |
 | **Expense Categories** | Per-building hierarchical categories with parent/subcategory support, Material icon, and hex color. 15 seeded defaults, all translated. Subcategories rendered nested with indent in UI. |
 | **Mark as Paid** | Admin toggle (`is_manually_paid`) overrides computed status to "Paid" building-wide, regardless of individual balances. Logged as `expense.marked_paid`. |
 | **Bill Upload** | File upload (JPEG, PNG, PDF, max 10 MB) stored in Cloudinary. Linked to expense via polymorphic MediaFile model. |
@@ -168,10 +168,8 @@ Last updated: 2026-03-23 · Covers: Web Frontend, REST API, Django Backend
 | Component | Details |
 |-----------|---------|
 | **PostgreSQL 16** | Primary database with persistent volume. Health-checked via `pg_isready`. |
-| **Redis 7** | Celery broker and result backend. Health-checked via `redis-cli ping`. |
 | **Django 4.2** | Backend API server with DRF, SimpleJWT, drf-spectacular (OpenAPI docs at `/api/docs/`). |
-| **Celery Worker** | Async task processing for notifications and exports. |
-| **Celery Beat** | Scheduler for recurring expense generation and payment reminders. |
+| **Daily job** | `python manage.py generate_recurring_expenses`, run by the host scheduler (cron / platform cron job). No Celery or Redis. |
 | **Vite Dev Server** | React 18 frontend with HMR on port 5173. |
 | **Docker Compose** | Full development stack in one command. `restart.sh` for service restart with health checks and optional smoke tests. `test.sh` for running Playwright tests. |
 | **Playwright Test Suite** | 300+ tests across smoke, API, UI, E2E, and DB layers. Headless Chromium with HTML report generation. |

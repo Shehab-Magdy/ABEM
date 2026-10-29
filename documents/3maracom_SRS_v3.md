@@ -38,7 +38,7 @@ Android and iOS users will use the same React web application, installed from th
 
 #### 1.2.3 Backend & Infrastructure
 
-Centralized backend built with Django + Django REST Framework (DRF), connected to a PostgreSQL database. RESTful APIs serve the web client with JWT authentication, RBAC enforcement, and multi-tenant data isolation. Celery + Redis handles asynchronous tasks and scheduled jobs.
+Centralized backend built with Django + Django REST Framework (DRF), connected to a PostgreSQL database. RESTful APIs serve the web client with JWT authentication, RBAC enforcement, and multi-tenant data isolation. A daily management command (run by the host scheduler) handles scheduled jobs; notifications are sent while the request is handled.
 
 ### 1.3 Definitions, Acronyms & Abbreviations
 
@@ -60,7 +60,6 @@ Centralized backend built with Django + Django REST Framework (DRF), connected t
 | ReportLab | Python PDF generation library (payment receipts) |
 | drf-spectacular | Auto-generated OpenAPI 3.0 documentation for DRF APIs |
 | openpyxl | Python library for reading/writing Excel (.xlsx) files |
-| Celery | Distributed task queue for asynchronous and scheduled jobs |
 | Split Engine | Internal service that divides an expense amount among applicable units |
 | Registration Code | 8-character alphanumeric code used for owner self-registration to a specific unit |
 | SRS | Software Requirements Specification |
@@ -96,7 +95,7 @@ Centralized backend built with Django + Django REST Framework (DRF), connected t
 |---|---|---|
 | Data Layer | PostgreSQL 16 | Persistent storage, multi-tenant scoping, backups |
 | Application Layer | Django 4.x + DRF | Business logic, REST API, authentication, RBAC |
-| Task Queue | Celery + Redis 7 | Async notifications, recurring expense scheduler |
+| Scheduled jobs | Django management command (host cron) | Daily recurring-expense generation; no Celery or Redis |
 | Web Client | React 18 + Material-UI v5 | Admin & Owner web interface |
 | Mobile Client | Installable PWA (React web app) | Planned — Android & iOS via browser install |
 | File Storage | Cloudinary | Bill images, profile pictures (validated type + size) |
@@ -201,7 +200,7 @@ Comprehensive expense tracking with flexible splitting logic, configurable categ
 **Recurring Expenses:**
 - Admin marks an expense as recurring and sets frequency: Monthly, Quarterly, or Annual.
 - A `RecurringConfig` record stores the frequency and `next_due` date.
-- A daily Celery Beat task (`generate_recurring_expenses`) copies each due recurring expense as a normal expense dated on `next_due`, splits it like the original, advances `next_due`, and catches up on missed periods.
+- A daily management command (`generate_recurring_expenses`, run by the host scheduler) copies each due recurring expense as a normal expense dated on `next_due`, splits it like the original, advances `next_due`, and catches up on missed periods.
 
 **Soft Delete:** Expenses are soft-deleted (`deleted_at` timestamp set); no records are permanently destroyed.
 
@@ -539,7 +538,7 @@ JWT-based auth with djangorestframework-simplejwt. Roles: Admin, Owner. RBAC enf
 Tenant isolation via building membership (`UserBuilding` junction table). All querysets filter data by buildings the requesting user is a member of, admin of, or co-admin of. No middleware tenant injection — isolation is enforced per-view in `get_queryset()`.
 
 **TS-3: Expense Engine**
-Split logic engine handles four split types (equal_all, equal_apartments, equal_stores, custom). Custom split supports optional per-unit weight dictionary; proportional allocation is computed, then each share is rounded up to the nearest 5 via `round_up_to_nearest_5()`. ApartmentExpense records are created (or recalculated on edit) and apartment balances are updated. Recurring expense scheduler runs daily via Celery Beat using `RecurringConfig.next_due`. Bill attachments uploaded to Cloudinary, metadata stored in `MediaFile` polymorphic table.
+Split logic engine handles four split types (equal_all, equal_apartments, equal_stores, custom). Custom split supports optional per-unit weight dictionary; proportional allocation is computed, then each share is rounded up to the nearest 5 via `round_up_to_nearest_5()`. ApartmentExpense records are created (or recalculated on edit) and apartment balances are updated. The recurring-expense job runs daily as a management command using `RecurringConfig.next_due`. Bill attachments uploaded to Cloudinary, metadata stored in `MediaFile` polymorphic table.
 
 **TS-4: Payment Engine**
 Payment recording creates an immutable `Payment` record in an atomic transaction with `SELECT FOR UPDATE` on the apartment row. `balance_before` and `balance_after` are snapshotted. Apartment running balance is decremented. PDF receipts generated synchronously via ReportLab with Latin-1 safe encoding. Payments link to expenses via M2M through table.
@@ -561,7 +560,7 @@ Bill uploads validated by file type (JPEG, PNG, PDF only) and size (max 10 MB). 
 HTTPS enforced (TLS 1.2+). Passwords hashed with Django's PBKDF2. JWT tokens signed with HS256. CORS configured for known origins. SQL injection prevented via Django ORM. XSS prevented via React's escaping. Secrets managed via environment variables. Refresh tokens blacklisted on logout.
 
 **TS-10: Performance & Scalability**
-Database indexes on: building_id, owner_id, expense_id, apartment_id, token (invitations). Pagination on all list endpoints (default page size: 20; clients can request up to 500 via `page_size` query param). Redis deployed for Celery broker. Dashboard queries run directly on PostgreSQL (Redis caching is a planned optimization).
+Database indexes on: building_id, owner_id, expense_id, apartment_id, token (invitations). Pagination on all list endpoints (default page size: 20; clients can request up to 500 via `page_size` query param). Dashboard queries run directly on PostgreSQL (caching is a planned optimization).
 
 **TS-11: Building Asset Management**
 `BuildingAsset` and `AssetSale` models. `sell` action on `BuildingAssetViewSet` creates an `AssetSale` record and sets `is_sold=True` (enforced as immutable — no further PATCH allowed after sale). Asset list is scoped by `building_id` query param.
@@ -570,7 +569,7 @@ Database indexes on: building_id, owner_id, expense_id, apartment_id, token (inv
 `UnitInvitation` model stores token (UUID), `registration_code` (8-char, auto-generated unique), invited_email, expiry, and used_at. `validate` endpoint is public (AllowAny) — returns unit/building info for the wizard UI without requiring auth. `use` endpoint is authenticated — redeems the invite, sets owner on apartment, adds user to building members.
 
 **TS-13: CI/CD & Containerization**
-Docker Compose for local development: PostgreSQL 16, Redis 7, Django backend, Celery worker, Celery Beat, React frontend (via Vite dev server). GitHub Actions workflows for linting and test automation (planned).
+Docker Compose for local development: PostgreSQL 16, Django backend, React frontend (via Vite dev server). GitHub Actions workflows for linting and test automation (planned).
 
 **TS-14: Interactive Tutorial System**
 React: Zustand store (`useTutorialStore`) holds `isActive`, `role`, `currentStep`. `TutorialButton` reads `useAuth()` and calls `startTutorial('admin' | 'owner')` directly — no role-picker modal. `waitForElement(anchorId)` uses `requestAnimationFrame` retry (max 2 s) to resolve anchor elements after React Router navigation. SVG mask with `<mask>` element creates a spotlight cutout; a positioned `<Box>` renders the blue highlight ring. `calcCardPos()` tries 6 candidate positions before clamping. All anchor IDs are documented in `TUTORIAL_ANCHORS.md`. Flutter: `WalkthroughController` (ChangeNotifier singleton) with `GlobalKey` anchors; `_SpotlightPainter` uses even-odd `Path` fill; anchor resolution uses `addPostFrameCallback` + 180 ms retry.
@@ -738,7 +737,7 @@ Base path: `/api/v1/`
 | Concurrent Users | 100+ (v1 target) | Scalable via horizontal scaling |
 | Database Query (indexed) | < 50ms | With proper indexing |
 
-Redis is deployed as the Celery broker. Direct Redis caching for dashboard aggregation queries is a planned optimization (not yet implemented — dashboards currently query PostgreSQL directly).
+There is no Celery or Redis in the stack: dashboards query PostgreSQL directly, the one scheduled job is a management command run by the host scheduler, and the cache is in-process.
 
 ### 8.2 Security
 
@@ -782,10 +781,10 @@ Redis is deployed as the Celery broker. Direct Redis caching for dashboard aggre
 
 | Sprint | Focus | Key Deliverables | Status |
 |---|---|---|---|
-| 0 | Setup & Architecture | Docker Compose, Django project skeleton, React scaffold, PostgreSQL + Redis, CI structure | Done |
+| 0 | Setup & Architecture | Docker Compose, Django project skeleton, React scaffold, PostgreSQL, CI structure | Done |
 | 1 | Auth & User Management | JWT login/logout/refresh, RBAC (Admin/Owner), user CRUD, account lockout, profile management, self-registration wizard | Done |
 | 2 | Buildings & Apartments | Building CRUD (with co-admins, auto-unit creation), apartment management, unit invitation + registration code flow, unit status | Done |
-| 3 | Expense Management | Expense CRUD, 4 split types (including weighted custom), split engine, rounding rule, configurable categories (icon/color/subcategory), 15 default categories, bill upload (Cloudinary), recurring expenses (Celery Beat) | Done |
+| 3 | Expense Management | Expense CRUD, 4 split types (including weighted custom), split engine, rounding rule, configurable categories (icon/color/subcategory), 15 default categories, bill upload (Cloudinary), recurring expenses (daily command) | Done |
 | 4 | Payment Management | Payment recording (atomic + balance snapshots), payment method tracking, M2M expense linking, carry-forward balance, PDF receipt (ReportLab), balance summary card | Done |
 | 5 | Dashboards (Web) | Admin dashboard (income/expense/overdue cards, 12-month bar chart, outstanding balances table), Owner dashboard (balance card, donut chart, recent payments, claim-unit widget) | Done |
 | 6 | Notifications & Messaging | In-app notification center (header badge, mark-as-read), expense + payment auto-notifications, broadcast announcements, direct messaging with recipient type selector, messaging restriction enforcement | Done |
@@ -827,7 +826,7 @@ Redis is deployed as the Celery broker. Direct Redis caching for dashboard aggre
 | 14 | Expense share rounding (up to nearest 5) | ✅ Implemented | |
 | 15 | Bill image upload (Cloudinary, JPEG/PNG/PDF ≤ 10 MB) | ✅ Implemented | |
 | 16 | Expense soft delete | ✅ Implemented | |
-| 17 | Recurring expenses (monthly/quarterly/annual) | ✅ Implemented | Celery Beat scheduler |
+| 17 | Recurring expenses (monthly/quarterly/annual) | ✅ Implemented | Daily management command |
 | 18 | Expense detail view with per-unit breakdown + shares total | ✅ Implemented | |
 | 19 | Payment recording (atomic, balance snapshots) | ✅ Implemented | select_for_update |
 | 20 | Payment method tracking (Cash/BankTransfer/Cheque/Other) | ✅ Implemented | |
@@ -850,7 +849,7 @@ Redis is deployed as the Celery broker. Direct Redis caching for dashboard aggre
 | 37 | Bulk expense import via CSV | ❌ Descoped | Not in current scope |
 | 38 | Payment due date automated email reminders | ❌ Descoped | Email delivery not configured |
 | 39 | Multi-currency support | ❌ Descoped | EGP only |
-| 40 | Redis caching for dashboard aggregations | 🔲 Pending | Redis deployed; caching not yet implemented |
+| 40 | Redis caching for dashboard aggregations | 🔲 Pending | Not implemented; no Redis in the stack |
 | 41 | Notification preferences UI | 🔲 Pending | Model field exists; UI not built |
 | 42 | Unit tests & integration test suite | 🔲 Pending | Sprint 10 |
 | 43 | Production deployment + monitoring | 🔲 Pending | Sprint 11 |

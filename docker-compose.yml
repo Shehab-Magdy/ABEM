@@ -21,18 +21,6 @@ services:
       timeout: 5s
       retries: 5
 
-  # ── Redis ───────────────────────────────────────────────────────────────────
-  redis:
-    image: redis:7-alpine
-    restart: unless-stopped
-    ports:
-      - "6379:6379"
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
   # ── Django Backend ──────────────────────────────────────────────────────────
   backend:
     build:
@@ -48,51 +36,12 @@ services:
     environment:
       DJANGO_SETTINGS_MODULE: config.settings.development
       POSTGRES_HOST: db
-      REDIS_URL: redis://redis:6379/0
     depends_on:
       db:
-        condition: service_healthy
-      redis:
         condition: service_healthy
     command: >
       sh -c "python manage.py migrate &&
              python manage.py runserver 0.0.0.0:8000"
-
-  # ── Celery Worker ───────────────────────────────────────────────────────────
-  celery_worker:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile.dev
-    restart: unless-stopped
-    volumes:
-      - ./backend:/app
-    env_file:
-      - .env
-    environment:
-      DJANGO_SETTINGS_MODULE: config.settings.development
-      POSTGRES_HOST: db
-      REDIS_URL: redis://redis:6379/0
-    depends_on:
-      - backend
-    command: celery -A config worker -l info
-
-  # ── Celery Beat (scheduler) ──────────────────────────────────────────────────
-  celery_beat:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile.dev
-    restart: unless-stopped
-    volumes:
-      - ./backend:/app
-    env_file:
-      - .env
-    environment:
-      DJANGO_SETTINGS_MODULE: config.settings.development
-      POSTGRES_HOST: db
-      REDIS_URL: redis://redis:6379/0
-    depends_on:
-      - backend
-    command: celery -A config beat -l info
 
   # ── React Frontend (dev server) ─────────────────────────────────────────────
   frontend:

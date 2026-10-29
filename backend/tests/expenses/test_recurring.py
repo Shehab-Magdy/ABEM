@@ -6,7 +6,7 @@ import pytest
 from apps.apartments.models import Apartment
 from apps.buildings.models import Building
 from apps.expenses.models import Expense, ExpenseCategory, RecurringConfig
-from apps.expenses.tasks import generate_recurring_expenses
+from apps.expenses.recurring import generate_recurring_expenses
 from apps.expenses.utils import run_split_engine
 
 pytestmark = pytest.mark.django_db
@@ -43,3 +43,12 @@ def test_nothing_is_created_before_the_due_date(template):
     RecurringConfig.objects.create(expense=template, frequency="monthly", next_due=date.today() + timedelta(days=5))
     assert generate_recurring_expenses() == 0
     assert Expense.objects.count() == 1
+
+
+def test_management_command_runs_the_job(template, capsys):
+    from django.core.management import call_command
+
+    RecurringConfig.objects.create(expense=template, frequency="monthly", next_due=date.today())
+    call_command("generate_recurring_expenses")
+    assert "Created 1 recurring expense" in capsys.readouterr().out
+    assert Expense.objects.count() == 2

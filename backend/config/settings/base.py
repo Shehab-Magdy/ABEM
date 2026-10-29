@@ -35,7 +35,6 @@ THIRD_PARTY_APPS = [
     "django_filters",
     "cloudinary",
     "cloudinary_storage",
-    "django_celery_beat",
     "rosetta",
 ]
 
@@ -201,32 +200,12 @@ CORS_ALLOWED_ORIGINS = config("CORS_ALLOWED_ORIGINS", default="http://localhost:
 CORS_ALLOW_CREDENTIALS = True
 
 # ---------------------------------------------------------------------------
-# Redis & Celery
+# Cache (used for API rate limiting)
 # ---------------------------------------------------------------------------
-REDIS_URL = config("REDIS_URL", default="redis://localhost:6379/0")
-
-CACHES = {
-    "default": {
-        "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": REDIS_URL,
-        "OPTIONS": {"CLIENT_CLASS": "django_redis.client.DefaultClient"},
-        "TIMEOUT": 300,
-    }
-}
-
-CELERY_BROKER_URL = REDIS_URL
-CELERY_RESULT_BACKEND = REDIS_URL
-CELERY_ACCEPT_CONTENT = ["json"]
-CELERY_TASK_SERIALIZER = "json"
-CELERY_RESULT_SERIALIZER = "json"
-CELERY_TIMEZONE = TIME_ZONE
-CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
-CELERY_BEAT_SCHEDULE = {
-    "generate-recurring-expenses": {
-        "task": "apps.expenses.tasks.generate_recurring_expenses",
-        "schedule": 60 * 60 * 24,  # daily
-    },
-}
+# In-process cache: no extra service to run. Rate-limit counters are kept per server
+# process, so the effective limit is per worker. Recurring expenses are created by the
+# `generate_recurring_expenses` management command, run daily by the host scheduler.
+CACHES = {"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}}
 
 # ---------------------------------------------------------------------------
 # Email

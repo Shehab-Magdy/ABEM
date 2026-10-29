@@ -9,9 +9,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### Full stack (Docker)
 ```bash
 cp .env.example .env              # then fill in credentials
-docker compose up -d              # db, redis, backend (:8000), celery worker/beat, frontend (:5173)
-docker compose up -d db redis     # infra only, if running backend locally (Docker VM disk can run out on Mac)
-./restart.sh [--test|--test-only] # restart backend/celery/frontend, leave db+redis; optionally run smoke tests
+docker compose up -d              # db, backend (:8000), frontend (:5173)
+docker compose up -d db           # database only, if running backend locally (Docker VM disk can run out on Mac)
+./restart.sh [--test|--test-only] # restart backend/frontend, leave db; optionally run smoke tests
 ./test.sh [smoke|api|ui|e2e|db]   # runs the abem-playwright suite (creates its own .venv on first run)
 ```
 
@@ -23,7 +23,7 @@ pytest                                            # collects tests/<app>/test_*.
 pytest tests/authentication/test_auth.py::TestX::test_y --no-cov   # single test
 flake8 backend/ ; black --check backend/ ; isort --check-only backend/   # CI lint gates (run from repo root)
 ```
-Swagger at `/api/docs/`, health check at `/api/health/`. Settings are split `config/settings/{base,development,production}.py`; secrets come from env via `python-decouple` (`DJANGO_SECRET_KEY` and `POSTGRES_PASSWORD` are required, no defaults). Tests need a real PostgreSQL (and Redis) — there is no SQLite fallback.
+Swagger at `/api/docs/`, health check at `/api/health/`. Settings are split `config/settings/{base,development,production}.py`; secrets come from env via `python-decouple` (`DJANGO_SECRET_KEY` and `POSTGRES_PASSWORD` are required, no defaults). Tests need a real PostgreSQL — there is no SQLite fallback.
 
 ### Frontend (`frontend/`, Node 22+, Vite)
 ```bash
@@ -40,7 +40,7 @@ No frontend unit-test runner is configured.
 
 ## Architecture
 
-**Backend** (`backend/apps/*`): one Django app per domain — `authentication` (custom `User` model, `AUTH_USER_MODEL = authentication.User`, email login, JWT via simplejwt with role/tenant claims, lockout, forced password change), `buildings`, `apartments`, `expenses` (split logic + categories), `payments`, `notifications` (in-app inbox + FCM), `audit` (immutable log), `dashboard`, `exports` (CSV/XLSX), `core` (exception handler, pagination, middleware, health). Tenant scoping: use `apps/buildings/scoping.py` — `managed_buildings(user)` filters admin querysets to buildings they administer, and `ensure_manages(user, building)` guards create paths. Every new viewset must scope its queryset this way (admins) or by membership (residents). Also in `payments`: InstaPay `PaymentClaim` (resident reports, admin confirms); new `maintenance` app for resident reports. Celery (`config/celery.py`, Redis broker, django-celery-beat) handles async work. Media goes to Cloudinary.
+**Backend** (`backend/apps/*`): one Django app per domain — `authentication` (custom `User` model, `AUTH_USER_MODEL = authentication.User`, email login, JWT via simplejwt with role/tenant claims, lockout, forced password change), `buildings`, `apartments`, `expenses` (split logic + categories), `payments`, `notifications` (in-app inbox + FCM), `audit` (immutable log), `dashboard`, `exports` (CSV/XLSX), `core` (exception handler, pagination, middleware, health). Tenant scoping: use `apps/buildings/scoping.py` — `managed_buildings(user)` filters admin querysets to buildings they administer, and `ensure_manages(user, building)` guards create paths. Every new viewset must scope its queryset this way (admins) or by membership (residents). Also in `payments`: InstaPay `PaymentClaim` (resident reports, admin confirms); new `maintenance` app for resident reports. There is no Celery/Redis: the one scheduled job is `python manage.py generate_recurring_expenses`, run daily by the host scheduler (see DEPLOYMENT.md section 12); the cache is in-process LocMem. Media goes to Cloudinary.
 
 **i18n is bilingual en/ar end to end**: backend `locale/{en,ar}` + `APILanguageMiddleware` + Rosetta; frontend `public/locales/{en,ar}` via i18next with RTL (`stylis-plugin-rtl`). A user's preferred language is stored in the DB and synced across devices. New user-facing strings must be added for both languages in both clients.
 
