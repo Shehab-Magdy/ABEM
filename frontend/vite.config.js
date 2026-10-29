@@ -8,7 +8,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: "autoUpdate",
-      includeAssets: ["abem-app-icon.svg", "apple-touch-icon.png", "favicon-16x16.png", "favicon-32x32.png"],
+      includeAssets: ["abem-app-icon.svg", "apple-touch-icon.png", "favicon-16x16.png", "favicon-32x32.png", "favicon.ico"],
       manifest: {
         id: "/",
         name: "عِمارة.كوم - إدارة اتحاد الملاك",
@@ -19,7 +19,7 @@ export default defineConfig({
         start_url: "/",
         scope: "/",
         display: "standalone",
-        theme_color: "#2563EB",
+        theme_color: "#254A80",
         background_color: "#FFFFFF",
         icons: [
           { src: "/pwa-192x192.png", sizes: "192x192", type: "image/png", purpose: "any" },

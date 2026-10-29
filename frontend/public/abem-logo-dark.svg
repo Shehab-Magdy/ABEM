@@ -1,15 +1,12 @@
-<svg width="220" height="60" viewBox="0 0 220 60" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <!-- Background for dark logo -->
-  <rect width="220" height="60" fill="#1F2937"/>
-  <!-- App Icon Mark -->
-  <rect x="0" y="4" width="52" height="52" rx="12" fill="#3B82F6"/>
-  <rect x="10" y="18" width="32" height="26" rx="2" fill="white" opacity="0.18"/>
-  <rect x="14" y="22" width="10" height="22" rx="1.5" fill="white" opacity="0.9"/>
-  <rect x="28" y="26" width="10" height="18" rx="1.5" fill="white" opacity="0.7"/>
-  <rect x="14" y="36" width="4" height="8" rx="1" fill="#34D399"/>
-  <rect x="20" y="32" width="4" height="12" rx="1" fill="#34D399"/>
-  <rect x="26" y="28" width="4" height="16" rx="1" fill="#FCD34D"/>
-  <!-- Wordmark -->
-  <text x="64" y="36" font-family="system-ui, -apple-system, Arial, sans-serif" font-size="26" font-weight="700" fill="#FFFFFF" letter-spacing="-0.5">ABEM</text>
-  <text x="64" y="52" font-family="system-ui, -apple-system, Arial, sans-serif" font-size="11" font-weight="400" fill="#9CA3AF" letter-spacing="0.04em">Expense Management</text>
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="320" viewBox="0 0 1024 320" fill="none">
+  
+  <rect width="1024" height="320" fill="#0F1623"/>
+  <g transform="translate(110 24) scale(.545)"><g transform="translate(-30 0)">
+    <path fill-rule="evenodd" d="M184 104H304A28 28 0 0 1 332 132V364A28 28 0 0 1 304 392H184A28 28 0 0 1 156 364V132A28 28 0 0 1 184 104Z M194 140H222A10 10 0 0 1 232 150V178A10 10 0 0 1 222 188H194A10 10 0 0 1 184 178V150A10 10 0 0 1 194 140Z M274 140H302A10 10 0 0 1 312 150V178A10 10 0 0 1 302 188H274A10 10 0 0 1 264 178V150A10 10 0 0 1 274 140Z M194 212H222A10 10 0 0 1 232 222V250A10 10 0 0 1 222 260H194A10 10 0 0 1 184 250V222A10 10 0 0 1 194 212Z M274 212H302A10 10 0 0 1 312 222V250A10 10 0 0 1 302 260H274A10 10 0 0 1 264 250V222A10 10 0 0 1 274 212Z M194 284H222A10 10 0 0 1 232 294V322A10 10 0 0 1 222 332H194A10 10 0 0 1 184 322V294A10 10 0 0 1 194 284Z" fill="#FFFFFF"/>
+    <circle cx="352" cy="336" r="64" fill="#E27A4A" stroke="#0F1623" stroke-width="14"/>
+    <path d="M322 338L344 360L384 312" stroke="#0C1018" stroke-width="20" stroke-linecap="round" stroke-linejoin="round"/>
+    <rect x="156" y="418" width="260" height="14" rx="7" fill="#FFFFFF" opacity=".6"/>
+  </g></g>
+  <text x="984" y="170" direction="rtl" font-family="Cairo, Tajawal, sans-serif" font-weight="800" font-size="104" fill="#FFFFFF">عِمارة<tspan fill="#E27A4A">.كوم</tspan></text>
+  <text x="984" y="246" text-anchor="end" font-family="Inter, system-ui, sans-serif" font-weight="600" font-size="52" letter-spacing="3" fill="#E27A4A">3maracom</text>
 </svg>
