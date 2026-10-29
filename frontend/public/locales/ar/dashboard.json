@@ -79,5 +79,9 @@
   "treasury_balance": "رصيد الخزينة الحالي",
   "treasury_income": "إجمالي ما دخل الخزينة",
   "treasury_expenses": "إجمالي المصروفات",
-  "collected_pct": "{{pct}}٪ من الوحدات سدّدت اشتراكاتها"
+  "collected_pct": "{{pct}}٪ من الوحدات سدّدت اشتراكاتها",
+  "found_unit": "تم العثور على الوحدة {{unit}} في {{building}}",
+  "claim_err_taken": "هذه الوحدة تم تسجيلها بالفعل لمالك آخر.",
+  "claim_err_used": "هذا الكود استُخدم من قبل أو انتهت صلاحيته.",
+  "claim_err_generic": "تعذّر تسجيل الوحدة."
 }

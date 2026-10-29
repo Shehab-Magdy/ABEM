@@ -469,7 +469,7 @@ function ClaimUnitStep({ onDone, onSkip, isAdmin }) {
       {codeError && <Alert severity="error" onClose={() => setCodeError(null)}>{codeError}</Alert>}
       {codeInfo && (
         <Alert severity="success">
-          Found: <strong>Unit {codeInfo.unit_number}</strong> in <strong>{codeInfo.building_name}</strong>
+          {t("found_unit", { unit: codeInfo.unit_number, building: codeInfo.building_name })}
         </Alert>
       )}
       <Stack direction="row" spacing={1} alignItems="flex-start">
@@ -494,7 +494,7 @@ function ClaimUnitStep({ onDone, onSkip, isAdmin }) {
       </Stack>
       {codeInfo && (
         <Button variant="contained" color="success" fullWidth disabled={claimingCode} onClick={handleClaimCode}>
-          {claimingCode ? <CircularProgress size={22} color="inherit" /> : `Claim Unit ${codeInfo.unit_number}`}
+          {claimingCode ? <CircularProgress size={22} color="inherit" /> : t("claim_unit_number", { unit: codeInfo.unit_number })}
         </Button>
       )}
     </Stack>
@@ -543,8 +543,8 @@ function InviteClaimStep({ inviteToken, inviteInfo, onDone }) {
       <Alert severity="success" icon={false}>
         <Typography fontWeight={600}>{t("invite_title")}</Typography>
         <Typography variant="body2">
-          Claim <strong>Unit {inviteInfo.unit_number}</strong> in{" "}
-          <strong>{inviteInfo.building_name}</strong> ({inviteInfo.building_city})
+          {t("join_unit_in_building", { unit: inviteInfo.unit_number, building: inviteInfo.building_name })}
+          {inviteInfo.building_city ? ` (${inviteInfo.building_city})` : ""}
         </Typography>
       </Alert>
       {error && <Alert severity="error">{error}</Alert>}
@@ -585,7 +585,7 @@ export default function RegisterPage() {
     if (!inviteToken) return;
     apartmentsApi.validateInvite(inviteToken)
       .then((res) => setInviteInfo(res.data))
-      .catch((err) => setInviteError(err.response?.data?.detail || "Invalid or expired invite link."))
+      .catch((err) => setInviteError(err.response?.data?.detail || t("invite_error")))
       .finally(() => setInviteLoading(false));
   }, [inviteToken]);
 
