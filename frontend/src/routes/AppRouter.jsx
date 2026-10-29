@@ -17,6 +17,7 @@ import ServerErrorPage from "../pages/errors/ServerErrorPage";
 const LandingPage = lazy(() => import("../pages/landing/LandingPage"));
 const LoginPage = lazy(() => import("../pages/auth/LoginPage"));
 const JoinPage = lazy(() => import("../pages/auth/JoinPage"));
+const MaintenancePage = lazy(() => import("../pages/maintenance/MaintenancePage"));
 const ResetPasswordPage = lazy(() => import("../pages/auth/ResetPasswordPage"));
 const RegisterPage = lazy(() => import("../pages/auth/RegisterPage"));
 const ForgotPasswordPage = lazy(() => import("../pages/auth/ForgotPasswordPage"));
@@ -127,6 +128,7 @@ export default function AppRouter() {
         <Route path="expenses" element={<ExpensesPage />} />
         <Route path="payments" element={<PaymentsPage />} />
         <Route path="notifications" element={<NotificationCenterPage />} />
+        <Route path="maintenance" element={<MaintenancePage />} />
         <Route path="audit" element={<RequireAdmin><AuditLogPage /></RequireAdmin>} />
         <Route path="expense-categories" element={<RequireAdmin><ExpenseCategoriesPage /></RequireAdmin>} />
         <Route path="assets" element={<RequireAdmin><AssetsPage /></RequireAdmin>} />

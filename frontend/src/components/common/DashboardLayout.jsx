@@ -30,6 +30,7 @@ import {
   AccountCircle,
   Apartment,
   Assessment,
+  Build,
   Business,
   Category,
   ChevronLeft,
@@ -148,6 +149,7 @@ export default function DashboardLayout() {
     { to: "/buildings", icon: <Business />, label: t("common:buildings", "Buildings"), show: isAdmin },
     { to: "/expenses", icon: <Apartment />, label: t("common:expenses", "Expenses"), show: true },
     { to: "/payments", icon: <Payment />, label: t("common:payments", "Payments"), show: true },
+    { to: "/maintenance", icon: <Build />, label: t("common:maintenance", "Maintenance"), show: true },
     { to: "/notifications", icon: <Notifications />, label: t("common:notifications", "Notifications"), show: true },
   ].filter((i) => i.show);
 
