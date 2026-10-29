@@ -2,6 +2,8 @@
 from datetime import timedelta
 from decimal import Decimal
 
+from django.core.exceptions import ValidationError
+from django.core.validators import validate_email
 from django.db.models import Sum
 from django.utils import timezone
 from rest_framework.decorators import action
@@ -188,15 +190,20 @@ class ApartmentViewSet(ModelViewSet):
         """
         POST /api/v1/apartments/{id}/invite/
         Admin creates (or re-creates) an invite token for a unit.
-        Body: {"email": "owner@example.com"}
-        Returns: {token, invited_email, expires_at}
+        Body: {"email": "owner@example.com"}  (email is optional; without it the
+        link is a shareable one-time invite for the unit, e.g. via WhatsApp)
+        Returns: {token, registration_code, invited_email, expires_at}
         """
         apartment = self.get_object()
-        email = request.data.get("email", "").strip().lower()
-        if not email:
-            return Response({"detail": _("email is required.")}, status=400)
+        email = (request.data.get("email") or "").strip().lower()
+        if email:
+            try:
+                validate_email(email)
+            except ValidationError:
+                return Response({"detail": _("Enter a valid email address.")}, status=400)
 
-        # Invalidate any existing unused invites for this unit+email
+        # Invalidate any existing unused invites for this unit+email (or email-less
+        # shareable invites for this unit when no email is given)
         UnitInvitation.objects.filter(
             apartment=apartment, invited_email=email, used_at__isnull=True
         ).update(expires_at=timezone.now())

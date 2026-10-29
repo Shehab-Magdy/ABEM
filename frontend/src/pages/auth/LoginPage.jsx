@@ -54,7 +54,10 @@ export default function LoginPage() {
       if (user.preferred_language) {
         i18n.changeLanguage(user.preferred_language);
       }
-      navigate("/dashboard", { replace: true });
+      const next = searchParams.get("next");
+      // only follow same-site relative paths (blocks open redirects like //evil.com)
+      const safeNext = next && next.startsWith("/") && !next.startsWith("//") ? next : "/dashboard";
+      navigate(safeNext, { replace: true });
     } catch (err) {
       const httpStatus = err.response?.status;
       const resData = err.response?.data;
