@@ -8,6 +8,7 @@
 import axios from "axios";
 import { useAuthStore } from "../contexts/authStore";
 import { deepConvertEasternArabic } from "../utils/formatters";
+import i18n from "../i18n";
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || "/api/v1";
 
@@ -23,6 +24,8 @@ axiosClient.interceptors.request.use((config) => {
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+  // Ask the API for the language chosen in the app (not the phone's), so errors match the UI.
+  config.headers["Accept-Language"] = (i18n.language || "ar").startsWith("ar") ? "ar" : "en";
   // T-01: convert any Eastern Arabic-Indic digits (٠-٩) → ASCII (0-9) in
   // request body so the backend always receives standard digits.
   // Skip FormData — it is not a plain object and its entries are not enumerable
