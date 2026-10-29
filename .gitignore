@@ -56,3 +56,4 @@ abem-automation/reports/
 # ── Claude Code ────────────────────────────────────────────────────────────────
 .claude/
 _agents_workspace/
+.playwright-mcp/
