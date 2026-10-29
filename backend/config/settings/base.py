@@ -220,6 +220,12 @@ CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_SERIALIZER = "json"
 CELERY_TIMEZONE = TIME_ZONE
 CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
+CELERY_BEAT_SCHEDULE = {
+    "generate-recurring-expenses": {
+        "task": "apps.expenses.tasks.generate_recurring_expenses",
+        "schedule": 60 * 60 * 24,  # daily
+    },
+}
 
 # ---------------------------------------------------------------------------
 # Email
