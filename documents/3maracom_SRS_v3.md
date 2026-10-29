@@ -361,6 +361,8 @@ A guided in-app walkthrough system that introduces new users to key features. Im
 
 **Tenant scoping.** Every building is a tenant. Anyone may self-register as an admin, but an admin only sees and changes the buildings they administer (primary admin or co-admin): apartments, expenses, categories, payments, assets, exports, audit log and users. Creating records in a building the admin does not manage is refused with HTTP 403. Residents see only their own building's data.
 
+**Unit claim approval.** A resident who picks their unit in the sign-up wizard sends a request; nothing is assigned until the building's admin approves it (the first approved resident becomes the primary owner, later ones co-owners). Invite links and codes created by an admin skip this step because the admin already authorised them. An admin of the building may still take a unit directly.
+
 **Installable PWA (Android & iOS).** The web app ships a Web App Manifest (Arabic, RTL, standalone) and a service worker that caches the app shell only — never API responses. A banner offers one-tap install on Android; on iPhone it shows the Share → Add to Home Screen steps.
 
 **Shareable invite link.** An admin generates a one-time link `/join/<token>` per unit (email optional) and can share it on WhatsApp. If the invite was created for an email, only the account with that email can redeem it; email-less links go to whoever opens them first. Validation and redemption endpoints are rate-limited; only token links reveal the invited email.

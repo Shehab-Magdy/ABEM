@@ -16,6 +16,10 @@ export const apartmentsApi = {
   claim: (apartmentId) => axiosClient.post(`/apartments/${apartmentId}/claim/`),
   /** Admin creates an invite token for a unit. */
   inviteUnit: (unitId, email) => axiosClient.post(`/apartments/${unitId}/invite/`, { email }),
+  /** Residents ask to claim a unit; the building admin approves or rejects. */
+  claimRequests: (params) => axiosClient.get("/apartments/claim-requests/", { params }),
+  approveClaimRequest: (id) => axiosClient.post(`/apartments/claim-requests/${id}/approve/`),
+  rejectClaimRequest: (id) => axiosClient.post(`/apartments/claim-requests/${id}/reject/`),
   /** Validate an invite token or registration code (public — no auth required). */
   validateInvite: (token, code) => axiosClient.get("/apartments/invite/validate/", { params: { token, code } }),
   /** Authenticated user redeems an invite token to claim their unit. */

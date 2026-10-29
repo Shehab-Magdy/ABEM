@@ -4,7 +4,7 @@ from decimal import Decimal
 
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.core.validators import validate_email
-from django.db import transaction
+from django.db import IntegrityError, transaction
 from django.db.models import Sum
 from django.utils import timezone
 from rest_framework.decorators import action
@@ -12,7 +12,7 @@ from rest_framework.filters import OrderingFilter, SearchFilter
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.throttling import AnonRateThrottle, UserRateThrottle
-from rest_framework.viewsets import ModelViewSet
+from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet
 
 from django_filters.rest_framework import DjangoFilterBackend
 
@@ -22,8 +22,8 @@ from apps.authentication.permissions import IsAdminRole
 
 from apps.buildings.scoping import ensure_manages, managed_buildings
 
-from .models import Apartment, UnitInvitation
-from .serializers import ApartmentSerializer
+from .models import Apartment, ClaimStatus, UnitClaimRequest, UnitInvitation
+from .serializers import ApartmentSerializer, UnitClaimRequestSerializer
 
 
 class ApartmentViewSet(ModelViewSet):
@@ -167,6 +167,18 @@ class ApartmentViewSet(ModelViewSet):
             return Response(
                 {"detail": _("This apartment is already assigned to an owner.")},
                 status=409,
+            )
+
+        # Residents ask; the building's admin approves. Only an admin of this building
+        # may take a unit directly (e.g. "claim for myself" on the Buildings page).
+        if not managed_buildings(request.user).filter(pk=apartment.building_id).exists():
+            try:
+                UnitClaimRequest.objects.create(apartment=apartment, user=request.user)
+            except IntegrityError:
+                return Response({"detail": _("You already asked to claim this unit.")}, status=409)
+            return Response(
+                {"status": "pending", "detail": _("Request sent. The building admin will review it.")},
+                status=202,
             )
 
         apartment.owner = request.user
@@ -372,3 +384,65 @@ class ApartmentViewSet(ModelViewSet):
             "total_paid":      total_paid,
             "is_credit":       apt.balance < Decimal("0.00"),
         })
+
+
+class UnitClaimRequestViewSet(ReadOnlyModelViewSet):
+    """
+    GET  /apartments/claim-requests/               – admins: requests in buildings they manage; residents: their own
+    POST /apartments/claim-requests/{id}/approve/  – admin makes the requester an owner of the unit
+    POST /apartments/claim-requests/{id}/reject/   – admin declines
+    """
+
+    serializer_class = UnitClaimRequestSerializer
+
+    def get_queryset(self):
+        qs = UnitClaimRequest.objects.select_related("apartment__building", "user")
+        user = self.request.user
+        if user.role == "admin":
+            qs = qs.filter(apartment__building__in=managed_buildings(user))
+        else:
+            qs = qs.filter(user=user)
+        if status_param := self.request.query_params.get("status"):
+            qs = qs.filter(status=status_param)
+        return qs
+
+    def get_permissions(self):
+        if self.action in ("approve", "reject"):
+            return [IsAuthenticated(), IsAdminRole()]
+        return [IsAuthenticated()]
+
+    @action(detail=True, methods=["post"], url_path="approve")
+    def approve(self, request, pk=None):
+        with transaction.atomic():
+            req = UnitClaimRequest.objects.select_for_update().get(pk=self.get_object().pk)
+            if req.status != ClaimStatus.PENDING:
+                return Response({"detail": _("This request was already reviewed.")}, status=409)
+            apt = Apartment.objects.select_for_update().select_related("building").get(pk=req.apartment_id)
+            # First approved resident becomes the primary owner; later ones are co-owners
+            if apt.owner is None:
+                apt.owner = req.user
+                apt.status = "occupied"
+                apt.save(update_fields=["owner", "status", "updated_at"])
+            apt.owners.add(req.user)
+            from apps.buildings.models import UserBuilding
+            UserBuilding.objects.get_or_create(user=req.user, building=apt.building)
+            req.status = ClaimStatus.APPROVED
+            req.reviewed_by = request.user
+            req.reviewed_at = timezone.now()
+            req.save()
+        log_action(
+            user=request.user, action="claim", entity="apartment", entity_id=apt.pk,
+            changes={"owner": {"before": None, "after": str(req.user_id)}, "via": "approval"}, request=request,
+        )
+        return Response(UnitClaimRequestSerializer(req).data)
+
+    @action(detail=True, methods=["post"], url_path="reject")
+    def reject(self, request, pk=None):
+        req = self.get_object()
+        if req.status != ClaimStatus.PENDING:
+            return Response({"detail": _("This request was already reviewed.")}, status=409)
+        req.status = ClaimStatus.REJECTED
+        req.reviewed_by = request.user
+        req.reviewed_at = timezone.now()
+        req.save()
+        return Response(UnitClaimRequestSerializer(req).data)

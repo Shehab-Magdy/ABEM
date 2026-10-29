@@ -83,5 +83,9 @@
   "found_unit": "Found unit {{unit}} in {{building}}",
   "claim_err_taken": "This unit has already been claimed by another owner.",
   "claim_err_used": "This code has already been used or has expired.",
-  "claim_err_generic": "Could not claim the unit."
+  "claim_err_generic": "Could not claim the unit.",
+  "claim_req_title": "{{count}} request(s) to join a unit waiting for your approval",
+  "claim_req_approve": "Approve",
+  "claim_req_reject": "Reject",
+  "claim_req_waiting": "Your request to join unit {{unit}} in {{building}} is waiting for the building admin."
 }

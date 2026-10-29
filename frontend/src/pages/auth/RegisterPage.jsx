@@ -297,6 +297,7 @@ function ClaimUnitStep({ onDone, onSkip, isAdmin }) {
   const [loadingBuildings, setLoadingBuildings] = useState(true);
   const [loadingApts, setLoadingApts] = useState(false);
   const [claiming, setClaiming] = useState(false);
+  const [requestSent, setRequestSent] = useState(false);
   const [error, setError] = useState(null);
 
   // Registration code entry
@@ -328,8 +329,12 @@ function ClaimUnitStep({ onDone, onSkip, isAdmin }) {
     setError(null);
     setClaiming(true);
     try {
-      await apartmentsApi.claim(selectedApartment);
-      onDone();
+      const res = await apartmentsApi.claim(selectedApartment);
+      if (res.status === 202) {
+        setRequestSent(true);
+      } else {
+        onDone();
+      }
     } catch (err) {
       setError(err.response?.data?.detail || t("errors:server_error"));
     } finally {
@@ -368,6 +373,15 @@ function ClaimUnitStep({ onDone, onSkip, isAdmin }) {
       setClaimingCode(false);
     }
   };
+
+  if (requestSent) {
+    return (
+      <Stack spacing={2}>
+        <Alert severity="success">{t("claim_request_sent")}</Alert>
+        <Button variant="contained" fullWidth onClick={onDone}>{t("continue")}</Button>
+      </Stack>
+    );
+  }
 
   if (loadingBuildings) return <Box display="flex" justifyContent="center" p={4}><CircularProgress /></Box>;
 

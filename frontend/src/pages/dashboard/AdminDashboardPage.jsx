@@ -41,6 +41,7 @@ import { formatCurrency } from "../../utils/formatters";
 import { PrivateSEO } from "../../components/seo/SEO";
 import TreasuryCard from "../../components/TreasuryCard";
 import PendingClaimsCard from "../../components/PendingClaimsCard";
+import UnitClaimRequestsCard from "../../components/UnitClaimRequestsCard";
 
 const MONTH_LABELS = [
   "Jan", "Feb", "Mar", "Apr", "May", "Jun",
@@ -211,6 +212,8 @@ export default function AdminDashboardPage() {
         </Alert>
       ) : (
         <>
+          <UnitClaimRequestsCard />
+
           <PendingClaimsCard />
 
           <TreasuryCard />
