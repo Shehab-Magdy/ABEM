@@ -53,6 +53,7 @@ export default [
     rules: {
       // React rules
       "react/jsx-uses-react": "off", // Not needed with React 18 JSX transform
+      "react/jsx-uses-vars": "error", // Count components used in JSX as used (silences false no-unused-vars)
       "react/react-in-jsx-scope": "off", // Not needed with React 18 JSX transform
       "react/prop-types": "off",
       "react/display-name": "off",
