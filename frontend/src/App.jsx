@@ -4,6 +4,7 @@ import { CacheProvider } from "@emotion/react";
 import { useTranslation } from "react-i18next";
 import AppRouter from "./routes/AppRouter";
 import SessionExpiryModal from "./components/SessionExpiryModal";
+import InstallPrompt from "./components/InstallPrompt";
 import { ltrTheme, rtlTheme } from "./theme/theme";
 import { createDirectionCache } from "./theme/rtlCache";
 import { useEasternArabicInput } from "./hooks/useEasternArabicInput";
@@ -43,6 +44,7 @@ export default function App() {
         <CssBaseline />
         <AppRouter />
         <SessionExpiryModal />
+        <InstallPrompt />
       </ThemeProvider>
     </CacheProvider>
   );

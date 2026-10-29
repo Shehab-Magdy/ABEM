@@ -48,7 +48,7 @@ export const TUTORIAL_STEPS = {
       anchor: null,
       titleKey: "step_1_title",
       descKey: "step_1_desc",
-      title: "Welcome to ABEM",
+      title: "Welcome to 3maracom",
       description:
         "The dashboard shows total income, total expenses, count of overdue units, and the number of buildings managed — all scoped to the currently selected building and refreshed in real time.",
     },
@@ -104,7 +104,7 @@ export const TUTORIAL_STEPS = {
       descKey: "step_7_desc",
       title: "Expense categories",
       description:
-        "ABEM ships with 15 built-in categories. Each has a Material icon, hex color, and optional subcategory hierarchy. Custom categories can be added for building-specific needs.",
+        "3maracom ships with 15 built-in categories. Each has a Material icon, hex color, and optional subcategory hierarchy. Custom categories can be added for building-specific needs.",
     },
     {
       page: "/assets",

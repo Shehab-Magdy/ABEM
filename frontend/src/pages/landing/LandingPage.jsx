@@ -10,17 +10,19 @@ import {
   Security,
 } from "@mui/icons-material";
 import { PublicSEO } from "../../components/seo/SEO";
+import BrandLogo from "../../components/common/BrandLogo";
+import { BRAND } from "../../brand";
 
 const structuredData = {
   "@context": "https://schema.org",
   "@type": "SoftwareApplication",
-  "name": "ABEM",
-  "alternateName": "Apartment & Building Expense Management",
+  "name": BRAND.nameAr,
+  "alternateName": BRAND.nameEn,
   "applicationCategory": "BusinessApplication",
   "operatingSystem": "Web",
   "description":
     "Multi-tenant platform for managing shared building expenses, payments, and balances for property managers and apartment owners.",
-  "url": "https://abem.app",
+  "url": BRAND.siteUrl,
   "inLanguage": ["ar", "en"],
   "offers": {
     "@type": "Offer",
@@ -52,7 +54,7 @@ export default function LandingPage() {
   return (
     <>
       <PublicSEO
-        title="ABEM – Apartment & Building Expense Management"
+        title="3maracom – Apartment & Building Expense Management"
         description="Manage shared building expenses, payments, and balances with ease. Built for property managers and apartment owners in Egypt."
       >
         <script type="application/ld+json">
@@ -70,15 +72,7 @@ export default function LandingPage() {
         }}
       >
         <Container maxWidth="md">
-          <Box
-            component="img"
-            src="/abem-logo-dark.svg"
-            alt="ABEM — Apartment & Building Expense Management"
-            width={180}
-            height={48}
-            loading="eager"
-            sx={{ mb: 3 }}
-          />
+          <Box sx={{ mb: 3 }}><BrandLogo light size={56} /></Box>
           <Typography variant="h3" fontWeight={700} gutterBottom>
             {t("hero_title", "Building Expense Management Made Simple")}
           </Typography>
@@ -114,7 +108,7 @@ export default function LandingPage() {
           {t("features_title", "Everything You Need")}
         </Typography>
         <Typography variant="body1" align="center" color="text.secondary" sx={{ mb: 6, maxWidth: 600, mx: "auto" }}>
-          {t("features_desc", "ABEM gives property managers and apartment owners the tools to manage shared building expenses transparently.")}
+          {t("features_desc", "3maracom gives property managers and apartment owners the tools to manage shared building expenses transparently.")}
         </Typography>
 
         <Grid container spacing={4}>

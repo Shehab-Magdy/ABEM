@@ -5,6 +5,7 @@
 import { Box, Container, Divider, Grid, Link, Stack, Typography } from "@mui/material";
 import { Link as RouterLink } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import BrandLogo from "./BrandLogo";
 
 export default function Footer() {
   const { t } = useTranslation("common");
@@ -26,7 +27,7 @@ export default function Footer() {
         <Grid container spacing={4}>
           {/* Brand */}
           <Grid item xs={12} sm={6} md={3}>
-            <Box component="img" src="/abem-logo-light.svg" alt="ABEM" sx={{ height: 32, mb: 1 }} />
+            <BrandLogo size={32} />
             <Typography variant="body2" color="text.secondary" sx={{ maxWidth: 220 }}>
               {t("footer_tagline", "Apartment & Building Expense Management")}
             </Typography>
@@ -118,7 +119,7 @@ export default function Footer() {
           spacing={1}
         >
           <Typography variant="caption" color="text.secondary">
-            © {year} ABEM — {t("footer_rights", "All rights reserved.")}
+            © {year} عِمارة.كوم | 3maracom — {t("footer_rights", "All rights reserved.")}
           </Typography>
           <Stack direction="row" spacing={2}>
             <Typography variant="caption" color="text.disabled">

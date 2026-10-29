@@ -344,7 +344,7 @@ export default function NotificationCenterPage() {
 
   return (
     <>
-      <PrivateSEO title="ABEM – Notifications" />
+      <PrivateSEO title="3maracom – Notifications" />
       <Box sx={{ p: 3, maxWidth: 1200 }}>
       <Typography variant="h4" fontWeight={700} sx={{ mb: 3 }}>
         {t("title")}

@@ -198,7 +198,7 @@ export default function ExpenseCategoriesPage() {
 
   return (
     <>
-      <PrivateSEO title="ABEM – Expense Categories" />
+      <PrivateSEO title="3maracom – Expense Categories" />
       <Box>
       {/* Header */}
       <Box display="flex" alignItems="center" justifyContent="space-between" mb={3}>

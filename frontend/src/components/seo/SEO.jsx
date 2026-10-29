@@ -1,7 +1,8 @@
 import { Helmet } from "react-helmet-async";
 import { useLocation } from "react-router-dom";
+import { BRAND } from "../../brand";
 
-const SITE_URL = "https://abem.app";
+const SITE_URL = BRAND.siteUrl;
 const DEFAULT_OG_IMAGE = "/og-image.png";
 
 /**
@@ -16,6 +17,7 @@ export function PublicSEO({ title, description, children }) {
     <Helmet>
       <title>{title}</title>
       <meta name="description" content={description} />
+      <meta name="keywords" content={BRAND.keywords} />
       <meta name="robots" content="index, follow" />
       <link rel="canonical" href={canonicalUrl} />
 
@@ -23,6 +25,8 @@ export function PublicSEO({ title, description, children }) {
       <meta property="og:title" content={title} />
       <meta property="og:description" content={description} />
       <meta property="og:type" content="website" />
+      <meta property="og:site_name" content={BRAND.combined} />
+      <meta property="og:locale" content="ar_EG" />
       <meta property="og:url" content={canonicalUrl} />
       <meta property="og:image" content={`${SITE_URL}${DEFAULT_OG_IMAGE}`} />
 

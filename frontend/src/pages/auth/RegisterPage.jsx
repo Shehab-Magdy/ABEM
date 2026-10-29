@@ -48,6 +48,7 @@ import { useAuthStore } from "../../contexts/authStore";
 import PhoneInput from "../../components/PhoneInput";
 import { PublicSEO } from "../../components/seo/SEO";
 import LanguageSwitcher from "../../components/LanguageSwitcher";
+import BrandLogo from "../../components/common/BrandLogo";
 
 // Step label arrays are built inside RegisterPage using t() — see below.
 
@@ -607,8 +608,8 @@ export default function RegisterPage() {
   return (
     <>
     <PublicSEO
-      title="Get Started – ABEM"
-      description="Create your ABEM account and start managing your building's expenses in minutes."
+      title="Get Started – 3maracom"
+      description="Create your 3maracom account and start managing your building's expenses in minutes."
     />
     <Box display="flex" alignItems="center" justifyContent="center"
       minHeight="100vh" px={2} py={4} position="relative"
@@ -625,7 +626,7 @@ export default function RegisterPage() {
       <Card sx={{ width: "100%", maxWidth: 560 }}>
         <CardContent sx={{ p: 4 }}>
           <Stack alignItems="center" spacing={0.5} mb={3}>
-            <Box component="img" src="/abem-logo-light.svg" alt="ABEM" sx={{ height: 40 }} />
+            <BrandLogo size={44} />
             <Typography variant="body2" color="text.secondary">{t("create_account")}</Typography>
           </Stack>
 

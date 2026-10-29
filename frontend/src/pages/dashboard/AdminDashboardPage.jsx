@@ -134,13 +134,13 @@ export default function AdminDashboardPage() {
 
   return (
     <>
-    <PrivateSEO title="ABEM – Dashboard" />
+    <PrivateSEO title="3maracom – Dashboard" />
     <Box sx={{ p: 3 }}>
       {/* Dashboard header banner */}
       <Box sx={{ mb: 3 }}>
         <img
           src="/abem-dashboard-header.svg"
-          alt="ABEM Dashboard"
+          alt="3maracom Dashboard"
           style={{
             width: '100%',
             height: 'auto',
@@ -207,6 +207,42 @@ export default function AdminDashboardPage() {
         </Alert>
       ) : (
         <>
+          {/* ── Building treasury (خزينة العمارة) ── */}
+          {(() => {
+            const income = parseFloat(data?.total_income ?? 0);
+            const spent = parseFloat(data?.total_expenses ?? 0);
+            const treasury = income - spent;
+            const cov = data?.payment_coverage;
+            const pct = cov && cov.total_billed > 0 ? Math.round((cov.paid / cov.total_billed) * 100) : null;
+            return (
+              <Card sx={{ mb: 3, bgcolor: "primary.main", color: "primary.contrastText" }} data-testid="treasury-card">
+                <CardContent>
+                  <Typography variant="overline" sx={{ opacity: 0.85 }}>{t("treasury_title")}</Typography>
+                  <Typography variant="body2" sx={{ opacity: 0.85 }}>{t("treasury_balance")}</Typography>
+                  <Typography variant="h3" fontWeight={800} data-testid="treasury-balance">
+                    {formatCurrency(treasury)}
+                  </Typography>
+                  <Stack direction="row" spacing={3} sx={{ mt: 1, mb: pct === null ? 0 : 2 }} flexWrap="wrap" useFlexGap>
+                    <Typography variant="caption">{t("treasury_income")}: {formatCurrency(income)}</Typography>
+                    <Typography variant="caption">{t("treasury_expenses")}: {formatCurrency(spent)}</Typography>
+                  </Stack>
+                  {pct !== null && (
+                    <>
+                      <Typography variant="subtitle2" fontWeight={700} sx={{ mb: 0.5 }}>
+                        {t("collected_pct", { pct })}
+                      </Typography>
+                      <LinearProgress
+                        variant="determinate"
+                        value={pct}
+                        sx={{ height: 12, borderRadius: 6, bgcolor: "rgba(255,255,255,0.3)", "& .MuiLinearProgress-bar": { bgcolor: "#fff" } }}
+                      />
+                    </>
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })()}
+
           {/* ── Top KPI cards (4 columns) ── */}
           <Grid container spacing={3} sx={{ mb: 3 }}>
 

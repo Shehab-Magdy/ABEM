@@ -435,7 +435,7 @@ export default function BuildingsPage() {
 
   return (
     <>
-      <PrivateSEO title="ABEM – Buildings" />
+      <PrivateSEO title="3maracom – Buildings" />
       <Box>
       {/* Header */}
       <Stack direction="row" justifyContent="space-between" alignItems="center" mb={3}>

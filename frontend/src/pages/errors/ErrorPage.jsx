@@ -101,7 +101,7 @@ export default function ErrorPage({
 
         {/* Subtle branding */}
         <Typography variant="caption" color="text.disabled">
-          ABEM — Apartment &amp; Building Expense Management
+          عِمارة.كوم | 3maracom
         </Typography>
       </Stack>
     </Box>

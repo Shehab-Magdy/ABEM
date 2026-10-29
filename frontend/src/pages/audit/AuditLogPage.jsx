@@ -150,7 +150,7 @@ export default function AuditLogPage() {
 
   return (
     <>
-      <PrivateSEO title="ABEM – Audit Log" />
+      <PrivateSEO title="3maracom – Audit Log" />
       <Box>
       {/* Header */}
       <Stack direction="row" justifyContent="space-between" alignItems="center" mb={3}>

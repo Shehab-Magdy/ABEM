@@ -129,13 +129,13 @@ export default function OwnerDashboardPage() {
 
   return (
     <>
-    <PrivateSEO title="ABEM – Dashboard" />
+    <PrivateSEO title="3maracom – Dashboard" />
     <Box sx={{ p: 3 }}>
       {/* ── Dashboard header banner ── */}
       <Box sx={{ mb: 3 }}>
         <img
           src="/abem-dashboard-header.svg"
-          alt="ABEM Dashboard"
+          alt="3maracom Dashboard"
           style={{
             width: '100%',
             height: 'auto',

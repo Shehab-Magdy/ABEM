@@ -5,7 +5,7 @@
   "admin_desc": "Manage buildings, expenses, users, and financials",
   "owner_label": "Owner",
   "owner_desc": "View your apartment balance, payment history, and notifications",
-  "step_1_title": "Welcome to ABEM",
+  "step_1_title": "Welcome to 3maracom",
   "step_1_desc": "This is your dashboard. See total income, expenses, overdue units, and managed buildings at a glance.",
   "step_2_title": "Create a Building",
   "step_2_desc": "Everything starts here. Click \"+ Add Building\" to enter the property address, floor count, and units.",

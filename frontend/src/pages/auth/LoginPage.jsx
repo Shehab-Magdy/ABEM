@@ -21,6 +21,7 @@ import { authApi } from "../../api/authApi";
 import { useAuthStore } from "../../contexts/authStore";
 import { PublicSEO } from "../../components/seo/SEO";
 import LanguageSwitcher from "../../components/LanguageSwitcher";
+import BrandLogo from "../../components/common/BrandLogo";
 
 export default function LoginPage() {
   const { t, i18n } = useTranslation("auth");
@@ -79,8 +80,8 @@ export default function LoginPage() {
   return (
     <>
     <PublicSEO
-      title="Login – ABEM"
-      description="Sign in to your ABEM account to manage your building's shared expenses and payments."
+      title="Login – 3maracom"
+      description="Sign in to your 3maracom account to manage your building's shared expenses and payments."
     />
     <Box
       display="flex"
@@ -106,7 +107,7 @@ export default function LoginPage() {
         <CardContent sx={{ p: 4 }}>
           {/* Header */}
           <Stack alignItems="center" spacing={1} mb={4}>
-            <Box component="img" src="/abem-logo-light.svg" alt="ABEM" sx={{ height: 48 }} />
+            <BrandLogo size={44} />
             <Typography variant="body2" color="text.secondary">
               {t("apartment_building_expense")}
             </Typography>
