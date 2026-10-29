@@ -3,14 +3,14 @@ name: ABEM — Playwright UI & Load Tests
 on:
   push:
     branches: [main, develop, "sprint/*"]
-    paths: ['abem-playwright/**']
+    paths: ['tests/playwright/**']
   pull_request:
     branches: [main]
-    paths: ['abem-playwright/**']
+    paths: ['tests/playwright/**']
 
 defaults:
   run:
-    working-directory: abem-playwright
+    working-directory: tests/playwright
 
 jobs:
   ui-tests:
@@ -52,7 +52,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: playwright-report
-          path: abem-playwright/reports/ui_report.html
+          path: tests/playwright/reports/ui_report.html
           retention-days: 14
 
   load-smoke:
@@ -92,5 +92,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: load-test-report
-          path: abem-playwright/reports/
+          path: tests/playwright/reports/
           retention-days: 14

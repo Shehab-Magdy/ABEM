@@ -45,13 +45,17 @@ Multi-tenant financial management platform for managing buildings, apartments, s
 │       ├── pages/              # Page components per sprint
 │       ├── routes/             # Protected route setup
 │       └── theme/              # MUI theme
-├── abem-automation/            # Pytest automation suite (480+ tests)
-│   ├── tests/                  # Sprint-based test folders (sprint_0 – sprint_10)
-│   ├── api/                    # Typed API wrappers
-│   ├── core/                   # APIClient, WebDriver
-│   └── utils/                  # Test data factories, logger
+├── tests/
+│   ├── playwright/             # Active black-box suite: api / ui / e2e / db / smoke / load
+│   └── selenium-legacy/        # Older sprint-based Selenium suite (sprint_0 – sprint_10)
+├── docs/
+│   ├── DEPLOYMENT.md           # Step-by-step production deployment guide
+│   ├── FEATURES.md             # Feature inventory
+│   ├── TUTORIAL_ANCHORS.md     # Load-bearing ids for the interactive tutorial
+│   └── specs/                  # SRS, QA strategy, workflow presentation
+├── branding/                   # Brand strategy, design tokens, logos (+ legacy ABEM assets)
+├── scripts/                    # restart.sh, test.sh, clear_db.sh, check_translations.js
 ├── .github/workflows/          # CI pipelines (backend, frontend)
-├── DEPLOYMENT.md               # Step-by-step production deployment guide
 ├── docker-compose.yml          # Development stack
 └── docker-compose.prod.yml     # Production stack
 ```
@@ -152,7 +156,7 @@ All endpoints require **Bearer JWT** authentication (except `/auth/login/` and `
 ### Run Automation Suite
 
 ```bash
-cd abem-automation
+cd tests/selenium-legacy
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 ```
@@ -183,7 +187,7 @@ cd backend && pytest
 # Frontend linting
 cd frontend && npm run lint
 
-# Mobile (PWA): emulate Android/iOS devices with Playwright; see abem-playwright
+# Mobile (PWA): emulate Android/iOS devices with Playwright; see tests/playwright
 ```
 
 ---
@@ -201,7 +205,7 @@ Two GitHub Actions workflows run on push/PR to `main` or `develop`:
 
 ## Production Deployment
 
-See **[DEPLOYMENT.md](DEPLOYMENT.md)** for the complete step-by-step production deployment guide, covering:
+See **[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)** for the complete step-by-step production deployment guide, covering:
 
 - Server provisioning & firewall setup
 - Docker production deployment

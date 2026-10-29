@@ -4,7 +4,7 @@ on:
   push:
     branches: [main, develop]
     paths:
-      - "abem-automation/**"
+      - "tests/selenium-legacy/**"
       - "backend/**"
       - "frontend/**"
   pull_request:
@@ -27,7 +27,7 @@ on:
 # ── Shared defaults ────────────────────────────────────────────────────────────
 defaults:
   run:
-    working-directory: abem-automation
+    working-directory: tests/selenium-legacy
 
 env:
   ABEM_ENVIRONMENT: ${{ github.event.inputs.environment || 'dev' }}
@@ -68,7 +68,7 @@ jobs:
           cache: pip
           cache-dependency-path: |
             backend/requirements/development.txt
-            abem-automation/requirements.txt
+            tests/selenium-legacy/requirements.txt
 
       # ── Install backend ─────────────────────────────────────────────────────
       - name: Install backend dependencies
@@ -131,8 +131,8 @@ jobs:
         with:
           name: api-test-reports
           path: |
-            abem-automation/reports/
-            abem-automation/screenshots/
+            tests/selenium-legacy/reports/
+            tests/selenium-legacy/screenshots/
           retention-days: 14
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -168,7 +168,7 @@ jobs:
           cache: pip
           cache-dependency-path: |
             backend/requirements/development.txt
-            abem-automation/requirements.txt
+            tests/selenium-legacy/requirements.txt
 
       # ── Install Node for frontend ────────────────────────────────────────────
       - name: Set up Node.js
@@ -240,8 +240,8 @@ jobs:
         with:
           name: web-test-reports
           path: |
-            abem-automation/reports/
-            abem-automation/screenshots/
+            tests/selenium-legacy/reports/
+            tests/selenium-legacy/screenshots/
           retention-days: 14
 
 # ══════════════════════════════════════════════════════════════════════════════

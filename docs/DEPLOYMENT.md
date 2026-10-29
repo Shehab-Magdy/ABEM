@@ -1120,7 +1120,7 @@ docker stats
 Run the Sprint 10 smoke suite immediately after every deployment:
 
 ```bash
-cd /opt/abem/abem-automation
+cd /opt/abem/tests/selenium-legacy
 source .venv/bin/activate
 
 # Point at production

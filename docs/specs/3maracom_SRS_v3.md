@@ -352,7 +352,7 @@ A guided in-app walkthrough system that introduces new users to key features. Im
 - An SVG mask creates a spotlight cutout over the highlighted element; a blue ring outlines it.
 - A floating card shows step badge, title, description, progress dots, and Back / Next / Finish navigation.
 - Clicking outside the card closes the tour.
-- Anchor IDs are documented in `TUTORIAL_ANCHORS.md` — these DOM `id` attributes must not be removed or renamed without updating the tutorial system.
+- Anchor IDs are documented in `docs/TUTORIAL_ANCHORS.md` — these DOM `id` attributes must not be removed or renamed without updating the tutorial system.
 
 ---
 
@@ -572,7 +572,7 @@ Database indexes on: building_id, owner_id, expense_id, apartment_id, token (inv
 Docker Compose for local development: PostgreSQL 16, Django backend, React frontend (via Vite dev server). GitHub Actions workflows for linting and test automation (planned).
 
 **TS-14: Interactive Tutorial System**
-React: Zustand store (`useTutorialStore`) holds `isActive`, `role`, `currentStep`. `TutorialButton` reads `useAuth()` and calls `startTutorial('admin' | 'owner')` directly — no role-picker modal. `waitForElement(anchorId)` uses `requestAnimationFrame` retry (max 2 s) to resolve anchor elements after React Router navigation. SVG mask with `<mask>` element creates a spotlight cutout; a positioned `<Box>` renders the blue highlight ring. `calcCardPos()` tries 6 candidate positions before clamping. All anchor IDs are documented in `TUTORIAL_ANCHORS.md`. Flutter: `WalkthroughController` (ChangeNotifier singleton) with `GlobalKey` anchors; `_SpotlightPainter` uses even-odd `Path` fill; anchor resolution uses `addPostFrameCallback` + 180 ms retry.
+React: Zustand store (`useTutorialStore`) holds `isActive`, `role`, `currentStep`. `TutorialButton` reads `useAuth()` and calls `startTutorial('admin' | 'owner')` directly — no role-picker modal. `waitForElement(anchorId)` uses `requestAnimationFrame` retry (max 2 s) to resolve anchor elements after React Router navigation. SVG mask with `<mask>` element creates a spotlight cutout; a positioned `<Box>` renders the blue highlight ring. `calcCardPos()` tries 6 candidate positions before clamping. All anchor IDs are documented in `docs/TUTORIAL_ANCHORS.md`. Flutter: `WalkthroughController` (ChangeNotifier singleton) with `GlobalKey` anchors; `_SpotlightPainter` uses even-odd `Path` fill; anchor resolution uses `addPostFrameCallback` + 180 ms retry.
 
 ---
 

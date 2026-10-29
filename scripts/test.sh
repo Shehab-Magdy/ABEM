@@ -2,16 +2,16 @@
 # test.sh — Run Playwright tests from the project root.
 #
 # Usage:
-#   ./test.sh                  Run all tests
-#   ./test.sh smoke            Run smoke tests only
-#   ./test.sh api              Run API tests only
-#   ./test.sh ui               Run UI tests only
-#   ./test.sh e2e              Run E2E tests only
-#   ./test.sh db               Run DB tests only
-#   ./test.sh <any pytest args> Pass custom args to pytest
+#   ./scripts/test.sh                  Run all tests
+#   ./scripts/test.sh smoke            Run smoke tests only
+#   ./scripts/test.sh api              Run API tests only
+#   ./scripts/test.sh ui               Run UI tests only
+#   ./scripts/test.sh e2e              Run E2E tests only
+#   ./scripts/test.sh db               Run DB tests only
+#   ./scripts/test.sh <any pytest args> Pass custom args to pytest
 set -e
 
-cd "$(dirname "$0")/abem-playwright"
+cd "$(dirname "$0")/../tests/playwright"
 
 if [ ! -d ".venv" ]; then
   echo "Creating test venv..."

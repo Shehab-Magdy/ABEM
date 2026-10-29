@@ -137,7 +137,7 @@ make test-all           # Full regression + smoke load
 ## Directory Structure
 
 ```
-abem-playwright/
+tests/playwright/
 ├── conftest.py             # Global fixtures, browser setup, auth helpers
 ├── pytest.ini              # Markers, timeout, reporting config
 ├── requirements.txt        # Pinned dependencies

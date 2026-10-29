@@ -26,7 +26,7 @@ import sys
 from pathlib import Path
 from typing import Any
 
-# Ensure the abem-playwright root is on sys.path for absolute imports
+# Ensure the tests/playwright root is on sys.path for absolute imports
 _ROOT = Path(__file__).resolve().parent.parent.parent
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))

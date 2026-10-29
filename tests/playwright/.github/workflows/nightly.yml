@@ -1,21 +1,18 @@
-name: CI — Smoke + API Tests
+name: Nightly — Full Regression
 
 on:
-  push:
-    branches: [main, develop]
-    paths: ['abem-playwright/**']
-  pull_request:
-    branches: [main]
-    paths: ['abem-playwright/**']
+  schedule:
+    - cron: '0 2 * * *'
+  workflow_dispatch:
 
 defaults:
   run:
-    working-directory: abem-playwright
+    working-directory: tests/playwright
 
 jobs:
-  test:
+  regression:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 60
 
     services:
       postgres:
@@ -48,7 +45,7 @@ jobs:
       - name: Install Playwright browsers
         run: playwright install chromium --with-deps
 
-      - name: Run smoke and API tests
+      - name: Run full regression suite
         env:
           BASE_URL: ${{ secrets.BASE_URL }}
           API_BASE_URL: ${{ secrets.API_BASE_URL }}
@@ -56,6 +53,8 @@ jobs:
           ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
           OWNER_EMAIL: ${{ secrets.OWNER_EMAIL }}
           OWNER_PASSWORD: ${{ secrets.OWNER_PASSWORD }}
+          ADMIN2_EMAIL: ${{ secrets.ADMIN2_EMAIL }}
+          ADMIN2_PASSWORD: ${{ secrets.ADMIN2_PASSWORD }}
           DB_HOST: localhost
           DB_PORT: 5432
           DB_NAME: abem
@@ -63,17 +62,22 @@ jobs:
           DB_PASSWORD: abem
           HEADLESS: true
         run: |
-          pytest tests/smoke/ tests/api/ \
-            -m "smoke or api" \
-            --html=reports/ci_report.html \
+          pytest \
+            -m "not performance" \
+            -n auto \
+            --html=reports/nightly_report.html \
             --self-contained-html \
-            -x \
-            --timeout=120
+            --alluredir=allure-results \
+            --timeout=300 \
+            --reruns=2 \
+            --reruns-delay=5
 
       - name: Upload test reports
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: ci-test-reports
-          path: abem-playwright/reports/
-          retention-days: 14
+          name: nightly-test-reports
+          path: |
+            tests/playwright/reports/
+            tests/playwright/allure-results/
+          retention-days: 30

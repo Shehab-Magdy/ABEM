@@ -171,7 +171,7 @@ Last updated: 2026-03-23 · Covers: Web Frontend, REST API, Django Backend
 | **Django 4.2** | Backend API server with DRF, SimpleJWT, drf-spectacular (OpenAPI docs at `/api/docs/`). |
 | **Daily job** | `python manage.py generate_recurring_expenses`, run by the host scheduler (cron / platform cron job). No Celery or Redis. |
 | **Vite Dev Server** | React 18 frontend with HMR on port 5173. |
-| **Docker Compose** | Full development stack in one command. `restart.sh` for service restart with health checks and optional smoke tests. `test.sh` for running Playwright tests. |
+| **Docker Compose** | Full development stack in one command. `scripts/restart.sh` for service restart with health checks and optional smoke tests. `test.sh` for running Playwright tests. |
 | **Playwright Test Suite** | 300+ tests across smoke, API, UI, E2E, and DB layers. Headless Chromium with HTML report generation. |
 | **ESLint v9** | Flat config (`eslint.config.js`) with React and React Hooks plugins. |
 | **CI/CD** | GitHub Actions: lint, translation check, build verification. |

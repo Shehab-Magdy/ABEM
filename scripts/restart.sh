@@ -4,16 +4,16 @@
 # Leaves:   db untouched (no data loss)
 #
 # Usage:
-#   ./restart.sh            Restart services only
-#   ./restart.sh --test     Restart then run smoke tests
-#   ./restart.sh --test-only  Run smoke tests without restarting
+#   ./scripts/restart.sh            Restart services only
+#   ./scripts/restart.sh --test     Restart then run smoke tests
+#   ./scripts/restart.sh --test-only  Run smoke tests without restarting
 #
 # Environment:
 #   APP_HOST  Override the host used for health checks and tests
 #             (default: auto-detect from .env or fall back to 127.0.0.1)
 set -e
 
-cd "$(dirname "$0")"
+cd "$(dirname "$0")/.."
 
 # ── Resolve host ──────────────────────────────────────────────
 if [ -z "$APP_HOST" ] && [ -f .env ]; then
@@ -32,7 +32,7 @@ for arg in "$@"; do
     --test)       RUN_TESTS=true ;;
     --test-only)  RUN_TESTS=true; SKIP_RESTART=true ;;
     -h|--help)
-      echo "Usage: ./restart.sh [--test] [--test-only]"
+      echo "Usage: ./scripts/restart.sh [--test] [--test-only]"
       echo "  --test        Restart services, then run smoke tests"
       echo "  --test-only   Run smoke tests without restarting"
       echo ""
@@ -89,8 +89,8 @@ if [ "$RUN_TESTS" = true ]; then
   echo ""
   echo "Running smoke tests..."
 
-  if [ -d "abem-playwright" ]; then
-    cd abem-playwright
+  if [ -d "tests/playwright" ]; then
+    cd tests/playwright
     if [ ! -d ".venv" ]; then
       echo "  Creating test venv..."
       python3 -m venv .venv
@@ -104,17 +104,17 @@ if [ "$RUN_TESTS" = true ]; then
     DB_HOST="${APP_HOST}" \
     .venv/bin/pytest tests/smoke/ -m smoke --tb=short 2>&1
     exit_code=$?
-    cd ..
+    cd ../..
 
     echo ""
     if [ "$exit_code" -eq 0 ]; then
       echo "Smoke tests passed."
     else
       echo "Smoke tests FAILED (exit code $exit_code)."
-      echo "  Full report: abem-playwright/reports/test_report.html"
+      echo "  Full report: tests/playwright/reports/test_report.html"
       exit "$exit_code"
     fi
   else
-    echo "  abem-playwright/ directory not found — skipping tests."
+    echo "  tests/playwright/ directory not found — skipping tests."
   fi
 fi
