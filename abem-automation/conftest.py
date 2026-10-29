@@ -13,13 +13,11 @@ Fixture tree:
   create_temp_apartment    (function) – factory: create/delete temporary apartments
   temp_apartment           (function) – single temporary apartment in a temp building
   web_driver               (function) – Selenium WebDriver (Chrome/Firefox)
-  mobile_driver            (session)  – Appium driver (re-used across mobile tests)
 
 Cleanup strategy:
   - owner_api creates a transient owner user and deletes it in teardown
   - create_temp_building / create_temp_apartment delete all created objects on teardown
   - web_driver quits after each test
-  - mobile_driver is session-scoped (Appium sessions are expensive)
 """
 
 from __future__ import annotations
@@ -30,7 +28,6 @@ from typing import Generator
 from config.settings import get_config, Config
 from core.api_client import APIClient
 from core.driver_factory import DriverFactory
-from core.mobile_driver_factory import MobileDriverFactory
 from api.auth_api import AuthAPI
 from api.building_api import BuildingAPI
 from api.apartment_api import ApartmentAPI
@@ -61,7 +58,6 @@ def pytest_configure(config):
     """Register custom markers so pytest doesn't warn about unknown ones."""
     config.addinivalue_line("markers", "web:      Web UI tests (requires browser)")
     config.addinivalue_line("markers", "api:      REST API tests")
-    config.addinivalue_line("markers", "mobile:   Mobile tests (requires Appium)")
     config.addinivalue_line("markers", "smoke:    Smoke tests")
     config.addinivalue_line("markers", "sprint_0: Sprint 0 infrastructure tests")
     config.addinivalue_line("markers", "sprint_1: Sprint 1 auth & user tests")
@@ -70,7 +66,7 @@ def pytest_configure(config):
     config.addinivalue_line("markers", "sprint_4: Sprint 4 payment management tests")
     config.addinivalue_line("markers", "sprint_5: Sprint 5 dashboard tests")
     config.addinivalue_line("markers", "sprint_6: Sprint 6 notification system tests")
-    config.addinivalue_line("markers", "sprint_7: Sprint 7 Flutter finalization tests")
+    config.addinivalue_line("markers", "sprint_7: Sprint 7 mobile-client API compatibility tests")
     config.addinivalue_line("markers", "sprint_8: Sprint 8 audit logs & data exports tests")
     config.addinivalue_line("markers", "sprint_9: Sprint 9 performance & security hardening tests")
     config.addinivalue_line("markers", "sprint_10: Sprint 10 deployment & production smoke tests")
@@ -224,34 +220,6 @@ def web_driver(env_config: Config, request):
         except Exception as exc:
             logger.error("Screenshot capture failed: %s", exc)
 
-    driver.quit()
-
-
-# ── Mobile Driver ──────────────────────────────────────────────────────────────
-
-@pytest.fixture(scope="session")
-def mobile_driver(env_config: Config):
-    """
-    Session-scoped Appium driver.
-    Re-used across all mobile tests to avoid expensive session creation per test.
-    Skip automatically if Appium is not configured.
-    """
-    import os
-    import socket
-
-    # Check if Appium server is reachable before creating driver
-    appium_url = env_config.mobile.appium_url
-    host = appium_url.split("//")[-1].split(":")[0]
-    port = int(appium_url.split(":")[-1].split("/")[0])
-
-    try:
-        sock = socket.create_connection((host, port), timeout=2)
-        sock.close()
-    except OSError:
-        pytest.skip(f"Appium server not reachable at {appium_url} — skipping mobile tests")
-
-    driver = MobileDriverFactory.create_driver(env_config.mobile)
-    yield driver
     driver.quit()
 
 

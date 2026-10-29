@@ -1,9 +1,9 @@
 """
-Sprint 7 — Flutter Finalization API Tests (10 cases)
+Sprint 7 — Mobile-client (PWA) API Tests (10 cases)
 TC-S7-API-001 → TC-S7-API-010
 
 Tests cover:
-  TestMobileUserAgentAPI   (1)  – all key endpoints accept Flutter user-agent
+  TestMobileUserAgentAPI   (1)  – all key endpoints accept mobile user-agent
   TestJWTRefreshMobileAPI  (1)  – JWT refresh flow from mobile client
   TestFileUploadMobileAPI  (1)  – multipart/form-data upload from mobile
   TestErrorFormatAPI       (2)  – 401 returns JSON, 404 returns JSON
@@ -41,7 +41,7 @@ _TINY_PNG = bytes([
     0x44, 0xAE, 0x42, 0x60, 0x82,
 ])
 
-_FLUTTER_UA = "ABEM-Flutter/1.0.0 (Android)"
+_MOBILE_UA = "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 Chrome/120 Mobile Safari/537.36"
 _MAX_PAYLOAD_BYTES = 204_800  # 200 KB
 
 
@@ -52,8 +52,8 @@ _MAX_PAYLOAD_BYTES = 204_800  # 200 KB
 class TestMobileUserAgentAPI:
 
     @pytest.mark.positive
-    def test_flutter_user_agent_accepted_on_all_endpoints(self, admin_api: APIClient):
-        """TC-S7-API-001: All key API endpoints respond correctly to Flutter user-agent header."""
+    def test_mobile_user_agent_accepted_on_all_endpoints(self, admin_api: APIClient):
+        """TC-S7-API-001: All key API endpoints respond correctly to mobile user-agent header."""
         endpoints = [
             "/buildings/",
             "/apartments/",
@@ -61,9 +61,9 @@ class TestMobileUserAgentAPI:
             "/notifications/",
         ]
         for endpoint in endpoints:
-            resp = admin_api.get(endpoint, headers={"User-Agent": _FLUTTER_UA})
+            resp = admin_api.get(endpoint, headers={"User-Agent": _MOBILE_UA})
             assert resp.status_code in (200, 204), (
-                f"Endpoint {endpoint} rejected Flutter user-agent: "
+                f"Endpoint {endpoint} rejected mobile user-agent: "
                 f"{resp.status_code} — {resp.text[:200]}"
             )
 

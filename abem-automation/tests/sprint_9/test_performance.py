@@ -6,7 +6,7 @@ Tests that require infrastructure unavailable in this environment are
 skip-guarded:
   - PERF-008: 5-minute sustained load (CI-unfriendly duration)
   - PERF-009 to 012: Lighthouse web metrics (no Lighthouse CLI)
-  - PERF-013, 014: Mobile benchmarks (no Appium device)
+  - PERF-013, 014: Mobile (PWA) benchmarks (need a device/emulator)
   - PERF-017: Locust 30-minute soak test (Locust not installed)
 
 All remaining 12 tests exercise the live Django API server.
@@ -218,15 +218,15 @@ class TestAPIResponseTimesPerf:
         )
 
     def test_mobile_cold_start_under_3s(self):
-        """TC-S9-PERF-013: Mobile app launch (cold start) < 3 seconds on mid-range device."""
+        """TC-S9-PERF-013: PWA launch (cold start) < 3 seconds on mid-range device."""
         pytest.skip(
-            "Mobile launch benchmarks require Appium + physical/emulated device — PERF-013"
+            "PWA launch benchmarks require a real/emulated device (Lighthouse mobile) — PERF-013"
         )
 
     def test_mobile_list_render_under_1_5s(self):
         """TC-S9-PERF-014: Mobile list screens render in < 1.5 seconds after API response."""
         pytest.skip(
-            "Mobile rendering metrics require Appium test environment — PERF-014"
+            "PWA rendering metrics require a device/emulator environment — PERF-014"
         )
 
     def test_expense_split_query_under_100ms(self, env_config, admin_api, perf_data):

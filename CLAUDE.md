@@ -2,7 +2,7 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-ABEM (Apartment & Building Expense Management) is a multi-tenant platform: Django/DRF API + React web app + Flutter mobile app, plus two separate test projects. Each **building is a tenant** (`tenant_id` is the building UUID). Two roles: `admin` (full CRUD within their buildings, incl. co-admins) and `owner` (read-only view of own unit data). Feature inventory is in [FEATURES.md](FEATURES.md); production deploy is in [DEPLOYMENT.md](DEPLOYMENT.md).
+ABEM (Apartment & Building Expense Management) is a multi-tenant platform: Django/DRF API + React web app (also the installable PWA that serves Android and iOS; the Flutter app was removed on branch `feature/react-pwa`), plus two separate test projects. Each **building is a tenant** (`tenant_id` is the building UUID). Two roles: `admin` (full CRUD within their buildings, incl. co-admins) and `owner` (read-only view of own unit data). Feature inventory is in [FEATURES.md](FEATURES.md); production deploy is in [DEPLOYMENT.md](DEPLOYMENT.md).
 
 ## Commands
 
@@ -34,29 +34,37 @@ npm run format                  # prettier
 ```
 No frontend unit-test runner is configured.
 
-### Mobile (`mobile/`)
-```bash
-flutter pub get && flutter test && dart analyze
-```
-
 ### Test projects (both are black-box suites against a *running* stack, not unit tests)
 - `abem-playwright/` — the active suite (what `test.sh` runs). Layers: `tests/{api,ui,e2e,db,smoke,load}`; `--strict-markers` is on, so new markers must be registered in `pytest.ini`. Per-feature targets in its `Makefile`; Locust for load. Per-test timeout 30s.
-- `abem-automation/` — older sprint-organized suite (`tests/sprint_0..10`, markers `sprint_N`, `api`, `web`, `mobile`, `smoke`) with Selenium/Appium drivers and typed API wrappers in `api/`. Example: `pytest -m smoke --tb=short -q`.
+- `abem-automation/` — older sprint-organized suite (`tests/sprint_0..10`, markers `sprint_N`, `api`, `web`, `smoke`) with Selenium drivers and typed API wrappers in `api/`. Example: `pytest -m smoke --tb=short -q`.
 
 ## Architecture
 
 **Backend** (`backend/apps/*`): one Django app per domain — `authentication` (custom `User` model, `AUTH_USER_MODEL = authentication.User`, email login, JWT via simplejwt with role/tenant claims, lockout, forced password change), `buildings`, `apartments`, `expenses` (split logic + categories), `payments`, `notifications` (in-app inbox + FCM), `audit` (immutable log), `dashboard`, `exports` (CSV/XLSX), `core` (exception handler, pagination, middleware, health). Cross-cutting tenant scoping lives in the `mixins.py` / `permissions.py` modules inside the apps — read these before adding a viewset, since list querysets must be scoped to the requesting user's buildings (admins also see users they `created_by`). Celery (`config/celery.py`, Redis broker, django-celery-beat) handles async work. Media goes to Cloudinary.
 
-**i18n is bilingual en/ar end to end**: backend `locale/{en,ar}` + `APILanguageMiddleware` + Rosetta; frontend `public/locales/{en,ar}` via i18next with RTL (`stylis-plugin-rtl`); mobile has its own. A user's preferred language is stored in the DB and synced across devices. New user-facing strings must be added for both languages in all three clients.
+**i18n is bilingual en/ar end to end**: backend `locale/{en,ar}` + `APILanguageMiddleware` + Rosetta; frontend `public/locales/{en,ar}` via i18next with RTL (`stylis-plugin-rtl`). A user's preferred language is stored in the DB and synced across devices. New user-facing strings must be added for both languages in both clients.
 
 **Frontend** (`frontend/src`): `api/` has an Axios client per domain, auth state is a Zustand store in `contexts/`, `routes/` holds role-based protected routes, `pages/<domain>/`, MUI theme in `theme/`, and `tutorial/` for the interactive walkthrough.
 
-**Mobile** (`mobile/lib`): Flutter with BLoC; `features/<domain>/` mirrors the backend domains, `core/` has API client/theme/router, `tutorial/` has the walkthrough overlay.
+**Mobile** is the React PWA in `frontend/` (see the `abem-pwa-mobile` skill); there is no native app.
 
-**Load-bearing tutorial anchors**: the interactive tutorial targets specific DOM ids (React) and `GlobalKey`s (Flutter). Do not rename/remove them without updating `TutorialOverlay.jsx` and `walkthrough_overlay.dart` — the full list is in [TUTORIAL_ANCHORS.md](TUTORIAL_ANCHORS.md).
+**Load-bearing tutorial anchors**: the interactive tutorial targets specific DOM ids. Do not rename/remove them without updating `TutorialOverlay.jsx` — the full list is in [TUTORIAL_ANCHORS.md](TUTORIAL_ANCHORS.md).
 
 ## Gotchas
 
-- CI (`.github/workflows/`) runs backend lint → pytest → Docker build, frontend lint + build, and mobile analyze + test, on pushes/PRs to `main`/`develop` (path-filtered). Backend code must pass black, isort and flake8.
+- CI (`.github/workflows/`) runs backend lint → pytest → Docker build, frontend lint + build, on pushes/PRs to `main`/`develop` (path-filtered). Backend code must pass black, isort and flake8.
 - `.env` is gitignored; `.env.example` is the template. The README contains example superuser credentials — don't copy them elsewhere.
 - Production CORS origins are configured via regex in `backend/config/settings/production.py`.
+
+## Agent harness
+
+Goal: review, update, create and test the ABEM backend, web app, Android/iOS (PWA) experience and SRS using project agents in `.claude/agents/`, skills in `.claude/skills/`, and MCP tools in `.mcp.json`.
+
+**Entry point (hard gate):** for any request to review, update, create, fix or test the web app, backend, Android/iOS experience or SRS/QA documents, invoke the `abem-orchestrator` skill before responding. It answers trivial or off-domain questions directly and routes everything else to the agents.
+
+Secrets: the Postgres MCP reads `ABEM_READONLY_DATABASE_URI` from your environment; use a read-only role on the dev database only.
+
+| Date | Change | Target | Reason |
+|---|---|---|---|
+| 2026-10-29 | Created harness (5 agents, 5 skills, orchestrator, tool registry) | `.claude/`, `.mcp.json` | Review/update/create/test web, PWA mobile and SRS |
+| 2026-10-29 | Removed Flutter app and mobile CI; replaced stale settings rules | `mobile/`, `.claude/settings.json` | Mobile is now a React PWA |

@@ -1,7 +1,7 @@
 # ABEM — Production Deployment Guide
 
 > **Audience:** DevOps engineers and developers responsible for deploying the ABEM platform to production.
-> **Stack:** Django 4.2 · PostgreSQL 16 · Redis 7 · Celery · React (Nginx) · Flutter (Android/iOS)
+> **Stack:** Django 4.2 · PostgreSQL 16 · Redis 7 · Celery · React (Nginx, also the installable PWA for Android/iOS)
 
 ---
 
@@ -20,7 +20,7 @@
 11. [Nginx & TLS / HTTPS](#11-nginx--tls--https)
 12. [Celery (Background Tasks)](#12-celery-background-tasks)
 13. [Frontend Build & Deployment](#13-frontend-build--deployment)
-14. [Mobile (Flutter) Release](#14-mobile-flutter-release)
+14. [Mobile (PWA) Release](#14-mobile-pwa-release)
 15. [CI/CD — GitHub Actions](#15-cicd--github-actions)
 16. [Monitoring & Logging](#16-monitoring--logging)
 17. [Post-Deployment Smoke Tests](#17-post-deployment-smoke-tests)
@@ -99,7 +99,7 @@ Every component below is free, self-hosted, and requires no external account.
 | Celery 5 | BSD-3 | Background task queue |
 | Nginx 1.27 | BSD-2 | Reverse proxy & SPA server |
 | React + Vite | MIT | Web frontend |
-| Flutter 3 | BSD-3 | Mobile (Android & iOS) |
+| vite-plugin-pwa (Workbox) | MIT | PWA manifest and service worker (Android & iOS install) |
 | WhiteNoise | MIT | Static file serving |
 | Let's Encrypt / Certbot | Apache 2.0 | Free TLS certificates |
 | Docker & Docker Compose | Apache 2.0 | Containerisation |
@@ -118,10 +118,7 @@ documented below.
 | **Sentry** (cloud) | Error tracking & alerting | Yes (open-core) | 5k events/mo | **No** — GlitchTip replaces it |
 | **Gmail SMTP** | Transactional email (notifications) | Google (free) | 500 msgs/day | **No** — Postfix replaces it |
 
-> **Mobile stores** — Google Play Store (US $25 one-time) and Apple App Store
-> (US $99/year) are **platform requirements** for official app distribution.
-> There is no open-source equivalent; direct APK sideloading is the only
-> alternative for Android.
+> **Mobile distribution** — Android and iOS use the installable PWA, so no app-store fees or accounts are required.
 
 ---
 
@@ -344,9 +341,7 @@ To deploy ABEM **without any commercial account**, use:
 | Source control | GitHub | Gitea (self-hosted) |
 | CI/CD | GitHub Actions | Woodpecker CI (works with Gitea) |
 
-The only unavoidable platform costs are:
-- **Google Play Store** — $25 one-time registration fee
-- **Apple App Store** — $99/year Apple Developer Program membership
+There are no unavoidable app-store costs: mobile is delivered as a PWA.
 
 ---
 
@@ -1096,74 +1091,27 @@ npm run build
 
 ---
 
-## 14. Mobile (Flutter) Release
+## 14. Mobile (PWA) Release
 
-### 14.1 Android (Google Play Store)
+Android and iOS use the React web app installed from the browser; there are no app-store builds.
 
-1. **Set up signing key:**
-
-   ```bash
-   # Generate a keystore (one-time)
-   keytool -genkey -v -keystore ~/abem-release.keystore \
-     -alias abem -keyalg RSA -keysize 2048 -validity 10000
-   ```
-
-2. **Configure signing in `android/app/build.gradle`:**
-
-   ```groovy
-   android {
-       signingConfigs {
-           release {
-               storeFile file(System.getenv("KEYSTORE_PATH") ?: "../abem-release.keystore")
-               storePassword System.getenv("KEYSTORE_PASS")
-               keyAlias "abem"
-               keyPassword System.getenv("KEY_PASS")
-           }
-       }
-       buildTypes {
-           release { signingConfig signingConfigs.release }
-       }
-   }
-   ```
-
-3. **Build the release APK / App Bundle:**
-
-   ```bash
-   cd /opt/abem/mobile
-   flutter build appbundle --release   # recommended for Play Store
-   flutter build apk --release         # direct APK install
-   ```
-
-4. **Upload to Google Play Console:**
-   - Go to [Google Play Console](https://play.google.com/console)
-   - Create a new app → Upload the `.aab` file from `build/app/outputs/bundle/release/`
-
-   **Reference:** [Flutter Android release guide](https://docs.flutter.dev/deployment/android)
-
-### 14.2 iOS (Apple App Store)
-
-1. **Requirements:** macOS machine, Xcode 15+, Apple Developer account ($99/year)
-2. **Archive and distribute:**
-
-   ```bash
-   cd /opt/abem/mobile
-   flutter build ios --release
-   # Open Xcode → Product → Archive → Distribute App → App Store Connect
-   ```
-
-   **Reference:** [Flutter iOS release guide](https://docs.flutter.dev/deployment/ios)
+1. **Serve over HTTPS** (section on Nginx + Let's Encrypt). Service workers and install prompts require it.
+2. **Build and deploy the frontend** as in the frontend section; the build emits `manifest.webmanifest` and the service worker (`sw.js`). Serve `sw.js` and the manifest with `Cache-Control: no-cache` so updates reach users.
+3. **Verify installability** on real devices:
+   - Android (Chrome): the install prompt appears, the app opens standalone.
+   - iOS (Safari): Share → Add to Home Screen. iOS has no install prompt, tighter storage limits, and web push only for installed PWAs on recent iOS versions; confirm against current Apple documentation.
+4. **Audit**: `npx lighthouse https://<your-domain> --form-factor=mobile` (performance, accessibility, best practices). Lighthouse 12+ has no PWA category, so check the manifest and service-worker registration in DevTools → Application.
 
 ---
 
 ## 15. CI/CD — GitHub Actions
 
-Three workflows are already configured in `.github/workflows/`:
+Two workflows are already configured in `.github/workflows/`:
 
 | Workflow | Trigger | Steps |
 |----------|---------|-------|
 | `backend-ci.yml` | Push/PR to `main`/`develop` | flake8 · black · pytest (≥70% coverage) · Docker build |
 | `frontend-ci.yml` | Push/PR to `main`/`develop` | ESLint · Vite production build |
-| `mobile-ci.yml` | Push/PR to `main`/`develop` | dart analyze · flutter test |
 
 ### Adding Automated Deployment (CD)
 
@@ -1351,8 +1299,6 @@ docker compose -f docker-compose.prod.yml start backend celery_worker
 | WhiteNoise | https://whitenoise.readthedocs.io/en/stable/ |
 | Certbot (Let's Encrypt) | https://certbot.eff.org/ |
 | Nginx documentation | https://nginx.org/en/docs/ |
-| Flutter Android release | https://docs.flutter.dev/deployment/android |
-| Flutter iOS release | https://docs.flutter.dev/deployment/ios |
 | GitHub Actions | https://docs.github.com/en/actions |
 | OWASP Top 10 | https://owasp.org/www-project-top-ten/ |
 
@@ -1376,8 +1322,6 @@ docker compose -f docker-compose.prod.yml start backend celery_worker
 | Cloudinary Django SDK | https://cloudinary.com/documentation/django_integration |
 | Firebase FCM setup | https://firebase.google.com/docs/admin/setup |
 | Sentry Django | https://docs.sentry.io/platforms/python/guides/django/ |
-| Google Play Console | https://play.google.com/console |
-| Apple App Store Connect | https://developer.apple.com/app-store-connect/ |
 
 ---
 

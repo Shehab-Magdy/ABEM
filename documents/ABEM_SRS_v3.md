@@ -14,7 +14,7 @@ Version 3.1 | March 2026
 | Version | 3.1 |
 | Audience | Dev / QA / Stakeholders |
 | Platform | Web (React + Django REST Framework) |
-| Note | This document describes the web application as fully built. The Flutter mobile application is planned for a future phase and is out of scope for this version. |
+| Note | This document describes the web application as fully built. Android and iOS are served by the web application as an installable Progressive Web App (PWA); native Flutter apps were dropped. |
 
 ---
 
@@ -32,9 +32,9 @@ ABEM is a multi-tenant financial management platform for managing multiple build
 
 Provides full administrative capabilities: system configuration, building setup, user management, expense tracking with flexible split logic, payment recording, receipt generation, dashboard analytics, in-app messaging, building asset management, data exports, and a full audit trail — all accessible via a browser.
 
-#### 1.2.2 Mobile Application (Flutter — Future Phase)
+#### 1.2.2 Mobile Experience (Installable PWA — Planned)
 
-A cross-platform (Android & iOS) application is planned for a future development phase. It will integrate with the same backend APIs as the web application.
+Android and iOS users will use the same React web application, installed from the browser as a Progressive Web App (web manifest, service worker, responsive and RTL layout). It uses the same backend APIs; no separate native codebase is maintained. Installability, offline behavior and push support on iOS are subject to platform limits and are validated on real devices.
 
 #### 1.2.3 Backend & Infrastructure
 
@@ -98,7 +98,7 @@ ABEM follows a layered, API-first architecture with a shared backend serving the
 | Application Layer | Django 4.x + DRF | Business logic, REST API, authentication, RBAC |
 | Task Queue | Celery + Redis 7 | Async notifications, recurring expense scheduler |
 | Web Client | React 18 + Material-UI v5 | Admin & Owner web interface |
-| Mobile Client | Flutter (planned) | Future phase — Android & iOS |
+| Mobile Client | Installable PWA (React web app) | Planned — Android & iOS via browser install |
 | File Storage | Cloudinary | Bill images, profile pictures (validated type + size) |
 | PDF Generation | ReportLab | Auto-generated payment receipt PDFs |
 | Auth | djangorestframework-simplejwt | JWT access + refresh token lifecycle |
@@ -337,7 +337,7 @@ Admins track physical assets belonging to a building and record their sale.
 
 ### 3.10 Interactive Tutorial System
 
-A guided in-app walkthrough system that introduces new users to key features. Implemented in React for web and Flutter for mobile.
+A guided in-app walkthrough system that introduces new users to key features. Implemented in React for web and the installable PWA.
 
 **Role-Based Tours:**
 
@@ -354,13 +354,6 @@ A guided in-app walkthrough system that introduces new users to key features. Im
 - A floating card shows step badge, title, description, progress dots, and Back / Next / Finish navigation.
 - Clicking outside the card closes the tour.
 - Anchor IDs are documented in `TUTORIAL_ANCHORS.md` — these DOM `id` attributes must not be removed or renamed without updating the tutorial system.
-
-**Flutter (Mobile) Implementation:**
-
-- `WalkthroughOverlay` widget wraps each screen; `WalkthroughController` singleton drives navigation.
-- `GlobalKey` anchors are declared in `walkthrough_overlay.dart` and attached to target widgets.
-- A `CustomPainter` with an even-odd path renders the spotlight cutout and blue highlight ring.
-- A bottom modal sheet (`RolePickerSheet`) allows mobile users to start a tour.
 
 ---
 
@@ -779,7 +772,7 @@ Redis is deployed as the Celery broker. Direct Redis caching for dashboard aggre
 | 9 | UX Polish & Bug Fixes | Form label alignment (shrink=true), PDF receipt popup-blocker fix, pagination fix (page_size param), multi-select expenses in record-payment, users scoping to admin's buildings | Done |
 | 10 | Testing & QA | Unit tests (pytest), integration tests, E2E tests, load testing | Pending |
 | 11 | Deployment & Launch | Production deploy, domain/TLS, monitoring (Sentry), backup configuration | Pending |
-| 12 | Mobile Application (Flutter) | Native Android & iOS app using same backend APIs | Future Phase |
+| 12 | Mobile Experience (PWA) | Installable Android & iOS experience from the React web app using same backend APIs | Planned |
 
 ### 9.2 Timeline Summary
 
@@ -839,10 +832,10 @@ Redis is deployed as the Celery broker. Direct Redis caching for dashboard aggre
 | 41 | Notification preferences UI | 🔲 Pending | Model field exists; UI not built |
 | 42 | Unit tests & integration test suite | 🔲 Pending | Sprint 10 |
 | 43 | Production deployment + monitoring | 🔲 Pending | Sprint 11 |
-| 44 | Flutter mobile application | 🔲 Pending | Future phase (Sprint 12+) |
+| 44 | Installable PWA for Android & iOS (manifest, service worker) | 🔲 Pending | Planned (Sprint 12+); replaces the dropped Flutter app |
 | 45 | Building photo upload | 🔲 Pending | Model field exists; UI not built |
 | 46 | Bulk apartment import via CSV | 🔲 Pending | |
-| 47 | Interactive guided tutorial (Admin 9-step + Owner 5-step tours, auto-role) | ✅ Implemented | React + Flutter; anchor IDs in TUTORIAL_ANCHORS.md |
+| 47 | Interactive guided tutorial (Admin 9-step + Owner 5-step tours, auto-role) | ✅ Implemented | React (web and PWA); anchor IDs in TUTORIAL_ANCHORS.md |
 | 48 | Multiple owners per unit with shared payment/dashboard visibility | ✅ Implemented | M2M owners; Q-filter on all owner queries |
 
 ---

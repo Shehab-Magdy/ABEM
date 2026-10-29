@@ -26,18 +26,6 @@ _ENV_FILE = Path(__file__).parent / "environments.yaml"
 # ── Sub-configs ───────────────────────────────────────────────────────────────
 
 @dataclass
-class MobileConfig:
-    platform_name: str = "Android"
-    device_name: str = "emulator-5554"
-    platform_version: str = "13.0"
-    app_package: str = "com.abem.mobile"
-    app_activity: str = ".MainActivity"
-    automation_name: str = "UiAutomator2"
-    appium_url: str = "http://localhost:4723"
-    no_reset: bool = True
-
-
-@dataclass
 class Config:
     environment: str = "dev"
     base_url: str = "http://localhost:3000"
@@ -50,7 +38,6 @@ class Config:
     headless: bool = True
     implicit_wait: int = 10
     explicit_wait: int = 15
-    mobile: MobileConfig = field(default_factory=MobileConfig)
 
     @property
     def health_url(self) -> str:
@@ -106,11 +93,9 @@ def get_config(environment: Optional[str] = None) -> Config:
     env_name = environment or os.environ.get("ABEM_ENVIRONMENT", "dev")
     data = _load_yaml(env_name)
 
-    mobile_data = data.pop("mobile", {})
-    mobile_cfg = MobileConfig(**{k: mobile_data[k] for k in mobile_data if hasattr(MobileConfig, k)})
+    data.pop("mobile", None)  # legacy Appium block; mobile is now a PWA
 
     return Config(
         environment=env_name,
-        mobile=mobile_cfg,
         **{k: data[k] for k in data if hasattr(Config, k)},
     )
