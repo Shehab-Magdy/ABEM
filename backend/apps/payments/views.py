@@ -6,7 +6,7 @@ import html as html_lib
 from django.db.models import Q
 from django.http import HttpResponse
 from django.utils import timezone
-from rest_framework.exceptions import PermissionDenied
+from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -19,6 +19,7 @@ from apps.audit.mixins import log_action
 from apps.authentication.permissions import IsAdminRole
 from apps.buildings.scoping import ensure_manages, managed_buildings
 
+from .allocation import AllocationError, auto_allocate, record_allocations, resolve_allocations
 from .models import AssetSale, BuildingAsset, ClaimStatus, Payment, PaymentClaim, PaymentExpense, PaymentMethod
 from .serializers import BuildingAssetSerializer, PaymentClaimSerializer, PaymentSerializer
 
@@ -184,18 +185,15 @@ class PaymentViewSet(ModelViewSet):
                 balance_after=apt.balance,
             )
 
-            # Handle manual allocations if provided
-            if raw_allocations:
-                for alloc in raw_allocations:
-                    expense_id = alloc.get("expense_id")
-                    alloc_amount = alloc.get("allocated_amount")
-                    PaymentExpense.objects.update_or_create(
-                        payment=payment,
-                        expense_id=expense_id,
-                        defaults={
-                            "allocated_amount": Decimal(str(alloc_amount)) if alloc_amount is not None else None,
-                        },
-                    )
+            # Validated manual amounts, or an automatic oldest-first split
+            try:
+                rows = resolve_allocations(
+                    apt, amount_paid, raw_allocations,
+                    selected_expense_ids=[str(e.pk) for e in serializer.validated_data.get("expenses", [])],
+                )
+            except AllocationError as exc:
+                raise ValidationError({"allocations": [str(exc)]})
+            record_allocations(payment, rows)
 
         # Determine audit action based on whether allocations were distributed
         audit_action = "payment.distributed" if raw_allocations else "create"
@@ -563,6 +561,7 @@ class PaymentClaimViewSet(ModelViewSet):
                 balance_before=balance_before,
                 balance_after=apt.balance,
             )
+            record_allocations(payment, auto_allocate(apt, claim.amount))
             claim.status = ClaimStatus.CONFIRMED
             claim.reviewed_by = request.user
             claim.reviewed_at = timezone.now()

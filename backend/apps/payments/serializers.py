@@ -178,10 +178,12 @@ class PaymentSerializer(serializers.ModelSerializer):
         # Remove allocations from validated_data (handled by the view's perform_create)
         validated_data.pop("allocations", None)
         payment = Payment.objects.create(**validated_data)
-        # Create through-table rows for linked expenses (without allocation;
-        # allocations are set by the view after save if provided).
+        # Link the chosen expenses at 0; the view fills in the real allocation right after
+        # (a null allocation would be read as a legacy payment spread evenly).
         for expense in expenses:
-            PaymentExpense.objects.get_or_create(payment=payment, expense=expense)
+            PaymentExpense.objects.get_or_create(
+                payment=payment, expense=expense, defaults={"allocated_amount": Decimal("0.00")}
+            )
         return payment
 
 
