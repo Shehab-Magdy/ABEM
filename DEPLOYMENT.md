@@ -1,6 +1,6 @@
-# ABEM — Production Deployment Guide
+# 3maracom — Production Deployment Guide
 
-> **Audience:** DevOps engineers and developers responsible for deploying the ABEM platform to production.
+> **Audience:** DevOps engineers and developers responsible for deploying the 3maracom platform to production.
 > **Stack:** Django 4.2 · PostgreSQL 16 · Redis 7 · Celery · React (Nginx, also the installable PWA for Android/iOS)
 
 ---
@@ -81,7 +81,7 @@ Before deployment, ensure:
 
 ## 2. External Services Audit
 
-ABEM uses a mix of fully open-source tools (self-hostable, zero cost) and
+3maracom uses a mix of fully open-source tools (self-hostable, zero cost) and
 third-party SaaS services.  This section identifies every external dependency,
 whether it is required or optional, and provides a **fully open-source
 self-hosted alternative** for each commercial service.
@@ -330,7 +330,7 @@ DEFAULT_FROM_EMAIL=noreply@yourdomain.com
 
 ### 2.7 Summary — Fully Open-Source Deployment
 
-To deploy ABEM **without any commercial account**, use:
+To deploy 3maracom **without any commercial account**, use:
 
 | Role | Replace | With |
 |------|---------|------|
@@ -349,7 +349,7 @@ There are no unavoidable app-store costs: mobile is delivered as a PWA.
 
 ### 3.1 Free & Trial Hosting (start here)
 
-The ABEM stack requires: **compute** (Django + Celery), **PostgreSQL**, and **Redis**.
+The 3maracom stack requires: **compute** (Django + Celery), **PostgreSQL**, and **Redis**.
 All three can be covered for free using the combinations below.
 
 #### Option A — Railway (recommended for beginners)
@@ -438,7 +438,7 @@ tier — no expiry, no credit card required after sign-up.
 
 > The ARM instances (Ampere A1) are the best deal in cloud computing — a
 > single `VM.Standard.A1.Flex` with 4 OCPUs / 24 GB RAM can run the entire
-> ABEM stack comfortably.
+> 3maracom stack comfortably.
 
 **Reference:** [Oracle Cloud free tier overview](https://docs.oracle.com/en-us/iaas/Content/FreeTier/freetier_topic-Always_Free_Resources.htm) · [Oracle Cloud sign-up](https://signup.cloud.oracle.com/)
 
@@ -526,7 +526,7 @@ Every hosting platform above provides a free HTTPS subdomain automatically:
 
 ### 3.3 Recommended Zero-Cost Setup
 
-For getting ABEM running at no cost:
+For getting 3maracom running at no cost:
 
 ```
 Hosting:    Railway (free $5/mo credit)
@@ -740,7 +740,7 @@ Paste:
 
 ```ini
 [Unit]
-Description=ABEM Gunicorn daemon
+Description=3maracom Gunicorn daemon
 Requires=abem-gunicorn.socket
 After=network.target
 
@@ -768,7 +768,7 @@ Paste:
 
 ```ini
 [Unit]
-Description=ABEM Gunicorn socket
+Description=3maracom Gunicorn socket
 
 [Socket]
 ListenStream=/run/abem-gunicorn.sock
@@ -1016,7 +1016,7 @@ sudo nano /etc/systemd/system/abem-celery-worker.service
 
 ```ini
 [Unit]
-Description=ABEM Celery Worker
+Description=3maracom Celery Worker
 After=network.target
 
 [Service]
@@ -1040,7 +1040,7 @@ sudo nano /etc/systemd/system/abem-celery-beat.service
 
 ```ini
 [Unit]
-Description=ABEM Celery Beat Scheduler
+Description=3maracom Celery Beat Scheduler
 After=network.target
 
 [Service]
@@ -1272,7 +1272,7 @@ docker compose -f docker-compose.prod.yml start backend celery_worker
 - [ ] Superuser password changed from the default after first login
 - [ ] `DJANGO_SUPERUSER_PASSWORD` not stored in source control
 - [ ] Sentry DSN configured for error monitoring
-- [ ] Cloudinary credentials are restricted to the ABEM application
+- [ ] Cloudinary credentials are restricted to the 3maracom application
 - [ ] Firebase credentials file is not committed to version control
 - [ ] Server firewall allows only ports 22, 80, 443
 - [ ] Automatic security updates enabled: `sudo apt install unattended-upgrades`

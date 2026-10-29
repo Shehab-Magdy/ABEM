@@ -23,7 +23,7 @@ Multi-tenant financial management platform for managing buildings, apartments, s
 ## Project Structure
 
 ```
-ABEM/
+3maracom/
 ├── backend/                    # Django REST API
 │   ├── apps/
 │   │   ├── authentication/     # JWT auth, users, roles

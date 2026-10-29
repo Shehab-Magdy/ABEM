@@ -1,4 +1,4 @@
-# ABEM — Feature Inventory
+# 3maracom — Feature Inventory
 
 **Apartment & Building Expense Management**
 Last updated: 2026-03-23 · Covers: Web Frontend, REST API, Django Backend
