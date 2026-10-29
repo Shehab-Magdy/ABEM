@@ -139,7 +139,7 @@ export default function BuildingsPage() {
 
   const openCreate = () => {
     setEditTarget(null);
-    form.reset({ name: "", address: "", city: "", country: "", num_floors: 1, num_apartments: 0, num_stores: 0, admin_id: "", starting_balance: "" });
+    form.reset({ name: "", address: "", city: "", country: "", num_floors: 1, num_apartments: 0, num_stores: 0, admin_id: "", starting_balance: "", instapay_address: "" });
     setCoAdminIds([]);
     setPhotoFile(null);
     setPhotoPreview(null);
@@ -161,6 +161,7 @@ export default function BuildingsPage() {
       num_stores: building.num_stores ?? 0,
       admin_id: building.admin_id || "",
       starting_balance: building.starting_balance ?? "",
+      instapay_address: building.instapay_address ?? "",
     });
     setCoAdminIds(building.co_admin_ids ?? []);
     setPhotoFile(null);
@@ -183,6 +184,7 @@ export default function BuildingsPage() {
         num_apartments: parseInt(data.num_apartments, 10) || 0,
         num_stores: parseInt(data.num_stores, 10) || 0,
         starting_balance: data.starting_balance !== "" ? parseFloat(data.starting_balance) : 0,
+        instapay_address: data.instapay_address?.trim() ?? "",
       };
       if (data.admin_id) fields.admin_id = data.admin_id;
       if (coAdminIds.length) fields.co_admin_ids = coAdminIds;
@@ -591,6 +593,12 @@ export default function BuildingsPage() {
                 fullWidth
                 {...form.register("starting_balance")}
                 helperText={t("starting_balance_helper")}
+              />
+              <TextField
+                label={t("instapay_address")}
+                fullWidth
+                {...form.register("instapay_address")}
+                helperText={t("instapay_address_helper")}
               />
               <FormControl fullWidth size="small">
                 <InputLabel>{t("building_admin")}</InputLabel>

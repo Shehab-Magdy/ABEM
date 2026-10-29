@@ -13,6 +13,7 @@ class PaymentMethod(models.TextChoices):
     BANK_TRANSFER = "bank_transfer", _("Bank Transfer")
     CHEQUE = "cheque", _("Cheque")
     MOBILE_WALLET = "mobile_wallet", _("Mobile Wallet")
+    INSTAPAY = "instapay", _("InstaPay")
     OTHER = "other", _("Other")
 
 
@@ -124,3 +125,38 @@ class AssetSale(models.Model):
 
     def __str__(self):
         return f"Sale of {self.asset.name} – {self.sale_price}"
+
+
+class ClaimStatus(models.TextChoices):
+    PENDING = "pending", _("Pending")
+    CONFIRMED = "confirmed", _("Confirmed")
+    REJECTED = "rejected", _("Rejected")
+
+
+class PaymentClaim(models.Model):
+    """A resident says they sent money (e.g. via InstaPay); an admin confirms it.
+
+    Confirming records a normal Payment and reduces the apartment's balance.
+    """
+    objects: models.Manager["PaymentClaim"]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    apartment = models.ForeignKey(Apartment, on_delete=models.CASCADE, related_name="payment_claims")
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    reference = models.CharField(max_length=100, blank=True, help_text=_("InstaPay transfer reference"))
+    status = models.CharField(max_length=10, choices=ClaimStatus.choices, default=ClaimStatus.PENDING)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name="payment_claims"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    reviewed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
+    )
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+    payment = models.OneToOneField(Payment, on_delete=models.SET_NULL, null=True, blank=True, related_name="claim")
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"Claim {self.amount} for {self.apartment} ({self.status})"

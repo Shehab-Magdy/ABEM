@@ -40,6 +40,7 @@ import axiosClient from "../../api/axiosClient";
 import { formatCurrency } from "../../utils/formatters";
 import { PrivateSEO } from "../../components/seo/SEO";
 import TreasuryCard from "../../components/TreasuryCard";
+import PendingClaimsCard from "../../components/PendingClaimsCard";
 
 const MONTH_LABELS = [
   "Jan", "Feb", "Mar", "Apr", "May", "Jun",
@@ -210,6 +211,8 @@ export default function AdminDashboardPage() {
         </Alert>
       ) : (
         <>
+          <PendingClaimsCard />
+
           <TreasuryCard />
 
           {/* ── Top KPI cards (4 columns) ── */}

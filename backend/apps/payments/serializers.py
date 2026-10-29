@@ -10,7 +10,7 @@ from apps.apartments.models import Apartment
 from apps.buildings.models import Building
 from apps.expenses.models import ApartmentExpense, Expense
 
-from .models import AssetSale, BuildingAsset, Payment, PaymentExpense
+from .models import PaymentClaim, AssetSale, BuildingAsset, Payment, PaymentExpense
 
 
 class AssetSaleSerializer(serializers.ModelSerializer):
@@ -183,3 +183,24 @@ class PaymentSerializer(serializers.ModelSerializer):
         for expense in expenses:
             PaymentExpense.objects.get_or_create(payment=payment, expense=expense)
         return payment
+
+
+class PaymentClaimSerializer(serializers.ModelSerializer):
+    """A resident's "I paid" claim. Residents send apartment_id, amount and reference."""
+
+    apartment_id = serializers.PrimaryKeyRelatedField(source="apartment", queryset=Apartment.objects.all())
+    unit_number = serializers.CharField(source="apartment.unit_number", read_only=True)
+    building_name = serializers.CharField(source="apartment.building.name", read_only=True)
+
+    class Meta:
+        model = PaymentClaim
+        fields = [
+            "id", "apartment_id", "unit_number", "building_name",
+            "amount", "reference", "status", "created_at", "reviewed_at",
+        ]
+        read_only_fields = ["id", "status", "created_at", "reviewed_at"]
+
+    def validate_amount(self, value):
+        if value <= Decimal("0.00"):
+            raise serializers.ValidationError(_("amount must be greater than zero."))
+        return value

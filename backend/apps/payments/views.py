@@ -3,7 +3,10 @@ from __future__ import annotations
 
 import html as html_lib
 
+from django.db.models import Q
 from django.http import HttpResponse
+from django.utils import timezone
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -16,8 +19,8 @@ from apps.audit.mixins import log_action
 from apps.authentication.permissions import IsAdminRole
 from apps.buildings.scoping import ensure_manages, managed_buildings
 
-from .models import AssetSale, BuildingAsset, Payment, PaymentExpense, PaymentMethod
-from .serializers import BuildingAssetSerializer, PaymentSerializer
+from .models import AssetSale, BuildingAsset, ClaimStatus, Payment, PaymentClaim, PaymentExpense, PaymentMethod
+from .serializers import BuildingAssetSerializer, PaymentClaimSerializer, PaymentSerializer
 
 
 # ── Arabic numeral / receipt helpers ─────────────────────────────────────────
@@ -501,3 +504,80 @@ class BuildingAssetViewSet(ModelViewSet):
         )
 
         return Response(BuildingAssetSerializer(asset).data, status=201)
+
+
+class PaymentClaimViewSet(ModelViewSet):
+    """
+    Resident-reported payments (InstaPay: display and confirm).
+
+    POST   /payments/claims/               – a resident of the unit reports a transfer
+    GET    /payments/claims/               – own claims (resident) / claims in managed buildings (admin)
+    POST   /payments/claims/{id}/confirm/  – admin records the payment and reduces the unit balance
+    POST   /payments/claims/{id}/reject/   – admin rejects it
+    """
+
+    serializer_class = PaymentClaimSerializer
+    http_method_names = ["get", "post", "options", "head"]
+
+    def get_queryset(self):
+        qs = PaymentClaim.objects.select_related("apartment__building")
+        user = self.request.user
+        if user.role == "admin":
+            qs = qs.filter(apartment__building__in=managed_buildings(user))
+        else:
+            qs = qs.filter(Q(apartment__owner=user) | Q(apartment__owners=user)).distinct()
+        if status_param := self.request.query_params.get("status"):
+            qs = qs.filter(status=status_param)
+        return qs
+
+    def get_permissions(self):
+        if self.action in ("confirm", "reject"):
+            return [IsAuthenticated(), IsAdminRole()]
+        return [IsAuthenticated()]
+
+    def perform_create(self, serializer):
+        user = self.request.user
+        apartment = serializer.validated_data["apartment"]
+        is_resident = apartment.owner_id == user.pk or apartment.owners.filter(pk=user.pk).exists()
+        if not is_resident:
+            raise PermissionDenied("You are not a resident of this unit.")
+        serializer.save(created_by=user)
+
+    @action(detail=True, methods=["post"], url_path="confirm")
+    def confirm(self, request, pk=None):
+        with transaction.atomic():
+            claim = PaymentClaim.objects.select_for_update().select_related("apartment").get(pk=self.get_object().pk)
+            if claim.status != ClaimStatus.PENDING:
+                return Response({"detail": _("This claim was already reviewed.")}, status=409)
+            apt = Apartment.objects.select_for_update().get(pk=claim.apartment_id)
+            balance_before = apt.balance
+            apt.balance -= claim.amount
+            apt.save(update_fields=["balance", "updated_at"])
+            payment = Payment.objects.create(
+                apartment=apt,
+                amount_paid=claim.amount,
+                payment_method=PaymentMethod.INSTAPAY,
+                payment_date=timezone.localdate(),
+                notes=f"InstaPay {claim.reference}".strip(),
+                recorded_by=request.user,
+                balance_before=balance_before,
+                balance_after=apt.balance,
+            )
+            claim.status = ClaimStatus.CONFIRMED
+            claim.reviewed_by = request.user
+            claim.reviewed_at = timezone.now()
+            claim.payment = payment
+            claim.save()
+        log_action(user=request.user, action="create", entity="payment", entity_id=payment.pk, request=request)
+        return Response(PaymentClaimSerializer(claim).data)
+
+    @action(detail=True, methods=["post"], url_path="reject")
+    def reject(self, request, pk=None):
+        claim = self.get_object()
+        if claim.status != ClaimStatus.PENDING:
+            return Response({"detail": _("This claim was already reviewed.")}, status=409)
+        claim.status = ClaimStatus.REJECTED
+        claim.reviewed_by = request.user
+        claim.reviewed_at = timezone.now()
+        claim.save()
+        return Response(PaymentClaimSerializer(claim).data)

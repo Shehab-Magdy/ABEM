@@ -45,6 +45,9 @@ class Building(models.Model):
         max_digits=12, decimal_places=2, default=Decimal("0.00"),
     )
 
+    # Where residents send InstaPay transfers (InstaPay address or phone); shown in the app
+    instapay_address = models.CharField(max_length=100, blank=True)
+
     is_active = models.BooleanField(default=True)
     deleted_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
