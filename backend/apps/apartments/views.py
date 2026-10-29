@@ -2,14 +2,16 @@
 from datetime import timedelta
 from decimal import Decimal
 
-from django.core.exceptions import ValidationError
+from django.core.exceptions import ValidationError as DjangoValidationError
 from django.core.validators import validate_email
+from django.db import transaction
 from django.db.models import Sum
 from django.utils import timezone
 from rest_framework.decorators import action
 from rest_framework.filters import OrderingFilter, SearchFilter
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.throttling import AnonRateThrottle, UserRateThrottle
 from rest_framework.viewsets import ModelViewSet
 
 from django_filters.rest_framework import DjangoFilterBackend
@@ -203,7 +205,7 @@ class ApartmentViewSet(ModelViewSet):
         if email:
             try:
                 validate_email(email)
-            except ValidationError:
+            except DjangoValidationError:
                 return Response({"detail": _("Enter a valid email address.")}, status=400)
 
         # Invalidate any existing unused invites for this unit+email (or email-less
@@ -226,7 +228,8 @@ class ApartmentViewSet(ModelViewSet):
         }, status=201)
 
     @action(detail=False, methods=["get"], url_path="invite/validate",
-            permission_classes=[AllowAny], authentication_classes=[])
+            permission_classes=[AllowAny], authentication_classes=[],
+            throttle_classes=[AnonRateThrottle])
     def invite_validate(self, request):
         """
         GET /api/v1/apartments/invite/validate/?token={token}
@@ -246,7 +249,7 @@ class ApartmentViewSet(ModelViewSet):
                 invite = UnitInvitation.objects.select_related(
                     "apartment__building"
                 ).get(registration_code=code.upper())
-        except UnitInvitation.DoesNotExist:
+        except (UnitInvitation.DoesNotExist, DjangoValidationError, ValueError):
             return Response({"detail": _("Invalid invite link or code.")}, status=404)
 
         if not invite.is_valid:
@@ -260,11 +263,13 @@ class ApartmentViewSet(ModelViewSet):
             "building_id": str(apt.building.id),
             "building_name": apt.building.name,
             "building_city": apt.building.city,
-            "invited_email": invite.invited_email,
+            # The long token is a secret held by the invitee; the short code is guessable,
+            # so only token links reveal the invited email (used to prefill sign-up).
+            "invited_email": invite.invited_email if token else "",
         })
 
     @action(detail=False, methods=["post"], url_path="invite/use",
-            permission_classes=[IsAuthenticated])
+            permission_classes=[IsAuthenticated], throttle_classes=[UserRateThrottle])
     def invite_use(self, request):
         """
         POST /api/v1/apartments/invite/use/
@@ -275,22 +280,28 @@ class ApartmentViewSet(ModelViewSet):
         code = request.data.get("code", "").strip().upper()
         if not token and not code:
             return Response({"detail": _("token or code is required.")}, status=400)
-        try:
-            if token:
-                invite = UnitInvitation.objects.select_related(
-                    "apartment__building"
-                ).get(token=token)
-            else:
-                invite = UnitInvitation.objects.select_related(
-                    "apartment__building"
-                ).get(registration_code=code)
-        except UnitInvitation.DoesNotExist:
-            return Response({"detail": _("Invalid invite.")}, status=404)
+        with transaction.atomic():
+            try:
+                # Lock the invite row so two people cannot redeem the same link at once
+                locked = UnitInvitation.objects.select_for_update()
+                invite = locked.get(token=token) if token else locked.get(registration_code=code)
+            except (UnitInvitation.DoesNotExist, DjangoValidationError, ValueError):
+                return Response({"detail": _("Invalid invite.")}, status=404)
 
-        if not invite.is_valid:
-            return Response({"detail": _("This invite link has expired or already been used.")}, status=410)
+            if not invite.is_valid:
+                return Response({"detail": _("This invite link has expired or already been used.")}, status=410)
 
-        apt = invite.apartment
+            # An invite sent to a specific email can only be redeemed by that account.
+            # Email-less shareable links are open to whoever opens them first.
+            if invite.invited_email and invite.invited_email.lower() != request.user.email.lower():
+                return Response(
+                    {"detail": _("This invite was sent to a different email address.")}, status=403
+                )
+
+            return self._redeem_invite(request, invite)
+
+    def _redeem_invite(self, request, invite):
+        apt = Apartment.objects.select_related("building").get(pk=invite.apartment_id)
         if apt.owners.filter(pk=request.user.pk).exists():
             return Response({"detail": _("You are already an owner of this unit.")}, status=409)
 

@@ -1,5 +1,5 @@
 """Apartment / unit models."""
-import random
+import secrets
 import string
 import uuid
 from decimal import Decimal
@@ -93,7 +93,7 @@ class UnitInvitation(models.Model):
     def save(self, *args, **kwargs):
         if not self.registration_code:
             while True:
-                code = ''.join(random.choices(string.ascii_uppercase + string.digits, k=8))
+                code = ''.join(secrets.choice(string.ascii_uppercase + string.digits) for _ in range(8))
                 if not UnitInvitation.objects.filter(registration_code=code).exists():
                     self.registration_code = code
                     break
