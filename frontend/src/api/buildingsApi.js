@@ -3,6 +3,8 @@ import axiosClient from "./axiosClient";
 const multipartConfig = { headers: { "Content-Type": "multipart/form-data" } };
 
 export const buildingsApi = {
+  /** Current balance (خزينة العمارة) — read-only, visible to admins and residents. */
+  treasury: (id) => axiosClient.get(`/buildings/${id}/treasury/`),
   list: (params, { signal } = {}) => axiosClient.get("/buildings/", { params, signal }),
   get: (id, { signal } = {}) => axiosClient.get(`/buildings/${id}/`, { signal }),
   create: (data) => axiosClient.post("/buildings/", data, data instanceof FormData ? multipartConfig : undefined),

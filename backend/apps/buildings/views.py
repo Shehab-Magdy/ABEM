@@ -170,6 +170,45 @@ class BuildingViewSet(ModelViewSet):
             status=http_status,
         )
 
+    @action(detail=True, methods=["get"], url_path="treasury", permission_classes=[IsAuthenticated])
+    def treasury(self, request, pk=None):
+        """
+        GET /buildings/{id}/treasury/
+        The building's current balance (خزينة العمارة): starting balance + payments received
+        + asset sales - expenses. Read-only; visible to the building's admins and its residents.
+        """
+        from decimal import Decimal
+
+        from django.db.models import Sum
+
+        from apps.apartments.models import Apartment
+        from apps.expenses.models import ApartmentExpense, Expense
+        from apps.payments.models import AssetSale, Payment
+
+        building = self.get_object()
+        zero = Decimal("0.00")
+        received = Payment.objects.filter(apartment__building=building).aggregate(s=Sum("amount_paid"))["s"] or zero
+        sales = AssetSale.objects.filter(asset__building=building).aggregate(s=Sum("sale_price"))["s"] or zero
+        spent = (
+            Expense.objects.filter(building=building, deleted_at__isnull=True).aggregate(s=Sum("amount"))["s"] or zero
+        )
+        billed_ids = list(
+            ApartmentExpense.objects.filter(expense__building=building, expense__deleted_at__isnull=True)
+            .values_list("apartment_id", flat=True)
+            .distinct()
+        )
+        paid_units = Apartment.objects.filter(id__in=billed_ids, balance__lte=0).count()
+
+        return Response({
+            "building_id": str(building.pk),
+            "balance": str(building.starting_balance + received + sales - spent),
+            "starting_balance": str(building.starting_balance),
+            "total_received": str(received + sales),
+            "total_expenses": str(spent),
+            "units_billed": len(billed_ids),
+            "units_paid": paid_units,
+        })
+
     @action(
         detail=True,
         methods=["post"],

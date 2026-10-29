@@ -29,6 +29,7 @@ import { useTranslation } from "react-i18next";
 import axiosClient from "../../api/axiosClient";
 import { apartmentsApi } from "../../api/apartmentsApi";
 import { PrivateSEO } from "../../components/seo/SEO";
+import TreasuryCard from "../../components/TreasuryCard";
 import { formatCurrency } from "../../utils/formatters";
 
 const PAYMENT_METHOD_KEYS = {
@@ -149,6 +150,8 @@ export default function OwnerDashboardPage() {
       <Typography variant="h4" fontWeight={700} gutterBottom>
         {t("owner_dashboard")}
       </Typography>
+
+      <TreasuryCard />
 
       {/* ── Claim unit by code ── */}
       <Card variant="outlined" sx={{ mb: 3 }}>
