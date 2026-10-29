@@ -68,3 +68,4 @@ Secrets: the Postgres MCP reads `ABEM_READONLY_DATABASE_URI` from your environme
 |---|---|---|---|
 | 2026-10-29 | Created harness (5 agents, 5 skills, orchestrator, tool registry) | `.claude/`, `.mcp.json` | Review/update/create/test web, PWA mobile and SRS |
 | 2026-10-29 | Removed Flutter app and mobile CI; replaced stale settings rules | `mobile/`, `.claude/settings.json` | Mobile is now a React PWA |
+| 2026-10-29 | Added PWA icons, nginx PWA cache headers, rebuilt abem-playwright venv (Python 3.13) with axe-playwright-python | `frontend/`, `abem-playwright/` | PWA install readiness and accessibility testing |

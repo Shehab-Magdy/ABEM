@@ -8,7 +8,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: "autoUpdate",
-      includeAssets: ["abem-app-icon.svg"],
+      includeAssets: ["abem-app-icon.svg", "apple-touch-icon.png", "favicon-16x16.png", "favicon-32x32.png"],
       manifest: {
         name: "ABEM - Apartment & Building Expense Management",
         short_name: "ABEM",
@@ -19,6 +19,9 @@ export default defineConfig({
         theme_color: "#2563EB",
         background_color: "#FFFFFF",
         icons: [
+          { src: "/pwa-192x192.png", sizes: "192x192", type: "image/png", purpose: "any" },
+          { src: "/pwa-512x512.png", sizes: "512x512", type: "image/png", purpose: "any" },
+          { src: "/pwa-maskable-512x512.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
           { src: "/abem-app-icon.svg", sizes: "any", type: "image/svg+xml", purpose: "any" },
         ],
       },
