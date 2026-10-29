@@ -123,7 +123,7 @@ export default function ProfilePage() {
 
   return (
     <>
-      <PrivateSEO title="ABEM – Profile" />
+      <PrivateSEO title="3maracom – Profile" />
       <Snackbar
         open={langSuccess}
         autoHideDuration={3000}

@@ -404,7 +404,7 @@ export default function ExpensesPage() {
 
   return (
     <>
-      <PrivateSEO title="ABEM – Expenses" />
+      <PrivateSEO title="3maracom – Expenses" />
       <Box>
       {/* Header */}
       <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>

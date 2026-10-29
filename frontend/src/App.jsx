@@ -4,7 +4,9 @@ import { CacheProvider } from "@emotion/react";
 import { useTranslation } from "react-i18next";
 import AppRouter from "./routes/AppRouter";
 import SessionExpiryModal from "./components/SessionExpiryModal";
-import { ltrTheme, rtlTheme } from "./theme/theme";
+import InstallPrompt from "./components/InstallPrompt";
+import { ltrTheme, rtlTheme, ltrDarkTheme, rtlDarkTheme } from "./theme/theme";
+import { useResolvedMode, useSyncPreferredTheme } from "./hooks/useThemeMode";
 import { createDirectionCache } from "./theme/rtlCache";
 import { useEasternArabicInput } from "./hooks/useEasternArabicInput";
 
@@ -28,7 +30,14 @@ export default function App() {
   // T-01: convert Eastern Arabic-Indic digits (٠-٩) → ASCII in number fields
   useEasternArabicInput();
 
-  const theme = dir === "rtl" ? rtlTheme : ltrTheme;
+  useSyncPreferredTheme();
+  const mode = useResolvedMode();
+  const theme =
+    dir === "rtl" ? (mode === "dark" ? rtlDarkTheme : rtlTheme) : mode === "dark" ? ltrDarkTheme : ltrTheme;
+
+  useEffect(() => {
+    document.documentElement.style.colorScheme = mode;
+  }, [mode]);
 
   // Create a fresh Emotion cache every time direction changes.
   // This is critical: Emotion caches are singletons that keep their
@@ -43,6 +52,7 @@ export default function App() {
         <CssBaseline />
         <AppRouter />
         <SessionExpiryModal />
+        <InstallPrompt />
       </ThemeProvider>
     </CacheProvider>
   );

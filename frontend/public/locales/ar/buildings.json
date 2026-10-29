@@ -85,5 +85,8 @@
   "upload_photo": "رفع صورة",
   "remove": "إزالة",
   "starting_balance": "الرصيد الافتتاحي",
-  "starting_balance_helper": "الوضع المالي المبدئي قبل استخدام النظام (يقبل قيمًا سالبة للعجز)"
+  "starting_balance_helper": "الوضع المالي المبدئي قبل استخدام النظام (يقبل قيمًا سالبة للعجز)",
+  "invite_email_optional": "البريد الإلكتروني (اختياري)",
+  "share_whatsapp": "مشاركة عبر واتساب",
+  "invite_whatsapp_text": "تمت دعوتك للانضمام إلى {{building}} — الوحدة {{unit}} على عِمارة.كوم: {{link}}"
 }

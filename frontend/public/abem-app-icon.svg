@@ -1,37 +1,10 @@
-<svg width="1024" height="1024" viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <defs>
-    <linearGradient id="appbg" x1="0" y1="0" x2="1024" y2="1024" gradientUnits="userSpaceOnUse">
-      <stop offset="0%" stop-color="#3B82F6"/>
-      <stop offset="100%" stop-color="#1D4ED8"/>
-    </linearGradient>
-  </defs>
-  <!-- Background -->
-  <rect width="1024" height="1024" rx="224" fill="url(#appbg)"/>
-  <!-- Building 1 - tall left -->
-  <rect x="200" y="280" width="240" height="480" rx="32" fill="white" opacity="0.22"/>
-  <!-- Building 2 - medium right -->
-  <rect x="584" y="368" width="240" height="392" rx="32" fill="white" opacity="0.15"/>
-  <!-- Windows B1 -->
-  <rect x="248" y="344" width="52" height="44" rx="10" fill="white" opacity="0.8"/>
-  <rect x="332" y="344" width="52" height="44" rx="10" fill="white" opacity="0.8"/>
-  <rect x="248" y="416" width="52" height="44" rx="10" fill="white" opacity="0.8"/>
-  <rect x="332" y="416" width="52" height="44" rx="10" fill="white" opacity="0.65"/>
-  <rect x="248" y="488" width="52" height="44" rx="10" fill="white" opacity="0.8"/>
-  <rect x="332" y="488" width="52" height="44" rx="10" fill="white" opacity="0.8"/>
-  <!-- Lit window accent -->
-  <rect x="332" y="416" width="52" height="44" rx="10" fill="#FCD34D" opacity="0.7"/>
-  <!-- Windows B2 -->
-  <rect x="632" y="428" width="52" height="40" rx="10" fill="white" opacity="0.7"/>
-  <rect x="716" y="428" width="52" height="40" rx="10" fill="white" opacity="0.7"/>
-  <rect x="632" y="500" width="52" height="40" rx="10" fill="white" opacity="0.6"/>
-  <rect x="716" y="500" width="52" height="40" rx="10" fill="#FCD34D" opacity="0.6"/>
-  <!-- Growth bars at base -->
-  <rect x="248" y="632" width="58" height="128" rx="14" fill="#34D399"/>
-  <rect x="330" y="584" width="58" height="176" rx="14" fill="#34D399"/>
-  <rect x="412" y="536" width="58" height="224" rx="14" fill="#FCD34D"/>
-  <rect x="632" y="576" width="58" height="184" rx="14" fill="#34D399" opacity="0.9"/>
-  <rect x="714" y="520" width="58" height="240" rx="14" fill="#FCD34D" opacity="0.9"/>
-  <!-- Trend line -->
-  <polyline points="277,625 359,577 441,529 661,569 743,512" fill="none" stroke="white" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" opacity="0.5"/>
-  <circle cx="743" cy="512" r="20" fill="white" opacity="0.7"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 512 512" fill="none">
+  <defs><linearGradient id="bg" x1="0" y1="0" x2="512" y2="512" gradientUnits="userSpaceOnUse"><stop stop-color="#345F9C"/><stop offset="1" stop-color="#152D4F"/></linearGradient></defs>
+  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+  <g transform="translate(-30 0)">
+    <path fill-rule="evenodd" d="M184 104H304A28 28 0 0 1 332 132V364A28 28 0 0 1 304 392H184A28 28 0 0 1 156 364V132A28 28 0 0 1 184 104Z M194 140H222A10 10 0 0 1 232 150V178A10 10 0 0 1 222 188H194A10 10 0 0 1 184 178V150A10 10 0 0 1 194 140Z M274 140H302A10 10 0 0 1 312 150V178A10 10 0 0 1 302 188H274A10 10 0 0 1 264 178V150A10 10 0 0 1 274 140Z M194 212H222A10 10 0 0 1 232 222V250A10 10 0 0 1 222 260H194A10 10 0 0 1 184 250V222A10 10 0 0 1 194 212Z M274 212H302A10 10 0 0 1 312 222V250A10 10 0 0 1 302 260H274A10 10 0 0 1 264 250V222A10 10 0 0 1 274 212Z M194 284H222A10 10 0 0 1 232 294V322A10 10 0 0 1 222 332H194A10 10 0 0 1 184 322V294A10 10 0 0 1 194 284Z" fill="#FFFFFF"/>
+    <circle cx="352" cy="336" r="64" fill="#E27A4A" stroke="#1C3B67" stroke-width="14"/>
+    <path d="M322 338L344 360L384 312" stroke="#0C1018" stroke-width="20" stroke-linecap="round" stroke-linejoin="round"/>
+    <rect x="156" y="418" width="260" height="14" rx="7" fill="#FFFFFF" opacity=".6"/>
+  </g>
 </svg>

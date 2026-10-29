@@ -308,7 +308,7 @@ export default function PaymentsPage() {
 
   return (
     <>
-      <PrivateSEO title="ABEM – Payments" />
+      <PrivateSEO title="3maracom – Payments" />
       <Box>
       {/* Header */}
       <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>

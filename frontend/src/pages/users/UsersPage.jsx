@@ -483,7 +483,7 @@ export default function UsersPage() {
 
   return (
     <>
-      <PrivateSEO title="ABEM – Users" />
+      <PrivateSEO title="3maracom – Users" />
       <Box>
       <Stack direction="row" justifyContent="space-between" alignItems="center" mb={3}>
         <Typography variant="h5">{t("title")}</Typography>

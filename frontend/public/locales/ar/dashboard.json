@@ -74,5 +74,10 @@
   "payments_income": "إيرادات المدفوعات",
   "asset_sale_income": "إيرادات بيع الأصول",
   "starting_balance": "الرصيد الافتتاحي",
-  "opening_deficit": "عجز افتتاحي"
+  "opening_deficit": "عجز افتتاحي",
+  "treasury_title": "خزينة العمارة",
+  "treasury_balance": "رصيد الخزينة الحالي",
+  "treasury_income": "إجمالي ما دخل الخزينة",
+  "treasury_expenses": "إجمالي المصروفات",
+  "collected_pct": "{{pct}}٪ من الوحدات سدّدت اشتراكاتها"
 }

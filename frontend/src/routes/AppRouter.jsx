@@ -16,6 +16,7 @@ import ServerErrorPage from "../pages/errors/ServerErrorPage";
 // Lazy-loaded pages
 const LandingPage = lazy(() => import("../pages/landing/LandingPage"));
 const LoginPage = lazy(() => import("../pages/auth/LoginPage"));
+const JoinPage = lazy(() => import("../pages/auth/JoinPage"));
 const RegisterPage = lazy(() => import("../pages/auth/RegisterPage"));
 const ForgotPasswordPage = lazy(() => import("../pages/auth/ForgotPasswordPage"));
 const ForceChangePasswordPage = lazy(() => import("../pages/auth/ForceChangePasswordPage"));
@@ -37,6 +38,12 @@ const SuspenseFallback = (
     <CircularProgress />
   </Box>
 );
+
+// Where to send a signed-in user who lands on /login: a same-site ?next= path, else the dashboard.
+function postLoginTarget() {
+  const next = new URLSearchParams(window.location.search).get("next");
+  return next && next.startsWith("/") && !next.startsWith("//") ? next : "/dashboard";
+}
 
 // ── Route guards ──────────────────────────────────────────────────────────────
 
@@ -75,10 +82,11 @@ export default function AppRouter() {
       <Route path="/landing" element={user ? <Navigate to="/dashboard" replace /> : <LandingPage />} />
 
       {/* Public auth pages */}
-      <Route path="/login" element={user ? <Navigate to="/dashboard" replace /> : <LoginPage />} />
+      <Route path="/login" element={user ? <Navigate to={postLoginTarget()} replace /> : <LoginPage />} />
       {/* /register has no guard here: the wizard calls login() mid-flow (after AccountStep),
           which would otherwise cause an immediate redirect away before the user finishes the wizard. */}
       <Route path="/register" element={<RegisterPage />} />
+      <Route path="/join/:token" element={<JoinPage />} />
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
 
       {/* Forced password change — accessible only when must_change_password is true */}

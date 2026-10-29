@@ -20,6 +20,7 @@
  *      Admin users get the Admin tour; all other users get the Owner tour.
  */
 
+import { useTheme, alpha } from "@mui/material/styles";
 import { useEffect, useRef, useCallback, useState } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -48,7 +49,7 @@ export const TUTORIAL_STEPS = {
       anchor: null,
       titleKey: "step_1_title",
       descKey: "step_1_desc",
-      title: "Welcome to ABEM",
+      title: "Welcome to 3maracom",
       description:
         "The dashboard shows total income, total expenses, count of overdue units, and the number of buildings managed — all scoped to the currently selected building and refreshed in real time.",
     },
@@ -104,7 +105,7 @@ export const TUTORIAL_STEPS = {
       descKey: "step_7_desc",
       title: "Expense categories",
       description:
-        "ABEM ships with 15 built-in categories. Each has a Material icon, hex color, and optional subcategory hierarchy. Custom categories can be added for building-specific needs.",
+        "3maracom ships with 15 built-in categories. Each has a Material icon, hex color, and optional subcategory hierarchy. Custom categories can be added for building-specific needs.",
     },
     {
       page: "/assets",
@@ -297,8 +298,8 @@ export function TutorialButton() {
         onClick={handleClick}
         disabled={isActive}
         sx={{
-          bgcolor: "#10B981",
-          color: "white",
+          bgcolor: "secondary.main",
+          color: "secondary.contrastText",
           textTransform: "none",
           fontWeight: 600,
           fontSize: 13,
@@ -306,8 +307,8 @@ export function TutorialButton() {
           py: 0.5,
           mr: 1,
           borderRadius: 1.5,
-          "&:hover": { bgcolor: "#059669" },
-          "&.Mui-disabled": { bgcolor: "#10B981", opacity: 0.45, color: "white" },
+          "&:hover": { bgcolor: "secondary.dark" },
+          "&.Mui-disabled": { bgcolor: "secondary.main", opacity: 0.45, color: "secondary.contrastText" },
         }}
       >
         {t("tour_button", "Tour")}
@@ -326,7 +327,7 @@ function ProgressDots({ total, current }) {
           sx={{
             height: 6,
             borderRadius: 99,
-            bgcolor: i === current ? "#2563EB" : "#CBD5E1",
+            bgcolor: i === current ? "primary.main" : "divider",
             width: i === current ? 18 : 6,
             transition: "all 0.25s ease",
           }}
@@ -352,8 +353,9 @@ function TutorialCard({ step, stepIndex, totalSteps, cardPos, onNext, onPrev, on
       }}
       sx={{
         zIndex: 10001,
-        bgcolor: "white",
-        border: "0.5px solid #E5E7EB",
+        bgcolor: "background.paper",
+        border: "0.5px solid",
+        borderColor: "divider",
         borderRadius: 2.5,
         boxShadow: "0 20px 60px rgba(0,0,0,0.25)",
         p: 2.5,
@@ -414,8 +416,8 @@ function TutorialCard({ step, stepIndex, totalSteps, cardPos, onNext, onPrev, on
             sx={{
               textTransform: "none",
               fontWeight: 600,
-              bgcolor: "#2563EB",
-              "&:hover": { bgcolor: "#1D4ED8" },
+              bgcolor: "primary.main",
+              "&:hover": { bgcolor: "primary.dark" },
               borderRadius: 1.5,
               px: 2,
             }}
@@ -438,6 +440,7 @@ function TutorialCard({ step, stepIndex, totalSteps, cardPos, onNext, onPrev, on
  * sits above all other content regardless of CSS stacking contexts.
  */
 export function TutorialOverlay() {
+  const theme = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
   const { i18n } = useTranslation();
@@ -572,9 +575,9 @@ export function TutorialOverlay() {
             width: rw,
             height: rh,
             borderRadius: 6,
-            outline: "3px solid #2563EB",
+            outline: `3px solid ${theme.palette.primary.main}`,
             outlineOffset: 0,
-            boxShadow: "0 0 0 6px rgba(37,99,235,0.18)",
+            boxShadow: `0 0 0 6px ${alpha(theme.palette.primary.main, 0.18)}`,
             zIndex: 10000,
             pointerEvents: "none",
             transition: "top 0.3s ease, left 0.3s ease, width 0.3s ease, height 0.3s ease",

@@ -202,7 +202,7 @@ export default function AssetsPage() {
 
   return (
     <>
-      <PrivateSEO title={`ABEM – ${t("assets.pageTitle", "Assets")}`} />
+      <PrivateSEO title={`3maracom – ${t("assets.pageTitle", "Assets")}`} />
       <Box>
       {/* Header */}
       <Stack direction="row" justifyContent="space-between" alignItems="center" mb={3}>

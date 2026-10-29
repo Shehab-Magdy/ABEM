@@ -45,11 +45,13 @@ import { useTheme } from "@mui/material/styles";
 import { useAuth } from "../../hooks/useAuth";
 import { authApi } from "../../api/authApi";
 import { useAuthStore } from "../../contexts/authStore";
+import ThemeModeToggle from "../ThemeModeToggle";
 import { usePreferredLanguage } from "../../hooks/usePreferredLanguage";
 import axiosClient from "../../api/axiosClient";
 import { useNotificationStore } from "../../contexts/notificationStore";
 import { TutorialButton } from "../../tutorial/TutorialOverlay";
 import Footer from "./Footer";
+import BrandLogo from "./BrandLogo";
 
 const DRAWER_WIDTH = 240;
 
@@ -164,7 +166,7 @@ export default function DashboardLayout() {
       {/* Header with close button */}
       <Box sx={{ p: 2.5, pb: 2, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <Box>
-          <Box component="img" src="/abem-logo-dark.svg" alt="ABEM" sx={{ height: 36, mb: 0.5 }} />
+          <BrandLogo light size={36} />
           <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.6)", display: "block" }}>
             {t("auth:apartment_building_expense")}
           </Typography>
@@ -237,6 +239,7 @@ export default function DashboardLayout() {
             </IconButton>
             <Box flex={1} />
             <TutorialButton />
+            <ThemeModeToggle />
             <Tooltip title={t("common:notifications")}>
               <IconButton
                 color="inherit"

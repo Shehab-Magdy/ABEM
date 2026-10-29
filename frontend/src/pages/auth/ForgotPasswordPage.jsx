@@ -16,6 +16,7 @@ import {
 } from "@mui/material";
 import { PublicSEO } from "../../components/seo/SEO";
 import LanguageSwitcher from "../../components/LanguageSwitcher";
+import BrandLogo from "../../components/common/BrandLogo";
 
 export default function ForgotPasswordPage() {
   const { t } = useTranslation("auth");
@@ -38,8 +39,8 @@ export default function ForgotPasswordPage() {
   return (
     <>
       <PublicSEO
-        title="Reset Password – ABEM"
-        description="Reset your ABEM account password securely."
+        title="Reset Password – 3maracom"
+        description="Reset your 3maracom account password securely."
       />
       <Box
         display="flex"
@@ -56,7 +57,7 @@ export default function ForgotPasswordPage() {
         <Card sx={{ width: "100%", maxWidth: 420 }}>
           <CardContent sx={{ p: 4 }}>
             <Stack alignItems="center" spacing={1} mb={4}>
-              <Box component="img" src="/abem-logo-light.svg" alt="ABEM" sx={{ height: 48 }} />
+              <BrandLogo size={44} />
               <Typography variant="h6" fontWeight={600}>
                 {t("reset_password_title")}
               </Typography>

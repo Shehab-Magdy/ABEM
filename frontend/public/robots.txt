@@ -14,4 +14,4 @@ Disallow: /users
 Disallow: /profile
 Disallow: /api/
 
-Sitemap: https://abem.app/sitemap.xml
+Sitemap: https://3mara.com/sitemap.xml

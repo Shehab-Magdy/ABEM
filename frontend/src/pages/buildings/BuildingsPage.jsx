@@ -39,7 +39,7 @@ import {
   Typography,
 } from "@mui/material";
 import { DataGrid } from "@mui/x-data-grid";
-import { Add, Apartment, Check, ContentCopy, Delete, Edit, PersonAdd, PhotoCamera, Send, PersonPin, PowerSettingsNew } from "@mui/icons-material";
+import { Add, Apartment, Check, ContentCopy, Delete, Edit, PersonAdd, PhotoCamera, Send, PersonPin, PowerSettingsNew, WhatsApp } from "@mui/icons-material";
 import { useForm } from "react-hook-form";
 import { buildingsApi } from "../../api/buildingsApi";
 import { apartmentsApi } from "../../api/apartmentsApi";
@@ -249,13 +249,12 @@ export default function BuildingsPage() {
 
   // ── Units ────────────────────────────────────────────────────────────────────
   const generateInvite = async (unit) => {
-    const email = inviteEmails[unit.id]?.trim();
-    if (!email) return;
+    const email = inviteEmails[unit.id]?.trim() ?? "";
     setInvitingUnit(unit.id);
     setUnitsError(null);
     try {
       const res = await apartmentsApi.inviteUnit(unit.id, email);
-      const link = `${window.location.origin}/register?invite=${res.data.token}`;
+      const link = `${window.location.origin}/join/${res.data.token}`;
       setInviteLinks((prev) => ({ ...prev, [unit.id]: link }));
       setInviteCodes((prev) => ({ ...prev, [unit.id]: res.data.registration_code }));
     } catch (err) {
@@ -283,6 +282,16 @@ export default function BuildingsPage() {
     navigator.clipboard.writeText(inviteLinks[unitId]);
     setCopiedUnit(unitId);
     setTimeout(() => setCopiedUnit(null), 2000);
+  };
+
+  const shareWhatsApp = (unit) => {
+    const text = t("invite_whatsapp_text", {
+      defaultValue: "You are invited to join {{building}} — unit {{unit}} on 3maracom: {{link}}",
+      building: unitsTarget?.name ?? "",
+      unit: unit.unit_number,
+      link: inviteLinks[unit.id],
+    });
+    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank", "noopener");
   };
 
   const openUnits = async (building) => {
@@ -435,7 +444,7 @@ export default function BuildingsPage() {
 
   return (
     <>
-      <PrivateSEO title="ABEM – Buildings" />
+      <PrivateSEO title="3maracom – Buildings" />
       <Box>
       {/* Header */}
       <Stack direction="row" justifyContent="space-between" alignItems="center" mb={3}>
@@ -738,6 +747,16 @@ export default function BuildingsPage() {
                                 </IconButton>
                               </Tooltip>
                             </Stack>
+                            <Button
+                              size="small"
+                              variant="contained"
+                              color="success"
+                              startIcon={<WhatsApp fontSize="small" />}
+                              onClick={() => shareWhatsApp(u)}
+                              sx={{ alignSelf: "flex-start" }}
+                            >
+                              {t("share_whatsapp", "Share on WhatsApp")}
+                            </Button>
                             {inviteCodes[u.id] && (
                               <Stack direction="row" spacing={0.5} alignItems="center">
                                 <Typography variant="caption" color="text.secondary">{t("code_label", "Code:")}</Typography>
@@ -765,7 +784,7 @@ export default function BuildingsPage() {
                                 renderInput={(params) => (
                                   <TextField
                                     {...params}
-                                    placeholder="owner@email.com"
+                                    placeholder={t("invite_email_optional", "owner@email.com (optional)")}
                                     type="email"
                                   />
                                 )}
@@ -775,7 +794,7 @@ export default function BuildingsPage() {
                                   <IconButton
                                     size="small"
                                     color="primary"
-                                    disabled={!inviteEmails[u.id]?.trim() || invitingUnit === u.id}
+                                    disabled={invitingUnit === u.id}
                                     onClick={() => generateInvite(u)}
                                   >
                                     {invitingUnit === u.id ? <CircularProgress size={16} /> : <Send fontSize="small" />}

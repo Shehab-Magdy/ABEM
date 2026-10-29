@@ -52,6 +52,13 @@ class User(AbstractBaseUser, PermissionsMixin):
         default="en",
     )
 
+    # Colour theme preference, synced across devices
+    preferred_theme = models.CharField(
+        max_length=6,
+        choices=[("light", "Light"), ("dark", "Dark"), ("system", "System")],
+        default="system",
+    )
+
     # Messaging restrictions (set by admins)
     messaging_blocked = models.BooleanField(default=False)
     individual_messaging_blocked = models.BooleanField(default=False)

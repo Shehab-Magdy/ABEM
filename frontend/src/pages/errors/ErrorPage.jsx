@@ -2,6 +2,7 @@
  * Generic full-page error display.
  * Used directly by 404 / 401 / 403 / 500 pages.
  */
+import { useTheme, alpha } from "@mui/material/styles";
 import { Box, Button, Stack, Typography } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 
@@ -12,8 +13,10 @@ export default function ErrorPage({
   icon,
   primaryAction,       // { label, to?, onClick? }
   secondaryAction,     // optional { label, to?, onClick? }
-  accentColor = "#2563EB",
+  tone = "primary", // MUI palette key: primary | error | warning | ...
 }) {
+  const theme = useTheme();
+  const accentColor = theme.palette[tone].main;
   const navigate = useNavigate();
 
   function handleClick(action) {
@@ -28,7 +31,7 @@ export default function ErrorPage({
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        bgcolor: "#F9FAFB",
+        bgcolor: "background.default",
         px: 3,
       }}
     >
@@ -55,7 +58,7 @@ export default function ErrorPage({
             width: 72,
             height: 72,
             borderRadius: "50%",
-            bgcolor: accentColor + "18",
+            bgcolor: alpha(accentColor, 0.1),
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -82,7 +85,7 @@ export default function ErrorPage({
           <Button
             variant="contained"
             size="large"
-            sx={{ bgcolor: accentColor, "&:hover": { bgcolor: accentColor } }}
+            sx={{ bgcolor: accentColor, color: theme.palette[tone].contrastText, "&:hover": { bgcolor: theme.palette[tone].dark } }}
             onClick={() => handleClick(primaryAction)}
           >
             {primaryAction.label}
@@ -101,7 +104,7 @@ export default function ErrorPage({
 
         {/* Subtle branding */}
         <Typography variant="caption" color="text.disabled">
-          ABEM — Apartment &amp; Building Expense Management
+          عِمارة.كوم | 3maracom
         </Typography>
       </Stack>
     </Box>

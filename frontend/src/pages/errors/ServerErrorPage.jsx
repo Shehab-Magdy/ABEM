@@ -12,7 +12,7 @@ export default function ServerErrorPage() {
       description={t("server_error_desc", "The server encountered an unexpected error. Our team has been notified. Please try again in a few moments.")}
       primaryAction={{ label: t("try_again", "Try Again"), onClick: () => window.location.reload() }}
       secondaryAction={{ label: t("go_to_dashboard", "Go to Dashboard"), to: "/dashboard" }}
-      accentColor="#EF4444"
+      tone="error"
     />
   );
 }

@@ -20,6 +20,7 @@ import { authApi } from "../../api/authApi";
 import { useAuthStore } from "../../contexts/authStore";
 import { PrivateSEO } from "../../components/seo/SEO";
 import LanguageSwitcher from "../../components/LanguageSwitcher";
+import BrandLogo from "../../components/common/BrandLogo";
 
 export default function ForceChangePasswordPage() {
   const { t } = useTranslation("auth");
@@ -61,7 +62,7 @@ export default function ForceChangePasswordPage() {
 
   return (
     <>
-      <PrivateSEO title="ABEM – Change Password" />
+      <PrivateSEO title="3maracom – Change Password" />
       <Box
         display="flex"
         alignItems="center"
@@ -77,7 +78,7 @@ export default function ForceChangePasswordPage() {
         <Card sx={{ width: "100%", maxWidth: 420 }}>
           <CardContent sx={{ p: 4 }}>
             <Stack alignItems="center" spacing={1} mb={3}>
-              <Box component="img" src="/abem-logo-light.svg" alt="ABEM" sx={{ height: 48 }} />
+              <BrandLogo size={44} />
               <Typography variant="h6" fontWeight={600}>
                 {t("password_change_required")}
               </Typography>

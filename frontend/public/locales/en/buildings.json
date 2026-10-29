@@ -85,5 +85,8 @@
   "upload_photo": "Upload Photo",
   "remove": "Remove",
   "starting_balance": "Starting Balance",
-  "starting_balance_helper": "Initial financial position before using the system (accepts negative for deficit)"
+  "starting_balance_helper": "Initial financial position before using the system (accepts negative for deficit)",
+  "invite_email_optional": "Email (optional)",
+  "share_whatsapp": "Share on WhatsApp",
+  "invite_whatsapp_text": "You are invited to join {{building}} — unit {{unit}} on 3maracom: {{link}}"
 }

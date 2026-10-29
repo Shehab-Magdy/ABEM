@@ -8,15 +8,18 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: "autoUpdate",
-      includeAssets: ["abem-app-icon.svg", "apple-touch-icon.png", "favicon-16x16.png", "favicon-32x32.png"],
+      includeAssets: ["abem-app-icon.svg", "apple-touch-icon.png", "favicon-16x16.png", "favicon-32x32.png", "favicon.ico"],
       manifest: {
-        name: "ABEM - Apartment & Building Expense Management",
-        short_name: "ABEM",
-        description: "Manage buildings, shared expenses and payments.",
+        id: "/",
+        name: "عِمارة.كوم - إدارة اتحاد الملاك",
+        short_name: "عِمارة.كوم",
+        description: "تطبيق إدارة اتحاد الملاك، تحصيل الاشتراكات ومتابعة مصاريف العمارة والخزينة.",
+        lang: "ar",
+        dir: "rtl",
         start_url: "/",
         scope: "/",
         display: "standalone",
-        theme_color: "#2563EB",
+        theme_color: "#254A80",
         background_color: "#FFFFFF",
         icons: [
           { src: "/pwa-192x192.png", sizes: "192x192", type: "image/png", purpose: "any" },

@@ -5,6 +5,7 @@
  * Admin users also see a Broadcast form.
  * All authenticated users can send messages to building members.
  */
+import { useTheme, alpha } from "@mui/material/styles";
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import {
@@ -54,6 +55,8 @@ const TYPE_COLORS = {
 // ── Collapsible section header ─────────────────────────────────────────────
 
 function SectionHeader({ icon, title, badge, open, onToggle, accent }) {
+  const theme = useTheme();
+  const accentHex = theme.palette[accent].main;
   return (
     <Box
       onClick={onToggle}
@@ -65,9 +68,9 @@ function SectionHeader({ icon, title, badge, open, onToggle, accent }) {
         py: 1.5,
         cursor: "pointer",
         borderRadius: open ? "10px 10px 0 0" : "10px",
-        bgcolor: open ? `${accent}14` : "transparent",
+        bgcolor: open ? alpha(accentHex, 0.08) : "transparent",
         transition: "background-color 0.2s",
-        "&:hover": { bgcolor: `${accent}1a` },
+        "&:hover": { bgcolor: alpha(accentHex, 0.1) },
         userSelect: "none",
       }}
     >
@@ -76,23 +79,23 @@ function SectionHeader({ icon, title, badge, open, onToggle, accent }) {
           width: 34,
           height: 34,
           borderRadius: "8px",
-          bgcolor: `${accent}1a`,
+          bgcolor: alpha(accentHex, 0.1),
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          color: accent,
+          color: accentHex,
           flexShrink: 0,
         }}
       >
         {icon}
       </Box>
-      <Typography variant="subtitle1" fontWeight={700} sx={{ flex: 1, color: "#1F2937" }}>
+      <Typography variant="subtitle1" fontWeight={700} sx={{ flex: 1, color: "text.primary" }}>
         {title}
       </Typography>
       {badge !== undefined && badge > 0 && (
         <Chip label={badge} size="small" color="error" sx={{ height: 20, fontSize: 11 }} />
       )}
-      <Box sx={{ color: "#6B7280" }}>
+      <Box sx={{ color: "text.secondary" }}>
         {open ? <ExpandLess fontSize="small" /> : <ExpandMore fontSize="small" />}
       </Box>
     </Box>
@@ -344,7 +347,7 @@ export default function NotificationCenterPage() {
 
   return (
     <>
-      <PrivateSEO title="ABEM – Notifications" />
+      <PrivateSEO title="3maracom – Notifications" />
       <Box sx={{ p: 3, maxWidth: 1200 }}>
       <Typography variant="h4" fontWeight={700} sx={{ mb: 3 }}>
         {t("title")}
@@ -364,7 +367,7 @@ export default function NotificationCenterPage() {
           variant="outlined"
           sx={{
             borderRadius: "12px",
-            borderColor: sendOpen ? "#6366F1" : "#E5E7EB",
+            borderColor: sendOpen ? "primary.main" : "divider",
             transition: "border-color 0.2s",
           }}
         >
@@ -373,7 +376,7 @@ export default function NotificationCenterPage() {
             title={t("sendMessage")}
             open={sendOpen}
             onToggle={() => setSendOpen((p) => !p)}
-            accent="#6366F1"
+            accent="primary"
           />
 
           <Collapse in={sendOpen}>
@@ -502,8 +505,8 @@ export default function NotificationCenterPage() {
                     (sendRecipientType === "individual" && selectedMembers.length === 0)
                   }
                   sx={{
-                    bgcolor: "#6366F1",
-                    "&:hover": { bgcolor: "#4F46E5" },
+                    bgcolor: "primary.main",
+                    "&:hover": { bgcolor: "primary.dark" },
                     textTransform: "none",
                     fontWeight: 600,
                   }}
@@ -526,7 +529,7 @@ export default function NotificationCenterPage() {
             variant="outlined"
             sx={{
               borderRadius: "12px",
-              borderColor: broadcastOpen ? "#F59E0B" : "#E5E7EB",
+              borderColor: broadcastOpen ? "warning.main" : "divider",
               transition: "border-color 0.2s",
             }}
           >
@@ -535,7 +538,7 @@ export default function NotificationCenterPage() {
               title={t("broadcastAnnouncement")}
               open={broadcastOpen}
               onToggle={() => setBroadcastOpen((p) => !p)}
-              accent="#F59E0B"
+              accent="warning"
               data-testid="broadcast-toggle"
             />
 
@@ -582,9 +585,9 @@ export default function NotificationCenterPage() {
                     data-testid="broadcast-send"
                     disabled={!broadcastBuilding || !broadcastSubject || !broadcastMessage}
                     sx={{
-                      bgcolor: "#F59E0B",
-                      color: "white",
-                      "&:hover": { bgcolor: "#D97706" },
+                      bgcolor: "warning.main",
+                      color: "warning.contrastText",
+                      "&:hover": { bgcolor: "warning.dark" },
                       textTransform: "none",
                       fontWeight: 600,
                     }}
@@ -611,7 +614,7 @@ export default function NotificationCenterPage() {
         variant="outlined"
         sx={{
           borderRadius: "12px",
-          borderColor: notifOpen ? "#10B981" : "#E5E7EB",
+          borderColor: notifOpen ? "success.main" : "divider",
           transition: "border-color 0.2s",
         }}
       >
@@ -621,7 +624,7 @@ export default function NotificationCenterPage() {
           badge={unreadCount}
           open={notifOpen}
           onToggle={() => setNotifOpen((p) => !p)}
-          accent="#10B981"
+          accent="success"
         />
 
         <Collapse in={notifOpen}>
