@@ -1,14 +1,14 @@
-# Arabic translations for ABEM.
-# Copyright (C) 2026 ABEM
-# This file is distributed under the same license as the ABEM package.
+# Arabic translations for 3maracom.
+# Copyright (C) 2026 3maracom
+# This file is distributed under the same license as the 3maracom package.
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: ABEM 1.0\n"
+"Project-Id-Version: 3maracom 1.0\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2026-03-18 23:49+0000\n"
 "PO-Revision-Date: 2026-03-19 00:00+0200\n"
-"Last-Translator: ABEM Team\n"
+"Last-Translator: 3maracom Team\n"
 "Language-Team: Arabic\n"
 "Language: ar\n"
 "MIME-Version: 1.0\n"

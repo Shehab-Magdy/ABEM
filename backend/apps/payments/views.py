@@ -60,7 +60,7 @@ _RECEIPT_LABELS = {
         "notes": "Notes",
         "general_payment": "General payment",
         "paid_received": "PAID {amount} RECEIVED",
-        "footer": "This is an automatically generated receipt. ABEM - abem.app",
+        "footer": "This is an automatically generated receipt. 3maracom - 3mara.com",
         "subtitle": "Apartment & Building Expense Management",
         # payment method translations
         "cash": "Cash",
@@ -85,7 +85,7 @@ _RECEIPT_LABELS = {
         "notes": "ملاحظات",
         "general_payment": "دفعة عامة",
         "paid_received": "تم الدفع {amount} تم الاستلام",
-        "footer": "هذا إيصال تم إنشاؤه تلقائيا. app.abem - ABEM",
+        "footer": "هذا إيصال تم إنشاؤه تلقائياً. عِمارة.كوم | 3mara.com",
         "subtitle": "إدارة مصروفات الشقق والمباني",
         # payment method translations
         "cash": "نقداً",
@@ -382,7 +382,7 @@ class PaymentViewSet(ModelViewSet):
 <body>
   <div class="header">
     <div>
-      <div class="logo">ABEM</div>
+      <div class="logo">عِمارة.كوم | 3maracom</div>
       <div class="subtitle">{labels["subtitle"]}</div>
     </div>
     <div>

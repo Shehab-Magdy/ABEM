@@ -230,7 +230,7 @@ EMAIL_PORT = config("EMAIL_PORT", default=587, cast=int)
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = config("EMAIL_HOST_USER", default="")
 EMAIL_HOST_PASSWORD = config("EMAIL_HOST_PASSWORD", default="")
-DEFAULT_FROM_EMAIL = config("DEFAULT_FROM_EMAIL", default="ABEM <noreply@abem.app>")
+DEFAULT_FROM_EMAIL = config("DEFAULT_FROM_EMAIL", default="عِمارة.كوم <noreply@3mara.com>")
 
 # ---------------------------------------------------------------------------
 # Firebase (FCM)
@@ -242,9 +242,9 @@ FIREBASE_CREDENTIALS_PATH = config("FIREBASE_CREDENTIALS_PATH", default="")
 # ---------------------------------------------------------------------------
 SPECTACULAR_SETTINGS = {
     # ── Identity ───────────────────────────────────────────────────────────────
-    "TITLE": "ABEM API",
+    "TITLE": "3maracom API",
     "DESCRIPTION": (
-        "**Apartment & Building Expense Management** — multi-tenant financial platform.\n\n"
+        "**عِمارة.كوم (3maracom)** — building expense management for owners' associations and residents.\n\n"
         "Manages buildings, apartments, shared expenses, payments, notifications, and audit logs.\n\n"
         "### Authentication\n"
         "All endpoints (except `/auth/login/` and `/auth/register/`) require a **Bearer JWT** token.\n"
@@ -259,7 +259,7 @@ SPECTACULAR_SETTINGS = {
     ),
     "VERSION": "1.0.0",
     "CONTACT": {
-        "name": "ABEM Support",
+        "name": "3maracom Support",
         "email": "cegres1@yahoo.com",
     },
     "LICENSE": {"name": "Proprietary"},
