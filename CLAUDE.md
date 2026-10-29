@@ -19,7 +19,7 @@ docker compose up -d db redis     # infra only, if running backend locally (Dock
 ```bash
 pip install -r requirements/development.txt
 python manage.py migrate && python manage.py runserver
-pytest                                            # enforces --cov-fail-under=70 (set in pytest.ini)
+pytest                                            # collects tests/<app>/test_*.py; coverage gate in pytest.ini (raise it as coverage grows)
 pytest tests/authentication/test_auth.py::TestX::test_y --no-cov   # single test
 flake8 backend/ ; black --check backend/ ; isort --check-only backend/   # CI lint gates (run from repo root)
 ```
@@ -40,7 +40,7 @@ No frontend unit-test runner is configured.
 
 ## Architecture
 
-**Backend** (`backend/apps/*`): one Django app per domain — `authentication` (custom `User` model, `AUTH_USER_MODEL = authentication.User`, email login, JWT via simplejwt with role/tenant claims, lockout, forced password change), `buildings`, `apartments`, `expenses` (split logic + categories), `payments`, `notifications` (in-app inbox + FCM), `audit` (immutable log), `dashboard`, `exports` (CSV/XLSX), `core` (exception handler, pagination, middleware, health). Cross-cutting tenant scoping lives in the `mixins.py` / `permissions.py` modules inside the apps — read these before adding a viewset, since list querysets must be scoped to the requesting user's buildings (admins also see users they `created_by`). Celery (`config/celery.py`, Redis broker, django-celery-beat) handles async work. Media goes to Cloudinary.
+**Backend** (`backend/apps/*`): one Django app per domain — `authentication` (custom `User` model, `AUTH_USER_MODEL = authentication.User`, email login, JWT via simplejwt with role/tenant claims, lockout, forced password change), `buildings`, `apartments`, `expenses` (split logic + categories), `payments`, `notifications` (in-app inbox + FCM), `audit` (immutable log), `dashboard`, `exports` (CSV/XLSX), `core` (exception handler, pagination, middleware, health). Tenant scoping: use `apps/buildings/scoping.py` — `managed_buildings(user)` filters admin querysets to buildings they administer, and `ensure_manages(user, building)` guards create paths. Every new viewset must scope its queryset this way (admins) or by membership (residents). Also in `payments`: InstaPay `PaymentClaim` (resident reports, admin confirms); new `maintenance` app for resident reports. Celery (`config/celery.py`, Redis broker, django-celery-beat) handles async work. Media goes to Cloudinary.
 
 **i18n is bilingual en/ar end to end**: backend `locale/{en,ar}` + `APILanguageMiddleware` + Rosetta; frontend `public/locales/{en,ar}` via i18next with RTL (`stylis-plugin-rtl`). A user's preferred language is stored in the DB and synced across devices. New user-facing strings must be added for both languages in both clients.
 
@@ -58,11 +58,11 @@ No frontend unit-test runner is configured.
 
 ## Agent harness
 
-Goal: review, update, create and test the ABEM backend, web app, Android/iOS (PWA) experience and SRS using project agents in `.claude/agents/`, skills in `.claude/skills/`, and MCP tools in `.mcp.json`.
+Goal: review, update, create and test the 3maracom backend, web app, Android/iOS (PWA) experience and SRS using project agents in `.claude/agents/`, skills in `.claude/skills/`, and MCP tools in `.mcp.json`.
 
 **Entry point (hard gate):** for any request to review, update, create, fix or test the web app, backend, Android/iOS experience or SRS/QA documents, invoke the `abem-orchestrator` skill before responding. It answers trivial or off-domain questions directly and routes everything else to the agents.
 
-Secrets: the Postgres MCP reads `ABEM_READONLY_DATABASE_URI` from your environment; use a read-only role on the dev database only.
+Secrets: the Postgres MCP reads `ABEM_READONLY_DATABASE_URI` (name kept) from your environment; use a read-only role on the dev database only.
 
 | Date | Change | Target | Reason |
 |---|---|---|---|
