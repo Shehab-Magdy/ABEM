@@ -12,7 +12,7 @@ export default function NotFoundPage() {
       description={t("page_not_found_desc", "The page you're looking for doesn't exist or has been moved. Double-check the URL or head back home.")}
       primaryAction={{ label: t("go_to_dashboard", "Go to Dashboard"), to: "/dashboard" }}
       secondaryAction={{ label: t("go_back", "Go Back"), onClick: () => window.history.back() }}
-      accentColor="#2563EB"
+      tone="primary"
     />
   );
 }

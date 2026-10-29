@@ -139,5 +139,7 @@
   "log_out": "Log Out",
   "install_app": "Install the app on your phone",
   "install_ios_hint": "Tap the Share button, then \"Add to Home Screen\"",
-  "install_dismiss": "Close"
+  "install_dismiss": "Close",
+  "switch_to_light": "Switch to light mode",
+  "switch_to_dark": "Switch to dark mode"
 }

@@ -2,6 +2,7 @@
  * Admin Dashboard — Sprint 5.
  * Shows building-wide financial overview: totals, overdue count, monthly trend, building summary.
  */
+import { useTheme } from "@mui/material/styles";
 import { useEffect, useState, useCallback } from "react";
 import {
   Box,
@@ -62,6 +63,7 @@ function TrendBadge({ pct, invertColors }) {
 }
 
 export default function AdminDashboardPage() {
+  const theme = useTheme();
   const { t, i18n } = useTranslation("dashboard");
   const isRtl = (i18n.language || "en").startsWith("ar");
   const { isAdmin } = useAuth();
@@ -513,8 +515,8 @@ export default function AdminDashboardPage() {
               >
                 <BarChart
                   series={[
-                    { data: incomeValues, label: t("income"), color: "#10B981" },
-                    { data: expenseValues, label: t("expenses"), color: "#F59E0B" },
+                    { data: incomeValues, label: t("income"), color: theme.palette.success.main },
+                    { data: expenseValues, label: t("expenses"), color: theme.palette.warning.main },
                   ]}
                   xAxis={[{ data: MONTH_LABELS, scaleType: "band" }]}
                   height={300}

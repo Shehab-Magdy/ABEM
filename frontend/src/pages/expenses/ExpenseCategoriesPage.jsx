@@ -39,7 +39,7 @@ import { expensesApi } from "../../api/expensesApi";
 import { buildingsApi } from "../../api/buildingsApi";
 import { PrivateSEO } from "../../components/seo/SEO";
 
-const EMPTY_FORM = { name: "", description: "", icon: "", color: "#2563EB", parent_id: "" };
+const EMPTY_FORM = { name: "", description: "", icon: "", color: "#254A80", parent_id: "" };
 
 export default function ExpenseCategoriesPage() {
   const { t } = useTranslation("categories");
@@ -270,7 +270,7 @@ export default function ExpenseCategoriesPage() {
                               width: 20,
                               height: 20,
                               borderRadius: "50%",
-                              bgcolor: cat.color || "#2563EB",
+                              bgcolor: cat.color || "#254A80",
                               flexShrink: 0,
                             }}
                           />
@@ -358,7 +358,7 @@ export default function ExpenseCategoriesPage() {
               value={form.color}
               onChange={handleFormChange}
               fullWidth
-              placeholder="#2563EB"
+              placeholder="#254A80"
               size="small"
               InputProps={{
                 startAdornment: (
@@ -367,7 +367,7 @@ export default function ExpenseCategoriesPage() {
                       width: 16,
                       height: 16,
                       borderRadius: "50%",
-                      bgcolor: form.color || "#2563EB",
+                      bgcolor: form.color || "#254A80",
                       mr: 0.5,
                       flexShrink: 0,
                     }}

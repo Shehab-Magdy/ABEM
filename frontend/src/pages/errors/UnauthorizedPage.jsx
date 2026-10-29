@@ -21,7 +21,7 @@ export default function UnauthorizedPage() {
       description={t("session_expired_desc", "Your session has expired or you are not signed in. Please sign in again to continue.")}
       primaryAction={{ label: t("sign_in", "Sign In"), onClick: handleSignIn }}
       secondaryAction={{ label: t("go_back", "Go Back"), onClick: () => window.history.back() }}
-      accentColor="#F59E0B"
+      tone="warning"
     />
   );
 }

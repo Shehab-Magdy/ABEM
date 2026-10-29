@@ -45,6 +45,7 @@ import { useTheme } from "@mui/material/styles";
 import { useAuth } from "../../hooks/useAuth";
 import { authApi } from "../../api/authApi";
 import { useAuthStore } from "../../contexts/authStore";
+import ThemeModeToggle from "../ThemeModeToggle";
 import { usePreferredLanguage } from "../../hooks/usePreferredLanguage";
 import axiosClient from "../../api/axiosClient";
 import { useNotificationStore } from "../../contexts/notificationStore";
@@ -238,6 +239,7 @@ export default function DashboardLayout() {
             </IconButton>
             <Box flex={1} />
             <TutorialButton />
+            <ThemeModeToggle />
             <Tooltip title={t("common:notifications")}>
               <IconButton
                 color="inherit"
