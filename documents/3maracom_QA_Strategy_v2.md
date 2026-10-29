@@ -1,4 +1,4 @@
-# ABEM
+# 3maracom
 
 Apartment & Building Expense Management
 
@@ -153,7 +153,7 @@ The most security-critical sprint. RBAC failures can expose all tenant data. Eve
 
 | Test ID | Description | Layer | Category | Type |
 |---|---|---|---|---|
-| TC-S1-WEB-001 | Login page title contains ABEM or Login | Web | Rendering | Positive |
+| TC-S1-WEB-001 | Login page title contains 3maracom or Login | Web | Rendering | Positive |
 | TC-S1-WEB-002 | Email input field is visible on login page | Web | Rendering | Positive |
 | TC-S1-WEB-003 | Password input field is visible on login page | Web | Rendering | Positive |
 | TC-S1-WEB-004 | Password field is type=password (masked) by default | Web | Security | Security |

@@ -1,4 +1,4 @@
-# ABEM – Apartment & Building Expense Management
+# عِمارة.كوم (3maracom) – Owners' Association & Building Expense Management
 
 Multi-tenant financial management platform for managing buildings, apartments, shared expenses, and payments.
 

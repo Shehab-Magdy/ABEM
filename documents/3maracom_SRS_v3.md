@@ -1,19 +1,19 @@
-# ABEM
+# عِمارة.كوم (3maracom)
 
-Apartment & Building Expense Management
+Owners' Association & Building Expense Management — formerly ABEM
 
 # SOFTWARE REQUIREMENTS SPECIFICATION
 
 *Web Application — Implemented Edition*
 
-Version 3.1 | March 2026
+Version 3.2 | October 2026
 
 | Document Info | Details |
 |---|---|
 | Status | Implemented — Web Application |
-| Version | 3.1 |
+| Version | 3.2 |
 | Audience | Dev / QA / Stakeholders |
-| Platform | Web (React + Django REST Framework) |
+| Platform | Web and installable PWA for Android and iOS (React + Django REST Framework) |
 | Note | This document describes the web application as fully built. Android and iOS are served by the web application as an installable Progressive Web App (PWA); native Flutter apps were dropped. |
 
 ---
@@ -22,11 +22,11 @@ Version 3.1 | March 2026
 
 ### 1.1 Purpose
 
-This Software Requirements Specification (SRS) document defines the functional and non-functional requirements for the ABEM (Apartment & Building Expense Management) system. Version 3.0 reflects the web application as implemented, serving as the authoritative reference for all stakeholders throughout the ongoing development lifecycle.
+This Software Requirements Specification (SRS) document defines the functional and non-functional requirements for the عِمارة.كوم (3maracom, formerly ABEM) system. Version 3.2 reflects the web application and its installable PWA as implemented, serving as the authoritative reference for all stakeholders throughout the ongoing development lifecycle.
 
 ### 1.2 Scope
 
-ABEM is a multi-tenant financial management platform for managing multiple buildings, apartment units, shared expenses, and financial transactions in a transparent and organized manner. The system targets building administrators, property managers, and apartment/store owners.
+عِمارة.كوم (3maracom) is an Arabic-first, multi-tenant financial management platform for owners' associations (اتحاد الملاك) and residents in Egypt and the Arab world for managing multiple buildings, apartment units, shared expenses, and financial transactions in a transparent and organized manner. The system targets building administrators, property managers, and apartment/store owners.
 
 #### 1.2.1 Web Application (Implemented)
 
@@ -44,7 +44,7 @@ Centralized backend built with Django + Django REST Framework (DRF), connected t
 
 | Term | Definition |
 |---|---|
-| ABEM | Apartment & Building Expense Management |
+| 3maracom / عِمارة.كوم | Product name (formerly ABEM — Apartment & Building Expense Management) |
 | Admin | User with full system configuration and management permissions |
 | Co-Admin | Additional admin assigned to a building; same management permissions as primary admin |
 | Owner | User authorized to view financial data for their assigned apartments/stores |
@@ -90,7 +90,7 @@ Centralized backend built with Django + Django REST Framework (DRF), connected t
 
 ### 2.1 System Architecture Summary
 
-ABEM follows a layered, API-first architecture with a shared backend serving the web client. The backend is stateless and horizontally scalable.
+3maracom follows a layered, API-first architecture with a shared backend serving the web client. The backend is stateless and horizontally scalable.
 
 | Layer | Technology | Responsibility |
 |---|---|---|
@@ -102,7 +102,7 @@ ABEM follows a layered, API-first architecture with a shared backend serving the
 | File Storage | Cloudinary | Bill images, profile pictures (validated type + size) |
 | PDF Generation | ReportLab | Auto-generated payment receipt PDFs |
 | Auth | djangorestframework-simplejwt | JWT access + refresh token lifecycle |
-| API Documentation | drf-spectacular | Auto-generated OpenAPI 3.0 schema at `/api/v1/schema/` |
+| API Documentation | drf-spectacular | Auto-generated OpenAPI 3.0 schema at `/api/schema/` |
 | Containerization | Docker + Docker Compose | Development and deployment environment |
 
 ### 2.2 User Roles & Permissions Matrix
@@ -201,7 +201,7 @@ Comprehensive expense tracking with flexible splitting logic, configurable categ
 **Recurring Expenses:**
 - Admin marks an expense as recurring and sets frequency: Monthly, Quarterly, or Annual.
 - A `RecurringConfig` record stores the frequency and `next_due` date.
-- Celery Beat runs a daily scheduler to auto-generate the next recurrence when `next_due` is reached.
+- A daily Celery Beat task (`generate_recurring_expenses`) copies each due recurring expense as a normal expense dated on `next_due`, splits it like the original, advances `next_due`, and catches up on missed periods.
 
 **Soft Delete:** Expenses are soft-deleted (`deleted_at` timestamp set); no records are permanently destroyed.
 
@@ -215,9 +215,9 @@ Manual payment recording by admins with full balance lifecycle management.
 - Apartment running balance is updated: `balance -= amount_paid` (positive = owes, negative = credit/overpayment).
 - **Payments are immutable** — no edits or deletions are permitted after creation.
 
-**Payment Methods:** Cash, Bank Transfer, Cheque, Other (requires custom detail text if "Other" is selected).
+**Payment Methods:** Cash, Bank Transfer, Cheque, Mobile Wallet, InstaPay, Other (requires custom detail text if "Other" is selected).
 
-**PDF Receipts:** Each payment generates a downloadable PDF receipt (via ReportLab) in B5 page format containing: Building info, unit number + first owner's full name, receipt ID (first 8 chars of UUID), amount paid, payment method, linked expense titles, balance before/after, recorder's full name (no email), date, and ABEM branding. The PDF is streamed as a blob and opened in a new browser tab.
+**PDF Receipts:** Each payment generates a downloadable PDF receipt (via WeasyPrint) in A6 page format, bilingual (Arabic/English) containing: Building info, unit number + first owner's full name, receipt ID (first 8 chars of UUID), amount paid, payment method, linked expense titles, balance before/after, recorder's full name (no email), date, and عِمارة.كوم | 3mara.com branding. The PDF is streamed as a blob and opened in a new browser tab.
 
 **Balance Summary Card (per unit):** Shows Total Owed (cumulative expenses), Total Paid (cumulative payments), Current Balance with a color-coded chip (Settled = green, Credit = blue, Outstanding = red).
 
@@ -357,13 +357,33 @@ A guided in-app walkthrough system that introduces new users to key features. Im
 
 ---
 
+### 3.11 Resident Self-Service & Platform Rules
+
+**Tenant scoping.** Every building is a tenant. Anyone may self-register as an admin, but an admin only sees and changes the buildings they administer (primary admin or co-admin): apartments, expenses, categories, payments, assets, exports, audit log and users. Creating records in a building the admin does not manage is refused with HTTP 403. Residents see only their own building's data.
+
+**Installable PWA (Android & iOS).** The web app ships a Web App Manifest (Arabic, RTL, standalone) and a service worker that caches the app shell only — never API responses. A banner offers one-tap install on Android; on iPhone it shows the Share → Add to Home Screen steps.
+
+**Shareable invite link.** An admin generates a one-time link `/join/<token>` per unit (email optional) and can share it on WhatsApp. If the invite was created for an email, only the account with that email can redeem it; email-less links go to whoever opens them first. Validation and redemption endpoints are rate-limited; only token links reveal the invited email.
+
+**Building treasury (خزينة العمارة).** The treasury is the building's current balance: starting balance + payments received + asset sales − expenses. It is shown on the admin and resident dashboards (read-only for residents) with the share of units that have paid.
+
+**Pay subscription (InstaPay — display and confirm).** The building admin stores an InstaPay address on the building. A resident taps "دفع الاشتراك", sees the address and amount due, transfers in their banking app, then reports it ("تم الدفع"). The admin confirms or rejects the claim; only confirmation records a payment (method InstaPay) and reduces the balance. No payment gateway is integrated.
+
+**Quick maintenance reports (بلاغ صيانة سريع).** A resident files a report for their building in three taps (elevator, stairs, cleaning, electricity, water, other + optional note). Building admins see reports for buildings they manage and set the status to open, in progress or done.
+
+**Password reset.** A user requests a reset link by email; the link opens a page to choose a new password. The request always answers the same, so registered emails cannot be probed.
+
+**Language and direction.** Arabic and English throughout (backend messages, emails, PDF receipts and web UI) with RTL layout; the app sends the chosen language to the API.
+
+---
+
 ## 4. Epics & User Stories
 
 ### Epic 1: User Management
 
 **US-1.1: Admin User Management**
 As an Admin, I want to create, edit, activate/deactivate, and reset passwords for user accounts, so that access is controlled properly.
-- Acceptance: Only Admins can access user management. Deactivated users receive 401 on login.
+- Acceptance: Only Admins can access user management. Deactivated users are refused at login with HTTP 403 (valid credentials, account not allowed).
 
 **US-1.2: Secure Login with Lockout**
 As a user, I want to log in securely; after repeated failures my account is temporarily locked.
@@ -539,7 +559,7 @@ Bill uploads validated by file type (JPEG, PNG, PDF only) and size (max 10 MB). 
 HTTPS enforced (TLS 1.2+). Passwords hashed with Django's PBKDF2. JWT tokens signed with HS256. CORS configured for known origins. SQL injection prevented via Django ORM. XSS prevented via React's escaping. Secrets managed via environment variables. Refresh tokens blacklisted on logout.
 
 **TS-10: Performance & Scalability**
-Database indexes on: building_id, owner_id, expense_id, apartment_id, token (invitations). Pagination on all list endpoints (default page size: 20; clients can request up to 200 via `page_size` query param). Redis deployed for Celery broker. Dashboard queries run directly on PostgreSQL (Redis caching is a planned optimization).
+Database indexes on: building_id, owner_id, expense_id, apartment_id, token (invitations). Pagination on all list endpoints (default page size: 20; clients can request up to 500 via `page_size` query param). Redis deployed for Celery broker. Dashboard queries run directly on PostgreSQL (Redis caching is a planned optimization).
 
 **TS-11: Building Asset Management**
 `BuildingAsset` and `AssetSale` models. `sell` action on `BuildingAssetViewSet` creates an `AssetSale` record and sets `is_sold=True` (enforced as immutable — no further PATCH allowed after sale). Asset list is scoped by `building_id` query param.
@@ -736,7 +756,7 @@ Redis is deployed as the Celery broker. Direct Redis caching for dashboard aggre
 - Target uptime: 99.5% (production).
 - Automated database backups: daily full backup, retained 30 days.
 - Health check endpoint: `GET /api/health/` — returns system status.
-- OpenAPI 3.0 documentation available at `GET /api/v1/schema/` (auto-generated by drf-spectacular).
+- OpenAPI 3.0 documentation available at `GET /api/schema/` (auto-generated by drf-spectacular).
 
 ### 8.4 Maintainability
 
@@ -821,7 +841,7 @@ Redis is deployed as the Celery broker. Direct Redis caching for dashboard aggre
 | 30 | Building asset management (track + record sale) | ✅ Implemented | |
 | 31 | Full audit log (all write operations) | ✅ Implemented | |
 | 32 | CSV/XLSX data exports (payments + expenses) | ✅ Implemented | openpyxl for XLSX |
-| 33 | OpenAPI 3.0 documentation (drf-spectacular) | ✅ Implemented | `/api/v1/schema/` |
+| 33 | OpenAPI 3.0 documentation (drf-spectacular) | ✅ Implemented | `/api/schema/` |
 | 34 | Admin dashboard export/print report | ✅ Implemented | Browser print API |
 | 35 | Claim unit by registration code from owner dashboard | ✅ Implemented | |
 | 36 | Expense approval workflow | ❌ Descoped | Not in current scope |

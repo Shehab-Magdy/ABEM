@@ -2,7 +2,7 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-ABEM (Apartment & Building Expense Management) is a multi-tenant platform: Django/DRF API + React web app (also the installable PWA that serves Android and iOS; the Flutter app was removed on branch `feature/react-pwa`), plus two separate test projects. Each **building is a tenant** (`tenant_id` is the building UUID). Two roles: `admin` (full CRUD within their buildings, incl. co-admins) and `owner` (read-only view of own unit data). Feature inventory is in [FEATURES.md](FEATURES.md); production deploy is in [DEPLOYMENT.md](DEPLOYMENT.md).
+عِمارة.كوم (3maracom, formerly ABEM) is a multi-tenant platform: Django/DRF API + React web app (also the installable PWA that serves Android and iOS; the Flutter app was removed on branch `feature/react-pwa`), plus two separate test projects. Each **building is a tenant** (`tenant_id` is the building UUID). Two roles: `admin` (full CRUD within their buildings, incl. co-admins) and `owner` (read-only view of own unit data). Feature inventory is in [FEATURES.md](FEATURES.md); production deploy is in [DEPLOYMENT.md](DEPLOYMENT.md).
 
 ## Commands
 
