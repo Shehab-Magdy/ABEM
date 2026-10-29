@@ -1,6 +1,7 @@
 """Expense serializers – Sprint 3."""
 from __future__ import annotations
 
+from django.db import transaction
 from rest_framework import serializers
 from django.utils.translation import gettext_lazy as _
 
@@ -52,13 +53,8 @@ class ApartmentExpenseSerializer(serializers.ModelSerializer):
 
     def get_total_paid(self, obj):
         """Sum of payments linked to this expense for this apartment."""
-        from apps.payments.models import Payment
-        from django.db.models import Sum
-        result = Payment.objects.filter(
-            apartment_id=obj.apartment_id,
-            expenses=obj.expense,
-        ).aggregate(total=Sum("amount_paid"))
-        return str(result["total"] or 0)
+        from .utils import paid_toward_expense
+        return str(paid_toward_expense(obj.expense, obj.apartment_id))
 
     def get_payment_status(self, obj):
         """
@@ -69,14 +65,9 @@ class ApartmentExpenseSerializer(serializers.ModelSerializer):
         """
         if obj.expense.is_manually_paid:
             return "paid"
-        from apps.payments.models import Payment
-        from django.db.models import Sum
         from decimal import Decimal
-        result = Payment.objects.filter(
-            apartment_id=obj.apartment_id,
-            expenses=obj.expense,
-        ).aggregate(total=Sum("amount_paid"))
-        total_paid = result["total"] or Decimal("0.00")
+        from .utils import paid_toward_expense
+        total_paid = paid_toward_expense(obj.expense, obj.apartment_id)
         if total_paid >= obj.share_amount:
             return "paid"
         elif total_paid > Decimal("0.00"):
@@ -234,14 +225,9 @@ class ExpenseSerializer(serializers.ModelSerializer):
         if share is None:
             return None
 
-        from apps.payments.models import Payment
-        from django.db.models import Sum
         from decimal import Decimal
-        result = Payment.objects.filter(
-            apartment_id=share.apartment_id,
-            expenses=obj,
-        ).aggregate(total=Sum("amount_paid"))
-        total_paid = result["total"] or Decimal("0.00")
+        from .utils import paid_toward_expense
+        total_paid = paid_toward_expense(obj, share.apartment_id)
         if total_paid >= share.share_amount:
             return "paid"
         elif total_paid > Decimal("0.00"):
@@ -250,6 +236,7 @@ class ExpenseSerializer(serializers.ModelSerializer):
 
     # ── Write ──────────────────────────────────────────────────────────────────
 
+    @transaction.atomic
     def create(self, validated_data):
         from .utils import run_split_engine
 
@@ -265,6 +252,7 @@ class ExpenseSerializer(serializers.ModelSerializer):
         run_split_engine(expense, custom_apartment_ids, custom_weights or None)
         return expense
 
+    @transaction.atomic
     def update(self, instance, validated_data):
         from .utils import run_split_engine
         from apps.apartments.models import Apartment
@@ -274,6 +262,10 @@ class ExpenseSerializer(serializers.ModelSerializer):
         custom_apartment_ids = validated_data.pop("custom_split_apartments", [])
         custom_weights = validated_data.pop("custom_split_weights", {})
 
+        # Remember the previous shares: an edit that does not resend the custom split
+        # (e.g. only the title changed) must keep the same units, not widen to all.
+        previous_shares = {str(ae.apartment_id): ae.share_amount for ae in instance.apartment_expenses.all()}
+
         # Reverse the balance increments from the previous split before recalculating
         for ae in instance.apartment_expenses.all():
             Apartment.objects.filter(pk=ae.apartment_id).update(
@@ -282,6 +274,9 @@ class ExpenseSerializer(serializers.ModelSerializer):
         instance.apartment_expenses.all().delete()
 
         expense = super().update(instance, validated_data)
+
+        if expense.split_type == SplitType.CUSTOM and not custom_apartment_ids and not custom_weights:
+            custom_weights = previous_shares
 
         # Re-calculate shares after any field change
         run_split_engine(expense, custom_apartment_ids, custom_weights or None)

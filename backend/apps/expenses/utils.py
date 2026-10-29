@@ -17,6 +17,28 @@ def round_up_to_nearest_5(amount: Decimal) -> Decimal:
     return Decimal(str(math.ceil(float(amount) / 5) * 5))
 
 
+def paid_toward_expense(expense, apartment_id) -> Decimal:
+    """Amount an apartment has paid toward one expense.
+
+    Uses the allocated amount when the payment recorded one; for older payments
+    without allocations, the payment is divided evenly across the expenses it covers
+    (so one payment of 100 over five expenses counts as 20 each, not 100 each).
+    """
+    from apps.payments.models import PaymentExpense
+
+    total = Decimal("0.00")
+    links = PaymentExpense.objects.filter(
+        expense=expense, payment__apartment_id=apartment_id
+    ).select_related("payment")
+    for link in links:
+        if link.allocated_amount is not None:
+            total += link.allocated_amount
+        else:
+            count = link.payment.payment_expenses.count() or 1
+            total += link.payment.amount_paid / count
+    return total
+
+
 def run_split_engine(
     expense,
     custom_apartment_ids: list | None = None,

@@ -4,6 +4,8 @@ from __future__ import annotations
 import os
 
 from django.conf import settings
+from django.db import transaction
+from django.db.models import F
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.decorators import action
@@ -16,6 +18,7 @@ from rest_framework.viewsets import ModelViewSet
 from django_filters.rest_framework import DjangoFilterBackend
 
 from django.utils.translation import gettext_lazy as _
+from apps.apartments.models import Apartment
 from apps.audit.mixins import log_action
 from apps.authentication.permissions import IsAdminRole
 from apps.buildings.scoping import ensure_manages, managed_buildings
@@ -212,8 +215,15 @@ class ExpenseViewSet(ModelViewSet):
             entity_id=instance.pk,
             request=self.request,
         )
-        instance.deleted_at = timezone.now()
-        instance.save()
+        with transaction.atomic():
+            # Take the expense's shares back off each apartment's balance
+            for share in instance.apartment_expenses.all():
+                Apartment.objects.filter(pk=share.apartment_id).update(
+                    balance=F("balance") - share.share_amount
+                )
+            instance.apartment_expenses.all().delete()
+            instance.deleted_at = timezone.now()
+            instance.save()
 
     # ── Mark as paid ──────────────────────────────────────────────────────────
 
