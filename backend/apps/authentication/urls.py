@@ -6,6 +6,8 @@ from .views import (
     ChangePasswordView,
     ForceChangePasswordView,
     RegisterView,
+    ForgotPasswordView,
+    ResetPasswordView,
     SelfRegisterView,
     ProfileView,
 )
@@ -16,6 +18,8 @@ urlpatterns = [
     path("refresh/", TokenRefreshView.as_view(), name="auth-token-refresh"),
     path("register/", RegisterView.as_view(), name="auth-register"),
     path("self-register/", SelfRegisterView.as_view(), name="auth-self-register"),
+    path("forgot-password/", ForgotPasswordView.as_view(), name="auth-forgot-password"),
+    path("reset-password/", ResetPasswordView.as_view(), name="auth-reset-password"),
     path("change-password/", ChangePasswordView.as_view(), name="auth-change-password"),
     path("force-change-password/", ForceChangePasswordView.as_view(), name="auth-force-change-password"),
     path("profile/", ProfileView.as_view(), name="auth-profile"),

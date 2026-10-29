@@ -5,11 +5,13 @@ All endpoints are under /api/v1/auth/.
 from datetime import timedelta
 
 from django.conf import settings
+from django.core.exceptions import ValidationError as DjangoValidationError
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.throttling import AnonRateThrottle
 from rest_framework.views import APIView
 from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -285,3 +287,76 @@ class ProfileView(APIView):
         )
 
         return Response(UserSerializer(request.user, context={"request": request}).data)
+
+
+# ── Forgot / reset password (emailed link) ───────────────────────────────────
+
+class ForgotPasswordView(APIView):
+    """POST /auth/forgot-password/ {email}. Always answers 200 so emails cannot be probed."""
+
+    permission_classes = [AllowAny]
+    authentication_classes = []
+    throttle_classes = [AnonRateThrottle]
+
+    def post(self, request):
+        from django.contrib.auth.tokens import default_token_generator
+        from django.core.mail import send_mail
+        from django.utils.encoding import force_bytes
+        from django.utils.http import urlsafe_base64_encode
+
+        email = (request.data.get("email") or "").strip().lower()
+        user = User.objects.filter(email__iexact=email, is_active=True).first() if email else None
+        if user:
+            uid = urlsafe_base64_encode(force_bytes(user.pk))
+            token = default_token_generator.make_token(user)
+            link = f"{settings.FRONTEND_URL.rstrip('/')}/reset-password?uid={uid}&token={token}"
+            send_mail(
+                subject="إعادة تعيين كلمة المرور | Reset your password — 3maracom",
+                message=(
+                    f"لإعادة تعيين كلمة المرور افتح الرابط التالي:\n{link}\n\n"
+                    f"To reset your password open this link:\n{link}\n\n"
+                    "إذا لم تطلب ذلك تجاهل هذه الرسالة. / If you did not ask for this, ignore this email."
+                ),
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[user.email],
+                fail_silently=True,
+            )
+        return Response({"detail": _("If that email is registered, a reset link has been sent.")})
+
+
+class ResetPasswordView(APIView):
+    """POST /auth/reset-password/ {uid, token, password, confirm_password}."""
+
+    permission_classes = [AllowAny]
+    authentication_classes = []
+    throttle_classes = [AnonRateThrottle]
+
+    def post(self, request):
+        from django.contrib.auth.tokens import default_token_generator
+        from django.utils.encoding import force_str
+        from django.utils.http import urlsafe_base64_decode
+
+        from .validators import validate_password_complexity
+
+        password = request.data.get("password") or ""
+        if password != request.data.get("confirm_password"):
+            return Response({"detail": _("Passwords do not match.")}, status=400)
+        try:
+            validate_password_complexity(password)
+        except DjangoValidationError as exc:
+            return Response({"detail": " ".join(exc.messages)}, status=400)
+
+        try:
+            user = User.objects.get(pk=force_str(urlsafe_base64_decode(request.data.get("uid", ""))))
+        except (User.DoesNotExist, ValueError, TypeError, OverflowError, DjangoValidationError):
+            user = None
+        if user is None or not default_token_generator.check_token(user, request.data.get("token", "")):
+            return Response({"detail": _("This reset link is invalid or has expired.")}, status=400)
+
+        user.set_password(password)
+        user.must_change_password = False
+        user.failed_login_attempts = 0
+        user.locked_until = None
+        user.save(update_fields=["password", "must_change_password", "failed_login_attempts", "locked_until"])
+        log_action(user=user, action="reset_password", entity="user", entity_id=user.id, request=request)
+        return Response({"detail": _("Password has been reset. You can now sign in.")})

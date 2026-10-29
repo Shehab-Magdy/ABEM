@@ -17,6 +17,7 @@ import ServerErrorPage from "../pages/errors/ServerErrorPage";
 const LandingPage = lazy(() => import("../pages/landing/LandingPage"));
 const LoginPage = lazy(() => import("../pages/auth/LoginPage"));
 const JoinPage = lazy(() => import("../pages/auth/JoinPage"));
+const ResetPasswordPage = lazy(() => import("../pages/auth/ResetPasswordPage"));
 const RegisterPage = lazy(() => import("../pages/auth/RegisterPage"));
 const ForgotPasswordPage = lazy(() => import("../pages/auth/ForgotPasswordPage"));
 const ForceChangePasswordPage = lazy(() => import("../pages/auth/ForceChangePasswordPage"));
@@ -87,6 +88,7 @@ export default function AppRouter() {
           which would otherwise cause an immediate redirect away before the user finishes the wizard. */}
       <Route path="/register" element={<RegisterPage />} />
       <Route path="/join/:token" element={<JoinPage />} />
+      <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
 
       {/* Forced password change — accessible only when must_change_password is true */}

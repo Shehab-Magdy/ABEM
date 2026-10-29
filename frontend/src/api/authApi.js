@@ -2,6 +2,8 @@ import axiosClient from "./axiosClient";
 
 export const authApi = {
   login: (credentials) => axiosClient.post("/auth/login/", credentials),
+  forgotPassword: (email) => axiosClient.post("/auth/forgot-password/", { email }),
+  resetPassword: (data) => axiosClient.post("/auth/reset-password/", data),
   logout: (refreshToken) => axiosClient.post("/auth/logout/", { refresh: refreshToken }),
   refresh: (refreshToken) => axiosClient.post("/auth/refresh/", { refresh: refreshToken }),
   selfRegister: (data) => axiosClient.post("/auth/self-register/", data),
