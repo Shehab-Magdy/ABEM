@@ -53,3 +53,7 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 STATICFILES_STORAGE = (
     "whitenoise.storage.CompressedManifestStaticFilesStorage"
 )
+
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    r"https://abem-.*\.vercel\.app",
+]
