@@ -19,6 +19,11 @@ class AssetSaleSerializer(serializers.ModelSerializer):
         fields = ["id", "sale_date", "sale_price", "buyer_name", "buyer_contact", "notes", "created_at"]
         read_only_fields = ["id", "created_at"]
 
+    def validate_sale_price(self, value):
+        if value <= Decimal("0.00"):
+            raise serializers.ValidationError(_("sale_price must be greater than zero."))
+        return value
+
 
 class BuildingAssetSerializer(serializers.ModelSerializer):
     building_id = serializers.PrimaryKeyRelatedField(

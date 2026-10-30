@@ -748,3 +748,6 @@ msgstr "لا يمكن إلغاء عملية إلغاء."
 
 msgid "This payment was already reversed."
 msgstr "تم إلغاء هذه الدفعة مسبقاً."
+
+msgid "sale_price must be greater than zero."
+msgstr "سعر البيع يجب أن يكون أكبر من صفر."

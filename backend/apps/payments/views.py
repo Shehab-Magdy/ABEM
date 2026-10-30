@@ -21,7 +21,7 @@ from apps.buildings.scoping import board_building_ids, ensure_manages, has_board
 
 from .allocation import AllocationError, auto_allocate, record_allocations, resolve_allocations
 from .models import AssetSale, BuildingAsset, ClaimStatus, Payment, PaymentClaim, PaymentExpense, PaymentMethod
-from .serializers import BuildingAssetSerializer, PaymentClaimSerializer, PaymentSerializer
+from .serializers import AssetSaleSerializer, BuildingAssetSerializer, PaymentClaimSerializer, PaymentSerializer
 
 
 # ── Arabic numeral / receipt helpers ─────────────────────────────────────────
@@ -550,26 +550,18 @@ class BuildingAssetViewSet(ModelViewSet):
         Marks the asset as sold and records the sale.
         """
         asset = self.get_object()
-        if asset.is_sold:
-            return Response({"detail": _("This asset has already been sold.")}, status=400)
-
-        sale_date = request.data.get("sale_date")
-        sale_price = request.data.get("sale_price")
-        if not sale_date or sale_price is None:
-            return Response({"detail": _("sale_date and sale_price are required.")}, status=400)
+        sale = AssetSaleSerializer(data=request.data)
+        sale.is_valid(raise_exception=True)
 
         with transaction.atomic():
-            AssetSale.objects.create(
-                asset=asset,
-                sale_date=sale_date,
-                sale_price=sale_price,
-                buyer_name=request.data.get("buyer_name", ""),
-                buyer_contact=request.data.get("buyer_contact", ""),
-                notes=request.data.get("notes", ""),
-                recorded_by=request.user,
-            )
+            # lock the row so two simultaneous sales cannot both pass the is_sold check
+            asset = BuildingAsset.objects.select_for_update().get(pk=asset.pk)
+            if asset.is_sold:
+                return Response({"detail": _("This asset has already been sold.")}, status=400)
+            sale.save(asset=asset, recorded_by=request.user)
             asset.is_sold = True
             asset.save(update_fields=["is_sold"])
+        sale_price = sale.validated_data["sale_price"]
 
         log_action(
             user=request.user,
