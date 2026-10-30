@@ -113,16 +113,21 @@ export default function ProfilePage() {
   const [deletePw, setDeletePw] = useState("");
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState(null);
+  const [balanceOwed, setBalanceOwed] = useState(null); // set when the server asks to confirm an unpaid balance
 
   const handleDeleteAccount = async () => {
     setDeleting(true);
     setDeleteError(null);
     try {
-      await authApi.deleteAccount(deletePw);
+      await authApi.deleteAccount(deletePw, balanceOwed !== null);
       useAuthStore.getState().logout();
       navigate("/login", { replace: true });
     } catch (err) {
-      setDeleteError(err.response?.data?.detail || t("errors:server_error"));
+      if (err.response?.data?.requires_confirmation) {
+        setBalanceOwed(err.response.data.balance);
+      } else {
+        setDeleteError(err.response?.data?.detail || t("errors:server_error"));
+      }
     } finally {
       setDeleting(false);
     }
@@ -339,7 +344,7 @@ export default function ProfilePage() {
         <CardContent>
           <Typography variant="h6" color="error" gutterBottom>{t("delete_account")}</Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>{t("delete_account_help")}</Typography>
-          <Button variant="outlined" color="error" onClick={() => { setDeleteOpen(true); setDeleteError(null); setDeletePw(""); }} sx={{ minHeight: 44 }}>
+          <Button variant="outlined" color="error" onClick={() => { setDeleteOpen(true); setDeleteError(null); setBalanceOwed(null); setDeletePw(""); }} sx={{ minHeight: 44 }}>
             {t("delete_account")}
           </Button>
         </CardContent>
@@ -349,6 +354,9 @@ export default function ProfilePage() {
         <DialogContent>
           <Stack spacing={2} sx={{ mt: 1 }}>
             {deleteError && <Alert severity="error">{deleteError}</Alert>}
+            {balanceOwed !== null && (
+              <Alert severity="warning">{t("delete_account_balance", { amount: balanceOwed })}</Alert>
+            )}
             <Typography variant="body2">{t("delete_account_confirm_text")}</Typography>
             <TextField type="password" label={t("currentPassword")} value={deletePw} onChange={(e) => setDeletePw(e.target.value)} autoComplete="current-password" />
           </Stack>
