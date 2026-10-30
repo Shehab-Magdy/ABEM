@@ -5,11 +5,13 @@ from __future__ import annotations
 import io
 
 import openpyxl
+from django.db.models import Q
+
 from apps.apartments.models import Apartment
 from apps.audit.models import AuditLog
 from apps.expenses.models import Expense, LateFee
 from apps.payments.models import Payment, PaymentClaim
-from django.db.models import Q
+from apps.plans.models import PlanPayment
 
 
 def _text(value) -> str:
@@ -17,7 +19,18 @@ def _text(value) -> str:
 
 
 def _units(building):
-    rows = [["Unit", "Floor", "Type", "Size (sqm)", "Status", "Rate factor", "Balance", "Billing paused"]]
+    rows = [
+        [
+            "Unit",
+            "Floor",
+            "Type",
+            "Size (sqm)",
+            "Status",
+            "Rate factor",
+            "Balance",
+            "Billing paused",
+        ]
+    ]
     for a in Apartment.objects.filter(building=building).order_by("unit_number"):
         rows.append(
             [
@@ -36,7 +49,11 @@ def _units(building):
 
 def _residents(building):
     rows = [["Unit", "Role", "Name", "Email", "Phone", "Primary owner"]]
-    qs = Apartment.objects.filter(building=building).prefetch_related("owners").select_related("owner")
+    qs = (
+        Apartment.objects.filter(building=building)
+        .prefetch_related("owners")
+        .select_related("owner")
+    )
     for a in qs.order_by("unit_number"):
         people = {u.pk: u for u in a.owners.all()}
         if a.owner_id and a.owner_id not in people:
@@ -57,9 +74,24 @@ def _residents(building):
 
 def _expenses(building):
     rows = [
-        ["ID", "Title", "Category", "Kind", "Amount", "Expense date", "Due date", "Split type", "Approval", "Deleted"]
+        [
+            "ID",
+            "Title",
+            "Category",
+            "Kind",
+            "Amount",
+            "Expense date",
+            "Due date",
+            "Split type",
+            "Approval",
+            "Deleted",
+        ]
     ]
-    qs = Expense.objects.filter(building=building).select_related("category").order_by("-expense_date")
+    qs = (
+        Expense.objects.filter(building=building)
+        .select_related("category")
+        .order_by("-expense_date")
+    )
     for e in qs:
         rows.append(
             [
@@ -94,7 +126,11 @@ def _payments(building):
             "Notes",
         ]
     ]
-    qs = Payment.objects.filter(apartment__building=building).select_related("apartment").order_by("-payment_date")
+    qs = (
+        Payment.objects.filter(apartment__building=building)
+        .select_related("apartment")
+        .order_by("-payment_date")
+    )
     for p in qs:
         rows.append(
             [
@@ -115,8 +151,21 @@ def _payments(building):
 
 
 def _claims(building):
-    rows = [["ID", "Unit", "Amount", "Reference", "Status", "Created", "Reviewed", "Payment"]]
-    qs = PaymentClaim.objects.filter(apartment__building=building).select_related("apartment")
+    rows = [
+        [
+            "ID",
+            "Unit",
+            "Amount",
+            "Reference",
+            "Status",
+            "Created",
+            "Reviewed",
+            "Payment",
+        ]
+    ]
+    qs = PaymentClaim.objects.filter(apartment__building=building).select_related(
+        "apartment"
+    )
     for c in qs.order_by("-created_at"):
         rows.append(
             [
@@ -134,8 +183,12 @@ def _claims(building):
 
 
 def _late_fees(building):
-    rows = [["ID", "Unit", "Expense", "Amount", "Created", "Waived at", "Waived reason"]]
-    qs = LateFee.objects.filter(expense__building=building).select_related("expense", "share__apartment")
+    rows = [
+        ["ID", "Unit", "Expense", "Amount", "Created", "Waived at", "Waived reason"]
+    ]
+    qs = LateFee.objects.filter(expense__building=building).select_related(
+        "expense", "share__apartment"
+    )
     for f in qs.order_by("-created_at"):
         rows.append(
             [
@@ -156,18 +209,19 @@ def _audit(building):
     unit_ids = Apartment.objects.filter(building=building).values("id")
     expense_ids = Expense.objects.filter(building=building).values("id")
     payment_ids = Payment.objects.filter(apartment__building=building).values("id")
+    claim_ids = PaymentClaim.objects.filter(apartment__building=building).values("id")
+    plan_payment_ids = PlanPayment.objects.filter(building=building).values("id")
     qs = (
         AuditLog.objects.filter(
-            Q(user__buildings=building)
-            | Q(user__administered_buildings=building)
-            | Q(user__co_administered_buildings=building)
-            | Q(entity_id=building.pk)
+            Q(entity_id=building.pk)
             | Q(entity_id__in=unit_ids)
             | Q(entity_id__in=expense_ids)
             | Q(entity_id__in=payment_ids)
+            | Q(entity_id__in=claim_ids)
+            | Q(entity_id__in=plan_payment_ids)
+            | Q(changes__building_id=str(building.pk))
         )
         .select_related("user")
-        .distinct()
         .order_by("-created_at")
     )
     for log in qs:
