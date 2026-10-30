@@ -30,6 +30,7 @@ i18n
       "statement",
       "legal",
       "governance",
+      "subscription",
     ],
     backend: { loadPath: "/locales/{{lng}}/{{ns}}.json" },
     detection: {

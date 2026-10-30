@@ -920,7 +920,7 @@ Phases are delivered in order; within a phase, requirements are independent unle
 
 ### 11.4 Phase 3 — Plans & Operations
 
-**R-9 Fixed monthly subscription per unit** — 🔲 Planned. *Why:* buildings collect a regular monthly amount (الاشتراك الشهري).
+**R-9 Fixed monthly subscription per unit** — ✅ Implemented (`/subscription` admin screen, `POST /buildings/{id}/subscription/`, daily command `bill_subscriptions`). Charges are stored as expenses of kind `subscription`, which reminders and payment allocation already understand but which are not counted as building costs in the treasury, statement or dashboard. Per-unit coefficients are R-10. *Why:* buildings collect a regular monthly amount (الاشتراك الشهري).
 - An admin defines a subscription amount for the building and a billing day. Each month the system bills every unit automatically (daily command), creating a due item that reminders (R-1) and statements (R-2) already understand.
 - Amounts can differ by unit type (apartment, store) or by a unit coefficient (R-10).
 - Pausing a unit (vacant) is possible with a reason and is audited.

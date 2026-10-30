@@ -50,6 +50,12 @@ class RecurringFrequency(models.TextChoices):
     ANNUAL = "annual", _("Annual")
 
 
+class ExpenseKind(models.TextChoices):
+    COST = "cost", _("Cost")                  # money the building spent; counts against the treasury
+    SUBSCRIPTION = "subscription", _("Monthly subscription")  # a charge to units; money comes in as payments
+    LATE_FEE = "late_fee", _("Late fee")      # a charge to one unit
+
+
 class Expense(models.Model):
     objects: models.Manager["Expense"]
     
@@ -65,6 +71,9 @@ class Expense(models.Model):
     expense_date = models.DateField()
     due_date = models.DateField(null=True, blank=True)
 
+    # Only "cost" rows are money the building spent. Subscriptions and late fees are charges to units,
+    # so treasury, statement and dashboard totals leave them out.
+    kind = models.CharField(max_length=12, choices=ExpenseKind.choices, default=ExpenseKind.COST)
     split_type = models.CharField(max_length=20, choices=SplitType.choices, default=SplitType.EQUAL_ALL)
     is_recurring = models.BooleanField(default=False)
     is_manually_paid = models.BooleanField(default=False)
@@ -156,3 +165,33 @@ class MediaFile(models.Model):
 
     def __str__(self):
         return f"{self.entity_type}:{self.entity_id} – {self.mime_type}"
+
+
+class SubscriptionPlan(models.Model):
+    """The fixed monthly amount each unit of a building pays (الاشتراك الشهري)."""
+    objects: models.Manager["SubscriptionPlan"]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    building = models.OneToOneField(Building, on_delete=models.CASCADE, related_name="subscription_plan")
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    billing_day = models.PositiveSmallIntegerField(default=1, help_text="Day of the month units are billed (1-28)")
+    due_days = models.PositiveSmallIntegerField(default=10, help_text="Days after billing that payment is due")
+    starts_on = models.DateField(help_text="First month to bill")
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.building.name}: {self.amount}/month"
+
+
+class SubscriptionRun(models.Model):
+    """One billed month of a plan; the unique constraint makes billing safe to repeat."""
+    objects: models.Manager["SubscriptionRun"]
+
+    plan = models.ForeignKey(SubscriptionPlan, on_delete=models.CASCADE, related_name="runs")
+    month = models.DateField(help_text="First day of the month billed")
+    expense = models.OneToOneField(Expense, on_delete=models.CASCADE, related_name="subscription_run")
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=["plan", "month"], name="one_run_per_plan_and_month")]

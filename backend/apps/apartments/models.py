@@ -40,6 +40,10 @@ class Apartment(models.Model):
         blank=True,
     )
 
+    # A paused unit (e.g. vacant or under renovation) is skipped by monthly subscription billing
+    billing_paused = models.BooleanField(default=False)
+    billing_pause_reason = models.CharField(max_length=200, blank=True)
+
     unit_number = models.CharField(max_length=20)
     floor = models.SmallIntegerField(default=0)
     unit_type = models.CharField(max_length=15, choices=UnitType.choices, default=UnitType.APARTMENT)

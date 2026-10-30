@@ -1,0 +1,21 @@
+{
+  "title": "Monthly subscription",
+  "help": "Set one fixed amount that every unit pays each month. Units are charged automatically on the billing day, and residents get reminders before it is due.",
+  "building": "Building",
+  "amount": "Subscription per unit",
+  "billing_day": "Billing day",
+  "billing_day_help": "1 to 28",
+  "due_days": "Days to pay",
+  "due_days_help": "After the billing day",
+  "active": "Subscription is on",
+  "monthly_total": "{{units}} units × amount = {{total}} EGP a month",
+  "save": "Save changes",
+  "start": "Start the monthly subscription",
+  "saved": "Saved.",
+  "units": "Units",
+  "unit": "Unit",
+  "billed": "Billed",
+  "pause_reason": "Reason paused",
+  "pause_reason_prompt": "Why is this unit not billed? (for example: vacant)",
+  "error": "Could not complete that."
+}

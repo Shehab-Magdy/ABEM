@@ -972,14 +972,15 @@ There is no background-worker service. The scheduled jobs are management command
 ```bash
 python manage.py generate_recurring_expenses   # creates recurring expenses that fell due
 python manage.py send_payment_reminders        # due-soon (3 days before) and overdue (weekly) reminders
+python manage.py bill_subscriptions            # charges each unit its monthly subscription on the billing day
 ```
 
 Run it from whatever scheduler your host provides (both are safe to run more than once a day: recurring expenses only creates what is due and catches up on missed periods; reminders never repeat the same notice twice in a day):
 
 | Host | How |
 |------|-----|
-| Docker on a VPS | `crontab -e` → `5 2 * * * cd /opt/abem && docker compose -f docker-compose.prod.yml exec -T backend sh -c 'python manage.py generate_recurring_expenses && python manage.py send_payment_reminders'` |
-| Render / Railway | Add a **Cron Job** that runs both commands daily |
+| Docker on a VPS | `crontab -e` → `5 2 * * * cd /opt/abem && docker compose -f docker-compose.prod.yml exec -T backend sh -c 'python manage.py generate_recurring_expenses && python manage.py bill_subscriptions && python manage.py send_payment_reminders'` |
+| Render / Railway | Add a **Cron Job** that runs the three commands daily (billing before reminders) |
 | Anything else | GitHub Actions `schedule`, systemd timer, or a cloud scheduler calling the same command |
 
 Emails and push notifications are sent while the request is handled, so no queue is needed.

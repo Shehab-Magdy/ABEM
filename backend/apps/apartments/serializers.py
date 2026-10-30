@@ -57,6 +57,8 @@ class ApartmentSerializer(serializers.ModelSerializer):
             "owner_ids",
             "owner_names",
             "renters",
+            "billing_paused",
+            "billing_pause_reason",
             "unit_number",
             "floor",
             "type",

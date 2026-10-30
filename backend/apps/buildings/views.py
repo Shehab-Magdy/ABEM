@@ -201,6 +201,55 @@ class BuildingViewSet(ModelViewSet):
         )
         return Response(self.get_serializer(building).data)
 
+    @action(detail=True, methods=["get", "post"], url_path="subscription", permission_classes=[IsAuthenticated, IsAdminRole])
+    def subscription(self, request, pk=None):
+        """
+        GET /buildings/{id}/subscription/   -> the monthly plan (or {"plan": null})
+        POST /buildings/{id}/subscription/  {amount, billing_day (1-28), due_days (0-60), is_active, starts_on?}
+        Every unit that is not paused is charged `amount` on the billing day each month (command bill_subscriptions).
+        """
+        from datetime import date
+        from decimal import Decimal, InvalidOperation
+
+        from apps.expenses.models import SubscriptionPlan
+
+        building = self.get_object()
+        plan = SubscriptionPlan.objects.filter(building=building).first()
+
+        def out(p):
+            return None if p is None else {
+                "amount": str(p.amount), "billing_day": p.billing_day, "due_days": p.due_days,
+                "starts_on": str(p.starts_on), "is_active": p.is_active,
+            }
+
+        if request.method == "GET":
+            return Response({"plan": out(plan)})  # POST below creates or updates the plan
+
+        data = request.data
+        try:
+            amount = Decimal(str(data.get("amount")))
+            billing_day = int(data.get("billing_day", 1))
+            due_days = int(data.get("due_days", 10))
+            starts_on = date.fromisoformat(data["starts_on"]) if data.get("starts_on") else None
+        except (InvalidOperation, TypeError, ValueError):
+            return Response({"detail": _("Enter a valid amount, billing day and due days.")}, status=400)
+        if amount <= 0 or not 1 <= billing_day <= 28 or not 0 <= due_days <= 60:
+            return Response({"detail": _("Amount must be above zero, billing day 1-28 and due days 0-60.")}, status=400)
+
+        if plan is None:
+            plan = SubscriptionPlan(building=building, starts_on=starts_on or date.today().replace(day=1))
+        elif starts_on:
+            plan.starts_on = starts_on
+        plan.amount, plan.billing_day, plan.due_days = amount, billing_day, due_days
+        plan.is_active = bool(data.get("is_active", True))
+        plan.save()
+        plan.refresh_from_db()  # echo the stored values (e.g. 200.00)
+        log_action(
+            user=request.user, action="update", entity="subscription_plan", entity_id=plan.pk,
+            changes={"amount": str(plan.amount), "billing_day": plan.billing_day, "is_active": plan.is_active}, request=request,
+        )
+        return Response({"plan": out(plan)})
+
     @action(detail=True, methods=["get"], url_path="statement", permission_classes=[IsAuthenticated])
     def statement(self, request, pk=None):
         """
@@ -266,7 +315,7 @@ class BuildingViewSet(ModelViewSet):
         received = Payment.objects.filter(apartment__building=building).aggregate(s=Sum("amount_paid"))["s"] or zero
         sales = AssetSale.objects.filter(asset__building=building).aggregate(s=Sum("sale_price"))["s"] or zero
         spent = (
-            Expense.objects.filter(building=building, deleted_at__isnull=True).aggregate(s=Sum("amount"))["s"] or zero
+            Expense.objects.filter(building=building, deleted_at__isnull=True, kind="cost").aggregate(s=Sum("amount"))["s"] or zero
         )
         billed_ids = list(
             ApartmentExpense.objects.filter(expense__building=building, expense__deleted_at__isnull=True)
