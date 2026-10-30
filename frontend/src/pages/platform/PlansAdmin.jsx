@@ -113,6 +113,7 @@ export default function PlansAdmin() {
       <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5}>
         <TextField size="small" label={t("instapay_address")} value={settings.instapay_address} onChange={(e) => setSettings((s) => ({ ...s, instapay_address: e.target.value }))} sx={{ minWidth: 240 }} />
         <TextField size="small" type="number" label={t("trial_days")} value={settings.trial_days} onChange={(e) => setSettings((s) => ({ ...s, trial_days: e.target.value }))} sx={{ width: 140 }} />
+        <TextField size="small" type="number" label={t("grace_days")} value={settings.grace_days ?? 7} onChange={(e) => setSettings((s) => ({ ...s, grace_days: e.target.value }))} helperText={t("grace_help")} sx={{ width: 180 }} />
         <Button variant="outlined" onClick={saveSettings} sx={{ minHeight: 40 }}>{t("save")}</Button>
       </Stack>
       {pending.length === 0 && <Typography color="text.secondary">{t("no_pending")}</Typography>}

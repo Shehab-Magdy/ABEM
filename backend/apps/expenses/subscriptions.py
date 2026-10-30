@@ -68,7 +68,11 @@ def bill_subscriptions(today: date | None = None) -> int:
     """
     today = today or timezone.localdate()
     created = 0
+    from apps.plans.services import billing_allowed
+
     for plan in SubscriptionPlan.objects.filter(is_active=True, building__deleted_at__isnull=True, building__is_active=True).select_related("building"):
+        if not billing_allowed(plan.building, today):
+            continue  # the building's plan no longer includes billing (after its grace period)
         for month in _months(plan.starts_on, today):
             if _billing_date(month, plan.billing_day) > today:
                 continue

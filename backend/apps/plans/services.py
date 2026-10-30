@@ -49,3 +49,23 @@ def extend(building, plan: Plan, period: str, today: date | None = None) -> date
     until = _add_months(start, 12 if period == "yearly" else 1)
     BuildingPlan.objects.update_or_create(building=building, defaults={"plan": plan, "paid_until": until})
     return until
+
+
+def billing_allowed(building, today: date | None = None) -> bool:
+    """True while the building's plan includes monthly billing, plus a grace period after it ends.
+
+    The grace period covers a lapsed paid plan or a finished trial, so charges do not stop on the first day.
+    """
+    today = today or date.today()
+    plan, _, _ = effective_plan(building, today)
+    if "subscriptions" in (plan.features or []):
+        return True
+    row = BuildingPlan.objects.select_related("plan").filter(building=building).first()
+    if row:
+        ended_on, covered = row.paid_until, "subscriptions" in (row.plan.features or [])
+    else:
+        settings_ = PlatformSettings.load()
+        ended_on = building.created_at.date() + timedelta(days=settings_.trial_days)
+        top = Plan.objects.filter(is_active=True).order_by("-price_monthly").first()
+        covered = bool(top and "subscriptions" in (top.features or []))
+    return covered and ended_on + timedelta(days=PlatformSettings.load().grace_days) >= today

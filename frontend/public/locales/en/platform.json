@@ -48,5 +48,7 @@
   "edit": "Edit",
   "save": "Save",
   "cancel": "Cancel",
-  "saved": "Saved."
+  "saved": "Saved.",
+  "grace_days": "Grace days",
+  "grace_help": "Monthly billing keeps running after a plan ends"
 }

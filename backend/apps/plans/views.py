@@ -112,14 +112,15 @@ class SettingsView(APIView):
 
     def get(self, request):
         s = PlatformSettings.load()
-        return Response({"instapay_address": s.instapay_address, "trial_days": s.trial_days})
+        return Response({"instapay_address": s.instapay_address, "trial_days": s.trial_days, "grace_days": s.grace_days})
 
     def patch(self, request):
         s = PlatformSettings.load()
         s.instapay_address = str(request.data.get("instapay_address", s.instapay_address))[:120]
         try:
             s.trial_days = max(0, min(90, int(request.data.get("trial_days", s.trial_days))))
+            s.grace_days = max(0, min(60, int(request.data.get("grace_days", s.grace_days))))
         except (TypeError, ValueError):
-            raise ValidationError({"trial_days": _("Must be a whole number.")})
+            raise ValidationError({"detail": _("Trial and grace days must be whole numbers.")})
         s.save()
-        return Response({"instapay_address": s.instapay_address, "trial_days": s.trial_days})
+        return Response({"instapay_address": s.instapay_address, "trial_days": s.trial_days, "grace_days": s.grace_days})

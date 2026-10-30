@@ -35,6 +35,9 @@ class PlatformSettings(models.Model):
 
     instapay_address = models.CharField(max_length=120, blank=True)
     trial_days = models.PositiveSmallIntegerField(default=14)
+    grace_days = models.PositiveSmallIntegerField(
+        default=7, help_text=_("Days monthly billing keeps running after a paid plan or trial ends")
+    )
 
     class Meta:
         verbose_name_plural = "Platform settings"

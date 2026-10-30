@@ -119,6 +119,61 @@ def test_current_plan_and_settings(admin_user, superuser, old_building):
     assert _client(admin_user).get("/api/v1/plans/settings/").status_code == 403
     body = {"instapay_address": "3mara@instapay", "trial_days": 7}
     resp = _client(superuser).patch("/api/v1/plans/settings/", body, format="json")
-    assert resp.data == {"instapay_address": "3mara@instapay", "trial_days": 7}
+    assert resp.data == {"instapay_address": "3mara@instapay", "trial_days": 7, "grace_days": 7}
     current = _client(admin_user).get(f"/api/v1/plans/current/?building_id={old_building.pk}").data
     assert current["instapay_address"] == "3mara@instapay"
+
+
+# ── Grace period and reminders ───────────────────────────────────────────────
+
+def _paid_until(building, day, code="standard"):
+    BuildingPlan.objects.update_or_create(building=building, defaults={"plan_id": code, "paid_until": day})
+
+
+def test_billing_continues_through_the_grace_period_then_stops(old_building):
+    from apps.plans.services import billing_allowed
+
+    ends = date.today() - timedelta(days=30)
+    _paid_until(old_building, ends)
+    assert billing_allowed(old_building, ends)
+    assert billing_allowed(old_building, ends + timedelta(days=7))        # last day of the 7-day grace
+    assert not billing_allowed(old_building, ends + timedelta(days=8))
+
+
+def test_free_buildings_never_bill(old_building):
+    from apps.plans.services import billing_allowed
+
+    assert not billing_allowed(old_building, date.today())
+
+
+def test_daily_billing_skips_buildings_past_grace_and_catches_up_after_renewal(admin_user, old_building):
+    from apps.expenses.models import SubscriptionPlan
+    from apps.expenses.subscriptions import bill_subscriptions
+
+    today = date.today()
+    SubscriptionPlan.objects.create(building=old_building, amount=Decimal("100"), starts_on=today.replace(day=1))
+    Apartment.objects.create(building=old_building, unit_number="1")
+    _paid_until(old_building, today - timedelta(days=30))
+    assert bill_subscriptions(today=today) == 0                  # grace over: nothing billed
+    _paid_until(old_building, today + timedelta(days=30))
+    assert bill_subscriptions(today=today.replace(day=28)) == 1  # renewed: billing resumes
+
+
+def test_reminders_go_out_at_7_3_1_0_days_and_when_billing_stops(admin_user, old_building):
+    from apps.expenses.models import SubscriptionPlan
+    from apps.notifications.models import Notification
+    from apps.plans.reminders import send_plan_reminders
+
+    SubscriptionPlan.objects.create(building=old_building, amount=Decimal("100"), starts_on=date(2026, 1, 1))
+    _paid_until(old_building, date(2026, 6, 10))
+    assert send_plan_reminders(today=date(2026, 6, 1)) == 0                       # 9 days left
+    for today in (date(2026, 6, 3), date(2026, 6, 7), date(2026, 6, 9), date(2026, 6, 10)):
+        assert send_plan_reminders(today=today) == 1
+    assert send_plan_reminders(today=date(2026, 6, 17)) == 1                       # grace over, billing stopped
+    assert Notification.objects.filter(user=admin_user, metadata__kind="plan").count() == 5
+
+
+def test_no_reminder_for_free_buildings(old_building):
+    from apps.plans.reminders import send_plan_reminders
+
+    assert send_plan_reminders(today=date.today()) == 0

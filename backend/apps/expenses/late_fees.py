@@ -27,6 +27,8 @@ def apply_late_fees(today: date | None = None) -> int:
 
     Returns how many fees were created. A share is charged at most once, however often this runs.
     """
+    from apps.plans.services import billing_allowed
+
     today = today or timezone.localdate()
     created = 0
     shares = (
@@ -42,6 +44,8 @@ def apply_late_fees(today: date | None = None) -> int:
     )
     for share in shares:
         plan = share.expense.subscription_run.plan
+        if not billing_allowed(plan.building, today):
+            continue
         if share.expense.due_date + timedelta(days=plan.grace_days) >= today:
             continue
         remaining = share.share_amount - paid_toward_expense(share.expense, share.apartment_id)
