@@ -31,13 +31,13 @@ import {
   Alert,
   Button,
 } from "@mui/material";
-import { TrendingUp, TrendingDown } from "@mui/icons-material";
+import { TrendingUp, TrendingDown, WhatsApp } from "@mui/icons-material";
 import { BarChart } from "@mui/x-charts/BarChart";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../../hooks/useAuth";
 import axiosClient from "../../api/axiosClient";
-import { formatCurrency } from "../../utils/formatters";
+import { formatCurrency, whatsappLink } from "../../utils/formatters";
 import { PrivateSEO } from "../../components/seo/SEO";
 import TreasuryCard from "../../components/TreasuryCard";
 import PendingClaimsCard from "../../components/PendingClaimsCard";
@@ -441,6 +441,7 @@ export default function AdminDashboardPage() {
                             </TableSortLabel>
                           </TableCell>
                         ))}
+                        <TableCell><strong>{t("remind_col")}</strong></TableCell>
                         <TableCell align="right">
                           <TableSortLabel
                             active={balanceSort.field === "balance"}
@@ -459,6 +460,35 @@ export default function AdminDashboardPage() {
                           <TableCell>{row.building_name}</TableCell>
                           <TableCell>{row.owner_name}</TableCell>
                           <TableCell>{row.owner_email}</TableCell>
+                          <TableCell>
+                            {(() => {
+                              const link = whatsappLink(
+                                row.owner_phone,
+                                t("remind_whatsapp_text", {
+                                  name: row.owner_name,
+                                  building: row.building_name,
+                                  unit: row.unit_number,
+                                  amount: formatCurrency(row.balance),
+                                }),
+                              );
+                              return link ? (
+                                <Button
+                                  size="small"
+                                  color="success"
+                                  variant="outlined"
+                                  startIcon={<WhatsApp fontSize="small" />}
+                                  href={link}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  sx={{ minHeight: 36 }}
+                                >
+                                  {t("remind_whatsapp")}
+                                </Button>
+                              ) : (
+                                <Typography variant="caption" color="text.disabled">{t("remind_no_phone")}</Typography>
+                              );
+                            })()}
+                          </TableCell>
                           <TableCell align="right" sx={{ color: "error.main", fontWeight: 600 }}>
                             {parseFloat(row.balance).toLocaleString("en-US", { minimumFractionDigits: 2 })}
                           </TableCell>

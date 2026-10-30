@@ -87,5 +87,9 @@
   "claim_req_title": "{{count}} طلب انضمام إلى وحدة بانتظار موافقتك",
   "claim_req_approve": "موافقة",
   "claim_req_reject": "رفض",
-  "claim_req_waiting": "طلبك للانضمام إلى الوحدة {{unit}} في {{building}} بانتظار موافقة مدير العمارة."
+  "claim_req_waiting": "طلبك للانضمام إلى الوحدة {{unit}} في {{building}} بانتظار موافقة مدير العمارة.",
+  "remind_col": "تذكير",
+  "remind_whatsapp": "تذكير عبر واتساب",
+  "remind_no_phone": "لا يوجد رقم هاتف",
+  "remind_whatsapp_text": "مرحباً {{name}}، تذكير ودّي من إدارة {{building}}: متبقي على وحدتك {{unit}} مبلغ {{amount}}. شكراً لتعاونك — عِمارة.كوم"
 }

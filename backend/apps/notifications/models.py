@@ -61,3 +61,22 @@ class Notification(models.Model):
 
     def __str__(self):
         return f"{self.user} – {self.notification_type} ({self.channel})"
+
+
+class ReminderKind(models.TextChoices):
+    DUE_SOON = "due_soon", _("Due soon")
+    OVERDUE = "overdue", _("Overdue")
+
+
+class ReminderLog(models.Model):
+    """One row per reminder sent, so a unit's share is never reminded twice for the same period."""
+    objects: models.Manager["ReminderLog"]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    expense = models.ForeignKey("expenses.Expense", on_delete=models.CASCADE, related_name="reminder_logs")
+    apartment = models.ForeignKey("apartments.Apartment", on_delete=models.CASCADE, related_name="reminder_logs")
+    kind = models.CharField(max_length=10, choices=ReminderKind.choices)
+    sent_on = models.DateField()
+
+    class Meta:
+        indexes = [models.Index(fields=["expense", "apartment", "kind", "sent_on"])]

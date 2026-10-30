@@ -221,6 +221,7 @@ class AdminDashboardView(APIView):
                 "owner__first_name",
                 "owner__last_name",
                 "owner__email",
+                "owner__phone",
             )[:50]
         )
         unpaid_rows = [
@@ -233,6 +234,7 @@ class AdminDashboardView(APIView):
                     or r["owner__email"] or "—"
                 ),
                 "owner_email": r["owner__email"] or "",
+                "owner_phone": r["owner__phone"] or "",
             }
             for r in unpaid_units
         ]

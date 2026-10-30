@@ -847,7 +847,7 @@ There is no Celery or Redis in the stack: dashboards query PostgreSQL directly, 
 | 35 | Claim unit by registration code from owner dashboard | ✅ Implemented | |
 | 36 | Expense approval workflow | 🔲 Planned | Phase 2, R-7 (approvals & votes) |
 | 37 | Bulk expense import via CSV | 🔲 Planned | Phase 3, R-13 |
-| 38 | Payment due date reminders (in-app + email + WhatsApp link) | 🟡 In progress | Phase 1, R-1 |
+| 38 | Payment due date reminders (in-app + email + WhatsApp link) | ✅ Implemented | Phase 1, R-1; needs the daily scheduler (DEPLOYMENT section 12) |
 | 39 | Multi-currency support | ❌ Descoped | EGP only |
 | 40 | Redis caching for dashboard aggregations | 🔲 Pending | Not implemented; no Redis in the stack |
 | 41 | Notification preferences UI | 🔲 Planned | Phase 3, R-13 |
@@ -878,7 +878,7 @@ Phases are delivered in order; within a phase, requirements are independent unle
 
 ### 11.2 Phase 1 — Collect & Show
 
-**R-1 Automatic payment reminders** — 🟡 In progress. *Why:* chasing late payers is the admin's biggest chore.
+**R-1 Automatic payment reminders** — ✅ Implemented (command `send_payment_reminders`; WhatsApp action on the admin's unpaid-units table). *Why:* chasing late payers is the admin's biggest chore.
 - A daily management command (`send_payment_reminders`, run by the host scheduler) finds each unit's unpaid share of every expense that has a due date.
 - Reminders are sent 3 days before the due date, and when overdue: on the first day, then at most once every 7 days. A unit is never reminded twice for the same share on the same day (reminder log).
 - Recipients are the unit's owners. Channels: in-app notification and email. Reminder text is bilingual (Arabic first) and states the building, unit, amount still owed and due date.
