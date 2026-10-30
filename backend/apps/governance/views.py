@@ -13,6 +13,7 @@ from apps.buildings.scoping import ensure_manages, managed_buildings
 from apps.notifications.models import NotificationType
 from apps.notifications.services import notify_user
 
+from .finalize import apply_poll_outcome
 from .models import Poll, PollOption, Vote
 from .results import can_vote_for
 from .serializers import PollSerializer
@@ -82,5 +83,6 @@ class PollViewSet(ModelViewSet):
             return Response({"detail": _("This vote is already closed.")}, status=409)
         poll.closed_at = timezone.now()
         poll.save(update_fields=["closed_at"])
+        apply_poll_outcome(poll)  # a poll about an expense settles it now
         log_action(user=request.user, action="update", entity="poll", entity_id=poll.pk, request=request)
         return Response(self.get_serializer(poll).data)

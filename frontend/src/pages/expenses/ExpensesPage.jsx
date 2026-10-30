@@ -58,6 +58,7 @@ import {
   Visibility as ViewIcon,
 } from "@mui/icons-material";
 import { expensesApi } from "../../api/expensesApi";
+import ReasonDialog from "../../components/ReasonDialog";
 import { buildingsApi } from "../../api/buildingsApi";
 import { useAuth } from "../../hooks/useAuth";
 import { useTranslation } from "react-i18next";
@@ -172,6 +173,8 @@ export default function ExpensesPage() {
   const [selectedBuilding, setSelectedBuilding] = useState("");
   // "" = everything a unit is billed; otherwise cost | subscription | late_fee
   const [filterKind, setFilterKind] = useState("");
+  // the chair (or an admin while no chair is named) decides on large costs
+  const [decision, setDecision] = useState(null);
 
   const [detailExpense, setDetailExpense] = useState(null);
   const [formOpen, setFormOpen] = useState(false);
@@ -221,6 +224,23 @@ export default function ExpensesPage() {
       /* ignore */
     }
   }, []);
+
+  const decide = async (note) => {
+    const { expense, action } = decision;
+    await (action === "approve" ? expensesApi.approve(expense.id, note) : expensesApi.reject(expense.id, note));
+    setDecision(null);
+    setSnack({ open: true, msg: t(action === "approve" ? "approved_msg" : "rejected_msg"), severity: "success" });
+    loadExpenses();
+  };
+
+  const putToVote = async (expense) => {
+    try {
+      await expensesApi.putToVote(expense.id);
+      setSnack({ open: true, msg: t("vote_started"), severity: "success" });
+    } catch (err) {
+      setSnack({ open: true, msg: err.response?.data?.detail || t("load_error"), severity: "error" });
+    }
+  };
 
   const loadExpenses = useCallback(async () => {
     if (!selectedBuilding) return;
@@ -545,6 +565,19 @@ export default function ExpensesPage() {
                       )}
                       {exp.kind === "late_fee" && (
                         <Chip size="small" variant="outlined" color="warning" icon={<LateFeeIcon />} label={t("kind_late_fee")} sx={{ mt: 0.5 }} />
+                      )}
+                      {exp.approval_status === "pending" && (
+                        <Chip size="small" color="warning" icon={<HourglassIcon />} label={t("approval_pending")} sx={{ mt: 0.5 }} />
+                      )}
+                      {exp.approval_status === "rejected" && (
+                        <Chip size="small" color="error" icon={<CancelIcon />} label={t("approval_rejected")} sx={{ mt: 0.5 }} />
+                      )}
+                      {exp.can_decide && (
+                        <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap sx={{ mt: 0.5 }}>
+                          <Button size="small" variant="contained" color="success" onClick={() => setDecision({ expense: exp, action: "approve" })} sx={{ minHeight: 32 }}>{t("approve")}</Button>
+                          <Button size="small" variant="outlined" color="error" onClick={() => setDecision({ expense: exp, action: "reject" })} sx={{ minHeight: 32 }}>{t("reject")}</Button>
+                          <Button size="small" variant="outlined" onClick={() => putToVote(exp)} sx={{ minHeight: 32 }}>{t("put_to_vote")}</Button>
+                        </Stack>
                       )}
                     </TableCell>
                     <TableCell>
@@ -1080,6 +1113,16 @@ export default function ExpensesPage() {
         </Alert>
       </Snackbar>
     </Box>
+      <ReasonDialog
+        open={!!decision}
+        title={decision ? t(decision.action === "approve" ? "approve_title" : "reject_title", { title: decision.expense.title }) : ""}
+        description={t("decision_help")}
+        label={t("decision_note")}
+        confirmLabel={decision ? t(decision.action) : ""}
+        color={decision?.action === "reject" ? "error" : "success"}
+        onClose={() => setDecision(null)}
+        onConfirm={decide}
+      />
     </>
   );
 }

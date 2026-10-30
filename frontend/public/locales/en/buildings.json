@@ -97,5 +97,7 @@
   "handover_no_coadmins": "Add a co-admin to this building first (in Edit building), then you can hand it over.",
   "handover_to": "New primary admin",
   "handover_confirm": "Hand over",
-  "renters_manage": "Renters"
+  "renters_manage": "Renters",
+  "approval_threshold": "Approval threshold",
+  "approval_threshold_helper": "Any cost above this amount waits for the chair's approval before units are billed. Leave empty for no rule."
 }

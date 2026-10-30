@@ -143,7 +143,7 @@ export default function BuildingsPage() {
 
   const openCreate = () => {
     setEditTarget(null);
-    form.reset({ name: "", address: "", city: "", country: "", num_floors: 1, num_apartments: 0, num_stores: 0, admin_id: "", starting_balance: "", instapay_address: "" });
+    form.reset({ name: "", address: "", city: "", country: "", num_floors: 1, num_apartments: 0, num_stores: 0, admin_id: "", starting_balance: "", instapay_address: "", approval_threshold: "" });
     setCoAdminIds([]);
     setPhotoFile(null);
     setPhotoPreview(null);
@@ -166,6 +166,7 @@ export default function BuildingsPage() {
       admin_id: building.admin_id || "",
       starting_balance: building.starting_balance ?? "",
       instapay_address: building.instapay_address ?? "",
+      approval_threshold: building.approval_threshold ?? "",
     });
     setCoAdminIds(building.co_admin_ids ?? []);
     setPhotoFile(null);
@@ -189,6 +190,7 @@ export default function BuildingsPage() {
         num_stores: parseInt(data.num_stores, 10) || 0,
         starting_balance: data.starting_balance !== "" ? parseFloat(data.starting_balance) : 0,
         instapay_address: data.instapay_address?.trim() ?? "",
+        approval_threshold: data.approval_threshold !== "" && data.approval_threshold != null ? parseFloat(data.approval_threshold) : null,
       };
       if (data.admin_id) fields.admin_id = data.admin_id;
       if (coAdminIds.length) fields.co_admin_ids = coAdminIds;
@@ -635,6 +637,14 @@ export default function BuildingsPage() {
                 fullWidth
                 {...form.register("starting_balance")}
                 helperText={t("starting_balance_helper")}
+              />
+              <TextField
+                label={t("approval_threshold")}
+                type="number"
+                inputProps={{ step: "0.01", min: 0 }}
+                fullWidth
+                {...form.register("approval_threshold")}
+                helperText={t("approval_threshold_helper")}
               />
               <TextField
                 label={t("instapay_address")}

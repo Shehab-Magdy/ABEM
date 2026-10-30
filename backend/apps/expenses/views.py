@@ -8,6 +8,7 @@ from django.db import transaction
 from django.db.models import F
 from django.utils import timezone
 from rest_framework import status
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.decorators import action
 from rest_framework.filters import OrderingFilter, SearchFilter
 from rest_framework.parsers import FormParser, MultiPartParser
@@ -23,6 +24,7 @@ from apps.audit.mixins import log_action
 from apps.authentication.permissions import IsAdminRole
 from apps.buildings.scoping import ensure_manages, managed_buildings
 
+from .approval import approve as approve_expense, can_decide, reject as reject_expense
 from .late_fees import waive_late_fee
 from .models import Expense, ExpenseCategory, LateFee, MediaFile
 from .serializers import (
@@ -143,7 +145,7 @@ class ExpenseViewSet(ModelViewSet):
     # ── Permissions ────────────────────────────────────────────────────────────
 
     def get_permissions(self):
-        write_actions = ("create", "partial_update", "update", "destroy", "upload", "mark_paid")
+        write_actions = ("create", "partial_update", "update", "destroy", "upload", "mark_paid")  # approve / reject / put_to_vote check the chair themselves
         if self.action in write_actions:
             return [IsAuthenticated(), IsAdminRole()]
         return [IsAuthenticated()]
@@ -170,6 +172,64 @@ class ExpenseViewSet(ModelViewSet):
             notify_expense_created(expense, [ae.apartment for ae in ae_list])
         except Exception:
             pass
+
+    def _decider(self, request):
+        """The pending expense, if the user may decide on it (the chair, or an admin while no chair is named)."""
+        expense = self.get_object()
+        if not can_decide(request.user, expense.building):
+            raise PermissionDenied(_("Only the building's chair can decide on this expense."))
+        if expense.approval_status != "pending":
+            return expense, Response({"detail": _("This expense is not waiting for approval.")}, status=409)
+        return expense, None
+
+    @action(detail=True, methods=["post"], url_path="approve")
+    def approve(self, request, pk=None):
+        expense, conflict = self._decider(request)
+        if conflict:
+            return conflict
+        expense = approve_expense(expense, request.user, str(request.data.get("note") or ""))
+        log_action(user=request.user, action="update", entity="expense", entity_id=expense.pk, changes={"approval": "approved"}, request=request)
+        return Response(self.get_serializer(expense).data)
+
+    @action(detail=True, methods=["post"], url_path="reject")
+    def reject(self, request, pk=None):
+        expense, conflict = self._decider(request)
+        if conflict:
+            return conflict
+        expense = reject_expense(expense, request.user, str(request.data.get("note") or ""))
+        log_action(user=request.user, action="update", entity="expense", entity_id=expense.pk, changes={"approval": "rejected"}, request=request)
+        return Response(self.get_serializer(expense).data)
+
+    @action(detail=True, methods=["post"], url_path="put-to-vote")
+    def put_to_vote(self, request, pk=None):
+        """Let the residents decide: opens a poll (approve / reject, one vote per unit); its outcome settles the expense."""
+        from datetime import timedelta
+
+        from apps.governance.models import Poll, PollOption
+        from apps.notifications.models import NotificationType
+        from apps.notifications.services import notify_user
+
+        expense, conflict = self._decider(request)
+        if conflict:
+            return conflict
+        if expense.polls.filter(finalized_at__isnull=True).exists():
+            return Response({"detail": _("A vote on this expense is already open.")}, status=409)
+        ar = getattr(request.user, "preferred_language", "ar") == "ar"
+        poll = Poll.objects.create(
+            building=expense.building, expense=expense, created_by=request.user,
+            title=(f"الموافقة على مصروف: {expense.title} ({expense.amount})" if ar else f"Approve this expense: {expense.title} ({expense.amount})"),
+            description=expense.description, closes_at=timezone.now() + timedelta(days=int(request.data.get("days") or 3)),
+            quorum_percent=int(request.data.get("quorum_percent") or 0),
+        )
+        PollOption.objects.bulk_create([
+            PollOption(poll=poll, text="موافق" if ar else "Approve", order=0),
+            PollOption(poll=poll, text="غير موافق" if ar else "Reject", order=1),
+        ])
+        for member in expense.building.members.exclude(pk=request.user.pk):
+            notify_user(user=member, notification_type=NotificationType.ANNOUNCEMENT,
+                        title="تصويت جديد" if getattr(member, "preferred_language", "en") == "ar" else "New vote",
+                        body=poll.title, metadata={"poll_id": str(poll.pk)})
+        return Response({"poll_id": str(poll.pk)}, status=201)
 
     def perform_update(self, serializer):
         tracked = {

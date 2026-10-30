@@ -7,6 +7,7 @@ from django.utils.translation import gettext_lazy as _
 
 from apps.buildings.models import Building
 
+from .approval import can_decide, needs_approval
 from .models import (
     ApartmentExpense,
     Expense,
@@ -152,6 +153,9 @@ class ExpenseSerializer(serializers.ModelSerializer):
             "expense_date",
             "due_date",
             "kind",
+            "approval_status",
+            "approval_note",
+            "can_decide",
             "split_type",
             "is_recurring",
             "frequency",
@@ -167,7 +171,7 @@ class ExpenseSerializer(serializers.ModelSerializer):
             "updated_at",
         ]
         read_only_fields = [
-            "kind", "id", "created_at", "updated_at"]
+            "kind", "approval_status", "approval_note", "can_decide", "id", "created_at", "updated_at"]
 
     # ── Field-level validation ─────────────────────────────────────────────────
 
@@ -188,6 +192,14 @@ class ExpenseSerializer(serializers.ModelSerializer):
         return data
 
     # ── Helpers ────────────────────────────────────────────────────────────────
+
+    can_decide = serializers.SerializerMethodField()
+
+    def get_can_decide(self, obj):
+        """True when this expense waits for approval and the viewer may approve, reject or call a vote."""
+        request = self.context.get("request")
+        user = getattr(request, "user", None)
+        return bool(user and user.is_authenticated and obj.approval_status == "pending" and can_decide(user, obj.building))
 
     def get_attachments(self, obj):
         files = MediaFile.objects.filter(entity_type="expense", entity_id=obj.pk)
@@ -251,6 +263,13 @@ class ExpenseSerializer(serializers.ModelSerializer):
         if expense.is_recurring and frequency:
             _create_recurring_config(expense, frequency)
 
+        if needs_approval(expense):
+            # a large cost bills no one until it is approved; remember how to split it
+            expense.approval_status = "pending"
+            expense.pending_split = {"apartments": [str(i) for i in custom_apartment_ids], "weights": {str(k): float(v) for k, v in (custom_weights or {}).items()}}
+            expense.save(update_fields=["approval_status", "pending_split"])
+            return expense
+
         run_split_engine(expense, custom_apartment_ids, custom_weights or None)
         return expense
 
@@ -267,6 +286,7 @@ class ExpenseSerializer(serializers.ModelSerializer):
         # Remember the previous shares: an edit that does not resend the custom split
         # (e.g. only the title changed) must keep the same units, not widen to all.
         previous_shares = {str(ae.apartment_id): ae.share_amount for ae in instance.apartment_expenses.all()}
+        status_before, amount_before = instance.approval_status, instance.amount
 
         # Reverse the balance increments from the previous split before recalculating
         for ae in instance.apartment_expenses.all():
@@ -280,8 +300,17 @@ class ExpenseSerializer(serializers.ModelSerializer):
         if expense.split_type == SplitType.CUSTOM and not custom_apartment_ids and not custom_weights:
             custom_weights = previous_shares
 
-        # Re-calculate shares after any field change
-        run_split_engine(expense, custom_apartment_ids, custom_weights or None)
+        if needs_approval(expense) and (status_before != "approved" or expense.amount != amount_before):
+            # raised above the threshold (or not yet approved): back to waiting for approval, nobody billed
+            expense.approval_status = "pending"
+            expense.pending_split = {"apartments": [str(i) for i in custom_apartment_ids], "weights": {str(k): float(v) for k, v in (custom_weights or {}).items()}}
+            expense.save(update_fields=["approval_status", "pending_split"])
+        else:
+            if expense.approval_status != "approved":  # lowered below the threshold: no approval needed any more
+                expense.approval_status, expense.pending_split = "approved", {}
+                expense.save(update_fields=["approval_status", "pending_split"])
+            # Re-calculate shares after any field change
+            run_split_engine(expense, custom_apartment_ids, custom_weights or None)
 
         # Update or create recurring config if frequency is provided
         if frequency:

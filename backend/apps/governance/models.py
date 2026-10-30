@@ -25,6 +25,9 @@ class Poll(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     closes_at = models.DateTimeField()
     closed_at = models.DateTimeField(null=True, blank=True, help_text="Set when an admin closes the poll early")
+    # A poll can decide a pending expense: option 1 approves it, option 2 rejects it
+    expense = models.ForeignKey("expenses.Expense", on_delete=models.CASCADE, null=True, blank=True, related_name="polls")
+    finalized_at = models.DateTimeField(null=True, blank=True)
     # Share of eligible units that must vote for the result to count (0 = no quorum rule)
     quorum_percent = models.PositiveSmallIntegerField(default=0)
     majority = models.CharField(max_length=12, choices=Majority.choices, default=Majority.SIMPLE)

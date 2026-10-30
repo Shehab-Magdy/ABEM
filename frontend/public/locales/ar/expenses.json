@@ -94,5 +94,17 @@
   "kind_all": "الكل",
   "kind_cost": "مصروفات",
   "kind_subscription": "اشتراكات",
-  "kind_late_fee": "غرامات تأخير"
+  "kind_late_fee": "غرامات تأخير",
+  "approval_pending": "بانتظار الموافقة",
+  "approval_rejected": "مرفوض",
+  "approve": "اعتماد",
+  "reject": "رفض",
+  "put_to_vote": "طرح للتصويت",
+  "approve_title": "اعتماد المصروف «{{title}}»؟",
+  "reject_title": "رفض المصروف «{{title}}»؟",
+  "decision_help": "لن تُحاسَب الوحدات إلا بعد الاعتماد. يُسجَّل قرارك مع الملاحظة.",
+  "decision_note": "ملاحظة (اختياري)",
+  "approved_msg": "تم اعتماد المصروف وحوسبت الوحدات.",
+  "rejected_msg": "تم رفض المصروف.",
+  "vote_started": "فُتح تصويت للسكان على هذا المصروف. ستجده في صفحة التصويت."
 }

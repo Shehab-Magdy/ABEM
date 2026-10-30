@@ -628,3 +628,12 @@ msgstr "أمين الصندوق"
 
 msgid "Secretary"
 msgstr "أمين السر"
+
+msgid "Only the building's chair can decide on this expense."
+msgstr "رئيس الاتحاد وحده يمكنه البتّ في هذا المصروف."
+
+msgid "This expense is not waiting for approval."
+msgstr "هذا المصروف لا ينتظر الاعتماد."
+
+msgid "A vote on this expense is already open."
+msgstr "يوجد تصويت مفتوح على هذا المصروف بالفعل."

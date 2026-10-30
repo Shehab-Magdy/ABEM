@@ -379,7 +379,7 @@ class BuildingViewSet(ModelViewSet):
         received = Payment.objects.filter(apartment__building=building).aggregate(s=Sum("amount_paid"))["s"] or zero
         sales = AssetSale.objects.filter(asset__building=building).aggregate(s=Sum("sale_price"))["s"] or zero
         spent = (
-            Expense.objects.filter(building=building, deleted_at__isnull=True, kind="cost").aggregate(s=Sum("amount"))["s"] or zero
+            Expense.objects.filter(building=building, deleted_at__isnull=True, kind="cost", approval_status="approved").aggregate(s=Sum("amount"))["s"] or zero
         )
         billed_ids = list(
             ApartmentExpense.objects.filter(expense__building=building, expense__deleted_at__isnull=True)

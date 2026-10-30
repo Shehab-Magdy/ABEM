@@ -37,7 +37,7 @@ def build_statement(building, first_day: date) -> dict:
     payments = Payment.objects.filter(apartment__building=building)
     sales = AssetSale.objects.filter(asset__building=building)
     # costs only: subscriptions and late fees are charges to units, not money the building spent
-    expenses = Expense.objects.filter(building=building, deleted_at__isnull=True, kind="cost")
+    expenses = Expense.objects.filter(building=building, deleted_at__isnull=True, kind="cost", approval_status="approved")
 
     opening = (
         building.starting_balance

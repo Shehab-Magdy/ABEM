@@ -94,5 +94,17 @@
   "kind_all": "All",
   "kind_cost": "Costs",
   "kind_subscription": "Subscriptions",
-  "kind_late_fee": "Late fees"
+  "kind_late_fee": "Late fees",
+  "approval_pending": "Waiting for approval",
+  "approval_rejected": "Rejected",
+  "approve": "Approve",
+  "reject": "Reject",
+  "put_to_vote": "Put to a vote",
+  "approve_title": "Approve “{{title}}”?",
+  "reject_title": "Reject “{{title}}”?",
+  "decision_help": "Units are billed only after approval. Your decision is recorded with the note.",
+  "decision_note": "Note (optional)",
+  "approved_msg": "Expense approved and units billed.",
+  "rejected_msg": "Expense rejected.",
+  "vote_started": "A vote on this expense is open for the residents. Find it on the Votes page."
 }
