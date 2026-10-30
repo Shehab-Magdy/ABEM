@@ -148,5 +148,6 @@
   "subscription": "Monthly subscription",
   "something_went_wrong": "Something went wrong. Please try again.",
   "board": "Board",
-  "records": "Minutes & documents"
+  "records": "Minutes & documents",
+  "operations": "Operations"
 }

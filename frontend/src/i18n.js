@@ -33,6 +33,7 @@ i18n
       "subscription",
       "board",
       "records",
+      "operations",
     ],
     backend: { loadPath: "/locales/{{lng}}/{{ns}}.json" },
     detection: {

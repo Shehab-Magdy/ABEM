@@ -661,3 +661,6 @@ msgstr "إيصال / إثبات عمل"
 
 msgid "Minutes"
 msgstr "محضر"
+
+msgid "Only the building's admins and board can change this."
+msgstr "مديرو العمارة وأعضاء الهيئة وحدهم يمكنهم تعديل هذا."
