@@ -228,7 +228,43 @@ class PaymentViewSet(ModelViewSet):
             },
             request=request,
         )
+        self._flag_reversed_claim(request, original, reversal, reason)
         return Response(self.get_serializer(reversal).data, status=201)
+
+    def _flag_reversed_claim(self, request, original, reversal, reason):
+        """A reversed payment that came from a confirmed claim: audit it on the claim and tell the resident."""
+        from apps.notifications.services import tell
+
+        claim = PaymentClaim.objects.filter(payment=original).select_related("apartment", "created_by").first()
+        if claim is None:
+            return
+        log_action(
+            user=request.user,
+            action="claim.payment_reversed",
+            entity="payment_claim",
+            entity_id=claim.pk,
+            changes={
+                "payment_id": {"before": str(original.pk), "after": str(reversal.pk)},
+                "reason": {"before": None, "after": reason},
+            },
+            request=request,
+        )
+        if claim.created_by is None or not claim.created_by.is_active:
+            return
+        unit, amount = claim.apartment.unit_number, claim.amount
+        try:
+            en = (
+                "Payment reversed",
+                f"Your confirmed transfer of {amount} EGP for unit {unit} was reversed. Reason: {reason}",
+            )
+            ar = (
+                "تم إلغاء الدفعة",
+                f"تم إلغاء تحويلك المؤكد بمبلغ {amount} ج.م للوحدة {unit}. السبب: {reason}",
+            )
+            meta = {"claim_id": str(claim.pk), "apartment_id": str(claim.apartment_id), "reversed": True}
+            tell(claim.created_by, en, ar, meta)
+        except Exception:
+            logger.exception("Could not notify the resident about the reversal of claim %s", claim.pk)
 
     # ── Write helper ────────────────────────────────────────────────────────────
 

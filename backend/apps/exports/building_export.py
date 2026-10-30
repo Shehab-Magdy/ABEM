@@ -149,8 +149,14 @@ def _claims(building):
             "Created",
             "Reviewed",
             "Payment",
+            "Payment reversed",
         ]
     ]
+    reversed_ids = set(
+        Payment.objects.filter(apartment__building=building, reversal_of__isnull=False).values_list(
+            "reversal_of_id", flat=True
+        )
+    )
     qs = PaymentClaim.objects.filter(apartment__building=building).select_related("apartment")
     for c in qs.order_by("-created_at"):
         rows.append(
@@ -163,6 +169,7 @@ def _claims(building):
                 _text(c.created_at),
                 _text(c.reviewed_at),
                 _text(c.payment_id),
+                "yes" if c.payment_id and c.payment_id in reversed_ids else "no",
             ]
         )
     return rows

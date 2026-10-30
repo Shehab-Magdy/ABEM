@@ -201,3 +201,48 @@ def test_reverse_legacy_links_split_exactly(admin_client, building, unit, admin_
     for exp in expenses:
         assert paid_toward_expense(exp, unit.pk) == Decimal("0")
         assert has_payments(exp) is False
+
+
+def test_reversing_a_claim_payment_notifies_resident_and_audits_claim(admin_client, unit, owner_user):
+    from apps.notifications.models import Notification
+    from apps.payments.models import PaymentClaim
+
+    owner_user.preferred_language = "ar"
+    owner_user.save(update_fields=["preferred_language"])
+    claim = PaymentClaim.objects.create(
+        apartment=unit,
+        amount=Decimal("100.00"),
+        reference="IP-9",
+        created_by=owner_user,
+    )
+    assert admin_client.post(f"/api/v1/payments/claims/{claim.pk}/confirm/").status_code == 200
+    claim.refresh_from_db()
+
+    resp = admin_client.post(
+        f"/api/v1/payments/{claim.payment_id}/reverse/",
+        {"reason": "bounced"},
+        format="json",
+    )
+    assert resp.status_code == 201, resp.data
+
+    note = Notification.objects.get(user=owner_user, metadata__claim_id=str(claim.pk), metadata__reversed=True)
+    assert "ج.م" in note.body and "bounced" in note.body
+    assert AuditLog.objects.filter(action="claim.payment_reversed", entity="payment_claim", entity_id=claim.pk).exists()
+
+
+def test_claims_sheet_marks_reversed_payment(admin_client, building, unit, owner_user):
+    import io
+
+    import openpyxl
+    from apps.payments.models import PaymentClaim
+
+    claim = PaymentClaim.objects.create(
+        apartment=unit, amount=Decimal("100.00"), reference="IP-9", created_by=owner_user
+    )
+    admin_client.post(f"/api/v1/payments/claims/{claim.pk}/confirm/")
+    claim.refresh_from_db()
+    admin_client.post(f"/api/v1/payments/{claim.payment_id}/reverse/", {"reason": "bounced"}, format="json")
+    resp = admin_client.get(f"/api/v1/exports/building/{building.pk}/")
+    sheet = openpyxl.load_workbook(io.BytesIO(resp.content))["Claims"]
+    rows = list(sheet.iter_rows(values_only=True))
+    assert rows[0][-1] == "Payment reversed" and rows[1][-1] == "yes"
