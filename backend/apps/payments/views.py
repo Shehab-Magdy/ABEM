@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import html as html_lib
 import logging
+from decimal import ROUND_DOWN, Decimal
 
 from django.db.models import Q
 from django.http import HttpResponse
@@ -198,12 +199,22 @@ class PaymentViewSet(ModelViewSet):
                 reversal_of=original,
                 reversal_reason=reason,
             )
+            legacy = [link for link in links if link.allocated_amount is None]
+            if legacy:
+                # legacy links were counted as an even share of the payment: pin that share to cents (the
+                # remainder goes on the last link) so the reversal below cancels it exactly
+                cent = Decimal("0.01")
+                share = (original.amount_paid / len(links)).quantize(cent, rounding=ROUND_DOWN)
+                for link in legacy:
+                    link.allocated_amount = share
+                if len(legacy) == len(links):
+                    legacy[-1].allocated_amount = original.amount_paid - share * (len(links) - 1)
+                for link in legacy:
+                    link.save(update_fields=["allocated_amount"])
             for link in links:
-                # legacy links (no amount) were counted as an even share of the payment
-                amount = link.allocated_amount
-                if amount is None:
-                    amount = original.amount_paid / (len(links) or 1)
-                PaymentExpense.objects.create(payment=reversal, expense=link.expense, allocated_amount=-amount)
+                PaymentExpense.objects.create(
+                    payment=reversal, expense=link.expense, allocated_amount=-link.allocated_amount
+                )
 
         log_action(
             user=request.user,
@@ -231,7 +242,6 @@ class PaymentViewSet(ModelViewSet):
           5. Create PaymentExpense rows with optional allocations.
           6. Emit audit log.
         """
-        from decimal import Decimal
 
         apartment = serializer.validated_data["apartment"]
         ensure_manages(self.request.user, apartment.building_id)
