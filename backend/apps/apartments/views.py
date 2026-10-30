@@ -5,7 +5,7 @@ from decimal import Decimal
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.core.validators import validate_email
 from django.db import IntegrityError, transaction
-from django.db.models import Sum
+from django.db.models import Q, Sum
 from django.utils import timezone
 from rest_framework.decorators import action
 from rest_framework.filters import OrderingFilter, SearchFilter
@@ -163,6 +163,11 @@ class ApartmentViewSet(ModelViewSet):
         except Apartment.DoesNotExist: # type: ignore[attr-defined]
             return Response({"detail": _("Apartment not found.")}, status=404)
 
+        if request.user.role == "renter":
+            return Response(
+                {"detail": _("Renters join a unit through an invite from its owner.")}, status=403
+            )
+
         if apartment.owner is not None:
             return Response(
                 {"detail": _("This apartment is already assigned to an owner.")},
@@ -212,7 +217,10 @@ class ApartmentViewSet(ModelViewSet):
         link is a shareable one-time invite for the unit, e.g. via WhatsApp)
         Returns: {token, registration_code, invited_email, expires_at}
         """
-        apartment = self.get_object()
+        return self._issue_invite(request, self.get_object(), "owner")
+
+    def _issue_invite(self, request, apartment, role):
+        """Create a one-time invite for `apartment` (as its owner or as a renter) and return the link data."""
         email = (request.data.get("email") or "").strip().lower()
         if email:
             try:
@@ -220,15 +228,16 @@ class ApartmentViewSet(ModelViewSet):
             except DjangoValidationError:
                 return Response({"detail": _("Enter a valid email address.")}, status=400)
 
-        # Invalidate any existing unused invites for this unit+email (or email-less
+        # Invalidate any existing unused invites for this unit, email and role (or email-less
         # shareable invites for this unit when no email is given)
         UnitInvitation.objects.filter(
-            apartment=apartment, invited_email=email, used_at__isnull=True
+            apartment=apartment, invited_email=email, invited_role=role, used_at__isnull=True
         ).update(expires_at=timezone.now())
 
         invite = UnitInvitation.objects.create(
             apartment=apartment,
             invited_email=email,
+            invited_role=role,
             invited_by=request.user,
             expires_at=timezone.now() + timedelta(days=30),
         )
@@ -238,6 +247,47 @@ class ApartmentViewSet(ModelViewSet):
             "invited_email": invite.invited_email,
             "expires_at": invite.expires_at,
         }, status=201)
+
+    @action(detail=True, methods=["post"], url_path="invite-renter",
+            permission_classes=[IsAuthenticated])
+    def invite_renter(self, request, pk=None):
+        """
+        POST /api/v1/apartments/{id}/invite-renter/
+        The unit's owner (or the building admin) invites a renter to live in the unit.
+        Renters see the unit's dues, pay, report problems and read the treasury, but cannot
+        invite others or claim units. Same body and result as `invite`.
+        """
+        if request.user.role == "renter":
+            return Response({"detail": _("Renters cannot invite other residents.")}, status=403)
+        return self._issue_invite(request, self.get_object(), "renter")
+
+    @action(detail=True, methods=["post"], url_path="remove-renter",
+            permission_classes=[IsAuthenticated])
+    def remove_renter(self, request, pk=None):
+        """
+        POST /api/v1/apartments/{id}/remove-renter/ {"user_id": ...}
+        The unit's owner (or the building admin) ends a renter's link to the unit.
+        """
+        if request.user.role == "renter":
+            return Response({"detail": _("Renters cannot remove other residents.")}, status=403)
+        apartment = self.get_object()
+        renter = apartment.owners.filter(pk=request.data.get("user_id"), role="renter").first() \
+            if request.data.get("user_id") else None
+        if renter is None:
+            return Response({"detail": _("That renter does not live in this unit.")}, status=404)
+        with transaction.atomic():
+            apartment.owners.remove(renter)
+            from apps.buildings.models import UserBuilding
+            still_there = Apartment.objects.filter(building=apartment.building).filter(
+                Q(owner=renter) | Q(owners=renter)
+            ).exists()
+            if not still_there:
+                UserBuilding.objects.filter(user=renter, building=apartment.building).delete()
+        log_action(
+            user=request.user, action="remove_renter", entity="apartment", entity_id=apartment.pk,
+            changes={"renter": str(renter.pk)}, request=request,
+        )
+        return Response(ApartmentSerializer(apartment).data)
 
     @action(detail=False, methods=["get"], url_path="invite/validate",
             permission_classes=[AllowAny], authentication_classes=[],
@@ -278,6 +328,7 @@ class ApartmentViewSet(ModelViewSet):
             # The long token is a secret held by the invitee; the short code is guessable,
             # so only token links reveal the invited email (used to prefill sign-up).
             "invited_email": invite.invited_email if token else "",
+            "role": invite.invited_role,
         })
 
     @action(detail=False, methods=["post"], url_path="invite/use",
@@ -317,8 +368,9 @@ class ApartmentViewSet(ModelViewSet):
         if apt.owners.filter(pk=request.user.pk).exists():
             return Response({"detail": _("You are already an owner of this unit.")}, status=409)
 
-        # Only set primary owner if not yet assigned; otherwise just add to M2M
-        if apt.owner is None:
+        # Only set primary owner if not yet assigned; otherwise just add to M2M.
+        # A renter lives in the unit but never becomes its owner.
+        if apt.owner is None and invite.invited_role == "owner":
             apt.owner = request.user
             apt.status = "occupied"
             apt.save(update_fields=["owner", "status", "updated_at"])

@@ -902,16 +902,16 @@ Phases are delivered in order; within a phase, requirements are independent unle
 
 ### 11.3 Phase 2 — People & Governance
 
-**R-4 Tenant (مستأجر) role** — 🔲 Planned. Tenants live in a unit but do not own it; they often pay the subscription.
+**R-4 Tenant (مستأجر) role** — ✅ Implemented as role `renter` (in code, "tenant" already means a building). Owners invite and remove renters from the app; building admins can do the same through the API (admin screen not built yet). Tenants live in a unit but do not own it; they often pay the subscription.
 - New role `tenant` linked to a unit by the owner or the admin. A tenant sees the unit's dues and the building's treasury and statement, can report maintenance and use "Pay subscription", and cannot see other units' balances or change data.
 - The owner remains responsible for the unit; owners see that a tenant is linked and can end the link.
 - Invite links can create either an owner or a tenant link.
 
 **R-5 Board roles** — 🔲 Planned. Roles inside a building: chair (رئيس), treasurer (أمين الصندوق), secretary (أمين السر). Treasurer can record payments and expenses; secretary can send announcements and edit minutes; chair can approve spending. Co-admins keep full powers until roles are assigned.
 
-**R-6 Admin handover** — 🔲 Planned. The primary administrator can transfer the building to another member; the previous admin becomes co-admin or a resident. All history (payments, audit log) stays intact and the transfer itself is audited. Required by R-3 for admins who want to delete their account.
+**R-6 Admin handover** — ✅ Implemented (`POST /buildings/{id}/transfer-admin/` to a co-admin; "Hand over" action on the Buildings screen). The primary administrator can transfer the building to another member; the previous admin becomes co-admin or a resident. All history (payments, audit log) stays intact and the transfer itself is audited. Required by R-3 for admins who want to delete their account.
 
-**R-7 Approvals & votes** — 🔲 Planned. (Replaces descoped item 36.)
+**R-7 Approvals & votes** — 🟡 Polls and votes are implemented (`/governance/polls/`, screen `/polls`: one vote per unit, owners only, quorum and majority rules, results after closing). The expense approval threshold ("pending approval" expenses) is still planned. (Replaces descoped item 36.)
 - A building sets an approval threshold. An expense above it is created as "pending approval" and does not bill units until approved by the chair or by a resident vote.
 - Polls: an admin creates a question with options and a closing date; each unit gets one vote (co-owners share it); results are visible after closing, with quorum and majority rules set per poll.
 - Decisions are recorded with date and result in the audit log and can be attached to minutes.

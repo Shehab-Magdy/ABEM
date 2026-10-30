@@ -392,7 +392,7 @@ class SelfRegisterSerializer(serializers.ModelSerializer):
     )
     confirm_password = serializers.CharField(write_only=True)
     accept_terms = serializers.BooleanField(write_only=True)
-    role = serializers.ChoiceField(choices=["admin", "owner"], default="owner")
+    role = serializers.ChoiceField(choices=["admin", "owner", "renter"], default="owner")
 
     class Meta:
         model = User

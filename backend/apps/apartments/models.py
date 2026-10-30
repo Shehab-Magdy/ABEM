@@ -71,7 +71,9 @@ class UnitInvitation(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     token = models.UUIDField(unique=True, default=uuid.uuid4, editable=False)
     apartment = models.ForeignKey(Apartment, on_delete=models.CASCADE, related_name="invitations")
-    invited_email = models.EmailField()
+    invited_email = models.EmailField(blank=True)
+    # What the person becomes in the unit: its owner, or a renter linked by the owner/admin
+    invited_role = models.CharField(max_length=10, choices=[("owner", "Owner"), ("renter", "Renter")], default="owner")
     registration_code = models.CharField(max_length=8, unique=True, editable=False)
     invited_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,

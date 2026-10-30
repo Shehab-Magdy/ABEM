@@ -90,5 +90,11 @@
   "share_whatsapp": "مشاركة عبر واتساب",
   "invite_whatsapp_text": "تمت دعوتك للانضمام إلى {{building}} — الوحدة {{unit}} على عِمارة.كوم: {{link}}",
   "instapay_address": "عنوان إنستا باي",
-  "instapay_address_helper": "يظهر للسكان عند دفع الاشتراك"
+  "instapay_address_helper": "يظهر للسكان عند دفع الاشتراك",
+  "handover_action": "نقل الإدارة إلى مدير آخر",
+  "handover_title": "نقل إدارة {{name}}",
+  "handover_help": "ينتقل لقب المدير الأساسي إلى المدير الذي تختاره، وتبقى أنت مديراً مشاركاً. كل السجلات تبقى كما هي.",
+  "handover_no_coadmins": "أضف مديراً مشاركاً للعمارة أولاً (من تعديل العمارة)، ثم يمكنك نقل الإدارة إليه.",
+  "handover_to": "المدير الجديد",
+  "handover_confirm": "نقل الإدارة"
 }

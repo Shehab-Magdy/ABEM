@@ -8,6 +8,8 @@ from django.utils import timezone
 class UserRole(models.TextChoices):
     ADMIN = "admin", "Admin"
     OWNER = "owner", "Owner"
+    # Lives in a unit without owning it. ("renter", not "tenant": in this code a tenant is a building.)
+    RENTER = "renter", "Renter"
 
 
 class UserManager(BaseUserManager):

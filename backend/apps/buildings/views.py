@@ -1,5 +1,5 @@
 """Building views — Sprint 2."""
-from django.db import models
+from django.db import models, transaction
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.decorators import action
@@ -17,7 +17,7 @@ from apps.authentication.models import User
 from apps.authentication.permissions import IsAdminRole
 from apps.authentication.serializers import UserSerializer
 
-from .models import Building, UserBuilding
+from .models import Building, BuildingCoAdmin, UserBuilding
 from .serializers import AssignUserSerializer, BuildingSerializer
 
 
@@ -169,6 +169,37 @@ class BuildingViewSet(ModelViewSet):
             {"detail": _("User '%(email)s' assigned to building '%(name)s'.") % {"email": user.email, "name": building.name}},
             status=http_status,
         )
+
+    @action(detail=True, methods=["post"], url_path="transfer-admin", permission_classes=[IsAuthenticated, IsAdminRole])
+    def transfer_admin(self, request, pk=None):
+        """
+        POST /buildings/{id}/transfer-admin/ {"user_id": ...}
+        The primary administrator hands the building to one of its co-admins. The previous
+        primary admin stays on as a co-admin; payments, expenses and the audit log are untouched.
+        """
+        building = self.get_object()
+        if building.admin_id != request.user.pk:
+            return Response({"detail": _("Only the building's primary administrator can hand it over.")}, status=403)
+
+        target = building.co_admins.filter(pk=request.data.get("user_id"), role="admin", is_active=True).first() \
+            if request.data.get("user_id") else None
+        if target is None:
+            return Response(
+                {"detail": _("Choose one of the building's co-admins. Add them as a co-admin first.")}, status=400
+            )
+
+        with transaction.atomic():
+            BuildingCoAdmin.objects.filter(building=building, user=target).delete()
+            BuildingCoAdmin.objects.get_or_create(building=building, user=request.user)
+            building.admin = target
+            building.save(update_fields=["admin", "updated_at"])
+            UserBuilding.objects.get_or_create(user=target, building=building)
+
+        log_action(
+            user=request.user, action="transfer_admin", entity="building", entity_id=building.pk,
+            changes={"admin": {"before": str(request.user.pk), "after": str(target.pk)}}, request=request,
+        )
+        return Response(self.get_serializer(building).data)
 
     @action(detail=True, methods=["get"], url_path="statement", permission_classes=[IsAuthenticated])
     def statement(self, request, pk=None):
@@ -332,8 +363,9 @@ class BuildingViewSet(ModelViewSet):
         from apps.apartments.serializers import ApartmentSerializer
 
         qs = Apartment.objects.filter(building=building)
-        if request.user.role == "owner":
-            qs = qs.filter(owner=request.user)
+        if request.user.role != "admin":
+            # residents (owners, co-owners, renters) see only their own unit(s)
+            qs = qs.filter(models.Q(owner=request.user) | models.Q(owners=request.user)).distinct()
 
         page = self.paginate_queryset(qs)
         serializer = ApartmentSerializer(

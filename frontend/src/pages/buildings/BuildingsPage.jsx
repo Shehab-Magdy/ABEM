@@ -39,18 +39,20 @@ import {
   Typography,
 } from "@mui/material";
 import { DataGrid } from "@mui/x-data-grid";
-import { Add, Apartment, Check, ContentCopy, Delete, Edit, PersonAdd, PhotoCamera, Send, PersonPin, PowerSettingsNew, WhatsApp } from "@mui/icons-material";
+import { Add, Apartment, SwapHoriz, Check, ContentCopy, Delete, Edit, PersonAdd, PhotoCamera, Send, PersonPin, PowerSettingsNew, WhatsApp } from "@mui/icons-material";
 import { useForm } from "react-hook-form";
 import { buildingsApi } from "../../api/buildingsApi";
 import { apartmentsApi } from "../../api/apartmentsApi";
 import { usersApi } from "../../api/usersApi";
 import { useAuth } from "../../hooks/useAuth";
+import TransferAdminDialog from "../../components/TransferAdminDialog";
 import { useTranslation } from "react-i18next";
 import { PrivateSEO } from "../../components/seo/SEO";
 
 export default function BuildingsPage() {
   const { t } = useTranslation("buildings");
-  const { isAdmin } = useAuth();
+  const { isAdmin, user } = useAuth();
+  const [handoverTarget, setHandoverTarget] = useState(null);
 
   const [rows, setRows] = useState([]);
   const [rowCount, setRowCount] = useState(0);
@@ -418,6 +420,20 @@ export default function BuildingsPage() {
                     <Apartment fontSize="small" color="secondary" />
                   </IconButton>
                 </Tooltip>
+                {row.admin_id === user?.id && (
+                  <Tooltip title={t("handover_action")}>
+                    <IconButton
+                      size="small"
+                      color="warning"
+                      onClick={async () => {
+                        if (!adminUsers.length) await loadAdminUsers();
+                        setHandoverTarget(row);
+                      }}
+                    >
+                      <SwapHoriz fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                )}
                 <Tooltip title={t("assign_owner")}>
                   <IconButton size="small" onClick={() => openAssign(row)}>
                     <PersonAdd fontSize="small" color="primary" />
@@ -481,6 +497,17 @@ export default function BuildingsPage() {
       />
 
       {/* ── Create / Edit Dialog ──────────────────────────────────────────── */}
+      <TransferAdminDialog
+        building={handoverTarget}
+        candidates={adminUsers
+          .filter((u) => handoverTarget?.co_admin_ids?.includes(u.id))
+          .map((u) => ({ id: u.id, name: `${u.first_name} ${u.last_name}`.trim() || u.email }))}
+        onClose={() => setHandoverTarget(null)}
+        onDone={() => {
+          setHandoverTarget(null);
+          fetchBuildings();
+        }}
+      />
       <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="sm" fullWidth>
         <DialogTitle>{editTarget ? t("edit_building") : t("new_building")}</DialogTitle>
         <Box component="form" onSubmit={form.handleSubmit(onSubmit)}>

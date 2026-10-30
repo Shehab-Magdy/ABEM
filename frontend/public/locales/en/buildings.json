@@ -90,5 +90,11 @@
   "share_whatsapp": "Share on WhatsApp",
   "invite_whatsapp_text": "You are invited to join {{building}} — unit {{unit}} on 3maracom: {{link}}",
   "instapay_address": "InstaPay address",
-  "instapay_address_helper": "Shown to residents when they pay their subscription"
+  "instapay_address_helper": "Shown to residents when they pay their subscription",
+  "handover_action": "Hand over to another admin",
+  "handover_title": "Hand over {{name}}",
+  "handover_help": "The primary admin role moves to the admin you choose and you stay on as a co-admin. All records stay as they are.",
+  "handover_no_coadmins": "Add a co-admin to this building first (in Edit building), then you can hand it over.",
+  "handover_to": "New primary admin",
+  "handover_confirm": "Hand over"
 }

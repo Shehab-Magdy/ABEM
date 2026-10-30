@@ -207,7 +207,7 @@ class NotificationViewSet(ReadOnlyModelViewSet):
             ).distinct()
         elif recipient_type == "owners":
             recipients = User.objects.filter(
-                userbuilding__building=building, role="owner"
+                userbuilding__building=building, role__in=["owner", "renter"]
             ).distinct()
         elif recipient_type == "individual":
             if request.user.individual_messaging_blocked:

@@ -20,6 +20,9 @@ export const apartmentsApi = {
   claimRequests: (params) => axiosClient.get("/apartments/claim-requests/", { params }),
   approveClaimRequest: (id) => axiosClient.post(`/apartments/claim-requests/${id}/approve/`),
   rejectClaimRequest: (id) => axiosClient.post(`/apartments/claim-requests/${id}/reject/`),
+  /** The unit's owner (or admin) invites a renter, and can end the link later. */
+  inviteRenter: (unitId) => axiosClient.post(`/apartments/${unitId}/invite-renter/`, {}),
+  removeRenter: (unitId, userId) => axiosClient.post(`/apartments/${unitId}/remove-renter/`, { user_id: userId }),
   /** Validate an invite token or registration code (public — no auth required). */
   validateInvite: (token, code) => axiosClient.get("/apartments/invite/validate/", { params: { token, code } }),
   /** Authenticated user redeems an invite token to claim their unit. */
