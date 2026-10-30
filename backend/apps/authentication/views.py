@@ -3,10 +3,12 @@ Authentication views – Login, Logout, Register, Profile, Change Password.
 All endpoints are under /api/v1/auth/.
 """
 from datetime import timedelta
+from decimal import Decimal
 
 from django.conf import settings
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import transaction
+from django.db.models import Q, Sum
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
@@ -365,6 +367,13 @@ class ResetPasswordView(APIView):
 
 # ── Delete my account ────────────────────────────────────────────────────────
 
+BOARD_TITLES = {
+    "chair": ("chair", "رئيس الهيئة"),
+    "treasurer": ("treasurer", "أمين الصندوق"),
+    "secretary": ("secretary", "أمين السر"),
+}
+
+
 class DeleteAccountView(APIView):
     """
     POST /auth/delete-account/ {password}
@@ -380,6 +389,8 @@ class DeleteAccountView(APIView):
     def post(self, request):
         from apps.apartments.models import Apartment
         from apps.buildings.models import Building, BuildingCoAdmin, UserBuilding
+        from apps.notifications.services import building_admins, tell
+        from apps.payments.models import ClaimStatus, PaymentClaim
 
         user = request.user
         if not user.check_password(request.data.get("password") or ""):
@@ -392,7 +403,43 @@ class DeleteAccountView(APIView):
                 status=status.HTTP_409_CONFLICT,
             )
 
+        other_platform_owners = User.objects.filter(is_superuser=True, is_active=True).exclude(pk=user.pk)
+        if user.is_superuser and not other_platform_owners.exists():
+            return Response(
+                {"detail": _("You are the last platform owner. Make someone else a platform owner first.")},
+                status=status.HTTP_409_CONFLICT,
+            )
+
+        # units the person owns or rents: what they still owe must be acknowledged before leaving
+        units = Apartment.objects.filter(Q(owner=user) | Q(owners=user)).distinct()
+        owed = units.filter(balance__gt=0).aggregate(s=Sum("balance"))["s"] or Decimal("0.00")
+        if owed > 0 and str(request.data.get("confirm_balance")).lower() != "true":
+            return Response(
+                {
+                    "detail": _("You still owe a balance on your unit. Send confirm_balance to delete your account anyway."),
+                    "balance": str(owed),
+                    "requires_confirmation": True,
+                },
+                status=status.HTTP_409_CONFLICT,
+            )
+
         with transaction.atomic():
+            # a pending transfer report can no longer be reviewed against a person who is gone
+            rejected = PaymentClaim.objects.filter(created_by=user, status=ClaimStatus.PENDING).update(
+                status=ClaimStatus.REJECTED, reviewed_at=timezone.now()
+            )
+            # tell each building's admins when a board member leaves
+            for link in UserBuilding.objects.filter(user=user).exclude(board_role="").select_related("building"):
+                for admin in building_admins(link.building):
+                    if admin.pk == user.pk:
+                        continue
+                    role_en, role_ar = BOARD_TITLES.get(link.board_role, (link.board_role, link.board_role))
+                    tell(
+                        admin,
+                        ("Board member left", f"The {role_en} of {link.building.name} deleted their account."),
+                        ("غادر عضو في الهيئة الإدارية", f"قام {role_ar} في {link.building.name} بحذف حسابه."),
+                        {"building_id": str(link.building_id)},
+                    )
             for apt in Apartment.objects.filter(owner=user):
                 apt.owner = None
                 apt.save(update_fields=["owner", "updated_at"])
@@ -400,7 +447,14 @@ class DeleteAccountView(APIView):
             UserBuilding.objects.filter(user=user).delete()
             BuildingCoAdmin.objects.filter(user=user).delete()
 
-            log_action(user=user, action="delete_account", entity="user", entity_id=user.id, request=request)
+            log_action(
+                user=user,
+                action="delete_account",
+                entity="user",
+                entity_id=user.id,
+                changes={"claims_rejected": rejected, "balance_owed": str(owed)},
+                request=request,
+            )
 
             user.email = f"deleted-{user.pk}@deleted.invalid"
             user.first_name = ""

@@ -91,3 +91,59 @@ def test_api_errors_come_back_in_arabic_when_asked(owner_user):
     )
     assert resp.status_code == 400
     assert resp.data["detail"] == "كلمة المرور غير صحيحة."
+
+
+# ── R-31 ─────────────────────────────────────────────────────────────────────
+
+def _resident(owner_user, admin_user, balance="0.00"):
+    building = Building.objects.create(name="Tower", address="1 Nile St", admin=admin_user)
+    unit = Apartment.objects.create(building=building, unit_number="1", owner=owner_user, balance=Decimal(balance))
+    unit.owners.add(owner_user)
+    UserBuilding.objects.create(user=owner_user, building=building)
+    return building, unit
+
+
+def _delete(user, **extra):
+    return _client(user).post("/api/v1/auth/delete-account/", {"password": "OwnerPass1!", **extra}, format="json")
+
+
+def test_pending_claims_are_rejected_on_deletion(admin_user, owner_user):
+    from apps.payments.models import PaymentClaim
+
+    _, unit = _resident(owner_user, admin_user)
+    claim = PaymentClaim.objects.create(apartment=unit, amount=Decimal("10.00"), created_by=owner_user)
+    assert _delete(owner_user).status_code == 200
+    claim.refresh_from_db()
+    assert claim.status == "rejected" and claim.reviewed_at is not None
+
+
+def test_outstanding_balance_requires_confirmation(admin_user, owner_user):
+    _, unit = _resident(owner_user, admin_user, balance="250.00")
+    resp = _delete(owner_user)
+    assert resp.status_code == 409
+    assert Decimal(str(resp.data["balance"])) == Decimal("250.00")
+    owner_user.refresh_from_db()
+    assert owner_user.is_active
+    assert _delete(owner_user, confirm_balance=True).status_code == 200
+    owner_user.refresh_from_db()
+    assert not owner_user.is_active
+
+
+def test_leaving_board_member_notifies_the_admin(admin_user, owner_user):
+    from apps.notifications.models import Notification
+
+    building, _ = _resident(owner_user, admin_user)
+    UserBuilding.objects.filter(user=owner_user, building=building).update(board_role="treasurer")
+    assert _delete(owner_user).status_code == 200
+    assert Notification.objects.filter(user=admin_user, metadata__building_id=str(building.pk)).exists()
+
+
+def test_last_platform_owner_cannot_delete_themselves(django_user_model):
+    root = django_user_model.objects.create_superuser(email="root@abem.test", password="OwnerPass1!")
+    resp = _client(root).post("/api/v1/auth/delete-account/", {"password": "OwnerPass1!"}, format="json")
+    assert resp.status_code == 409
+    root.refresh_from_db()
+    assert root.is_active
+
+    django_user_model.objects.create_superuser(email="root2@abem.test", password="OwnerPass1!")
+    assert _client(root).post("/api/v1/auth/delete-account/", {"password": "OwnerPass1!"}, format="json").status_code == 200

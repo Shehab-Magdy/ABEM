@@ -766,3 +766,9 @@ msgstr "توجد دفعة باقة لهذا المبنى بانتظار المر
 
 msgid "You cannot review a payment claim for a unit you own or rent."
 msgstr "لا يمكنك مراجعة مطالبة دفع لوحدة تملكها أو تستأجرها."
+
+msgid "You are the last platform owner. Make someone else a platform owner first."
+msgstr "أنت آخر مالك للمنصة. عيّن مالكاً آخر للمنصة أولاً."
+
+msgid "You still owe a balance on your unit. Send confirm_balance to delete your account anyway."
+msgstr "ما زال عليك رصيد مستحق على وحدتك. أكّد (confirm_balance) لحذف حسابك رغم ذلك."
