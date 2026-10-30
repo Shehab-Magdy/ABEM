@@ -499,23 +499,43 @@ class BuildingViewSet(ModelViewSet):
 
         from django.db.models import Sum
 
-        from apps.apartments.models import Apartment
         from apps.expenses.models import ApartmentExpense, Expense
-        from apps.payments.models import AssetSale, Payment
+        from apps.expenses.utils import paid_toward_expense
+        from apps.payments.models import AssetSale, Payment, PaymentExpense
 
         building = self.get_object()
         zero = Decimal("0.00")
-        received = Payment.objects.filter(apartment__building=building).aggregate(s=Sum("amount_paid"))["s"] or zero
+        payments = Payment.objects.filter(apartment__building=building)
+        received = payments.aggregate(s=Sum("amount_paid"))["s"] or zero  # net of reversals
+        reversed_total = -(payments.filter(amount_paid__lt=0).aggregate(s=Sum("amount_paid"))["s"] or zero)
+        gross = received + reversed_total
         sales = AssetSale.objects.filter(asset__building=building).aggregate(s=Sum("sale_price"))["s"] or zero
         spent = (
             Expense.objects.filter(building=building, deleted_at__isnull=True, kind="cost", approval_status="approved").aggregate(s=Sum("amount"))["s"] or zero
         )
-        billed_ids = list(
+        shares = list(
             ApartmentExpense.objects.filter(expense__building=building, expense__deleted_at__isnull=True)
-            .values_list("apartment_id", flat=True)
-            .distinct()
+            .select_related("expense")
         )
-        paid_units = Apartment.objects.filter(id__in=billed_ids, balance__lte=0).count()
+        billed_ids = {share.apartment_id for share in shares}
+        # what each (unit, expense) has paid: allocated amounts in one query, legacy rows one by one
+        paid = {
+            (row["payment__apartment_id"], row["expense_id"]): row["s"]
+            for row in PaymentExpense.objects.filter(expense__building=building, allocated_amount__isnull=False)
+            .values("payment__apartment_id", "expense_id")
+            .annotate(s=Sum("allocated_amount"))
+        }
+        legacy = set(
+            PaymentExpense.objects.filter(expense__building=building, allocated_amount__isnull=True)
+            .values_list("payment__apartment_id", "expense_id")
+        )
+        unpaid_units = set()
+        for share in shares:
+            key = (share.apartment_id, share.expense_id)
+            done = paid_toward_expense(share.expense, share.apartment_id) if key in legacy else paid.get(key, zero)
+            if share.share_amount - done > 0:
+                unpaid_units.add(share.apartment_id)
+        paid_units = len(billed_ids - unpaid_units)
 
         return Response({
             "building_id": str(building.pk),
@@ -525,6 +545,9 @@ class BuildingViewSet(ModelViewSet):
             "total_expenses": str(spent),
             "units_billed": len(billed_ids),
             "units_paid": paid_units,
+            "total_payments": str(gross),
+            "total_reversals": str(reversed_total),
+            "total_sales": str(sales),
         })
 
     @action(
