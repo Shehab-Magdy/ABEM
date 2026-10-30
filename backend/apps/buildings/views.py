@@ -220,6 +220,7 @@ class BuildingViewSet(ModelViewSet):
             return None if p is None else {
                 "amount": str(p.amount), "billing_day": p.billing_day, "due_days": p.due_days,
                 "starts_on": str(p.starts_on), "is_active": p.is_active,
+                "late_fee_type": p.late_fee_type, "late_fee_value": str(p.late_fee_value), "grace_days": p.grace_days,
             }
 
         if request.method == "GET":
@@ -231,10 +232,21 @@ class BuildingViewSet(ModelViewSet):
             billing_day = int(data.get("billing_day", 1))
             due_days = int(data.get("due_days", 10))
             starts_on = date.fromisoformat(data["starts_on"]) if data.get("starts_on") else None
+            late_fee_type = data.get("late_fee_type", "none")
+            late_fee_value = Decimal(str(data.get("late_fee_value", 0) or 0))
+            grace_days = int(data.get("grace_days", 0) or 0)
         except (InvalidOperation, TypeError, ValueError):
             return Response({"detail": _("Enter a valid amount, billing day and due days.")}, status=400)
         if amount <= 0 or not 1 <= billing_day <= 28 or not 0 <= due_days <= 60:
             return Response({"detail": _("Amount must be above zero, billing day 1-28 and due days 0-60.")}, status=400)
+        if (
+            late_fee_type not in ("none", "fixed", "percent")
+            or late_fee_value < 0
+            or (late_fee_type == "percent" and late_fee_value > 100)
+            or (late_fee_type != "none" and late_fee_value == 0)
+            or not 0 <= grace_days <= 60
+        ):
+            return Response({"detail": _("Late fee: choose none, a fixed amount or a percent (up to 100), and 0-60 grace days.")}, status=400)
 
         if plan is None:
             plan = SubscriptionPlan(building=building, starts_on=starts_on or date.today().replace(day=1))
@@ -242,6 +254,7 @@ class BuildingViewSet(ModelViewSet):
             plan.starts_on = starts_on
         plan.amount, plan.billing_day, plan.due_days = amount, billing_day, due_days
         plan.is_active = bool(data.get("is_active", True))
+        plan.late_fee_type, plan.late_fee_value, plan.grace_days = late_fee_type, late_fee_value, grace_days
         plan.save()
         plan.refresh_from_db()  # echo the stored values (e.g. 200.00)
         log_action(

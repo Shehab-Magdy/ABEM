@@ -17,5 +17,18 @@
   "billed": "Billed",
   "pause_reason": "Reason paused",
   "pause_reason_prompt": "Why is this unit not billed? (for example: vacant)",
-  "error": "Could not complete that."
+  "error": "Could not complete that.",
+  "late_fee": "Late fee",
+  "late_fee_type": "Type",
+  "late_fee_none": "No late fee",
+  "late_fee_fixed": "Fixed amount",
+  "late_fee_percent": "Percent of what is owed",
+  "late_fee_value": "Value",
+  "grace_days": "Grace days",
+  "grace_days_help": "After the due date",
+  "rate": "Rate",
+  "late_fees_list": "Current late fees",
+  "fee": "Fee",
+  "waive": "Waive",
+  "waive_prompt": "Why is this fee waived? (optional)"
 }

@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import calendar
 from datetime import date, timedelta
+from decimal import Decimal
 
 from django.db import transaction
 from django.db.models import F
@@ -35,6 +36,8 @@ def bill_plan_month(plan: SubscriptionPlan, month: date) -> Expense | None:
     if not units:
         return None
 
+    # each unit pays the plan amount times its rate factor (a shop 1.5x, a large flat 1.2x ...)
+    shares = {u.pk: (plan.amount * u.rate_factor).quantize(Decimal("0.01")) for u in units}
     billed_on = _billing_date(month, plan.billing_day)
     category, _ = ExpenseCategory.objects.get_or_create(building=plan.building, name=CATEGORY_NAME)
     with transaction.atomic():
@@ -42,7 +45,7 @@ def bill_plan_month(plan: SubscriptionPlan, month: date) -> Expense | None:
             building=plan.building,
             category=category,
             title=f"{CATEGORY_NAME} {month:%Y-%m}",
-            amount=plan.amount * len(units),
+            amount=sum(shares.values()),
             expense_date=billed_on,
             due_date=billed_on + timedelta(days=plan.due_days),
             kind=ExpenseKind.SUBSCRIPTION,
@@ -50,9 +53,10 @@ def bill_plan_month(plan: SubscriptionPlan, month: date) -> Expense | None:
             created_by=plan.building.admin,
         )
         ApartmentExpense.objects.bulk_create(
-            [ApartmentExpense(apartment=u, expense=charge, share_amount=plan.amount) for u in units]
+            [ApartmentExpense(apartment=u, expense=charge, share_amount=shares[u.pk]) for u in units]
         )
-        Apartment.objects.filter(pk__in=[u.pk for u in units]).update(balance=F("balance") + plan.amount)
+        for unit in units:
+            Apartment.objects.filter(pk=unit.pk).update(balance=F("balance") + shares[unit.pk])
         SubscriptionRun.objects.create(plan=plan, month=month, expense=charge)
     return charge
 

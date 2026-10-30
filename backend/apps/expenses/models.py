@@ -178,6 +178,12 @@ class SubscriptionPlan(models.Model):
     due_days = models.PositiveSmallIntegerField(default=10, help_text="Days after billing that payment is due")
     starts_on = models.DateField(help_text="First month to bill")
     is_active = models.BooleanField(default=True)
+    # Optional late fee, added once to a subscription share that is still unpaid after due date + grace days
+    late_fee_type = models.CharField(
+        max_length=8, choices=[("none", "None"), ("fixed", "Fixed amount"), ("percent", "Percent of what is owed")], default="none"
+    )
+    late_fee_value = models.DecimalField(max_digits=8, decimal_places=2, default=0)
+    grace_days = models.PositiveSmallIntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -195,3 +201,16 @@ class SubscriptionRun(models.Model):
 
     class Meta:
         constraints = [models.UniqueConstraint(fields=["plan", "month"], name="one_run_per_plan_and_month")]
+
+
+class LateFee(models.Model):
+    """A late fee charged on one overdue subscription share; an admin may waive it with a reason."""
+    objects: models.Manager["LateFee"]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    share = models.OneToOneField(ApartmentExpense, on_delete=models.CASCADE, related_name="late_fee")
+    expense = models.OneToOneField(Expense, on_delete=models.CASCADE, related_name="late_fee_record")
+    waived_at = models.DateTimeField(null=True, blank=True)
+    waived_reason = models.CharField(max_length=200, blank=True)
+    waived_by = models.ForeignKey("authentication.User", on_delete=models.SET_NULL, null=True, blank=True, related_name="+")
+    created_at = models.DateTimeField(auto_now_add=True)

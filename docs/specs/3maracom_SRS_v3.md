@@ -925,7 +925,7 @@ Phases are delivered in order; within a phase, requirements are independent unle
 - Amounts can differ by unit type (apartment, store) or by a unit coefficient (R-10).
 - Pausing a unit (vacant) is possible with a reason and is audited.
 
-**R-10 Per-unit rates & late fees** — 🔲 Planned. Optional per-unit coefficient (e.g. shops pay 1.5×, large flats 1.2×). Optional late fee (fixed amount or percentage) after a grace period; fees are added as separate, visible lines and can be waived by an admin with a recorded reason.
+**R-10 Per-unit rates & late fees** — ✅ Implemented (`rate_factor` per unit, edited on the Monthly subscription screen; late fee fixed or percent with grace days; daily command `apply_late_fees`; waive with a recorded reason via `POST /expenses/late-fees/{id}/waive/`). A share is fined at most once; fees are charges, not building costs. Optional per-unit coefficient (e.g. shops pay 1.5×, large flats 1.2×). Optional late fee (fixed amount or percentage) after a grace period; fees are added as separate, visible lines and can be waived by an admin with a recorded reason.
 
 **R-11 Contractors & obligations calendar** — 🔲 Planned. A directory of contractors per building (name, trade, phone, contract dates, notes) and a calendar of recurring obligations (elevator maintenance contract renewal, fire-extinguisher inspection, tank cleaning). Obligations remind the board before their due date (same reminder mechanism as R-1).
 

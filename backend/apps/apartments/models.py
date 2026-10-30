@@ -41,6 +41,8 @@ class Apartment(models.Model):
     )
 
     # A paused unit (e.g. vacant or under renovation) is skipped by monthly subscription billing
+    # Multiplier on the building subscription (e.g. 1.50 for a shop, 1.20 for a large flat)
+    rate_factor = models.DecimalField(max_digits=4, decimal_places=2, default=1)
     billing_paused = models.BooleanField(default=False)
     billing_pause_reason = models.CharField(max_length=200, blank=True)
 

@@ -6,9 +6,11 @@ import {
 } from "@mui/material";
 import { buildingsApi } from "../../api/buildingsApi";
 import { apartmentsApi } from "../../api/apartmentsApi";
+import { expensesApi } from "../../api/expensesApi";
+import { formatCurrency } from "../../utils/formatters";
 import { PrivateSEO } from "../../components/seo/SEO";
 
-const EMPTY = { amount: "", billing_day: 1, due_days: 10, is_active: true };
+const EMPTY = { amount: "", billing_day: 1, due_days: 10, is_active: true, late_fee_type: "none", late_fee_value: 0, grace_days: 0 };
 
 /** الاشتراك الشهري — one fixed amount per unit, billed automatically each month. */
 export default function SubscriptionPage() {
@@ -18,6 +20,7 @@ export default function SubscriptionPage() {
   const [form, setForm] = useState(EMPTY);
   const [hasPlan, setHasPlan] = useState(false);
   const [units, setUnits] = useState([]);
+  const [lateFees, setLateFees] = useState([]);
   const [message, setMessage] = useState(null);
   const [error, setError] = useState(null);
   const [saving, setSaving] = useState(false);
@@ -38,13 +41,15 @@ export default function SubscriptionPage() {
     setMessage(null);
     setError(null);
     try {
-      const [planRes, unitsRes] = await Promise.all([
+      const [planRes, unitsRes, feesRes] = await Promise.all([
         buildingsApi.subscription(buildingId),
         buildingsApi.apartments(buildingId, { page_size: 500 }),
+        expensesApi.lateFees({ building_id: buildingId, waived: "false" }),
       ]);
+      setLateFees(feesRes.data?.results ?? feesRes.data ?? []);
       const plan = planRes.data.plan;
       setHasPlan(!!plan);
-      setForm(plan ? { amount: plan.amount, billing_day: plan.billing_day, due_days: plan.due_days, is_active: plan.is_active } : EMPTY);
+      setForm(plan ? { amount: plan.amount, billing_day: plan.billing_day, due_days: plan.due_days, is_active: plan.is_active, late_fee_type: plan.late_fee_type, late_fee_value: plan.late_fee_value, grace_days: plan.grace_days } : EMPTY);
       setUnits(unitsRes.data?.results ?? unitsRes.data ?? []);
     } catch {
       setError(t("error"));
@@ -83,7 +88,30 @@ export default function SubscriptionPage() {
     }
   };
 
+  const saveRate = async (unit, value) => {
+    if (String(value) === String(unit.rate_factor)) return;
+    try {
+      await apartmentsApi.update(unit.id, { rate_factor: value });
+      load();
+    } catch (err) {
+      setError(err.response?.data?.errors?.rate_factor?.[0] || t("error"));
+      load();
+    }
+  };
+
+  const waive = async (fee) => {
+    const reason = window.prompt(t("waive_prompt"), "") ?? null;
+    if (reason === null) return;
+    try {
+      await expensesApi.waiveLateFee(fee.id, reason);
+      load();
+    } catch {
+      setError(t("error"));
+    }
+  };
+
   const billable = units.filter((u) => !u.billing_paused).length;
+  const monthlyTotal = units.filter((u) => !u.billing_paused).reduce((sum, u) => sum + Number(form.amount || 0) * Number(u.rate_factor || 1), 0);
 
   return (
     <>
@@ -107,10 +135,24 @@ export default function SubscriptionPage() {
                 <TextField type="number" label={t("billing_day")} helperText={t("billing_day_help")} value={form.billing_day} onChange={(e) => set("billing_day", e.target.value)} inputProps={{ min: 1, max: 28 }} fullWidth />
                 <TextField type="number" label={t("due_days")} helperText={t("due_days_help")} value={form.due_days} onChange={(e) => set("due_days", e.target.value)} inputProps={{ min: 0, max: 60 }} fullWidth />
               </Stack>
+              <Typography variant="subtitle2" fontWeight={700}>{t("late_fee")}</Typography>
+              <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+                <TextField select label={t("late_fee_type")} value={form.late_fee_type} onChange={(e) => set("late_fee_type", e.target.value)} fullWidth>
+                  <MenuItem value="none">{t("late_fee_none")}</MenuItem>
+                  <MenuItem value="fixed">{t("late_fee_fixed")}</MenuItem>
+                  <MenuItem value="percent">{t("late_fee_percent")}</MenuItem>
+                </TextField>
+                {form.late_fee_type !== "none" && (
+                  <>
+                    <TextField type="number" label={t("late_fee_value")} value={form.late_fee_value} onChange={(e) => set("late_fee_value", e.target.value)} inputProps={{ min: 0, step: "0.01" }} fullWidth />
+                    <TextField type="number" label={t("grace_days")} helperText={t("grace_days_help")} value={form.grace_days} onChange={(e) => set("grace_days", e.target.value)} inputProps={{ min: 0, max: 60 }} fullWidth />
+                  </>
+                )}
+              </Stack>
               <FormControlLabel control={<Switch checked={form.is_active} onChange={(e) => set("is_active", e.target.checked)} />} label={t("active")} />
               {form.amount > 0 && (
                 <Typography variant="body2" color="text.secondary">
-                  {t("monthly_total", { units: billable, total: (Number(form.amount) * billable).toLocaleString() })}
+                  {t("monthly_total", { units: billable, total: monthlyTotal.toLocaleString() })}
                 </Typography>
               )}
               <Box>
@@ -126,12 +168,23 @@ export default function SubscriptionPage() {
         <Card>
           <Table size="small">
             <TableHead>
-              <TableRow><TableCell>{t("unit")}</TableCell><TableCell>{t("billed")}</TableCell><TableCell>{t("pause_reason")}</TableCell></TableRow>
+              <TableRow><TableCell>{t("unit")}</TableCell><TableCell>{t("rate")}</TableCell><TableCell>{t("billed")}</TableCell><TableCell>{t("pause_reason")}</TableCell></TableRow>
             </TableHead>
             <TableBody>
               {units.map((u) => (
                 <TableRow key={u.id}>
                   <TableCell>{u.unit_number}</TableCell>
+                  <TableCell>
+                    <TextField
+                      key={`${u.id}-${u.rate_factor}`}
+                      type="number"
+                      size="small"
+                      defaultValue={u.rate_factor}
+                      inputProps={{ min: 0.1, max: 10, step: "0.05", "aria-label": t("rate") }}
+                      onBlur={(e) => saveRate(u, e.target.value)}
+                      sx={{ width: 90 }}
+                    />
+                  </TableCell>
                   <TableCell>
                     <Switch checked={!u.billing_paused} onChange={() => togglePause(u)} inputProps={{ "aria-label": t("billed") }} />
                   </TableCell>
@@ -141,6 +194,30 @@ export default function SubscriptionPage() {
             </TableBody>
           </Table>
         </Card>
+
+        {lateFees.length > 0 && (
+          <>
+            <Typography variant="h6" fontWeight={700} sx={{ mt: 3 }} gutterBottom>{t("late_fees_list")}</Typography>
+            <Card>
+              <Table size="small">
+                <TableHead>
+                  <TableRow><TableCell>{t("unit")}</TableCell><TableCell>{t("fee")}</TableCell><TableCell /></TableRow>
+                </TableHead>
+                <TableBody>
+                  {lateFees.map((f) => (
+                    <TableRow key={f.id}>
+                      <TableCell>{f.unit_number}</TableCell>
+                      <TableCell>{formatCurrency(f.amount)}</TableCell>
+                      <TableCell align="right">
+                        <Button size="small" color="warning" onClick={() => waive(f)} sx={{ minHeight: 36 }}>{t("waive")}</Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </Card>
+          </>
+        )}
       </Box>
     </>
   );

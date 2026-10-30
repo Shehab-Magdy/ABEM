@@ -601,3 +601,9 @@ msgstr "الاشتراك الشهري"
 
 msgid "Late fee"
 msgstr "غرامة تأخير"
+
+msgid "The rate factor must be between 0.1 and 10."
+msgstr "يجب أن يكون المعامل بين 0.1 و10."
+
+msgid "Late fee: choose none, a fixed amount or a percent (up to 100), and 0-60 grace days."
+msgstr "غرامة التأخير: اختر بدون أو مبلغاً ثابتاً أو نسبة (حتى 100) وأيام سماح من 0 إلى 60."
