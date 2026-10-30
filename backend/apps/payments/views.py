@@ -2,6 +2,8 @@
 from __future__ import annotations
 
 import html as html_lib
+import logging
+from decimal import ROUND_DOWN, Decimal
 
 from django.db.models import Q
 from django.http import HttpResponse
@@ -21,7 +23,7 @@ from apps.buildings.scoping import board_building_ids, ensure_manages, has_board
 
 from .allocation import AllocationError, auto_allocate, record_allocations, resolve_allocations
 from .models import AssetSale, BuildingAsset, ClaimStatus, Payment, PaymentClaim, PaymentExpense, PaymentMethod
-from .serializers import BuildingAssetSerializer, PaymentClaimSerializer, PaymentSerializer
+from .serializers import AssetSaleSerializer, BuildingAssetSerializer, PaymentClaimSerializer, PaymentSerializer
 
 
 # ── Arabic numeral / receipt helpers ─────────────────────────────────────────
@@ -51,6 +53,8 @@ _RECEIPT_LABELS = {
     "en": {
         "receipt_title": "PAYMENT RECEIPT",
         "receipt_no": "Receipt No",
+        "voided": "VOIDED",
+        "reversal_of": "REVERSAL of receipt",
         "building": "BUILDING",
         "unit": "UNIT",
         "owner": "OWNER",
@@ -77,6 +81,8 @@ _RECEIPT_LABELS = {
     "ar": {
         "receipt_title": "إيصال دفع",
         "receipt_no": "رقم الإيصال",
+        "voided": "ملغي",
+        "reversal_of": "إلغاء الإيصال",
         "building": "المبنى",
         "unit": "الوحدة",
         "owner": "المالك",
@@ -123,7 +129,7 @@ class PaymentViewSet(ModelViewSet):
     # ── Scoping & filtering ─────────────────────────────────────────────────────
 
     def get_queryset(self):
-        qs = Payment.objects.select_related("apartment", "recorded_by").prefetch_related(
+        qs = Payment.objects.select_related("apartment", "recorded_by", "reversal").prefetch_related(
             "expenses", "payment_expenses", "payment_expenses__expense",
         )
 
@@ -152,9 +158,113 @@ class PaymentViewSet(ModelViewSet):
     # ── Permissions ─────────────────────────────────────────────────────────────
 
     def get_permissions(self):
-        if self.action == "create":
+        if self.action in ("create", "reverse"):
             return [IsAuthenticated(), IsAdminRole()]
         return [IsAuthenticated()]
+
+    # ── Reversal ────────────────────────────────────────────────────────────────
+
+    @action(detail=True, methods=["post"], url_path="reverse")
+    def reverse(self, request, pk=None):
+        """
+        POST /api/v1/payments/{id}/reverse/   body: {reason}
+        Cancels a payment without rewriting history: adds a linked row with the negative amount (and negative
+        allocations), puts the amount back on the unit's balance, and audits it. One reversal per payment.
+        """
+        ensure_manages(request.user, self.get_object().apartment.building_id)
+        reason = str(request.data.get("reason") or "").strip()
+        if not reason:
+            raise ValidationError({"reason": [_("A reason is required to reverse a payment.")]})
+
+        with transaction.atomic():
+            original = Payment.objects.select_for_update().get(pk=pk)
+            if original.is_reversal:
+                return Response({"detail": _("A reversal cannot itself be reversed.")}, status=409)
+            if Payment.objects.filter(reversal_of=original).exists():
+                return Response({"detail": _("This payment was already reversed.")}, status=409)
+            apt = Apartment.objects.select_for_update().get(pk=original.apartment_id)
+            balance_before = apt.balance
+            apt.balance += original.amount_paid
+            apt.save(update_fields=["balance", "updated_at"])
+            links = list(original.payment_expenses.all())
+            reversal = Payment.objects.create(
+                apartment=apt,
+                amount_paid=-original.amount_paid,
+                payment_method=original.payment_method,
+                payment_date=timezone.localdate(),
+                notes=original.notes,
+                balance_before=balance_before,
+                balance_after=apt.balance,
+                recorded_by=request.user,
+                reversal_of=original,
+                reversal_reason=reason,
+            )
+            legacy = [link for link in links if link.allocated_amount is None]
+            if legacy:
+                # legacy links were counted as an even share of the payment: pin that share to cents (the
+                # remainder goes on the last link) so the reversal below cancels it exactly
+                cent = Decimal("0.01")
+                share = (original.amount_paid / len(links)).quantize(cent, rounding=ROUND_DOWN)
+                for link in legacy:
+                    link.allocated_amount = share
+                if len(legacy) == len(links):
+                    legacy[-1].allocated_amount = original.amount_paid - share * (len(links) - 1)
+                for link in legacy:
+                    link.save(update_fields=["allocated_amount"])
+            for link in links:
+                PaymentExpense.objects.create(
+                    payment=reversal, expense=link.expense, allocated_amount=-link.allocated_amount
+                )
+
+        log_action(
+            user=request.user,
+            action="payment.reversed",
+            entity="payment",
+            entity_id=original.pk,
+            changes={
+                "reason": {"before": None, "after": reason},
+                "reversal_id": {"before": None, "after": str(reversal.pk)},
+                "amount": {"before": str(original.amount_paid), "after": str(reversal.amount_paid)},
+            },
+            request=request,
+        )
+        self._flag_reversed_claim(request, original, reversal, reason)
+        return Response(self.get_serializer(reversal).data, status=201)
+
+    def _flag_reversed_claim(self, request, original, reversal, reason):
+        """A reversed payment that came from a confirmed claim: audit it on the claim and tell the resident."""
+        from apps.notifications.services import tell
+
+        claim = PaymentClaim.objects.filter(payment=original).select_related("apartment", "created_by").first()
+        if claim is None:
+            return
+        log_action(
+            user=request.user,
+            action="claim.payment_reversed",
+            entity="payment_claim",
+            entity_id=claim.pk,
+            changes={
+                "payment_id": {"before": str(original.pk), "after": str(reversal.pk)},
+                "reason": {"before": None, "after": reason},
+            },
+            request=request,
+        )
+        if claim.created_by is None or not claim.created_by.is_active:
+            return
+        unit, amount = claim.apartment.unit_number, claim.amount
+        try:
+            en = (
+                "Payment reversed",
+                f"Your confirmed transfer of {amount} EGP for unit {unit} was reversed. Reason: {reason}",
+            )
+            ar = (
+                "تم إلغاء الدفعة",
+                f"تم إلغاء تحويلك المؤكد بمبلغ {amount} ج.م للوحدة {unit}. السبب: {reason}",
+            )
+            meta = {"claim_id": str(claim.pk), "apartment_id": str(claim.apartment_id), "reversed": True}
+            tell(claim.created_by, en, ar, meta)
+        except Exception:
+            logger.exception("Could not notify the resident about the reversal of claim %s", claim.pk)
 
     # ── Write helper ────────────────────────────────────────────────────────────
 
@@ -168,7 +278,6 @@ class PaymentViewSet(ModelViewSet):
           5. Create PaymentExpense rows with optional allocations.
           6. Emit audit log.
         """
-        from decimal import Decimal
 
         apartment = serializer.validated_data["apartment"]
         ensure_manages(self.request.user, apartment.building_id)
@@ -210,7 +319,7 @@ class PaymentViewSet(ModelViewSet):
             from apps.notifications.services import notify_payment_confirmed
             notify_payment_confirmed(payment)
         except Exception:
-            pass
+            logger.exception("Could not notify the unit owner of payment %s", payment.pk)
 
     # ── PDF Receipt ──────────────────────────────────────────────────────────────
 
@@ -307,11 +416,19 @@ class PaymentViewSet(ModelViewSet):
             owner_display = esc(first_owner.get_full_name() or first_owner.email) if first_owner else "—"
 
         receipt_no_label = labels["receipt_no"]
-        receipt_no_value = str(payment.id)[:8].upper()
+        receipt_no_value = str(payment.receipt_no) if payment.receipt_no else str(payment.id)[:8].upper()
         if is_rtl:
             receipt_no_value = _to_eastern_arabic(receipt_no_value)
         paid_amount_display = _fmt_money(payment.amount_paid, lang)
         paid_received_text = labels["paid_received"].replace("{amount}", paid_amount_display)
+        voided_html = ""
+        if payment.is_reversal:
+            original_no = payment.reversal_of.receipt_no or str(payment.reversal_of_id)[:8].upper()
+            voided_html = f'<div class="voided-box">{labels["reversal_of"]} #{original_no}: {esc(payment.reversal_reason)}</div>'
+        elif payment.is_voided:
+            voided_html = (
+                f'<div class="voided-box">{labels["voided"]} - {esc(payment.reversal.reversal_reason)}</div>'
+            )
 
         html_dir = "rtl" if is_rtl else "ltr"
         lbl_align = "right" if is_rtl else "left"
@@ -321,7 +438,6 @@ class PaymentViewSet(ModelViewSet):
 <head>
 <meta charset="utf-8">
 <style>
-  @import url("https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;700&family=Noto+Sans+Arabic:wght@400;700&display=swap");
   @page {{ size: A6; margin: 0; }}
   * {{ box-sizing: border-box; margin: 0; padding: 0; }}
   body {{
@@ -374,6 +490,16 @@ class PaymentViewSet(ModelViewSet):
     padding: 2.5mm;
     border-radius: 2mm;
   }}
+  .voided-box {{
+    background: #FDECEA;
+    color: #B71C1C;
+    font-size: 9pt;
+    font-weight: bold;
+    text-align: center;
+    margin: 3mm 6mm 0;
+    padding: 2.5mm;
+    border-radius: 2mm;
+  }}
   .footer {{
     text-align: center;
     color: #888;
@@ -413,6 +539,7 @@ class PaymentViewSet(ModelViewSet):
     {rows_html}
   </table>
 
+  {voided_html}
   <div class="paid-box">&#10003; {paid_received_text}</div>
 
   <div class="footer">{labels["footer"]}</div>
@@ -430,7 +557,7 @@ class PaymentViewSet(ModelViewSet):
             )
 
         resp = HttpResponse(pdf_bytes, content_type="application/pdf")
-        resp["Content-Disposition"] = f'inline; filename="receipt_{str(payment.id)[:8]}.pdf"'
+        resp["Content-Disposition"] = f'inline; filename="receipt_{payment.receipt_no or str(payment.id)[:8]}.pdf"'
         return resp
 
 
@@ -469,26 +596,18 @@ class BuildingAssetViewSet(ModelViewSet):
         Marks the asset as sold and records the sale.
         """
         asset = self.get_object()
-        if asset.is_sold:
-            return Response({"detail": _("This asset has already been sold.")}, status=400)
-
-        sale_date = request.data.get("sale_date")
-        sale_price = request.data.get("sale_price")
-        if not sale_date or sale_price is None:
-            return Response({"detail": _("sale_date and sale_price are required.")}, status=400)
+        sale = AssetSaleSerializer(data=request.data)
+        sale.is_valid(raise_exception=True)
 
         with transaction.atomic():
-            AssetSale.objects.create(
-                asset=asset,
-                sale_date=sale_date,
-                sale_price=sale_price,
-                buyer_name=request.data.get("buyer_name", ""),
-                buyer_contact=request.data.get("buyer_contact", ""),
-                notes=request.data.get("notes", ""),
-                recorded_by=request.user,
-            )
+            # lock the row so two simultaneous sales cannot both pass the is_sold check
+            asset = BuildingAsset.objects.select_for_update().get(pk=asset.pk)
+            if asset.is_sold:
+                return Response({"detail": _("This asset has already been sold.")}, status=400)
+            sale.save(asset=asset, recorded_by=request.user)
             asset.is_sold = True
             asset.save(update_fields=["is_sold"])
+        sale_price = sale.validated_data["sale_price"]
 
         log_action(
             user=request.user,
@@ -504,6 +623,9 @@ class BuildingAssetViewSet(ModelViewSet):
         )
 
         return Response(BuildingAssetSerializer(asset).data, status=201)
+
+
+logger = logging.getLogger(__name__)
 
 
 class PaymentClaimViewSet(ModelViewSet):
@@ -545,6 +667,27 @@ class PaymentClaimViewSet(ModelViewSet):
         )
         if not allowed:
             raise PermissionDenied("Only the building's admins or treasurer can review this.")
+        apartment = claim.apartment
+        if apartment.owner_id == user.pk or apartment.owners.filter(pk=user.pk).exists():
+            raise PermissionDenied(_("You cannot review a payment claim for a unit you own or rent."))
+
+    def _tell_resident(self, claim, confirmed):
+        """Tell the resident who reported the transfer how it was decided (a failure never undoes the decision)."""
+        from apps.notifications.services import tell
+
+        if claim.created_by is None or not claim.created_by.is_active:
+            return
+        unit, amount = claim.apartment.unit_number, claim.amount
+        try:
+            if confirmed:
+                en = ("Payment confirmed", f"Your transfer of {amount} EGP for unit {unit} was confirmed.")
+                ar = ("تم تأكيد الدفعة", f"تم تأكيد تحويلك بمبلغ {amount} ج.م للوحدة {unit}.")
+            else:
+                en = ("Payment not accepted", f"Your transfer of {amount} EGP for unit {unit} was rejected.")
+                ar = ("لم يتم قبول الدفعة", f"تم رفض تحويلك بمبلغ {amount} ج.م للوحدة {unit}.")
+            tell(claim.created_by, en, ar, {"claim_id": str(claim.pk), "apartment_id": str(claim.apartment_id)})
+        except Exception:
+            logger.exception("Could not notify the resident about claim %s", claim.pk)
 
     def perform_create(self, serializer):
         user = self.request.user
@@ -582,6 +725,7 @@ class PaymentClaimViewSet(ModelViewSet):
             claim.payment = payment
             claim.save()
         log_action(user=request.user, action="create", entity="payment", entity_id=payment.pk, request=request)
+        self._tell_resident(claim, confirmed=True)
         return Response(PaymentClaimSerializer(claim).data)
 
     @action(detail=True, methods=["post"], url_path="reject")
@@ -594,4 +738,13 @@ class PaymentClaimViewSet(ModelViewSet):
         claim.reviewed_by = request.user
         claim.reviewed_at = timezone.now()
         claim.save()
+        log_action(
+            user=request.user,
+            action="reject",
+            entity="payment_claim",
+            entity_id=claim.pk,
+            changes={"amount": str(claim.amount), "apartment_id": str(claim.apartment_id)},
+            request=request,
+        )
+        self._tell_resident(claim, confirmed=False)
         return Response(PaymentClaimSerializer(claim).data)

@@ -5,11 +5,13 @@ import csv
 import io
 
 from django.http import HttpResponse
+from django.shortcuts import get_object_or_404
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 
 from apps.authentication.permissions import IsAdminRole
 from apps.buildings.scoping import managed_buildings
+from apps.exports.safe import safe_row
 from apps.expenses.models import Expense
 from apps.payments.models import AssetSale, Payment
 
@@ -90,7 +92,7 @@ class ExportPaymentsView(APIView):
         writer = csv.writer(response)
         writer.writerow(self._HEADERS)
         for row in self._rows(qs, asset_qs):
-            writer.writerow(row)
+            writer.writerow(safe_row(row))
         return response
 
 
@@ -152,7 +154,7 @@ class ExportExpensesView(APIView):
         writer = csv.writer(response)
         writer.writerow(self._HEADERS)
         for row in self._rows(qs):
-            writer.writerow(row)
+            writer.writerow(safe_row(row))
         return response
 
     def _xlsx_response(self, qs):
@@ -163,7 +165,7 @@ class ExportExpensesView(APIView):
         ws.title = "Expenses"
         ws.append(self._HEADERS)
         for row in self._rows(qs):
-            ws.append(row)
+            ws.append(safe_row(row))
 
         buf = io.BytesIO()
         wb.save(buf)
@@ -219,4 +221,32 @@ class ExportAssetSalesView(APIView):
                 sale.buyer_name,
                 sale.buyer_contact,
             ])
+        return response
+
+
+class ExportBuildingView(APIView):
+    """
+    GET /api/v1/exports/building/{building_id}/
+
+    One XLSX workbook for a building the caller administers: units, residents (owners and renters), expenses,
+    payments (reversals included), payment claims, late fees and the building's audit log.
+    """
+
+    permission_classes = [IsAuthenticated, IsAdminRole]
+
+    def get(self, request, building_id):
+        from apps.audit.mixins import log_action
+
+        from .building_export import build_workbook
+
+        building = get_object_or_404(managed_buildings(request.user), pk=building_id)
+        log_action(
+            user=request.user, action="export", entity="building", entity_id=building.pk,
+            changes={"export": "full_building"}, request=request,
+        )
+        response = HttpResponse(
+            build_workbook(building),
+            content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        )
+        response["Content-Disposition"] = f'attachment; filename="building-{building.pk}.xlsx"'
         return response

@@ -32,5 +32,7 @@
   "delete_title": "Confirm delete",
   "delete_text": "“{{name}}” will be deleted permanently.",
   "error": "Could not complete that.",
-  "pdf_error": "Could not create the PDF."
+  "pdf_error": "Could not create the PDF.",
+  "export_building": "Download full building export (Excel)",
+  "export_error": "Could not create the export."
 }

@@ -98,12 +98,65 @@ class ApartmentViewSet(ModelViewSet):
             request=self.request,
         )
 
+    def _hand_over(self, instance, previous):
+        """R-25: the previous owner loses the unit and, unless they hold another one, the building."""
+        from apps.buildings.models import UserBuilding
+        from apps.notifications.services import building_admins, tell
+
+        instance.owners.remove(previous)
+        if instance.owner is not None:
+            instance.owners.add(instance.owner)
+        still_there = (
+            Apartment.objects.filter(building=instance.building)
+            .filter(Q(owner=previous) | Q(owners=previous))
+            .exists()
+        )
+        board_role = ""
+        if not still_there and previous.pk not in {u.pk for u in building_admins(instance.building)}:
+            link = UserBuilding.objects.filter(user=previous, building=instance.building)
+            board_role = link.values_list("board_role", flat=True).first() or ""
+            link.delete()
+        log_action(
+            user=self.request.user,
+            action="owner_changed",
+            entity="apartment",
+            entity_id=instance.pk,
+            changes={
+                "before": str(previous.pk),
+                "after": str(instance.owner_id) if instance.owner_id else None,
+                "balance": str(instance.balance),
+                **({"board_role_removed": board_role} if board_role else {}),
+            },
+            request=self.request,
+        )
+        en_note = ar_note = ""
+        if board_role:
+            en_note = f" The previous owner's board role ({board_role}) was removed; assign it again if needed."
+            ar_note = f" تمت إزالة دور الهيئة الإدارية ({board_role}) من المالك السابق؛ عيّنه من جديد عند الحاجة."
+        for admin in building_admins(instance.building):
+            tell(
+                admin,
+                (
+                    "Unit owner changed",
+                    f"Unit {instance.unit_number} changed owner. Balance at handover: {instance.balance} EGP."
+                    + en_note,
+                ),
+                (
+                    "تغيير مالك وحدة",
+                    f"تغيّر مالك الوحدة {instance.unit_number}. الرصيد وقت التسليم: {instance.balance} ج.م." + ar_note,
+                ),
+                {"apartment_id": str(instance.pk)},
+            )
+
     def perform_update(self, serializer):
         old = {
             field: getattr(serializer.instance, field)
             for field in serializer.validated_data
         }
+        previous_owner = serializer.instance.owner
         instance = serializer.save()
+        if "owner" in serializer.validated_data and previous_owner and previous_owner.pk != instance.owner_id:
+            self._hand_over(instance, previous_owner)
         changes = {
             field: {
                 "before": str(old.get(field, "")),

@@ -1,12 +1,14 @@
 """Expense views – Sprint 3."""
 from __future__ import annotations
 
+import logging
 import os
 
 from django.conf import settings
 from django.db import transaction
 from django.db.models import F
-from django.utils import timezone
+from django.utils import timezone, translation
+from django.utils.translation import gettext
 from rest_framework import status
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.decorators import action
@@ -32,6 +34,9 @@ from .serializers import (
     ExpenseSerializer,
     MediaFileSerializer,
 )
+
+
+logger = logging.getLogger(__name__)
 
 
 class ExpenseCategoryViewSet(ModelViewSet):
@@ -172,7 +177,7 @@ class ExpenseViewSet(ModelViewSet):
             )
             notify_expense_created(expense, [ae.apartment for ae in ae_list])
         except Exception:
-            pass
+            logger.exception("Could not notify owners of expense %s", expense.pk)
 
     @action(
         detail=False, methods=["post"], url_path="import",
@@ -241,7 +246,7 @@ class ExpenseViewSet(ModelViewSet):
         if conflict:
             return conflict
         expense = approve_expense(expense, request.user, str(request.data.get("note") or ""))
-        log_action(user=request.user, action="update", entity="expense", entity_id=expense.pk, changes={"approval": "approved"}, request=request)
+        log_action(user=request.user, action="approve", entity="expense", entity_id=expense.pk, changes={"approval": "approved"}, request=request)
         return Response(self.get_serializer(expense).data)
 
     @action(detail=True, methods=["post"], url_path="reject")
@@ -250,7 +255,7 @@ class ExpenseViewSet(ModelViewSet):
         if conflict:
             return conflict
         expense = reject_expense(expense, request.user, str(request.data.get("note") or ""))
-        log_action(user=request.user, action="update", entity="expense", entity_id=expense.pk, changes={"approval": "rejected"}, request=request)
+        log_action(user=request.user, action="reject", entity="expense", entity_id=expense.pk, changes={"approval": "rejected"}, request=request)
         return Response(self.get_serializer(expense).data)
 
     @action(detail=True, methods=["post"], url_path="put-to-vote")
@@ -267,20 +272,26 @@ class ExpenseViewSet(ModelViewSet):
             return conflict
         if expense.polls.filter(finalized_at__isnull=True).exists():
             return Response({"detail": _("A vote on this expense is already open.")}, status=409)
-        ar = getattr(request.user, "preferred_language", "ar") == "ar"
+        with translation.override(getattr(request.user, "preferred_language", None) or "ar"):
+            title = gettext("Approve this expense: %(title)s (%(amount)s)") % {
+                "title": expense.title,
+                "amount": expense.amount,
+            }
+            approve_text, reject_text = gettext("Approve"), gettext("Reject")
         poll = Poll.objects.create(
-            building=expense.building, expense=expense, created_by=request.user,
-            title=(f"الموافقة على مصروف: {expense.title} ({expense.amount})" if ar else f"Approve this expense: {expense.title} ({expense.amount})"),
+            building=expense.building, expense=expense, created_by=request.user, title=title,
             description=expense.description, closes_at=timezone.now() + timedelta(days=int(request.data.get("days") or 3)),
             quorum_percent=int(request.data.get("quorum_percent") or 0),
         )
         PollOption.objects.bulk_create([
-            PollOption(poll=poll, text="موافق" if ar else "Approve", order=0),
-            PollOption(poll=poll, text="غير موافق" if ar else "Reject", order=1),
+            PollOption(poll=poll, text=approve_text, order=0),
+            PollOption(poll=poll, text=reject_text, order=1),
         ])
         for member in expense.building.members.exclude(pk=request.user.pk):
+            with translation.override(getattr(member, "preferred_language", None) or "en"):
+                vote_title = gettext("New vote")
             notify_user(user=member, notification_type=NotificationType.ANNOUNCEMENT,
-                        title="تصويت جديد" if getattr(member, "preferred_language", "en") == "ar" else "New vote",
+                        title=vote_title,
                         body=poll.title, category="announcements", metadata={"poll_id": str(poll.pk)})
         return Response({"poll_id": str(poll.pk)}, status=201)
 
@@ -307,6 +318,15 @@ class ExpenseViewSet(ModelViewSet):
 
     def perform_destroy(self, instance):
         from django.core.files.storage import default_storage
+        from rest_framework.exceptions import ValidationError
+
+        from .utils import has_payments
+
+        if has_payments(instance):
+            raise ValidationError(
+                {"detail": _("This expense has payments and cannot be deleted. "
+                             "Reverse the payments or add a credit note instead.")}
+            )
 
         # Delete physical files and MediaFile records before soft-deleting
         media_files = MediaFile.objects.filter(entity_type="expense", entity_id=instance.pk)
@@ -319,7 +339,7 @@ class ExpenseViewSet(ModelViewSet):
                 if default_storage.exists(storage_name):
                     default_storage.delete(storage_name)
             except Exception:
-                pass
+                logger.exception("Could not delete media file %s", mf.url)
         media_files.delete()
 
         log_action(

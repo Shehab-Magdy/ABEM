@@ -39,6 +39,18 @@ def paid_toward_expense(expense, apartment_id) -> Decimal:
     return total
 
 
+def has_payments(expense) -> bool:
+    """True when money has been paid toward this expense (net of reversals), so its amount and split are frozen."""
+    from django.db.models import Sum
+
+    from apps.payments.models import PaymentExpense
+
+    links = PaymentExpense.objects.filter(expense=expense)
+    if links.filter(allocated_amount__isnull=True).exists():  # legacy payments: counted as paid
+        return True
+    return (links.aggregate(s=Sum("allocated_amount"))["s"] or Decimal("0.00")) > 0
+
+
 def run_split_engine(
     expense,
     custom_apartment_ids: list | None = None,

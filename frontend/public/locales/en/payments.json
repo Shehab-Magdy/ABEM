@@ -93,5 +93,14 @@
   "pay_send_error": "Could not send the request.",
   "claims_title": "{{count}} InstaPay transfer(s) waiting for confirmation",
   "claims_confirm": "Confirm",
-  "claims_reject": "Reject"
+  "claims_reject": "Reject",
+  "colReceiptNo": "Receipt No",
+  "voided": "Voided",
+  "reversal": "Reversal",
+  "reverse": "Reverse",
+  "reverseTitle": "Reverse this payment",
+  "reverseHint": "A reversal does not delete the payment. It adds a linked negative entry and puts the amount back on the unit's balance.",
+  "reverseReason": "Reason (required)",
+  "reverseDone": "Payment reversed.",
+  "reverseError": "Could not reverse the payment."
 }

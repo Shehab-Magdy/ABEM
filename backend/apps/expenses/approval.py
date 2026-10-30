@@ -1,6 +1,8 @@
 """Approval of large costs: a cost above the building's threshold bills no one until it is approved."""
 from __future__ import annotations
 
+import logging
+
 from django.db import transaction
 from django.utils import timezone
 
@@ -8,6 +10,8 @@ from apps.buildings.scoping import has_board_role, managed_buildings
 
 from .models import Expense
 from .utils import run_split_engine
+
+logger = logging.getLogger(__name__)
 
 
 def needs_approval(expense: Expense) -> bool:
@@ -42,7 +46,7 @@ def approve(expense: Expense, user=None, note: str = "") -> Expense:
 
         notify_expense_created(expense, [ae.apartment for ae in expense.apartment_expenses.select_related("apartment__owner")])
     except Exception:
-        pass
+        logger.exception("Could not notify owners of expense %s", expense.pk)
     return expense
 
 

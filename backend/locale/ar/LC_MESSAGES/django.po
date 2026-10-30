@@ -724,3 +724,132 @@ msgstr "الفئة يجب أن تكون إحدى: %(names)s."
 
 msgid "year must look like 2026."
 msgstr "السنة يجب أن تكون بالشكل 2026."
+
+msgid "A unit cannot be moved to another building."
+msgstr "لا يمكن نقل الوحدة إلى عمارة أخرى."
+
+msgid "An asset cannot be moved to another building."
+msgstr "لا يمكن نقل الأصل إلى عمارة أخرى."
+
+msgid "An expense cannot be moved to another building."
+msgstr "لا يمكن نقل المصروف إلى عمارة أخرى."
+
+msgid "This category belongs to another building."
+msgstr "هذه الفئة تابعة لعمارة أخرى."
+
+msgid "Every unit in a custom split must belong to this building."
+msgstr "يجب أن تنتمي كل وحدة في التقسيم المخصص إلى هذه العمارة."
+
+msgid "A reason is required to reverse a payment."
+msgstr "السبب مطلوب لإلغاء الدفعة."
+
+msgid "A reversal cannot itself be reversed."
+msgstr "لا يمكن إلغاء عملية إلغاء."
+
+msgid "This payment was already reversed."
+msgstr "تم إلغاء هذه الدفعة مسبقاً."
+
+msgid "sale_price must be greater than zero."
+msgstr "سعر البيع يجب أن يكون أكبر من صفر."
+
+msgid "This expense has payments. Its amount, split and units cannot be changed; reverse the payments or add a credit note instead."
+msgstr "عليه مدفوعات. لا يمكن تغيير مبلغ هذا المصروف أو تقسيمه أو وحداته؛ قم بإلغاء المدفوعات أو أضف إشعار دائن بدلاً من ذلك."
+
+msgid "This expense has payments and cannot be deleted. Reverse the payments or add a credit note instead."
+msgstr "عليه مدفوعات ولا يمكن حذفه. قم بإلغاء المدفوعات أو أضف إشعار دائن بدلاً من ذلك."
+
+msgid "Only people already in the building can be made owners. Invite them instead."
+msgstr "لا يمكن تعيين مالك إلا من الأشخاص الموجودين في المبنى. قم بدعوته بدلاً من ذلك."
+
+msgid "A plan payment for this building is already waiting for review."
+msgstr "توجد دفعة باقة لهذا المبنى بانتظار المراجعة."
+
+msgid "You cannot review a payment claim for a unit you own or rent."
+msgstr "لا يمكنك مراجعة مطالبة دفع لوحدة تملكها أو تستأجرها."
+
+msgid "You are the last platform owner. Make someone else a platform owner first."
+msgstr "أنت آخر مالك للمنصة. عيّن مالكاً آخر للمنصة أولاً."
+
+msgid "You still owe a balance on your unit. Send confirm_balance to delete your account anyway."
+msgstr "ما زال عليك رصيد مستحق على وحدتك. أكّد (confirm_balance) لحذف حسابك رغم ذلك."
+
+msgid "Your plan's unit limit is reached. Upgrade the plan to add more units."
+msgstr "تم بلوغ الحد الأقصى للوحدات في باقتك. قم بترقية الباقة لإضافة المزيد من الوحدات."
+
+msgid "Monthly subscription billing is part of the Standard and Plus plans."
+msgstr "الفوترة بالاشتراك الشهري جزء من باقتي القياسية وبلس."
+
+msgid "The annual report is part of the Plus plan."
+msgstr "التقرير السنوي جزء من باقة بلس."
+
+msgid "Mobile Wallet"
+msgstr "محفظة موبايل"
+
+msgid "Amount of the payment allocated to this expense. NULL = legacy/unspecified."
+msgstr "مبلغ الدفعة المخصص لهذا المصروف. فارغ = قديم/غير محدد."
+
+msgid "Empty = unlimited"
+msgstr "فارغ = غير محدود"
+
+msgid "Any of: annual_report, subscriptions"
+msgstr "أي من: annual_report, subscriptions"
+
+msgid "Days monthly billing keeps running after a paid plan or trial ends"
+msgstr "عدد الأيام التي تستمر فيها الفوترة الشهرية بعد انتهاء الباقة المدفوعة أو الفترة التجريبية"
+
+msgid "Yearly"
+msgstr "سنوي"
+
+msgid "The price when it was requested"
+msgstr "السعر وقت الطلب"
+
+msgid "Not found."
+msgstr "غير موجود."
+
+msgid "Only a building admin can pay for a plan."
+msgstr "يمكن لمدير المبنى فقط دفع ثمن الباقة."
+
+msgid "This plan is free; there is nothing to pay."
+msgstr "هذه الباقة مجانية؛ لا يوجد ما يجب دفعه."
+
+msgid "This payment was already reviewed."
+msgstr "تمت مراجعة هذه الدفعة بالفعل."
+
+msgid "Trial and grace days must be whole numbers."
+msgstr "يجب أن تكون أيام التجربة والسماح أعداداً صحيحة."
+
+msgid "Closed"
+msgstr "مغلق"
+
+msgid "The screen the user was on"
+msgstr "الشاشة التي كان المستخدم عليها"
+
+msgid "Enter a valid email address."
+msgstr "أدخل عنوان بريد إلكتروني صالحاً."
+
+msgid "At least one building must be assigned to an admin user."
+msgstr "يجب تعيين مبنى واحد على الأقل لمستخدم مدير."
+
+msgid "You do not manage all selected buildings."
+msgstr "أنت لا تدير جميع المباني المحددة."
+
+msgid "One or more apartments do not exist."
+msgstr "شقة واحدة أو أكثر غير موجودة."
+
+msgid "You do not manage the building(s) for all selected apartments."
+msgstr "أنت لا تدير مبنى (مباني) جميع الشقق المحددة."
+
+msgid "Message"
+msgstr "الرسالة"
+
+msgid "Approve this expense: %(title)s (%(amount)s)"
+msgstr "الموافقة على مصروف: %(title)s (%(amount)s)"
+
+msgid "Approve"
+msgstr "موافق"
+
+msgid "Reject"
+msgstr "غير موافق"
+
+msgid "New vote"
+msgstr "تصويت جديد"

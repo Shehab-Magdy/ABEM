@@ -3,6 +3,8 @@ import axiosClient from "./axiosClient";
 const multipartConfig = { headers: { "Content-Type": "multipart/form-data" } };
 
 export const buildingsApi = {
+  /** Full building export (units, residents, expenses, payments, claims, late fees, audit log) as XLSX. Admin only. */
+  exportAll: (id) => axiosClient.get(`/exports/building/${id}/`, { responseType: "blob", timeout: 90000 }),
   /** Current balance (خزينة العمارة) — read-only, visible to admins and residents. */
   treasury: (id) => axiosClient.get(`/buildings/${id}/treasury/`),
   /** Monthly statement (كشف حساب شهري). month = "YYYY-MM". */

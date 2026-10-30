@@ -36,6 +36,7 @@
   "delete_account_help": "Erases your name, email, phone and picture and removes your account from the building. The building's financial records stay, without your personal details.",
   "delete_account_confirm_title": "Delete your account?",
   "delete_account_confirm_text": "This cannot be undone. Enter your password to confirm.",
+  "delete_account_balance": "You still owe {{amount}} EGP on your unit. Deleting your account does not cancel it. Press the button again to delete anyway.",
   "delete_account_confirm": "Delete permanently",
   "cancel": "Cancel",
   "prefs_title": "Notifications",

@@ -181,6 +181,20 @@ export default function RecordsPage() {
     }
   };
 
+  const exportAll = async () => {
+    try {
+      const res = await buildingsApi.exportAll(buildingId);
+      const url = URL.createObjectURL(res.data);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `building-${buildingId}.xlsx`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      setError(t("export_error"));
+    }
+  };
+
   const remove = async () => {
     await (removing.type === "meeting" ? governanceApi.deleteMeeting(removing.id) : governanceApi.deleteDocument(removing.id));
     setRemoving(null);
@@ -196,6 +210,11 @@ export default function RecordsPage() {
           <TextField select size="small" label={t("building")} value={buildingId} onChange={(e) => setBuildingId(e.target.value)} sx={{ mb: 2, minWidth: 220 }}>
             {buildings.map((b) => <MenuItem key={b.id} value={b.id}>{b.name}</MenuItem>)}
           </TextField>
+        )}
+        {isAdmin && buildingId && (
+          <Button variant="outlined" startIcon={<Download />} onClick={exportAll} data-testid="export-building" sx={{ mb: 2, minHeight: 44, display: "flex" }}>
+            {t("export_building")}
+          </Button>
         )}
         {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>{error}</Alert>}
         <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ mb: 2 }}>

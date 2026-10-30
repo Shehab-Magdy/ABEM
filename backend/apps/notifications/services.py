@@ -157,3 +157,23 @@ def notify_payment_confirmed(payment) -> None:
                 "amount": str(payment.amount_paid),
             },
         )
+
+
+def building_admins(building) -> list:
+    """Active primary admin and co-admins of `building`."""
+    people = {building.admin_id: building.admin}
+    for co in building.co_admins.all():
+        people[co.pk] = co
+    return [u for u in people.values() if u is not None and u.is_active]
+
+
+def tell(user, en: tuple[str, str], ar: tuple[str, str], metadata: dict | None = None):
+    """Send `user` an in-app message in their language; en and ar are (title, body)."""
+    title, body = ar if getattr(user, "preferred_language", "en") == "ar" else en
+    return notify_user(
+        user=user,
+        notification_type=NotificationType.ANNOUNCEMENT,
+        title=title,
+        body=body,
+        metadata=metadata or {},
+    )

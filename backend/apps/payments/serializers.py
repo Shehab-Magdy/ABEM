@@ -19,6 +19,11 @@ class AssetSaleSerializer(serializers.ModelSerializer):
         fields = ["id", "sale_date", "sale_price", "buyer_name", "buyer_contact", "notes", "created_at"]
         read_only_fields = ["id", "created_at"]
 
+    def validate_sale_price(self, value):
+        if value <= Decimal("0.00"):
+            raise serializers.ValidationError(_("sale_price must be greater than zero."))
+        return value
+
 
 class BuildingAssetSerializer(serializers.ModelSerializer):
     building_id = serializers.PrimaryKeyRelatedField(
@@ -35,6 +40,11 @@ class BuildingAssetSerializer(serializers.ModelSerializer):
             "is_sold", "sale", "created_at",
         ]
         read_only_fields = ["id", "is_sold", "created_at"]
+
+    def validate(self, data):
+        if self.instance is not None and "building" in data and data["building"].pk != self.instance.building_id:
+            raise serializers.ValidationError({"building_id": _("An asset cannot be moved to another building.")})
+        return data
 
 
 class PaymentExpenseReadSerializer(serializers.ModelSerializer):
@@ -100,6 +110,8 @@ class PaymentSerializer(serializers.ModelSerializer):
     )
 
     recorded_by = serializers.StringRelatedField(read_only=True)
+    is_voided = serializers.BooleanField(read_only=True)
+    is_reversal = serializers.BooleanField(read_only=True)
 
     class Meta:
         model = Payment
@@ -117,10 +129,18 @@ class PaymentSerializer(serializers.ModelSerializer):
             "balance_after",
             "remaining_balance",
             "recorded_by",
+            "receipt_no",
+            "reversal_of",
+            "reversal_reason",
+            "is_voided",
+            "is_reversal",
             "created_at",
         ]
         read_only_fields = [
             "id",
+            "receipt_no",
+            "reversal_of",
+            "reversal_reason",
             "balance_before",
             "balance_after",
             "remaining_balance",
