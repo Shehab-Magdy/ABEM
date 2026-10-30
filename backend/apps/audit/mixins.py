@@ -79,3 +79,12 @@ class AuditLogMixin:
             request=self.request,
         )
         instance.delete()
+
+
+def log_job_run(action, per_building):
+    """One summary audit entry per building for a scheduled job run.
+
+    `per_building` maps building id -> dict of counters (e.g. {"created": 3}); empty runs write nothing.
+    """
+    for building_id, summary in per_building.items():
+        log_action(user=None, action=action, entity="building", entity_id=building_id, changes=summary)

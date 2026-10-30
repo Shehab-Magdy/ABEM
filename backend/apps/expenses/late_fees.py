@@ -9,6 +9,7 @@ from django.db.models import F
 from django.utils import timezone
 
 from apps.apartments.models import Apartment
+from apps.audit.mixins import log_job_run
 
 from .models import ApartmentExpense, Expense, ExpenseCategory, ExpenseKind, LateFee, SplitType
 from .utils import paid_toward_expense
@@ -31,6 +32,7 @@ def apply_late_fees(today: date | None = None) -> int:
 
     today = today or timezone.localdate()
     created = 0
+    runs: dict = {}
     shares = (
         ApartmentExpense.objects.filter(
             expense__kind=ExpenseKind.SUBSCRIPTION,
@@ -65,6 +67,10 @@ def apply_late_fees(today: date | None = None) -> int:
             Apartment.objects.filter(pk=share.apartment_id).update(balance=F("balance") + fee)
             LateFee.objects.create(share=share, expense=charge)
         created += 1
+        run = runs.setdefault(plan.building_id, {"created": 0, "total": Decimal("0.00")})
+        run["created"] += 1
+        run["total"] += fee
+    log_job_run("apply_late_fees", {b: {**r, "total": str(r["total"])} for b, r in runs.items()})
     return created
 
 

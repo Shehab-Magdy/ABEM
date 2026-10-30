@@ -9,6 +9,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.analytics.views import IsPlatformOwner
+from apps.audit.mixins import log_action
 from apps.buildings.models import Building
 from apps.buildings.scoping import ensure_manages, managed_buildings
 
@@ -94,6 +95,14 @@ class PlanPaymentViewSet(mixins.CreateModelMixin, mixins.ListModelMixin, viewset
             payment.save(update_fields=["status", "reviewed_at"])
             if status == PlanPaymentStatus.CONFIRMED:
                 extend(payment.building, payment.plan, payment.period)
+        log_action(
+            user=request.user,
+            action="confirm" if status == PlanPaymentStatus.CONFIRMED else "reject",
+            entity="plan_payment",
+            entity_id=payment.pk,
+            changes={"building_id": str(payment.building_id), "plan": payment.plan_id, "amount": str(payment.amount)},
+            request=request,
+        )
         return Response(self.get_serializer(payment).data)
 
     @action(detail=True, methods=["post"])

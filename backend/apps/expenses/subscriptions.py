@@ -10,6 +10,7 @@ from django.db.models import F
 from django.utils import timezone
 
 from apps.apartments.models import Apartment
+from apps.audit.mixins import log_job_run
 
 from .models import ApartmentExpense, Expense, ExpenseCategory, ExpenseKind, SplitType, SubscriptionPlan, SubscriptionRun
 
@@ -68,6 +69,7 @@ def bill_subscriptions(today: date | None = None) -> int:
     """
     today = today or timezone.localdate()
     created = 0
+    runs: dict = {}
     from apps.plans.services import billing_allowed
 
     for plan in SubscriptionPlan.objects.filter(is_active=True, building__deleted_at__isnull=True, building__is_active=True).select_related("building"):
@@ -78,4 +80,6 @@ def bill_subscriptions(today: date | None = None) -> int:
                 continue
             if bill_plan_month(plan, month):
                 created += 1
+                runs.setdefault(plan.building_id, {"created": 0})["created"] += 1
+    log_job_run("bill_subscriptions", runs)
     return created

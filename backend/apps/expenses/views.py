@@ -241,7 +241,7 @@ class ExpenseViewSet(ModelViewSet):
         if conflict:
             return conflict
         expense = approve_expense(expense, request.user, str(request.data.get("note") or ""))
-        log_action(user=request.user, action="update", entity="expense", entity_id=expense.pk, changes={"approval": "approved"}, request=request)
+        log_action(user=request.user, action="approve", entity="expense", entity_id=expense.pk, changes={"approval": "approved"}, request=request)
         return Response(self.get_serializer(expense).data)
 
     @action(detail=True, methods=["post"], url_path="reject")
@@ -250,7 +250,7 @@ class ExpenseViewSet(ModelViewSet):
         if conflict:
             return conflict
         expense = reject_expense(expense, request.user, str(request.data.get("note") or ""))
-        log_action(user=request.user, action="update", entity="expense", entity_id=expense.pk, changes={"approval": "rejected"}, request=request)
+        log_action(user=request.user, action="reject", entity="expense", entity_id=expense.pk, changes={"approval": "rejected"}, request=request)
         return Response(self.get_serializer(expense).data)
 
     @action(detail=True, methods=["post"], url_path="put-to-vote")

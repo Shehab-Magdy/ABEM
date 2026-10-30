@@ -3,6 +3,8 @@ from dateutil.relativedelta import relativedelta
 from django.db import transaction
 from django.utils import timezone
 
+from apps.audit.mixins import log_job_run
+
 from .models import Expense, RecurringConfig, RecurringFrequency, SplitType
 from .utils import run_split_engine
 
@@ -21,6 +23,7 @@ def generate_recurring_expenses() -> int:
     """
     today = timezone.localdate()
     created = 0
+    runs: dict = {}
     due = RecurringConfig.objects.filter(is_active=True, next_due__lte=today).select_related("expense")
     for config in due:
         template = config.expense
@@ -46,5 +49,7 @@ def generate_recurring_expenses() -> int:
                 run_split_engine(copy, None, weights)
                 config.next_due = config.next_due + _STEP[config.frequency]
                 created += 1
+                runs.setdefault(template.building_id, {"created": 0})["created"] += 1
             config.save(update_fields=["next_due"])
+    log_job_run("generate_recurring", runs)
     return created

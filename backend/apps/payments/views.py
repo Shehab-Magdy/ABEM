@@ -667,4 +667,12 @@ class PaymentClaimViewSet(ModelViewSet):
         claim.reviewed_by = request.user
         claim.reviewed_at = timezone.now()
         claim.save()
+        log_action(
+            user=request.user,
+            action="reject",
+            entity="payment_claim",
+            entity_id=claim.pk,
+            changes={"amount": str(claim.amount), "apartment_id": str(claim.apartment_id)},
+            request=request,
+        )
         return Response(PaymentClaimSerializer(claim).data)
