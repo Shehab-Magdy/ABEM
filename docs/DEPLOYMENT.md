@@ -1123,21 +1123,23 @@ docker stats
 
 ## 17. Post-Deployment Smoke Tests
 
-Run the Sprint 10 smoke suite immediately after every deployment:
+Run the Playwright smoke suite immediately after every deployment:
 
 ```bash
-cd /opt/abem/tests/selenium-legacy
-source .venv/bin/activate
+cd /opt/abem/tests/playwright
+python -m venv .venv && source .venv/bin/activate   # first time only
+pip install -r requirements.txt && playwright install chromium
 
-# Point at production
-export TEST_ENV=production          # or set in environments.yaml
+# Point at production (or set these in tests/playwright/.env)
+export API_BASE_URL=https://abem.yourdomain.com
+export BASE_URL=https://abem.yourdomain.com
 
-# Run all 15 smoke tests (should complete in < 60 seconds)
-pytest -m smoke --tb=short -q
-
-# Expected output:
-# 15 passed in Xs
+# Run the smoke tests (API-only, should complete in < 60 seconds)
+pytest tests/smoke/ -m smoke --tb=short -q
 ```
+
+The suite logs in with `ADMIN_EMAIL`/`ADMIN_PASSWORD` and the owner equivalents
+from `tests/playwright/config/settings.py`; use a dedicated smoke account on production.
 
 ### Manual Verification Checklist
 
