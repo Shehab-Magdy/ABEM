@@ -618,6 +618,9 @@ class PaymentClaimViewSet(ModelViewSet):
         )
         if not allowed:
             raise PermissionDenied("Only the building's admins or treasurer can review this.")
+        apartment = claim.apartment
+        if apartment.owner_id == user.pk or apartment.owners.filter(pk=user.pk).exists():
+            raise PermissionDenied(_("You cannot review a payment claim for a unit you own or rent."))
 
     def perform_create(self, serializer):
         user = self.request.user

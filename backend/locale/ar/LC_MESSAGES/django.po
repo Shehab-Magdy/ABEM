@@ -763,3 +763,6 @@ msgstr "لا يمكن تعيين مالك إلا من الأشخاص الموج�
 
 msgid "A plan payment for this building is already waiting for review."
 msgstr "توجد دفعة باقة لهذا المبنى بانتظار المراجعة."
+
+msgid "You cannot review a payment claim for a unit you own or rent."
+msgstr "لا يمكنك مراجعة مطالبة دفع لوحدة تملكها أو تستأجرها."
