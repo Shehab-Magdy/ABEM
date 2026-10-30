@@ -65,12 +65,13 @@ _RECEIPT_LABELS = {
         "general_payment": "General payment",
         "paid_received": "PAID {amount} RECEIVED",
         "footer": "This is an automatically generated receipt. 3maracom - 3mara.com",
-        "subtitle": "Apartment & Building Expense Management",
+        "subtitle": "Owners' association & building expenses",
         # payment method translations
         "cash": "Cash",
         "bank_transfer": "Bank Transfer",
         "cheque": "Cheque",
         "mobile_wallet": "Mobile Wallet",
+        "instapay": "InstaPay",
         "other": "Other",
     },
     "ar": {
@@ -90,12 +91,13 @@ _RECEIPT_LABELS = {
         "general_payment": "دفعة عامة",
         "paid_received": "تم الدفع {amount} تم الاستلام",
         "footer": "هذا إيصال تم إنشاؤه تلقائياً. عِمارة.كوم | 3mara.com",
-        "subtitle": "إدارة مصروفات الشقق والمباني",
+        "subtitle": "إدارة اتحاد الملاك ومصاريف العمارة",
         # payment method translations
         "cash": "نقداً",
         "bank_transfer": "تحويل بنكي",
         "cheque": "شيك",
         "mobile_wallet": "محفظة موبايل",
+        "instapay": "إنستا باي",
         "other": "أخرى",
     },
 }
