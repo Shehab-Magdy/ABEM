@@ -1,6 +1,7 @@
 """Expense serializers – Sprint 3."""
 from __future__ import annotations
 
+from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import transaction
 from rest_framework import serializers
 from django.utils.translation import gettext_lazy as _
@@ -183,6 +184,25 @@ class ExpenseSerializer(serializers.ModelSerializer):
     # ── Object-level validation ────────────────────────────────────────────────
 
     def validate(self, data):
+        if self.instance is not None and "building" in data and data["building"].pk != self.instance.building_id:
+            raise serializers.ValidationError({"building_id": _("An expense cannot be moved to another building.")})
+        building = data.get("building", getattr(self.instance, "building", None))
+        category = data.get("category")
+        if category is not None and building is not None and category.building_id != building.pk:
+            raise serializers.ValidationError({"category_id": _("This category belongs to another building.")})
+        unit_ids = {str(i) for i in data.get("custom_split_apartments") or []}
+        unit_ids |= {str(i) for i in (data.get("custom_split_weights") or {})}
+        if unit_ids and building is not None:
+            from apps.apartments.models import Apartment
+
+            try:
+                found = Apartment.objects.filter(building=building, pk__in=unit_ids).count()
+            except (ValueError, DjangoValidationError):
+                found = -1
+            if found != len(unit_ids):
+                raise serializers.ValidationError(
+                    {"custom_split_apartments": _("Every unit in a custom split must belong to this building.")}
+                )
         is_recurring = data.get("is_recurring", getattr(self.instance, "is_recurring", False))
         frequency = data.get("frequency")
         if is_recurring and not frequency:

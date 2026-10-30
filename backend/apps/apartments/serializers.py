@@ -81,6 +81,8 @@ class ApartmentSerializer(serializers.ModelSerializer):
 
     def validate(self, data):
         """Cross-field: floor must not exceed the building's num_floors."""
+        if self.instance is not None and "building" in data and data["building"].pk != self.instance.building_id:
+            raise serializers.ValidationError({"building_id": _("A unit cannot be moved to another building.")})
         building = data.get("building", getattr(self.instance, "building", None))
         floor = data.get("floor", getattr(self.instance, "floor", None))
 

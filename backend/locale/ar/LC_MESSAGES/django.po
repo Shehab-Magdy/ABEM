@@ -724,3 +724,18 @@ msgstr "الفئة يجب أن تكون إحدى: %(names)s."
 
 msgid "year must look like 2026."
 msgstr "السنة يجب أن تكون بالشكل 2026."
+
+msgid "A unit cannot be moved to another building."
+msgstr "لا يمكن نقل الوحدة إلى عمارة أخرى."
+
+msgid "An asset cannot be moved to another building."
+msgstr "لا يمكن نقل الأصل إلى عمارة أخرى."
+
+msgid "An expense cannot be moved to another building."
+msgstr "لا يمكن نقل المصروف إلى عمارة أخرى."
+
+msgid "This category belongs to another building."
+msgstr "هذه الفئة تابعة لعمارة أخرى."
+
+msgid "Every unit in a custom split must belong to this building."
+msgstr "يجب أن تنتمي كل وحدة في التقسيم المخصص إلى هذه العمارة."

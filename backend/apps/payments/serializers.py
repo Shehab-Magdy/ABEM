@@ -36,6 +36,11 @@ class BuildingAssetSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ["id", "is_sold", "created_at"]
 
+    def validate(self, data):
+        if self.instance is not None and "building" in data and data["building"].pk != self.instance.building_id:
+            raise serializers.ValidationError({"building_id": _("An asset cannot be moved to another building.")})
+        return data
+
 
 class PaymentExpenseReadSerializer(serializers.ModelSerializer):
     """Read-only representation of a payment-expense allocation."""
