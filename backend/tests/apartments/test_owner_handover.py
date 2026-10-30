@@ -75,3 +75,18 @@ def test_stranger_cannot_be_assigned_on_create(admin_client, setup):
         format="json",
     )
     assert resp.status_code == 400
+
+
+def test_handover_reports_removed_board_role(admin_client, admin_user, setup):
+    UserBuilding.objects.filter(user=setup["old"], building=setup["building"]).update(board_role="treasurer")
+    _patch(admin_client, setup["unit"], setup["new"])
+    entry = AuditLog.objects.get(action="owner_changed", entity_id=setup["unit"].pk)
+    assert entry.changes["board_role_removed"] == "treasurer"
+    note = Notification.objects.get(user=admin_user, metadata__apartment_id=str(setup["unit"].pk))
+    assert "treasurer" in note.body.lower()
+
+
+def test_handover_without_board_role_has_no_board_note(admin_client, admin_user, setup):
+    _patch(admin_client, setup["unit"], setup["new"])
+    entry = AuditLog.objects.get(action="owner_changed", entity_id=setup["unit"].pk)
+    assert "board_role_removed" not in entry.changes

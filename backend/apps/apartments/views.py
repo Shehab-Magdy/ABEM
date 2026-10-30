@@ -111,8 +111,11 @@ class ApartmentViewSet(ModelViewSet):
             .filter(Q(owner=previous) | Q(owners=previous))
             .exists()
         )
+        board_role = ""
         if not still_there and previous.pk not in {u.pk for u in building_admins(instance.building)}:
-            UserBuilding.objects.filter(user=previous, building=instance.building).delete()
+            link = UserBuilding.objects.filter(user=previous, building=instance.building)
+            board_role = link.values_list("board_role", flat=True).first() or ""
+            link.delete()
         log_action(
             user=self.request.user,
             action="owner_changed",
@@ -122,19 +125,25 @@ class ApartmentViewSet(ModelViewSet):
                 "before": str(previous.pk),
                 "after": str(instance.owner_id) if instance.owner_id else None,
                 "balance": str(instance.balance),
+                **({"board_role_removed": board_role} if board_role else {}),
             },
             request=self.request,
         )
+        en_note = ar_note = ""
+        if board_role:
+            en_note = f" The previous owner's board role ({board_role}) was removed; assign it again if needed."
+            ar_note = f" تمت إزالة دور الهيئة الإدارية ({board_role}) من المالك السابق؛ عيّنه من جديد عند الحاجة."
         for admin in building_admins(instance.building):
             tell(
                 admin,
                 (
                     "Unit owner changed",
-                    f"Unit {instance.unit_number} changed owner. Balance at handover: {instance.balance} EGP.",
+                    f"Unit {instance.unit_number} changed owner. Balance at handover: {instance.balance} EGP."
+                    + en_note,
                 ),
                 (
                     "تغيير مالك وحدة",
-                    f"تغيّر مالك الوحدة {instance.unit_number}. الرصيد وقت التسليم: {instance.balance} ج.م.",
+                    f"تغيّر مالك الوحدة {instance.unit_number}. الرصيد وقت التسليم: {instance.balance} ج.م." + ar_note,
                 ),
                 {"apartment_id": str(instance.pk)},
             )
