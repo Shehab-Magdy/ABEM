@@ -11,7 +11,7 @@ import { apartmentsApi } from "../api/apartmentsApi";
  * The unit's owner invites a renter (مستأجر) with a one-time link and can end a renter's link later.
  * Renters see the unit's dues, pay, report problems and read the treasury; they cannot invite others.
  */
-export default function ManageRentersDialog({ open, onClose }) {
+export default function ManageRentersDialog({ open, onClose, unitId: fixedUnitId }) {
   const { t } = useTranslation("dashboard");
   const [units, setUnits] = useState([]);
   const [unitId, setUnitId] = useState("");
@@ -22,14 +22,16 @@ export default function ManageRentersDialog({ open, onClose }) {
 
   const loadUnits = useCallback(async () => {
     try {
-      const res = await apartmentsApi.list({ page_size: 50 });
-      const list = res.data?.results ?? res.data ?? [];
+      const res = await apartmentsApi.list({ page_size: 500 });
+      const all = res.data?.results ?? res.data ?? [];
+      // Opened for one unit (admin, from the Buildings screen): show just that unit
+      const list = fixedUnitId ? all.filter((u) => u.id === fixedUnitId) : all;
       setUnits(list);
-      setUnitId((prev) => prev || list[0]?.id || "");
+      setUnitId((prev) => (fixedUnitId ? fixedUnitId : prev || list[0]?.id || ""));
     } catch {
       setError(t("renters_load_error"));
     }
-  }, [t]);
+  }, [t, fixedUnitId]);
 
   useEffect(() => {
     if (!open) return;
