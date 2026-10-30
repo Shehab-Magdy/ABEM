@@ -39,13 +39,14 @@ import {
   Typography,
 } from "@mui/material";
 import { DataGrid } from "@mui/x-data-grid";
-import { Add, Apartment, SwapHoriz, Check, ContentCopy, Delete, Edit, PersonAdd, PhotoCamera, Send, PersonPin, PowerSettingsNew, WhatsApp } from "@mui/icons-material";
+import { Add, Apartment, Groups, SwapHoriz, Check, ContentCopy, Delete, Edit, PersonAdd, PhotoCamera, Send, PersonPin, PowerSettingsNew, WhatsApp } from "@mui/icons-material";
 import { useForm } from "react-hook-form";
 import { buildingsApi } from "../../api/buildingsApi";
 import { apartmentsApi } from "../../api/apartmentsApi";
 import { usersApi } from "../../api/usersApi";
 import { useAuth } from "../../hooks/useAuth";
 import TransferAdminDialog from "../../components/TransferAdminDialog";
+import ManageRentersDialog from "../../components/ManageRentersDialog";
 import { useTranslation } from "react-i18next";
 import { PrivateSEO } from "../../components/seo/SEO";
 
@@ -53,6 +54,7 @@ export default function BuildingsPage() {
   const { t } = useTranslation("buildings");
   const { isAdmin, user } = useAuth();
   const [handoverTarget, setHandoverTarget] = useState(null);
+  const [rentersUnitId, setRentersUnitId] = useState(null);
 
   const [rows, setRows] = useState([]);
   const [rowCount, setRowCount] = useState(0);
@@ -497,6 +499,19 @@ export default function BuildingsPage() {
       />
 
       {/* ── Create / Edit Dialog ──────────────────────────────────────────── */}
+      <ManageRentersDialog
+        open={!!rentersUnitId}
+        unitId={rentersUnitId}
+        onClose={() => {
+          setRentersUnitId(null);
+          // refresh just the units (keeps any owner-invite links already shown)
+          if (unitsTarget) {
+            buildingsApi.apartments(unitsTarget.id, { page_size: 500 })
+              .then((res) => setUnits(res.data?.results ?? res.data))
+              .catch(() => {});
+          }
+        }}
+      />
       <TransferAdminDialog
         building={handoverTarget}
         candidates={adminUsers
@@ -716,7 +731,14 @@ export default function BuildingsPage() {
               <TableBody>
                 {units.map((u) => (
                   <TableRow key={u.id}>
-                    <TableCell>{u.unit_number}</TableCell>
+                    <TableCell>
+                      {u.unit_number}
+                      <Tooltip title={`${t("renters_manage")}${u.renters?.length ? ` (${u.renters.length})` : ""}`}>
+                        <IconButton size="small" onClick={() => setRentersUnitId(u.id)} aria-label={t("renters_manage")}>
+                          <Groups fontSize="small" color={u.renters?.length ? "primary" : "action"} />
+                        </IconButton>
+                      </Tooltip>
+                    </TableCell>
                     <TableCell>
                       <Chip
                         label={u.type === "store" ? t("store") : t("apt")}

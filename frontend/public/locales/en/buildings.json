@@ -96,5 +96,6 @@
   "handover_help": "The primary admin role moves to the admin you choose and you stay on as a co-admin. All records stay as they are.",
   "handover_no_coadmins": "Add a co-admin to this building first (in Edit building), then you can hand it over.",
   "handover_to": "New primary admin",
-  "handover_confirm": "Hand over"
+  "handover_confirm": "Hand over",
+  "renters_manage": "Renters"
 }

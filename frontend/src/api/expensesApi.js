@@ -1,6 +1,9 @@
 import axiosClient from "./axiosClient";
 
 export const expensesApi = {
+  /** Late fees added to overdue subscription shares; an admin can waive one. */
+  lateFees: (params) => axiosClient.get("/expenses/late-fees/", { params }),
+  waiveLateFee: (id, reason) => axiosClient.post(`/expenses/late-fees/${id}/waive/`, { reason }),
   list: (params, { signal } = {}) => axiosClient.get("/expenses/", { params, signal }),
   get: (id, { signal } = {}) => axiosClient.get(`/expenses/${id}/`, { signal }),
   create: (data) => axiosClient.post("/expenses/", data),

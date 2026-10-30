@@ -902,7 +902,7 @@ Phases are delivered in order; within a phase, requirements are independent unle
 
 ### 11.3 Phase 2 — People & Governance
 
-**R-4 Tenant (مستأجر) role** — ✅ Implemented as role `renter` (in code, "tenant" already means a building). Owners invite and remove renters from the app; building admins can do the same through the API (admin screen not built yet). Tenants live in a unit but do not own it; they often pay the subscription.
+**R-4 Tenant (مستأجر) role** — ✅ Implemented as role `renter` (in code, "tenant" already means a building). Owners invite and remove renters from their home screen; building admins do the same from the unit list on the Buildings screen. Tenants live in a unit but do not own it; they often pay the subscription.
 - New role `tenant` linked to a unit by the owner or the admin. A tenant sees the unit's dues and the building's treasury and statement, can report maintenance and use "Pay subscription", and cannot see other units' balances or change data.
 - The owner remains responsible for the unit; owners see that a tenant is linked and can end the link.
 - Invite links can create either an owner or a tenant link.
@@ -920,12 +920,12 @@ Phases are delivered in order; within a phase, requirements are independent unle
 
 ### 11.4 Phase 3 — Plans & Operations
 
-**R-9 Fixed monthly subscription per unit** — 🔲 Planned. *Why:* buildings collect a regular monthly amount (الاشتراك الشهري).
+**R-9 Fixed monthly subscription per unit** — ✅ Implemented (`/subscription` admin screen, `POST /buildings/{id}/subscription/`, daily command `bill_subscriptions`). Charges are stored as expenses of kind `subscription`, which reminders and payment allocation already understand but which are not counted as building costs in the treasury, statement or dashboard. Per-unit coefficients are R-10. *Why:* buildings collect a regular monthly amount (الاشتراك الشهري).
 - An admin defines a subscription amount for the building and a billing day. Each month the system bills every unit automatically (daily command), creating a due item that reminders (R-1) and statements (R-2) already understand.
 - Amounts can differ by unit type (apartment, store) or by a unit coefficient (R-10).
 - Pausing a unit (vacant) is possible with a reason and is audited.
 
-**R-10 Per-unit rates & late fees** — 🔲 Planned. Optional per-unit coefficient (e.g. shops pay 1.5×, large flats 1.2×). Optional late fee (fixed amount or percentage) after a grace period; fees are added as separate, visible lines and can be waived by an admin with a recorded reason.
+**R-10 Per-unit rates & late fees** — ✅ Implemented (`rate_factor` per unit, edited on the Monthly subscription screen; late fee fixed or percent with grace days; daily command `apply_late_fees`; waive with a recorded reason via `POST /expenses/late-fees/{id}/waive/`). A share is fined at most once; fees are charges, not building costs. Optional per-unit coefficient (e.g. shops pay 1.5×, large flats 1.2×). Optional late fee (fixed amount or percentage) after a grace period; fees are added as separate, visible lines and can be waived by an admin with a recorded reason.
 
 **R-11 Contractors & obligations calendar** — 🔲 Planned. A directory of contractors per building (name, trade, phone, contract dates, notes) and a calendar of recurring obligations (elevator maintenance contract renewal, fire-extinguisher inspection, tank cleaning). Obligations remind the board before their due date (same reminder mechanism as R-1).
 

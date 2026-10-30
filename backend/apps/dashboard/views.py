@@ -71,7 +71,7 @@ class AdminDashboardView(APIView):
 
         total_income = payment_income + asset_sale_income + starting_balance_total
 
-        expense_qs = Expense.objects.filter(building__in=buildings, deleted_at__isnull=True)
+        expense_qs = Expense.objects.filter(building__in=buildings, deleted_at__isnull=True, kind="cost")
         if date_from:
             expense_qs = expense_qs.filter(expense_date__gte=date_from)
         if date_to:
@@ -120,6 +120,7 @@ class AdminDashboardView(APIView):
                 expense_date__year=today.year,
                 expense_date__month=today.month,
                 deleted_at__isnull=True,
+                kind="cost",
             ).aggregate(s=Sum("amount"))["s"] or Decimal("0.00")
         )
         prev_month_expense = (
@@ -128,6 +129,7 @@ class AdminDashboardView(APIView):
                 expense_date__year=prev_year,
                 expense_date__month=prev_month,
                 deleted_at__isnull=True,
+                kind="cost",
             ).aggregate(s=Sum("amount"))["s"] or Decimal("0.00")
         )
         expense_change_pct = (
@@ -175,6 +177,7 @@ class AdminDashboardView(APIView):
                     expense_date__year=today.year,
                     expense_date__month=month_num,
                     deleted_at__isnull=True,
+                    kind="cost",
                 ).aggregate(s=Sum("amount"))["s"]
                 or Decimal("0.00")
             )

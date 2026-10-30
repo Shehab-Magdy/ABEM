@@ -13,7 +13,7 @@ from rest_framework.filters import OrderingFilter, SearchFilter
 from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from rest_framework.viewsets import ModelViewSet
+from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet
 
 from django_filters.rest_framework import DjangoFilterBackend
 
@@ -23,7 +23,8 @@ from apps.audit.mixins import log_action
 from apps.authentication.permissions import IsAdminRole
 from apps.buildings.scoping import ensure_manages, managed_buildings
 
-from .models import Expense, ExpenseCategory, MediaFile
+from .late_fees import waive_late_fee
+from .models import Expense, ExpenseCategory, LateFee, MediaFile
 from .serializers import (
     ExpenseCategorySerializer,
     ExpenseSerializer,
@@ -333,3 +334,46 @@ class ExpenseViewSet(ModelViewSet):
         )
 
         return Response(MediaFileSerializer(media_file).data, status=status.HTTP_200_OK)
+
+
+class LateFeeViewSet(ReadOnlyModelViewSet):
+    """
+    GET  /expenses/late-fees/?building_id=        – late fees in buildings the admin manages
+    POST /expenses/late-fees/{id}/waive/ {reason} – take a fee back off the unit (recorded with who and why)
+    """
+
+    permission_classes = [IsAuthenticated, IsAdminRole]
+
+    def get_queryset(self):
+        qs = LateFee.objects.select_related("expense__building", "share__apartment", "waived_by").filter(
+            expense__building__in=managed_buildings(self.request.user)
+        )
+        if building_id := self.request.query_params.get("building_id"):
+            qs = qs.filter(expense__building_id=building_id)
+        if self.request.query_params.get("waived") == "false":
+            qs = qs.filter(waived_at__isnull=True)
+        return qs.order_by("-created_at")
+
+    def get_serializer_class(self):
+        from rest_framework import serializers
+
+        class LateFeeSerializer(serializers.ModelSerializer):
+            building_name = serializers.CharField(source="expense.building.name", read_only=True)
+            unit_number = serializers.CharField(source="share.apartment.unit_number", read_only=True)
+            amount = serializers.DecimalField(source="expense.amount", max_digits=10, decimal_places=2, read_only=True)
+            title = serializers.CharField(source="expense.title", read_only=True)
+
+            class Meta:
+                model = LateFee
+                fields = ["id", "building_name", "unit_number", "title", "amount", "created_at", "waived_at", "waived_reason"]
+
+        return LateFeeSerializer
+
+    @action(detail=True, methods=["post"], url_path="waive")
+    def waive(self, request, pk=None):
+        fee = waive_late_fee(self.get_object(), request.user, str(request.data.get("reason") or ""))
+        log_action(
+            user=request.user, action="update", entity="late_fee", entity_id=fee.pk,
+            changes={"waived": True, "reason": fee.waived_reason}, request=request,
+        )
+        return Response(self.get_serializer(fee).data)

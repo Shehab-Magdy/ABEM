@@ -32,6 +32,7 @@ import {
   Assessment,
   Build,
   Description,
+  EventRepeat,
   HowToVote,
   Business,
   Category,
@@ -160,6 +161,7 @@ export default function DashboardLayout() {
   const adminItems = [
     { to: "/users", icon: <People />, label: t("common:users", "Users"), show: isAdmin },
     { to: "/expense-categories", icon: <Category />, label: t("common:categories", "Categories"), show: isAdmin },
+    { to: "/subscription", icon: <EventRepeat />, label: t("common:subscription", "Monthly subscription"), show: isAdmin },
     { to: "/assets", icon: <AccountBalance />, label: t("common:assets", "Assets"), show: isAdmin },
   ].filter((i) => i.show);
 

@@ -94,7 +94,7 @@
   "remind_whatsapp_text": "Hello {{name}}, a friendly reminder from {{building}}: unit {{unit}} still owes {{amount}}. Thank you — 3maracom",
   "treasury_statement": "View this month's statement →",
   "renters_title": "Renters",
-  "renters_help": "Invite your unit's renter with a link. A renter sees the unit's dues, pays, reports problems and reads the building treasury, but cannot invite others.",
+  "renters_help": "Invite this unit's renter with a link. A renter sees the unit's dues, pays, reports problems and reads the building treasury, but cannot invite others.",
   "renters_unit": "Unit",
   "renters_current": "Current renters",
   "renters_remove": "End this renter's link",

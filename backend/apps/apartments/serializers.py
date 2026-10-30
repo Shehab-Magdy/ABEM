@@ -1,4 +1,6 @@
 """Serializers for the apartments app — Sprint 2."""
+from decimal import Decimal
+
 from rest_framework import serializers
 from django.utils.translation import gettext_lazy as _
 
@@ -57,6 +59,9 @@ class ApartmentSerializer(serializers.ModelSerializer):
             "owner_ids",
             "owner_names",
             "renters",
+            "rate_factor",
+            "billing_paused",
+            "billing_pause_reason",
             "unit_number",
             "floor",
             "type",
@@ -65,6 +70,11 @@ class ApartmentSerializer(serializers.ModelSerializer):
             "balance",
         ]
         read_only_fields = ["id", "balance"]
+
+    def validate_rate_factor(self, value):
+        if not Decimal("0.1") <= value <= Decimal("10"):
+            raise serializers.ValidationError(_("The rate factor must be between 0.1 and 10."))
+        return value
 
     def get_owner_names(self, obj):
         return [o.get_full_name() or o.email for o in obj.owners.all() if o.role != "renter"]

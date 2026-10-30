@@ -586,3 +586,24 @@ msgstr "أكثر من نصف الأصوات"
 
 msgid "At least two thirds of the votes cast"
 msgstr "ثلثا الأصوات على الأقل"
+
+msgid "Enter a valid amount, billing day and due days."
+msgstr "أدخل مبلغاً ويوم تحصيل وعدد أيام استحقاق صحيحة."
+
+msgid "Amount must be above zero, billing day 1-28 and due days 0-60."
+msgstr "يجب أن يكون المبلغ أكبر من صفر، ويوم التحصيل بين 1 و28، وأيام الاستحقاق بين 0 و60."
+
+msgid "Cost"
+msgstr "تكلفة"
+
+msgid "Monthly subscription"
+msgstr "الاشتراك الشهري"
+
+msgid "Late fee"
+msgstr "غرامة تأخير"
+
+msgid "The rate factor must be between 0.1 and 10."
+msgstr "يجب أن يكون المعامل بين 0.1 و10."
+
+msgid "Late fee: choose none, a fixed amount or a percent (up to 100), and 0-60 grace days."
+msgstr "غرامة التأخير: اختر بدون أو مبلغاً ثابتاً أو نسبة (حتى 100) وأيام سماح من 0 إلى 60."
