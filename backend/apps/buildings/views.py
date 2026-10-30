@@ -425,6 +425,54 @@ class BuildingViewSet(ModelViewSet):
             "units_total": data["units_total"],
         })
 
+    @action(detail=True, methods=["get"], url_path="annual-report", permission_classes=[IsAuthenticated])
+    def annual_report(self, request, pk=None):
+        """
+        GET /buildings/{id}/annual-report/?year=YYYY[&file_format=pdf]
+        The year for the general assembly: collections and expenses by month, expenses by category,
+        opening/closing balance and unpaid dues. Read-only; visible to the building's admins and residents.
+        """
+        from datetime import date
+
+        from django.http import HttpResponse
+
+        from .annual import build_annual_report, render_annual_pdf
+
+        building = self.get_object()
+        try:
+            year = int(request.query_params.get("year") or date.today().year)
+            if not 2000 <= year <= 2100:
+                raise ValueError
+        except ValueError:
+            return Response({"detail": _("year must look like 2026.")}, status=400)
+
+        data = build_annual_report(building, year)
+        if (request.query_params.get("file_format") or "").lower() == "pdf":
+            lang = getattr(request.user, "preferred_language", None) or "ar"
+            try:
+                pdf = render_annual_pdf(data, lang)
+            except Exception as exc:  # WeasyPrint or its system libraries missing
+                return Response({"detail": f"PDF generation failed: {exc}"}, status=503)
+            response = HttpResponse(pdf, content_type="application/pdf")
+            response["Content-Disposition"] = f'inline; filename="annual_report_{year}.pdf"'
+            return response
+
+        def money(value):
+            return str(value)
+
+        return Response({
+            "building": data["building"],
+            "year": year,
+            "opening_balance": money(data["opening_balance"]),
+            "total_collected": money(data["total_collected"]),
+            "total_expenses": money(data["total_expenses"]),
+            "closing_balance": money(data["closing_balance"]),
+            "months": [{**m, "collected": money(m["collected"]), "expenses": money(m["expenses"])} for m in data["months"]],
+            "expenses_by_category": [{**c, "amount": money(c["amount"])} for c in data["expenses_by_category"]],
+            "unpaid_units": [{**u, "balance_due": money(u["balance_due"])} for u in data["unpaid_units"]],
+            "total_unpaid": money(data["total_unpaid"]),
+        })
+
     @action(detail=True, methods=["get"], url_path="treasury", permission_classes=[IsAuthenticated])
     def treasury(self, request, pk=None):
         """

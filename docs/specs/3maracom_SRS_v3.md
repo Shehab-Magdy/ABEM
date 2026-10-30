@@ -947,7 +947,7 @@ Phases are delivered in order; within a phase, requirements are independent unle
 
 **R-19 Store distribution** — 🔲 Planned. Optional Google Play listing by wrapping the PWA (Trusted Web Activity) once a production domain exists; iOS requires a native wrapper and Apple review and is a separate decision.
 
-**R-20 Annual report** — 🔲 Planned. A yearly summary for the general assembly: collections by month, expenses by category, balance sheet and unpaid dues, as PDF.
+**R-20 Annual report** — ✅ Done (`GET /buildings/{id}/annual-report/?year=**R-20 Annual report** — 🔲 Planned.file_format=pdf`; "Annual" tab on the statement page). A yearly summary for the general assembly: collections by month, expenses by category, balance sheet and unpaid dues, as PDF.
 
 ### 11.6 Deferred and not planned
 

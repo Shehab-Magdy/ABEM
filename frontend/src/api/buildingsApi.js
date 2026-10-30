@@ -13,6 +13,14 @@ export const buildingsApi = {
       responseType: "blob",
       timeout: 90000,
     }),
+  /** Annual report (التقرير السنوي) for the general assembly. year = 2026. */
+  annualReport: (id, year) => axiosClient.get(`/buildings/${id}/annual-report/`, { params: { year } }),
+  annualReportPdf: (id, year) =>
+    axiosClient.get(`/buildings/${id}/annual-report/`, {
+      params: { year, file_format: "pdf" },
+      responseType: "blob",
+      timeout: 90000,
+    }),
   /** Primary admin hands the building to one of its co-admins. */
   transferAdmin: (id, userId) => axiosClient.post(`/buildings/${id}/transfer-admin/`, { user_id: userId }),
   /** Monthly subscription plan (الاشتراك الشهري): amount, billing day, days until due. */

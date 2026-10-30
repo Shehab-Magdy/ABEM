@@ -16,5 +16,17 @@
   "units_hint": "Green = paid this month. The amount next to a unit is what it still owes.",
   "none": "None this month",
   "load_error": "Could not load the statement.",
-  "pdf_error": "Could not create the PDF."
+  "pdf_error": "Could not create the PDF.",
+  "view_month": "Monthly",
+  "view_year": "Annual",
+  "annual_title": "Annual report",
+  "year": "Year",
+  "annual_opening": "Opening balance",
+  "annual_collected": "Collected",
+  "annual_closing": "Closing balance",
+  "by_month": "Collections and expenses by month",
+  "by_category": "Expenses by category",
+  "unpaid": "Unpaid dues today",
+  "annual_none": "None",
+  "annual_load_error": "Could not load the annual report."
 }
