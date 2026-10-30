@@ -739,3 +739,12 @@ msgstr "هذه الفئة تابعة لعمارة أخرى."
 
 msgid "Every unit in a custom split must belong to this building."
 msgstr "يجب أن تنتمي كل وحدة في التقسيم المخصص إلى هذه العمارة."
+
+msgid "A reason is required to reverse a payment."
+msgstr "السبب مطلوب لإلغاء الدفعة."
+
+msgid "A reversal cannot itself be reversed."
+msgstr "لا يمكن إلغاء عملية إلغاء."
+
+msgid "This payment was already reversed."
+msgstr "تم إلغاء هذه الدفعة مسبقاً."

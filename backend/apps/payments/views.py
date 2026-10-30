@@ -51,6 +51,8 @@ _RECEIPT_LABELS = {
     "en": {
         "receipt_title": "PAYMENT RECEIPT",
         "receipt_no": "Receipt No",
+        "voided": "VOIDED",
+        "reversal_of": "REVERSAL of receipt",
         "building": "BUILDING",
         "unit": "UNIT",
         "owner": "OWNER",
@@ -77,6 +79,8 @@ _RECEIPT_LABELS = {
     "ar": {
         "receipt_title": "إيصال دفع",
         "receipt_no": "رقم الإيصال",
+        "voided": "ملغي",
+        "reversal_of": "إلغاء الإيصال",
         "building": "المبنى",
         "unit": "الوحدة",
         "owner": "المالك",
@@ -123,7 +127,7 @@ class PaymentViewSet(ModelViewSet):
     # ── Scoping & filtering ─────────────────────────────────────────────────────
 
     def get_queryset(self):
-        qs = Payment.objects.select_related("apartment", "recorded_by").prefetch_related(
+        qs = Payment.objects.select_related("apartment", "recorded_by", "reversal").prefetch_related(
             "expenses", "payment_expenses", "payment_expenses__expense",
         )
 
@@ -152,9 +156,67 @@ class PaymentViewSet(ModelViewSet):
     # ── Permissions ─────────────────────────────────────────────────────────────
 
     def get_permissions(self):
-        if self.action == "create":
+        if self.action in ("create", "reverse"):
             return [IsAuthenticated(), IsAdminRole()]
         return [IsAuthenticated()]
+
+    # ── Reversal ────────────────────────────────────────────────────────────────
+
+    @action(detail=True, methods=["post"], url_path="reverse")
+    def reverse(self, request, pk=None):
+        """
+        POST /api/v1/payments/{id}/reverse/   body: {reason}
+        Cancels a payment without rewriting history: adds a linked row with the negative amount (and negative
+        allocations), puts the amount back on the unit's balance, and audits it. One reversal per payment.
+        """
+        ensure_manages(request.user, self.get_object().apartment.building_id)
+        reason = str(request.data.get("reason") or "").strip()
+        if not reason:
+            raise ValidationError({"reason": [_("A reason is required to reverse a payment.")]})
+
+        with transaction.atomic():
+            original = Payment.objects.select_for_update().get(pk=pk)
+            if original.is_reversal:
+                return Response({"detail": _("A reversal cannot itself be reversed.")}, status=409)
+            if Payment.objects.filter(reversal_of=original).exists():
+                return Response({"detail": _("This payment was already reversed.")}, status=409)
+            apt = Apartment.objects.select_for_update().get(pk=original.apartment_id)
+            balance_before = apt.balance
+            apt.balance += original.amount_paid
+            apt.save(update_fields=["balance", "updated_at"])
+            links = list(original.payment_expenses.all())
+            reversal = Payment.objects.create(
+                apartment=apt,
+                amount_paid=-original.amount_paid,
+                payment_method=original.payment_method,
+                payment_date=timezone.localdate(),
+                notes=original.notes,
+                balance_before=balance_before,
+                balance_after=apt.balance,
+                recorded_by=request.user,
+                reversal_of=original,
+                reversal_reason=reason,
+            )
+            for link in links:
+                # legacy links (no amount) were counted as an even share of the payment
+                amount = link.allocated_amount
+                if amount is None:
+                    amount = original.amount_paid / (len(links) or 1)
+                PaymentExpense.objects.create(payment=reversal, expense=link.expense, allocated_amount=-amount)
+
+        log_action(
+            user=request.user,
+            action="payment.reversed",
+            entity="payment",
+            entity_id=original.pk,
+            changes={
+                "reason": {"before": None, "after": reason},
+                "reversal_id": {"before": None, "after": str(reversal.pk)},
+                "amount": {"before": str(original.amount_paid), "after": str(reversal.amount_paid)},
+            },
+            request=request,
+        )
+        return Response(self.get_serializer(reversal).data, status=201)
 
     # ── Write helper ────────────────────────────────────────────────────────────
 
@@ -307,11 +369,19 @@ class PaymentViewSet(ModelViewSet):
             owner_display = esc(first_owner.get_full_name() or first_owner.email) if first_owner else "—"
 
         receipt_no_label = labels["receipt_no"]
-        receipt_no_value = str(payment.id)[:8].upper()
+        receipt_no_value = str(payment.receipt_no) if payment.receipt_no else str(payment.id)[:8].upper()
         if is_rtl:
             receipt_no_value = _to_eastern_arabic(receipt_no_value)
         paid_amount_display = _fmt_money(payment.amount_paid, lang)
         paid_received_text = labels["paid_received"].replace("{amount}", paid_amount_display)
+        voided_html = ""
+        if payment.is_reversal:
+            original_no = payment.reversal_of.receipt_no or str(payment.reversal_of_id)[:8].upper()
+            voided_html = f'<div class="voided-box">{labels["reversal_of"]} #{original_no}: {esc(payment.reversal_reason)}</div>'
+        elif payment.is_voided:
+            voided_html = (
+                f'<div class="voided-box">{labels["voided"]} - {esc(payment.reversal.reversal_reason)}</div>'
+            )
 
         html_dir = "rtl" if is_rtl else "ltr"
         lbl_align = "right" if is_rtl else "left"
@@ -374,6 +444,16 @@ class PaymentViewSet(ModelViewSet):
     padding: 2.5mm;
     border-radius: 2mm;
   }}
+  .voided-box {{
+    background: #FDECEA;
+    color: #B71C1C;
+    font-size: 9pt;
+    font-weight: bold;
+    text-align: center;
+    margin: 3mm 6mm 0;
+    padding: 2.5mm;
+    border-radius: 2mm;
+  }}
   .footer {{
     text-align: center;
     color: #888;
@@ -413,6 +493,7 @@ class PaymentViewSet(ModelViewSet):
     {rows_html}
   </table>
 
+  {voided_html}
   <div class="paid-box">&#10003; {paid_received_text}</div>
 
   <div class="footer">{labels["footer"]}</div>
@@ -430,7 +511,7 @@ class PaymentViewSet(ModelViewSet):
             )
 
         resp = HttpResponse(pdf_bytes, content_type="application/pdf")
-        resp["Content-Disposition"] = f'inline; filename="receipt_{str(payment.id)[:8]}.pdf"'
+        resp["Content-Disposition"] = f'inline; filename="receipt_{payment.receipt_no or str(payment.id)[:8]}.pdf"'
         return resp
 
 

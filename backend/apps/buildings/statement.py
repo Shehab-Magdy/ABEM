@@ -65,7 +65,10 @@ def build_statement(building, first_day: date) -> dict:
     total_spent = sum((e["amount"] for e in spent), ZERO)
 
     # Units: unit numbers only (no names), so the statement is safe to share with the building
-    paid_units = {p.apartment_id for p in month_payments}
+    net_paid = {}
+    for p in month_payments:
+        net_paid[p.apartment_id] = net_paid.get(p.apartment_id, ZERO) + p.amount_paid
+    paid_units = {apartment_id for apartment_id, net in net_paid.items() if net > ZERO}  # a reversed payment is not paid
     units = [
         {"unit": a.unit_number, "paid_this_month": a.pk in paid_units, "balance_due": max(a.balance, ZERO)}
         for a in Apartment.objects.filter(building=building).order_by("floor", "unit_number")

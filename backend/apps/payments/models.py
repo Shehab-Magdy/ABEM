@@ -1,4 +1,5 @@
 """Payment / ledger models."""
+
 import uuid
 from decimal import Decimal
 from django.conf import settings
@@ -19,7 +20,7 @@ class PaymentMethod(models.TextChoices):
 
 class Payment(models.Model):
     objects: models.Manager["Payment"]
-    
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     apartment = models.ForeignKey(Apartment, on_delete=models.CASCADE, related_name="payments")
     expenses = models.ManyToManyField(Expense, through="PaymentExpense", blank=True, related_name="payments")
@@ -39,6 +40,11 @@ class Payment(models.Model):
         null=True,
         related_name="recorded_payments",
     )
+    # Sequential per building (1, 2, 3 ...), assigned on first save
+    receipt_no = models.PositiveIntegerField(null=True, blank=True, editable=False)
+    # A reversal is a new row with a negative amount that points back at the payment it cancels
+    reversal_of = models.OneToOneField("self", on_delete=models.PROTECT, null=True, blank=True, related_name="reversal")
+    reversal_reason = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -49,18 +55,48 @@ class Payment(models.Model):
             models.Index(fields=["payment_date"]),
         ]
 
+    def save(self, *args, **kwargs):
+        if self._state.adding and self.receipt_no is None:
+            from django.db import transaction
+            from django.db.models import Max
+
+            from apps.buildings.models import Building
+
+            with transaction.atomic():
+                # the building row lock serialises numbering until this transaction ends
+                Building.objects.select_for_update().get(pk=self.apartment.building_id)
+                last = Payment.objects.filter(apartment__building_id=self.apartment.building_id).aggregate(
+                    n=Max("receipt_no")
+                )["n"]
+                self.receipt_no = (last or 0) + 1
+                super().save(*args, **kwargs)
+            return
+        super().save(*args, **kwargs)
+
+    @property
+    def is_reversal(self):
+        return self.reversal_of_id is not None
+
+    @property
+    def is_voided(self):
+        return hasattr(self, "reversal")
+
     def __str__(self):
         return f"{self.apartment} | {self.amount_paid} on {self.payment_date}"
 
 
 class PaymentExpense(models.Model):
     """Explicit through table for Payment <-> Expense with per-expense allocation."""
+
     objects: models.Manager["PaymentExpense"]
-    
+
     payment = models.ForeignKey(Payment, on_delete=models.CASCADE, related_name="payment_expenses")
     expense = models.ForeignKey(Expense, on_delete=models.CASCADE, related_name="payment_expenses")
     allocated_amount = models.DecimalField(
-        max_digits=10, decimal_places=2, null=True, blank=True,
+        max_digits=10,
+        decimal_places=2,
+        null=True,
+        blank=True,
         help_text=_("Amount of the payment allocated to this expense. NULL = legacy/unspecified."),
     )
 
@@ -82,11 +118,9 @@ class AssetType(models.TextChoices):
 
 class BuildingAsset(models.Model):
     objects: models.Manager["BuildingAsset"]
-    
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    building = models.ForeignKey(
-        "buildings.Building", on_delete=models.CASCADE, related_name="assets"
-    )
+    building = models.ForeignKey("buildings.Building", on_delete=models.CASCADE, related_name="assets")
     name = models.CharField(max_length=255)
     description = models.TextField(blank=True)
     asset_type = models.CharField(max_length=20, choices=AssetType.choices, default=AssetType.OTHER)
@@ -107,7 +141,7 @@ class BuildingAsset(models.Model):
 
 class AssetSale(models.Model):
     objects: models.Manager["AssetSale"]
-    
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     asset = models.OneToOneField(BuildingAsset, on_delete=models.CASCADE, related_name="sale")
     sale_date = models.DateField()
@@ -138,6 +172,7 @@ class PaymentClaim(models.Model):
 
     Confirming records a normal Payment and reduces the apartment's balance.
     """
+
     objects: models.Manager["PaymentClaim"]
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)

@@ -105,6 +105,8 @@ class PaymentSerializer(serializers.ModelSerializer):
     )
 
     recorded_by = serializers.StringRelatedField(read_only=True)
+    is_voided = serializers.BooleanField(read_only=True)
+    is_reversal = serializers.BooleanField(read_only=True)
 
     class Meta:
         model = Payment
@@ -122,10 +124,18 @@ class PaymentSerializer(serializers.ModelSerializer):
             "balance_after",
             "remaining_balance",
             "recorded_by",
+            "receipt_no",
+            "reversal_of",
+            "reversal_reason",
+            "is_voided",
+            "is_reversal",
             "created_at",
         ]
         read_only_fields = [
             "id",
+            "receipt_no",
+            "reversal_of",
+            "reversal_reason",
             "balance_before",
             "balance_after",
             "remaining_balance",
