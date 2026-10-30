@@ -5,6 +5,7 @@ import csv
 import io
 
 from django.http import HttpResponse
+from django.shortcuts import get_object_or_404
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 
@@ -219,4 +220,32 @@ class ExportAssetSalesView(APIView):
                 sale.buyer_name,
                 sale.buyer_contact,
             ])
+        return response
+
+
+class ExportBuildingView(APIView):
+    """
+    GET /api/v1/exports/building/{building_id}/
+
+    One XLSX workbook for a building the caller administers: units, residents (owners and renters), expenses,
+    payments (reversals included), payment claims, late fees and the building's audit log.
+    """
+
+    permission_classes = [IsAuthenticated, IsAdminRole]
+
+    def get(self, request, building_id):
+        from apps.audit.mixins import log_action
+
+        from .building_export import build_workbook
+
+        building = get_object_or_404(managed_buildings(request.user), pk=building_id)
+        log_action(
+            user=request.user, action="export", entity="building", entity_id=building.pk,
+            changes={"export": "full_building"}, request=request,
+        )
+        response = HttpResponse(
+            build_workbook(building),
+            content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        )
+        response["Content-Disposition"] = f'attachment; filename="building-{building.pk}.xlsx"'
         return response
