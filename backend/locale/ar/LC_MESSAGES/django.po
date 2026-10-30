@@ -760,3 +760,6 @@ msgstr "عليه مدفوعات ولا يمكن حذفه. قم بإلغاء ال
 
 msgid "Only people already in the building can be made owners. Invite them instead."
 msgstr "لا يمكن تعيين مالك إلا من الأشخاص الموجودين في المبنى. قم بدعوته بدلاً من ذلك."
+
+msgid "A plan payment for this building is already waiting for review."
+msgstr "توجد دفعة باقة لهذا المبنى بانتظار المراجعة."

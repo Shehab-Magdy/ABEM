@@ -82,7 +82,12 @@ class PlanPaymentViewSet(mixins.CreateModelMixin, mixins.ListModelMixin, viewset
         amount = plan.price_yearly if period == "yearly" else plan.price_monthly
         if amount <= 0:
             raise ValidationError(_("This plan is free; there is nothing to pay."))
-        serializer.save(created_by=user, amount=amount)
+        with transaction.atomic():
+            # lock the building so two simultaneous requests cannot both pass the check
+            Building.objects.select_for_update().get(pk=building.pk)
+            if PlanPayment.objects.filter(building=building, status=PlanPaymentStatus.PENDING).exists():
+                raise ValidationError(_("A plan payment for this building is already waiting for review."))
+            serializer.save(created_by=user, amount=amount)
 
     def _review(self, request, pk, status):
         if not request.user.is_superuser:
