@@ -14,7 +14,7 @@ export const BRAND = {
   // Shown on the legal pages when set. Set before launch.
   supportEmail: "cegres1@gmail.com",
   // International format without + or spaces, e.g. "201001234567". WhatsApp button shows only when set.
-  supportWhatsapp: "",
+  supportWhatsapp: "+201009352823",
   // The policy texts are drafts until a lawyer has reviewed them; the pages say so while this is true.
   legalDraft: true,
   keywords:

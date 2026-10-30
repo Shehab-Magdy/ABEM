@@ -33,6 +33,7 @@ import {
   Build,
   Description,
   HelpOutline,
+  WorkspacePremium,
   EventRepeat,
   HowToVote,
   Groups,
@@ -170,6 +171,7 @@ export default function DashboardLayout() {
     { to: "/expense-categories", icon: <Category />, label: t("common:categories", "Categories"), show: isAdmin },
     { to: "/subscription", icon: <EventRepeat />, label: t("common:subscription", "Monthly subscription"), show: isAdmin },
     { to: "/assets", icon: <AccountBalance />, label: t("common:assets", "Assets"), show: isAdmin },
+    { to: "/plan", icon: <WorkspacePremium />, label: t("common:plan", "Plan"), show: isAdmin },
     { to: "/platform", icon: <Assessment />, label: t("common:platform", "Platform"), show: isPlatformOwner },
   ].filter((i) => i.show);
 

@@ -77,7 +77,14 @@ class ApartmentViewSet(ModelViewSet):
     # ── Write helpers ──────────────────────────────────────────────────────────
 
     def perform_create(self, serializer):
-        ensure_manages(self.request.user, serializer.validated_data["building"])
+        building = serializer.validated_data["building"]
+        ensure_manages(self.request.user, building)
+        from rest_framework.exceptions import ValidationError
+
+        from apps.plans.services import unit_room
+
+        if not unit_room(building):
+            raise ValidationError({"detail": _("Your plan's unit limit is reached. Upgrade the plan to add more units.")})
         instance = serializer.save()
         # If an owner was set on creation, auto-link them to the building
         if instance.owner is not None:

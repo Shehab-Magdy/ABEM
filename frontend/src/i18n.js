@@ -36,6 +36,7 @@ i18n
       "operations",
       "platform",
       "help",
+      "plans",
     ],
     backend: { loadPath: "/locales/{{lng}}/{{ns}}.json" },
     detection: {

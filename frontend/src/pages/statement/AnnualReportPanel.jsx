@@ -23,7 +23,7 @@ export default function AnnualReportPanel({ buildingId }) {
     buildingsApi
       .annualReport(buildingId, year)
       .then((res) => setData(res.data))
-      .catch(() => setError(t("annual_load_error")))
+      .catch((err) => setError(err.response?.status === 403 ? err.response.data.detail : t("annual_load_error")))
       .finally(() => setLoading(false));
   }, [buildingId, year, t]);
 

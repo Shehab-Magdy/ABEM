@@ -935,9 +935,9 @@ Phases are delivered in order; within a phase, requirements are independent unle
 
 ### 11.5 Phase 4 — Business & Scale
 
-**R-14 Plans & pricing** — 🔲 Planned. Define the commercial model: a free tier up to N units per building with paid features (for example WhatsApp reminders and statements, multiple buildings, board roles). Limits are enforced by the platform and explained in the app. *Open decision:* tier boundaries and prices.
+**R-14 Plans & pricing** — ✅ Done. Plans are data (`Plan`), edited by platform owners on the Platform page or Django admin: names, monthly/yearly price, unit limit (empty = unlimited) and features (`subscriptions`, `annual_report`). Seeded: Free (10 units), Standard 99/990 EGP (40 units, subscriptions), Plus 249/2490 EGP (unlimited, adds annual report). Each building has its own plan; new buildings get a trial of the top plan (`PlatformSettings.trial_days`, default 14); a lapsed paid plan falls back to Free. Limits are enforced on creating units (single and CSV) and on the gated features; nothing existing is deleted when a limit is passed. Admin page: "Plan".
 
-**R-15 Platform billing** — 🔲 Planned. Charging buildings for 3maracom: subscription state per building, invoices, grace period and downgrade rules. Depends on R-14.
+**R-15 Platform billing** — ✅ Done (manual). A building admin picks a plan and period, sends the amount to the platform InstaPay address (`PlatformSettings.instapay_address`) and reports the reference (`PlanPayment`, price frozen at request). A platform owner confirms or rejects it on the Platform page; confirming sets the plan and extends `paid_until` by one period (from the old end date while still running). Invoices and gateway charging stay with R-16.
 
 **R-16 Payment gateway integration** — ⏸ Deferred until demand is proven. Replace InstaPay "display and confirm" with an integrated flow (card, wallet or InstaPay through a licensed aggregator), automatic reconciliation of payments, and receipts without manual admin confirmation. Needs a provider decision and, likely, legal and fee review.
 

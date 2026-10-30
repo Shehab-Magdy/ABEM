@@ -260,6 +260,12 @@ class BuildingViewSet(ModelViewSet):
         errors = sum(1 for r in report if not r["ok"])
         created = 0
         if str(request.data.get("commit", "")).lower() == "true" and errors == 0:
+            from apps.plans.services import unit_room
+
+            if not unit_room(building, len(clean)):
+                return Response(
+                    {"detail": _("Your plan's unit limit is reached. Upgrade the plan to add more units.")}, status=403
+                )
             with transaction.atomic():
                 Apartment.objects.bulk_create(clean)
             created = len(clean)
@@ -342,6 +348,11 @@ class BuildingViewSet(ModelViewSet):
 
         if request.method == "GET":
             return Response({"plan": out(plan)})  # POST below creates or updates the plan
+
+        from apps.plans.services import has_feature
+
+        if not has_feature(building, "subscriptions"):
+            return Response({"detail": _("Monthly subscription billing is part of the Standard and Plus plans.")}, status=403)
 
         data = request.data
         try:
@@ -439,6 +450,10 @@ class BuildingViewSet(ModelViewSet):
         from .annual import build_annual_report, render_annual_pdf
 
         building = self.get_object()
+        from apps.plans.services import has_feature
+
+        if not has_feature(building, "annual_report"):
+            return Response({"detail": _("The annual report is part of the Plus plan.")}, status=403)
         try:
             year = int(request.query_params.get("year") or date.today().year)
             if not 2000 <= year <= 2100:

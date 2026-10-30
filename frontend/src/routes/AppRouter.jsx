@@ -24,6 +24,7 @@ const BoardPage = lazy(() => import("../pages/board/BoardPage"));
 const SubscriptionPage = lazy(() => import("../pages/subscription/SubscriptionPage"));
 const PollsPage = lazy(() => import("../pages/governance/PollsPage"));
 const LegalPage = lazy(() => import("../pages/legal/LegalPage"));
+const PlanPage = lazy(() => import("../pages/plans/PlanPage"));
 const HelpPage = lazy(() => import("../pages/help/HelpPage"));
 const StatementPage = lazy(() => import("../pages/statement/StatementPage"));
 const MaintenancePage = lazy(() => import("../pages/maintenance/MaintenancePage"));
@@ -152,6 +153,7 @@ export default function AppRouter() {
         <Route path="board" element={<BoardPage />} />
         <Route path="records" element={<RecordsPage />} />
         <Route path="platform" element={<RequirePlatformOwner><PlatformPage /></RequirePlatformOwner>} />
+        <Route path="plan" element={<RequireAdmin><PlanPage /></RequireAdmin>} />
         <Route path="help" element={<HelpPage />} />
         <Route path="operations" element={<OperationsPage />} />
         <Route path="subscription" element={<RequireAdmin><SubscriptionPage /></RequireAdmin>} />

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Alert, Box, Card, CardContent, Chip, CircularProgress, Stack, Table, TableBody, TableCell, TableHead, TableRow, Typography } from "@mui/material";
 import { analyticsApi } from "../../api/analyticsApi";
+import PlansAdmin from "./PlansAdmin";
 import { PrivateSEO } from "../../components/seo/SEO";
 
 const HEALTH_COLOR = { active: "success", quiet: "warning", dormant: "error", new: "default" };
@@ -58,6 +59,8 @@ export default function PlatformPage() {
         <Stack direction="row" flexWrap="wrap" useFlexGap spacing={1} sx={{ mb: 3 }}>
           {data.signups_by_month.map((s) => <Chip key={s.month} label={`${s.month} · ${s.count}`} variant="outlined" />)}
         </Stack>
+
+        <PlansAdmin />
 
         <Typography variant="subtitle1" fontWeight={700} gutterBottom>{t("health_list")}</Typography>
         <Card>
