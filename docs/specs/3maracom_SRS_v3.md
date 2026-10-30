@@ -873,6 +873,7 @@ This section records what the product still lacks to run as a business for owner
 | **2 — People & Governance** | Model who actually lives and decides in a building | R-4 Tenant role, R-5 Board roles, R-6 Admin handover, R-7 Approvals & votes, R-8 Meeting minutes | Tenants can pay; large spending needs approval; a new treasurer takes over without losing history |
 | **3 — Plans & Operations** | Predictable income and organised upkeep | R-9 Monthly subscription plan, R-10 Per-unit rates & late fees, R-11 Contractors & obligations calendar, R-12 Maintenance to work order to expense, R-13 Carry-over items | Each unit is billed automatically each month; recurring obligations are tracked and reminded |
 | **4 — Business & Scale** | Make 3maracom itself a sustainable product | R-14 Plans & pricing, R-15 Platform billing, R-16 Payment gateway, R-17 Product analytics, R-18 Support channel, R-19 Store distribution, R-20 Annual report | Outside buildings can sign up, pay for 3maracom and be supported |
+| **5 — Hardening & Trust** | Make the money trustworthy and auditable | R-21 to R-33 (tenant-safe writes, payment reversals and numbered receipts, expense immutability, owner handover, full audit, approvals, notifications, Arabic completeness, full export) | An admin can correct any money mistake without rewriting history; no action can cross buildings; every money change is audited |
 
 Phases are delivered in order; within a phase, requirements are independent unless a dependency is listed.
 
@@ -947,9 +948,30 @@ Phases are delivered in order; within a phase, requirements are independent unle
 
 **R-19 Store distribution** — 🔲 Planned. Optional Google Play listing by wrapping the PWA (Trusted Web Activity) once a production domain exists; iOS requires a native wrapper and Apple review and is a separate decision.
 
-**R-20 Annual report** — ✅ Done (`GET /buildings/{id}/annual-report/?year=**R-20 Annual report** — 🔲 Planned.file_format=pdf`; "Annual" tab on the statement page). A yearly summary for the general assembly: collections by month, expenses by category, balance sheet and unpaid dues, as PDF.
+**R-20 Annual report** — ✅ Done (`GET /buildings/{id}/annual-report/?year=2026&file_format=pdf`; "Annual" tab on the statement page). A yearly summary for the general assembly: collections by month, expenses by category, balance sheet and unpaid dues, as PDF.
 
-### 11.6 Deferred and not planned
+### 11.6 Phase 5 — Hardening & Trust
+
+Source: the business-gap review of 2026-10-30 (SRS audit plus code review). Order of delivery is top to bottom; each item is one commit with tests. Statuses are updated as each lands.
+
+| Id | Requirement | Acceptance criteria | Status |
+|---|---|---|---|
+| **R-21** | Tenant-safe writes | `building_id` (units, expenses, assets) cannot be changed on update; `category_id` and `apartment_id` must belong to a building the caller manages; a PATCH to another building returns 403/400 and changes nothing. | 🔲 Planned |
+| **R-22** | Payment reversal and numbered receipts | An admin can reverse a payment with a required reason; the reversal is linked to the original, audited, restores the unit balance and counts negatively in treasury; the receipt shows "voided". Receipts get a sequential number per building. | 🔲 Planned |
+| **R-23** | Safe asset sale | `sale_price` must be greater than 0 and `sale_date` valid (400 otherwise, never 500); the asset row is locked so a double sale is impossible. | 🔲 Planned |
+| **R-24** | Expense immutability once paid | An approved expense with payment allocations cannot be deleted, and its amount, split and units cannot be edited; the API says to use a credit note or reversal. Unpaid expenses stay editable. | 🔲 Planned |
+| **R-25** | Owner handover and owner assignment | Changing a unit's owner removes the previous owner's building access unless they hold another unit, writes an `owner_changed` audit entry with the balance at handover, and notifies the admin. Owners can only be assigned from users already in the building or by invite. | 🔲 Planned |
+| **R-26** | Complete audit of money actions | Audit entries exist for claim reject, plan payment confirm and reject, expense approve and reject (own actions), recurring expense generation, subscription billing and late fees. | 🔲 Planned |
+| **R-27** | One pending plan payment | A building can have only one pending plan payment at a time; confirming extends the plan once. | 🔲 Planned |
+| **R-28** | No self-review of claims | A user cannot confirm or reject a payment claim for a unit they own or rent. (A second-approver rule for all payments is not planned.) | 🔲 Planned |
+| **R-29** | Treasury correctness | `units_paid` counts units with no unpaid shares (credit does not count as paid); treasury shows reversals and sales separately. | 🔲 Planned |
+| **R-30** | Reliable notifications | Notification failures are logged, not swallowed; claim confirm and reject notify the resident. | 🔲 Planned |
+| **R-31** | Safer account deletion | Deletion rejects pending claims of the user, warns when the user has an outstanding balance (requires confirmation), tells the building admin when a board member leaves, and is blocked for the last platform owner. | 🔲 Planned |
+| **R-32** | Arabic completeness | Every backend `_()` string has an Arabic translation; hard-coded Arabic or English strings in views move to translations; the receipt PDF uses a bundled font, not Google Fonts. | 🔲 Planned |
+| **R-33** | Full building export | An admin can download one file per building with units, owners, expenses, payments, claims, late fees and audit log. | 🔲 Planned |
+| **D-1** | SRS drift cleanup | Status rows 20, 23, 36, 42, heading 1.2.2, roles in 2.2 and 3.1, rate limiting in 8.2, and sections 6 and 7 match the code. | 🔲 Planned |
+
+### 11.7 Deferred and not planned
 
 | Item | Decision |
 |---|---|
@@ -958,7 +980,7 @@ Phases are delivered in order; within a phase, requirements are independent unle
 | Redis caching | Not planned; the stack runs without Redis |
 | WhatsApp Business API / SMS | Deferred; Phase 1 uses WhatsApp share links |
 
-### 11.7 Cross-cutting rules for every phase
+### 11.8 Cross-cutting rules for every phase
 
 - Every new screen and message is written Arabic-first, with English, and works in RTL and on a phone.
 - Every new endpoint is scoped to the caller's buildings (admins) or membership (residents) and has tests for cross-building access.
