@@ -664,3 +664,12 @@ msgstr "محضر"
 
 msgid "Only the building's admins and board can change this."
 msgstr "مديرو العمارة وأعضاء الهيئة وحدهم يمكنهم تعديل هذا."
+
+msgid "Only the building's admins and board can manage work orders."
+msgstr "مديرو العمارة وأعضاء الهيئة وحدهم يمكنهم إدارة أوامر العمل."
+
+msgid "This report already has a work order."
+msgstr "لهذا البلاغ أمر عمل بالفعل."
+
+msgid "Assigned"
+msgstr "تم الإسناد"

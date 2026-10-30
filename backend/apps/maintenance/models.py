@@ -45,3 +45,27 @@ class MaintenanceReport(models.Model):
 
     def __str__(self):
         return f"{self.get_category_display()} – {self.building.name} ({self.status})"
+
+
+class WorkOrderStatus(models.TextChoices):
+    ASSIGNED = "assigned", _("Assigned")
+    IN_PROGRESS = "in_progress", _("In progress")
+    DONE = "done", _("Done")
+
+
+class WorkOrder(models.Model):
+    """A maintenance report taken on: who does the work, when, and which expense it cost."""
+    objects: models.Manager["WorkOrder"]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    report = models.OneToOneField(MaintenanceReport, on_delete=models.CASCADE, related_name="work_order")
+    contractor = models.ForeignKey("operations.Contractor", on_delete=models.SET_NULL, null=True, blank=True, related_name="work_orders")
+    scheduled_on = models.DateField(null=True, blank=True)
+    status = models.CharField(max_length=12, choices=WorkOrderStatus.choices, default=WorkOrderStatus.ASSIGNED)
+    completed_on = models.DateField(null=True, blank=True)
+    notes = models.TextField(blank=True)
+    # The cost, once it is recorded as an expense of the same building
+    expense = models.ForeignKey("expenses.Expense", on_delete=models.SET_NULL, null=True, blank=True, related_name="work_orders")
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name="+")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
