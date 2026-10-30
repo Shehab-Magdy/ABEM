@@ -60,11 +60,6 @@
   "footer_product": "الرئيسية",
   "footer_management": "الإدارة",
   "footer_audit": "سجل التدقيق",
-  "footer_coming_soon": "قريباً",
-  "footer_mobile_app": "تطبيق الهاتف (iOS و Android)",
-  "footer_reports": "تقارير متقدمة",
-  "footer_integrations": "تكامل بوابة الدفع",
-  "footer_multi_currency": "دعم العملات المتعددة",
   "footer_rights": "جميع الحقوق محفوظة.",
   "footer_privacy": "سياسة الخصوصية",
   "footer_terms": "شروط الخدمة",
@@ -158,5 +153,6 @@
   "csv_has_problems": "في {{errors}} من {{total}} صفاً مشاكل. لن يُستورد شيء قبل إصلاحها.",
   "csv_imported": "تم استيراد {{n}} صفاً.",
   "csv_row": "السطر",
-  "csv_problem": "المشكلة"
+  "csv_problem": "المشكلة",
+  "footer_support": "الدعم"
 }

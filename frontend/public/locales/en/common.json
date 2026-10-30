@@ -60,11 +60,6 @@
   "footer_product": "Product",
   "footer_management": "Management",
   "footer_audit": "Audit Log",
-  "footer_coming_soon": "Coming Soon",
-  "footer_mobile_app": "Mobile App (iOS & Android)",
-  "footer_reports": "Advanced Reports",
-  "footer_integrations": "Payment Gateway Integration",
-  "footer_multi_currency": "Multi-Currency Support",
   "footer_rights": "All rights reserved.",
   "footer_privacy": "Privacy Policy",
   "footer_terms": "Terms of Service",
@@ -158,5 +153,6 @@
   "csv_has_problems": "{{errors}} of {{total}} rows have problems. Nothing is imported until they are fixed.",
   "csv_imported": "Imported {{n}} rows.",
   "csv_row": "Row",
-  "csv_problem": "Problem"
+  "csv_problem": "Problem",
+  "footer_support": "Support"
 }

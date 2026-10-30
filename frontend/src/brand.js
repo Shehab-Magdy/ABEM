@@ -12,7 +12,7 @@ export const BRAND = {
   description:
     "تطبيق عِمارة.كوم (3maracom) هو الحل الأسهل والأسرع لإدارة اتحاد الملاك، تحصيل الاشتراكات شهرياً، ومتابعة مصاريف الصيانة والخزينة بكل شفافية وبلمسة زر.",
   // Shown on the legal pages when set. Set before launch.
-  supportEmail: "",
+  supportEmail: "cegres1@gmail.com",
   // The policy texts are drafts until a lawyer has reviewed them; the pages say so while this is true.
   legalDraft: true,
   keywords:
