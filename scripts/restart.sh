@@ -53,8 +53,7 @@ if [ "$SKIP_RESTART" = false ]; then
   echo "Waiting for backend health check (${API_URL})..."
   retries=0
   max_retries=30
-  until curl -sf "${API_URL}/api/v1/health/" > /dev/null 2>&1 \
-     || curl -sf "${API_URL}/api/v1/auth/login/" > /dev/null 2>&1; do
+  until curl -sf "${API_URL}/api/health/" > /dev/null 2>&1; do
     retries=$((retries + 1))
     if [ "$retries" -ge "$max_retries" ]; then
       echo "  Backend did not become healthy after ${max_retries}s"
@@ -93,7 +92,8 @@ if [ "$RUN_TESTS" = true ]; then
     cd tests/playwright
     if [ ! -d ".venv" ]; then
       echo "  Creating test venv..."
-      python3 -m venv .venv
+      PY=$(command -v python3.13 || command -v python3)
+      "$PY" -m venv .venv
       .venv/bin/pip install -q -r requirements.txt
       .venv/bin/playwright install chromium
     fi
@@ -102,8 +102,8 @@ if [ "$RUN_TESTS" = true ]; then
     BASE_URL="${APP_URL}" \
     API_BASE_URL="${API_URL}" \
     DB_HOST="${APP_HOST}" \
-    .venv/bin/pytest tests/smoke/ -m smoke --tb=short 2>&1
-    exit_code=$?
+    .venv/bin/pytest tests/smoke/ -m smoke --tb=short 2>&1 || exit_code=$?
+    exit_code="${exit_code:-0}"
     cd ../..
 
     echo ""

@@ -15,20 +15,23 @@ cd "$(dirname "$0")/../tests/playwright"
 
 if [ ! -d ".venv" ]; then
   echo "Creating test venv..."
-  python3 -m venv .venv
+  PY=$(command -v python3.13 || command -v python3)
+  "$PY" -m venv .venv
   .venv/bin/pip install -q -r requirements.txt
   .venv/bin/playwright install chromium
 fi
 
-ARGS="$@"
+ARGS=("$@")
 
 # Map shorthand names to test directories/markers
 case "${1:-}" in
-  smoke) ARGS="-m smoke tests/smoke/" ;;
-  api)   ARGS="-m api tests/api/" ;;
-  ui)    ARGS="-m ui tests/ui/" ;;
-  e2e)   ARGS="tests/e2e/" ;;
-  db)    ARGS="tests/db/" ;;
+  smoke) ARGS=(-m smoke tests/smoke/) ;;
+  api)   ARGS=(-m api tests/api/) ;;
+  ui)    ARGS=(-m ui tests/ui/) ;;
+  e2e)   ARGS=(tests/e2e/) ;;
+  db)    ARGS=(tests/db/) ;;
 esac
 
-.venv/bin/pytest ${ARGS:- tests/} --tb=short -v
+[ ${#ARGS[@]} -eq 0 ] && ARGS=(tests/)
+
+.venv/bin/pytest "${ARGS[@]}" --tb=short -v

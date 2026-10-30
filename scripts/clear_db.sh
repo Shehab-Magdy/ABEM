@@ -1,12 +1,15 @@
 #!/usr/bin/env bash
 # clear_db.sh — Wipe all operational data while preserving the superuser.
-# Runs clear_db.py inside the running backend Docker container.
+# Runs backend/clear_db.py inside the running backend compose service.
+# Dev database only: this deletes every building, unit, expense, payment and non-superuser account.
 set -e
 
-REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+cd "$(dirname "$0")/.."
 
-echo "Copying clear_db.py into abem-backend-1..."
-docker cp "$REPO_ROOT/backend/clear_db.py" abem-backend-1:/app/clear_db.py
+if [ "${1:-}" != "--yes" ]; then
+  read -r -p "This wipes all operational data in the dev database. Continue? [y/N] " answer
+  case "$answer" in [yY]*) ;; *) echo "Aborted."; exit 1 ;; esac
+fi
 
-echo "Running..."
-docker exec abem-backend-1 python /app/clear_db.py
+echo "Running clear_db.py in the backend service..."
+docker compose exec -T backend python clear_db.py

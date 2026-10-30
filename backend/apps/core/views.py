@@ -1,16 +1,70 @@
+import logging
 from pathlib import Path
 
+from django.core.cache import cache
+from django.db import DEFAULT_DB_ALIAS, connections
+from django.db.migrations.executor import MigrationExecutor
 from django.http import HttpResponse
-from rest_framework.views import APIView
-from rest_framework.response import Response
 from rest_framework.permissions import AllowAny
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
+logger = logging.getLogger(__name__)
+
+
+def _check_database():
+    with connections[DEFAULT_DB_ALIAS].cursor() as cursor:
+        cursor.execute("SELECT 1")
+        cursor.fetchone()
+
+
+def _check_cache():
+    cache.set("health-check", "ok", 5)
+    if cache.get("health-check") != "ok":
+        raise RuntimeError("cache read-back mismatch")
+
+
+def _check_migrations():
+    connection = connections[DEFAULT_DB_ALIAS]
+    executor = MigrationExecutor(connection)
+    if executor.migration_plan(executor.loader.graph.leaf_nodes()):
+        raise RuntimeError("unapplied migrations")
 
 
 class HealthCheckView(APIView):
+    """Liveness plus dependency readiness: 200 only if every check passes, else 503.
+
+    Failure details go to the log, not the response, because the endpoint is public.
+    """
+
     permission_classes = [AllowAny]
+    authentication_classes = []
+    throttle_classes = []
+
+    checks = {
+        "database": _check_database,
+        "cache": _check_cache,
+        "migrations": _check_migrations,
+    }
 
     def get(self, request):
-        return Response({"status": "ok", "service": "3maracom API"})
+        results = {}
+        for name, check in self.checks.items():
+            try:
+                check()
+                results[name] = "ok"
+            except Exception:
+                logger.warning("Health check failed: %s", name, exc_info=True)
+                results[name] = "error"
+        healthy = all(v == "ok" for v in results.values())
+        return Response(
+            {
+                "status": "ok" if healthy else "unavailable",
+                "service": "3maracom API",
+                "checks": results,
+            },
+            status=200 if healthy else 503,
+        )
 
 
 _SITEMAP_FILENAME = "sitemap.xml"
