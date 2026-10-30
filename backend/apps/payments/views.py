@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import html as html_lib
+import logging
 
 from django.db.models import Q
 from django.http import HttpResponse
@@ -272,7 +273,7 @@ class PaymentViewSet(ModelViewSet):
             from apps.notifications.services import notify_payment_confirmed
             notify_payment_confirmed(payment)
         except Exception:
-            pass
+            logger.exception("Could not notify the unit owner of payment %s", payment.pk)
 
     # ── PDF Receipt ──────────────────────────────────────────────────────────────
 
@@ -579,6 +580,9 @@ class BuildingAssetViewSet(ModelViewSet):
         return Response(BuildingAssetSerializer(asset).data, status=201)
 
 
+logger = logging.getLogger(__name__)
+
+
 class PaymentClaimViewSet(ModelViewSet):
     """
     Resident-reported payments (InstaPay: display and confirm).
@@ -622,6 +626,24 @@ class PaymentClaimViewSet(ModelViewSet):
         if apartment.owner_id == user.pk or apartment.owners.filter(pk=user.pk).exists():
             raise PermissionDenied(_("You cannot review a payment claim for a unit you own or rent."))
 
+    def _tell_resident(self, claim, confirmed):
+        """Tell the resident who reported the transfer how it was decided (a failure never undoes the decision)."""
+        from apps.notifications.services import tell
+
+        if claim.created_by is None or not claim.created_by.is_active:
+            return
+        unit, amount = claim.apartment.unit_number, claim.amount
+        try:
+            if confirmed:
+                en = ("Payment confirmed", f"Your transfer of {amount} EGP for unit {unit} was confirmed.")
+                ar = ("تم تأكيد الدفعة", f"تم تأكيد تحويلك بمبلغ {amount} ج.م للوحدة {unit}.")
+            else:
+                en = ("Payment not accepted", f"Your transfer of {amount} EGP for unit {unit} was rejected.")
+                ar = ("لم يتم قبول الدفعة", f"تم رفض تحويلك بمبلغ {amount} ج.م للوحدة {unit}.")
+            tell(claim.created_by, en, ar, {"claim_id": str(claim.pk), "apartment_id": str(claim.apartment_id)})
+        except Exception:
+            logger.exception("Could not notify the resident about claim %s", claim.pk)
+
     def perform_create(self, serializer):
         user = self.request.user
         apartment = serializer.validated_data["apartment"]
@@ -658,6 +680,7 @@ class PaymentClaimViewSet(ModelViewSet):
             claim.payment = payment
             claim.save()
         log_action(user=request.user, action="create", entity="payment", entity_id=payment.pk, request=request)
+        self._tell_resident(claim, confirmed=True)
         return Response(PaymentClaimSerializer(claim).data)
 
     @action(detail=True, methods=["post"], url_path="reject")
@@ -678,4 +701,5 @@ class PaymentClaimViewSet(ModelViewSet):
             changes={"amount": str(claim.amount), "apartment_id": str(claim.apartment_id)},
             request=request,
         )
+        self._tell_resident(claim, confirmed=False)
         return Response(PaymentClaimSerializer(claim).data)

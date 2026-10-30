@@ -1,6 +1,7 @@
 """Expense views – Sprint 3."""
 from __future__ import annotations
 
+import logging
 import os
 
 from django.conf import settings
@@ -32,6 +33,9 @@ from .serializers import (
     ExpenseSerializer,
     MediaFileSerializer,
 )
+
+
+logger = logging.getLogger(__name__)
 
 
 class ExpenseCategoryViewSet(ModelViewSet):
@@ -172,7 +176,7 @@ class ExpenseViewSet(ModelViewSet):
             )
             notify_expense_created(expense, [ae.apartment for ae in ae_list])
         except Exception:
-            pass
+            logger.exception("Could not notify owners of expense %s", expense.pk)
 
     @action(
         detail=False, methods=["post"], url_path="import",
@@ -328,7 +332,7 @@ class ExpenseViewSet(ModelViewSet):
                 if default_storage.exists(storage_name):
                     default_storage.delete(storage_name)
             except Exception:
-                pass
+                logger.exception("Could not delete media file %s", mf.url)
         media_files.delete()
 
         log_action(
