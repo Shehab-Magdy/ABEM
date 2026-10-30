@@ -97,5 +97,10 @@
   "handover_no_coadmins": "Add a co-admin to this building first (in Edit building), then you can hand it over.",
   "handover_to": "New primary admin",
   "handover_confirm": "Hand over",
-  "renters_manage": "Renters"
+  "renters_manage": "Renters",
+  "approval_threshold": "Approval threshold",
+  "approval_threshold_helper": "Any cost above this amount waits for the chair's approval before units are billed. Leave empty for no rule.",
+  "import_units": "Import units (CSV)",
+  "import_units_title": "Import units into {{name}}",
+  "import_units_help": "Upload a CSV with columns unit_number (required), type (apartment or store), floor and size_sqm. The file is checked first and nothing is saved unless every row is fine."
 }

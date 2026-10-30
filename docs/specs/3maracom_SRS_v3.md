@@ -846,16 +846,16 @@ There is no Celery or Redis in the stack: dashboards query PostgreSQL directly, 
 | 34 | Admin dashboard export/print report | ✅ Implemented | Browser print API |
 | 35 | Claim unit by registration code from owner dashboard | ✅ Implemented | |
 | 36 | Expense approval workflow | 🔲 Planned | Phase 2, R-7 (approvals & votes) |
-| 37 | Bulk expense import via CSV | 🔲 Planned | Phase 3, R-13 |
+| 37 | Bulk expense import via CSV | ✅ Implemented | Phase 3, R-13 |
 | 38 | Payment due date reminders (in-app + email + WhatsApp link) | ✅ Implemented | Phase 1, R-1; needs the daily scheduler (DEPLOYMENT section 12) |
 | 39 | Multi-currency support | ❌ Descoped | EGP only |
 | 40 | Redis caching for dashboard aggregations | 🔲 Pending | Not implemented; no Redis in the stack |
-| 41 | Notification preferences UI | 🔲 Planned | Phase 3, R-13 |
+| 41 | Notification preferences UI | ✅ Implemented | Phase 3, R-13 |
 | 42 | Unit tests & integration test suite | 🔲 Pending | Sprint 10 |
 | 43 | Production deployment + monitoring | 🔲 Pending | Sprint 11 |
 | 44 | Installable PWA for Android & iOS (manifest, service worker, install banner) | ✅ Implemented | Replaces the dropped Flutter app; store listing is R-19 |
-| 45 | Building photo upload | 🔲 Pending | Model field exists; UI not built |
-| 46 | Bulk apartment import via CSV | 🔲 Planned | Phase 3, R-13 |
+| 45 | Building photo upload | ✅ Implemented | On the building form |
+| 46 | Bulk apartment import via CSV | ✅ Implemented | Phase 3, R-13 |
 | 47 | Interactive guided tutorial (Admin 9-step + Owner 5-step tours, auto-role) | ✅ Implemented | React (web and PWA); anchor IDs in TUTORIAL_ANCHORS.md |
 | 48 | Multiple owners per unit with shared payment/dashboard visibility | ✅ Implemented | M2M owners; Q-filter on all owner queries |
 
@@ -907,16 +907,16 @@ Phases are delivered in order; within a phase, requirements are independent unle
 - The owner remains responsible for the unit; owners see that a tenant is linked and can end the link.
 - Invite links can create either an owner or a tenant link.
 
-**R-5 Board roles** — 🔲 Planned. Roles inside a building: chair (رئيس), treasurer (أمين الصندوق), secretary (أمين السر). Treasurer can record payments and expenses; secretary can send announcements and edit minutes; chair can approve spending. Co-admins keep full powers until roles are assigned.
+**R-5 Board roles** — ✅ Implemented (`/board` screen, `GET/POST /buildings/{id}/board/`). One holder per title. The treasurer reviews InstaPay transfers for their building (they see and confirm them from their home screen); the chair approves large expenses (R-7) and the secretary keeps the minutes (R-8). Building admins keep full powers. Roles inside a building: chair (رئيس), treasurer (أمين الصندوق), secretary (أمين السر). Treasurer can record payments and expenses; secretary can send announcements and edit minutes; chair can approve spending. Co-admins keep full powers until roles are assigned.
 
 **R-6 Admin handover** — ✅ Implemented (`POST /buildings/{id}/transfer-admin/` to a co-admin; "Hand over" action on the Buildings screen). The primary administrator can transfer the building to another member; the previous admin becomes co-admin or a resident. All history (payments, audit log) stays intact and the transfer itself is audited. Required by R-3 for admins who want to delete their account.
 
-**R-7 Approvals & votes** — 🟡 Polls and votes are implemented (`/governance/polls/`, screen `/polls`: one vote per unit, owners only, quorum and majority rules, results after closing). The expense approval threshold ("pending approval" expenses) is still planned. (Replaces descoped item 36.)
+**R-7 Approvals & votes** — ✅ Implemented. Polls: one vote per unit, owners only, quorum and majority rules, results after closing (`/polls`). Expense approval: a building's `approval_threshold`; a cost above it is created as pending, bills no one and is not counted as spent until the chair approves it, or a resident vote (opened from the expense) approves it; a building with no chair yet is decided by its admins; raising an approved cost above the threshold sends it back to pending. A tie or too few votes leaves it pending. Daily command `finalize_polls` settles votes whose time is up. (Replaces descoped item 36.)
 - A building sets an approval threshold. An expense above it is created as "pending approval" and does not bill units until approved by the chair or by a resident vote.
 - Polls: an admin creates a question with options and a closing date; each unit gets one vote (co-owners share it); results are visible after closing, with quorum and majority rules set per poll.
 - Decisions are recorded with date and result in the audit log and can be attached to minutes.
 
-**R-8 Meeting minutes & documents** — 🔲 Planned. The secretary records meeting minutes (date, attendees, decisions) and uploads documents (contracts, receipts of work, bylaws). Residents can read; only board roles can edit. Minutes are exportable as PDF.
+**R-8 Meeting minutes & documents** — ✅ Implemented (`/records` screen; `/governance/meetings/` with a bilingual PDF, `/governance/documents/` for PDF/JPEG/PNG up to the upload limit). The secretary and building admins write; members read. Files are stored like expense bills (public but unguessable URLs). The secretary records meeting minutes (date, attendees, decisions) and uploads documents (contracts, receipts of work, bylaws). Residents can read; only board roles can edit. Minutes are exportable as PDF.
 
 ### 11.4 Phase 3 — Plans & Operations
 
@@ -927,11 +927,11 @@ Phases are delivered in order; within a phase, requirements are independent unle
 
 **R-10 Per-unit rates & late fees** — ✅ Implemented (`rate_factor` per unit, edited on the Monthly subscription screen; late fee fixed or percent with grace days; daily command `apply_late_fees`; waive with a recorded reason via `POST /expenses/late-fees/{id}/waive/`). A share is fined at most once; fees are charges, not building costs. Optional per-unit coefficient (e.g. shops pay 1.5×, large flats 1.2×). Optional late fee (fixed amount or percentage) after a grace period; fees are added as separate, visible lines and can be waived by an admin with a recorded reason.
 
-**R-11 Contractors & obligations calendar** — 🔲 Planned. A directory of contractors per building (name, trade, phone, contract dates, notes) and a calendar of recurring obligations (elevator maintenance contract renewal, fire-extinguisher inspection, tank cleaning). Obligations remind the board before their due date (same reminder mechanism as R-1).
+**R-11 Contractors & obligations calendar** — ✅ Implemented (`/operations` screen; `/operations/contractors/` and `/operations/obligations/`). Admins and any board member keep it; members read it. A repeating obligation moves to its next date when marked done (missed periods are skipped); admins and the board are reminded from `remind_days` before the due date and weekly while overdue, and 30 days before a contract ends (daily command `send_obligation_reminders`). A directory of contractors per building (name, trade, phone, contract dates, notes) and a calendar of recurring obligations (elevator maintenance contract renewal, fire-extinguisher inspection, tank cleaning). Obligations remind the board before their due date (same reminder mechanism as R-1).
 
-**R-12 Maintenance report to work order to expense** — 🔲 Planned. An admin can turn a maintenance report into a work order assigned to a contractor, and link the resulting expense to it. The report shows status, cost and completion date to the reporting resident.
+**R-12 Maintenance report to work order to expense** — ✅ Implemented (`/maintenance/work-orders/`, dialog on the Maintenance screen). Admins and board members assign a contractor and date, follow the status, and link the expense that recorded the cost; the report follows the order and the resident who reported it is told when it is done. The status, contractor, dates and cost show on the report to everyone who can see it. An admin can turn a maintenance report into a work order assigned to a contractor, and link the resulting expense to it. The report shows status, cost and completion date to the reporting resident.
 
-**R-13 Carry-over items** — 🔲 Planned. Notification preferences UI (status item 41), building photo upload UI (45), bulk apartment import via CSV (46), bulk expense import (37).
+**R-13 Carry-over items** — ✅ Implemented. Notification preferences: a Notifications card on the profile (payment reminders, new expenses, announcements and votes, email). Building photo upload: already on the building form (the earlier "UI not built" note was out of date). Bulk unit import (`POST /buildings/{id}/import-units/`) and bulk expense import (`POST /expenses/import/`): CSV, UTF-8 or Excel-style, checked first then imported all-or-nothing, with every problem row listed. Notification preferences UI (status item 41), building photo upload UI (45), bulk apartment import via CSV (46), bulk expense import (37).
 
 ### 11.5 Phase 4 — Business & Scale
 

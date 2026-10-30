@@ -77,6 +77,15 @@ def _get_content(message_key: str, lang: str, **kwargs) -> tuple[str, str]:
 # ── Core notification creation ───────────────────────────────────────────────
 
 
+# What a person can switch off. Everything is on until they say otherwise.
+PREFERENCE_KEYS = ("payment_reminders", "expense_updates", "announcements", "email")
+
+
+def wants(user, key: str) -> bool:
+    """True unless the user switched this kind of notification off in their profile."""
+    return (getattr(user, "notification_preferences", None) or {}).get(key, True) is not False
+
+
 def notify_user(
     user,
     notification_type: str,
@@ -87,8 +96,11 @@ def notify_user(
     sender=None,
     message_key: str | None = None,
     broadcast_group=None,
-) -> Notification:
-    """Create a single in-app notification for *user*."""
+    category: str | None = None,
+) -> Notification | None:
+    """Create a single in-app notification for *user* (skipped when they switched `category` off)."""
+    if category and not wants(user, category):
+        return None
     return Notification.objects.create(
         user=user,
         sender=sender,
@@ -118,6 +130,7 @@ def notify_expense_created(expense, apartments: list) -> None:
                 notification_type=NotificationType.EXPENSE_ADDED,
                 title=title,
                 body=body,
+                category="expense_updates",
                 message_key="expense_added",
                 metadata={"expense_id": str(expense.id)},
             )

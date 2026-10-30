@@ -62,6 +62,7 @@ class BuildingSerializer(serializers.ModelSerializer):
             "photo",
             "starting_balance",
             "instapay_address",
+            "approval_threshold",
             "is_active",
             "created_at",
             "updated_at",

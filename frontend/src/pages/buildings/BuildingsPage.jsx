@@ -47,6 +47,7 @@ import { usersApi } from "../../api/usersApi";
 import { useAuth } from "../../hooks/useAuth";
 import TransferAdminDialog from "../../components/TransferAdminDialog";
 import ManageRentersDialog from "../../components/ManageRentersDialog";
+import CsvImportDialog from "../../components/CsvImportDialog";
 import { useTranslation } from "react-i18next";
 import { PrivateSEO } from "../../components/seo/SEO";
 
@@ -55,6 +56,7 @@ export default function BuildingsPage() {
   const { isAdmin, user } = useAuth();
   const [handoverTarget, setHandoverTarget] = useState(null);
   const [rentersUnitId, setRentersUnitId] = useState(null);
+  const [importOpen, setImportOpen] = useState(false);
 
   const [rows, setRows] = useState([]);
   const [rowCount, setRowCount] = useState(0);
@@ -143,7 +145,7 @@ export default function BuildingsPage() {
 
   const openCreate = () => {
     setEditTarget(null);
-    form.reset({ name: "", address: "", city: "", country: "", num_floors: 1, num_apartments: 0, num_stores: 0, admin_id: "", starting_balance: "", instapay_address: "" });
+    form.reset({ name: "", address: "", city: "", country: "", num_floors: 1, num_apartments: 0, num_stores: 0, admin_id: "", starting_balance: "", instapay_address: "", approval_threshold: "" });
     setCoAdminIds([]);
     setPhotoFile(null);
     setPhotoPreview(null);
@@ -166,6 +168,7 @@ export default function BuildingsPage() {
       admin_id: building.admin_id || "",
       starting_balance: building.starting_balance ?? "",
       instapay_address: building.instapay_address ?? "",
+      approval_threshold: building.approval_threshold ?? "",
     });
     setCoAdminIds(building.co_admin_ids ?? []);
     setPhotoFile(null);
@@ -189,6 +192,7 @@ export default function BuildingsPage() {
         num_stores: parseInt(data.num_stores, 10) || 0,
         starting_balance: data.starting_balance !== "" ? parseFloat(data.starting_balance) : 0,
         instapay_address: data.instapay_address?.trim() ?? "",
+        approval_threshold: data.approval_threshold !== "" && data.approval_threshold != null ? parseFloat(data.approval_threshold) : null,
       };
       if (data.admin_id) fields.admin_id = data.admin_id;
       if (coAdminIds.length) fields.co_admin_ids = coAdminIds;
@@ -512,6 +516,20 @@ export default function BuildingsPage() {
           }
         }}
       />
+      <CsvImportDialog
+        open={importOpen}
+        title={t("import_units_title", { name: unitsTarget?.name })}
+        help={t("import_units_help")}
+        columns="unit_number,type,floor,size_sqm"
+        sample={"unit_number,type,floor,size_sqm\n1,apartment,1,95\n2,apartment,1,90\nS1,store,0,40\n"}
+        filename="units.csv"
+        upload={(file, commit) => buildingsApi.importUnits(unitsTarget.id, file, commit)}
+        onClose={() => setImportOpen(false)}
+        onDone={() => {
+          buildingsApi.apartments(unitsTarget.id, { page_size: 500 }).then((res) => setUnits(res.data?.results ?? res.data)).catch(() => {});
+          fetchBuildings();
+        }}
+      />
       <TransferAdminDialog
         building={handoverTarget}
         candidates={adminUsers
@@ -635,6 +653,14 @@ export default function BuildingsPage() {
                 fullWidth
                 {...form.register("starting_balance")}
                 helperText={t("starting_balance_helper")}
+              />
+              <TextField
+                label={t("approval_threshold")}
+                type="number"
+                inputProps={{ step: "0.01", min: 0 }}
+                fullWidth
+                {...form.register("approval_threshold")}
+                helperText={t("approval_threshold_helper")}
               />
               <TextField
                 label={t("instapay_address")}
@@ -883,6 +909,7 @@ export default function BuildingsPage() {
           )}
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button onClick={() => setImportOpen(true)}>{t("import_units")}</Button>
           <Button onClick={() => setUnitsTarget(null)}>{t("close")}</Button>
           <Button
             variant="contained"

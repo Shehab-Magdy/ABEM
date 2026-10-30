@@ -145,5 +145,18 @@
   "maintenance": "Maintenance",
   "statement": "Statement",
   "polls": "Votes",
-  "subscription": "Monthly subscription"
+  "subscription": "Monthly subscription",
+  "something_went_wrong": "Something went wrong. Please try again.",
+  "board": "Board",
+  "records": "Minutes & documents",
+  "operations": "Operations",
+  "csv_download_sample": "Download a sample file",
+  "csv_choose_file": "Choose a CSV file",
+  "csv_check": "Check the file",
+  "csv_import": "Import",
+  "csv_ready": "The file looks good: {{n}} rows ready to import.",
+  "csv_has_problems": "{{errors}} of {{total}} rows have problems. Nothing is imported until they are fixed.",
+  "csv_imported": "Imported {{n}} rows.",
+  "csv_row": "Row",
+  "csv_problem": "Problem"
 }

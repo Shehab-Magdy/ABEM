@@ -45,6 +45,9 @@ class Building(models.Model):
         max_digits=12, decimal_places=2, default=Decimal("0.00"),
     )
 
+    # Costs above this amount wait for the chair's (or a resident vote's) approval before units are billed. Empty = no rule.
+    approval_threshold = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+
     # Where residents send InstaPay transfers (InstaPay address or phone); shown in the app
     instapay_address = models.CharField(max_length=100, blank=True)
 
@@ -67,6 +70,11 @@ class UserBuilding(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     building = models.ForeignKey(Building, on_delete=models.CASCADE)
     joined_at = models.DateTimeField(auto_now_add=True)
+    # Title on the building's board (الهيئة الإدارية). One holder per title per building.
+    board_role = models.CharField(
+        max_length=10, blank=True, default="",
+        choices=[("chair", "Chair"), ("treasurer", "Treasurer"), ("secretary", "Secretary")],
+    )
 
     class Meta:
         unique_together = ("user", "building")

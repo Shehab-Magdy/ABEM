@@ -974,14 +974,16 @@ python manage.py generate_recurring_expenses   # creates recurring expenses that
 python manage.py send_payment_reminders        # due-soon (3 days before) and overdue (weekly) reminders
 python manage.py bill_subscriptions            # charges each unit its monthly subscription on the billing day
 python manage.py apply_late_fees               # adds a late fee to overdue subscription shares (buildings that use them)
+python manage.py finalize_polls                # settles expense-approval votes whose time is up
+python manage.py send_obligation_reminders     # reminds admins and the board of obligations coming due and contracts ending
 ```
 
 Run it from whatever scheduler your host provides (both are safe to run more than once a day: recurring expenses only creates what is due and catches up on missed periods; reminders never repeat the same notice twice in a day):
 
 | Host | How |
 |------|-----|
-| Docker on a VPS | `crontab -e` → `5 2 * * * cd /opt/abem && docker compose -f docker-compose.prod.yml exec -T backend sh -c 'python manage.py generate_recurring_expenses && python manage.py bill_subscriptions && python manage.py apply_late_fees && python manage.py send_payment_reminders'` |
-| Render / Railway | Add a **Cron Job** that runs the four commands daily (billing and fees before reminders) |
+| Docker on a VPS | `crontab -e` → `5 2 * * * cd /opt/abem && docker compose -f docker-compose.prod.yml exec -T backend sh -c 'python manage.py generate_recurring_expenses && python manage.py bill_subscriptions && python manage.py apply_late_fees && python manage.py finalize_polls && python manage.py send_obligation_reminders && python manage.py send_payment_reminders'` |
+| Render / Railway | Add a **Cron Job** that runs the six commands daily (billing and fees before reminders) |
 | Anything else | GitHub Actions `schedule`, systemd timer, or a cloud scheduler calling the same command |
 
 Emails and push notifications are sent while the request is handled, so no queue is needed.

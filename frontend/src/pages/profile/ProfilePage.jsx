@@ -30,6 +30,7 @@ import { authApi } from "../../api/authApi";
 import { useAuth } from "../../hooks/useAuth";
 import { useAuthStore } from "../../contexts/authStore";
 import { PrivateSEO } from "../../components/seo/SEO";
+import NotificationPreferences from "../../components/NotificationPreferences";
 import PhoneInput from "../../components/PhoneInput";
 
 export default function ProfilePage() {
@@ -330,6 +331,8 @@ export default function ProfilePage() {
           </Box>
         </CardContent>
       </Card>
+
+      <NotificationPreferences />
 
       {/* ── Delete my account ── */}
       <Card sx={{ mt: 3, border: "1px solid", borderColor: "error.light" }}>

@@ -193,14 +193,28 @@ class PaymentClaimSerializer(serializers.ModelSerializer):
     apartment_id = serializers.PrimaryKeyRelatedField(source="apartment", queryset=Apartment.objects.all())
     unit_number = serializers.CharField(source="apartment.unit_number", read_only=True)
     building_name = serializers.CharField(source="apartment.building.name", read_only=True)
+    can_review = serializers.SerializerMethodField()
 
     class Meta:
         model = PaymentClaim
         fields = [
-            "id", "apartment_id", "unit_number", "building_name",
+            "id", "apartment_id", "unit_number", "building_name", "can_review",
             "amount", "reference", "status", "created_at", "reviewed_at",
         ]
         read_only_fields = ["id", "status", "created_at", "reviewed_at"]
+
+    def get_can_review(self, obj):
+        """True when the requesting user may confirm or reject this transfer (building admin or treasurer)."""
+        from apps.buildings.scoping import has_board_role, managed_buildings
+
+        request = self.context.get("request")
+        user = getattr(request, "user", None)
+        if not user or not user.is_authenticated:
+            return False
+        building_id = obj.apartment.building_id
+        return (user.role == "admin" and managed_buildings(user).filter(pk=building_id).exists()) or has_board_role(
+            user, building_id, "treasurer"
+        )
 
     def validate_amount(self, value):
         if value <= Decimal("0.00"):

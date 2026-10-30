@@ -1,12 +1,17 @@
-from rest_framework.exceptions import PermissionDenied
+from django.utils import timezone
+from django.utils.translation import gettext as _
+from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.viewsets import ModelViewSet
 
 from apps.authentication.permissions import IsAdminRole
+from apps.buildings.models import UserBuilding
 from apps.buildings.scoping import ensure_manages, managed_buildings
+from apps.notifications.models import NotificationType
+from apps.notifications.services import notify_user
 
-from .models import MaintenanceReport, ReportStatus
-from .serializers import MaintenanceReportSerializer
+from .models import MaintenanceReport, ReportStatus, WorkOrder
+from .serializers import MaintenanceReportSerializer, WorkOrderSerializer
 
 
 class MaintenanceReportViewSet(ModelViewSet):
@@ -54,3 +59,64 @@ class MaintenanceReportViewSet(ModelViewSet):
         report.status = status_value
         report.save(update_fields=["status", "updated_at"])
         return self.retrieve(request, *args, **kwargs)
+
+
+class WorkOrderViewSet(ModelViewSet):
+    """
+    POST  /maintenance/work-orders/        {report_id, contractor_id?, scheduled_on?, notes?} - take a report on
+    PATCH /maintenance/work-orders/{id}/   status (assigned / in_progress / done), completed_on, expense_id (the cost), notes
+    The report follows the order (in progress / done) and the resident who reported it is told when it is done.
+    Admins and board members of the building write; the order is visible on the report to everyone who sees it.
+    """
+
+    serializer_class = WorkOrderSerializer
+    http_method_names = ["get", "post", "patch", "options", "head"]
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        qs = WorkOrder.objects.select_related("report__building", "contractor", "expense")
+        if user.role == "admin":
+            return qs.filter(report__building__in=managed_buildings(user))
+        return qs.filter(report__building__members=user).distinct()
+
+    def _check(self, building):
+        user = self.request.user
+        board = UserBuilding.objects.filter(user=user, building=building).exclude(board_role="").exists()
+        if not (managed_buildings(user).filter(pk=building.pk).exists() or board):
+            raise PermissionDenied(_("Only the building's admins and board can manage work orders."))
+
+    def perform_create(self, serializer):
+        report = serializer.validated_data["report"]
+        self._check(report.building)  # permission first, so outsiders learn nothing about the report
+        if WorkOrder.objects.filter(report=report).exists():
+            raise ValidationError({"report_id": _("This report already has a work order.")})
+        serializer.save(created_by=self.request.user)
+        if report.status == "open":
+            report.status = "in_progress"
+            report.save(update_fields=["status", "updated_at"])
+
+    def perform_update(self, serializer):
+        order = serializer.instance
+        self._check(order.report.building)
+        order = serializer.save()
+        report = order.report
+        if order.status == "done":
+            order.completed_on = order.completed_on or timezone.localdate()
+            order.save(update_fields=["completed_on"])
+            if report.status != "done":
+                report.status = "done"
+                report.save(update_fields=["status", "updated_at"])
+                self._tell_reporter(report)
+        elif order.status == "in_progress" and report.status == "open":
+            report.status = "in_progress"
+            report.save(update_fields=["status", "updated_at"])
+
+    def _tell_reporter(self, report):
+        if report.reporter_id and report.reporter.is_active:
+            ar = getattr(report.reporter, "preferred_language", "ar") == "ar"
+            notify_user(
+                user=report.reporter, notification_type=NotificationType.ANNOUNCEMENT,
+                title="تم إنجاز بلاغ الصيانة" if ar else "Your maintenance report is done",
+                body=report.get_category_display(), metadata={"report_id": str(report.pk)},
+            )

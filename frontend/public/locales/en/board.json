@@ -1,0 +1,16 @@
+{
+  "title": "Board",
+  "help": "The chair, treasurer and secretary of the owners' association. One person per title in a building.",
+  "building": "Building",
+  "vacant": "Vacant",
+  "role_chair": "Chair",
+  "role_chair_help": "Approves large expenses.",
+  "role_treasurer": "Treasurer",
+  "role_treasurer_help": "Confirms InstaPay transfers.",
+  "role_secretary": "Secretary",
+  "role_secretary_help": "Writes the meeting minutes.",
+  "choose_member": "Choose a member",
+  "assign": "Assign",
+  "remove": "Remove",
+  "error": "Could not complete that."
+}

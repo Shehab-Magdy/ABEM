@@ -8,6 +8,7 @@ from django.db import transaction
 from django.db.models import F
 from django.utils import timezone
 from rest_framework import status
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.decorators import action
 from rest_framework.filters import OrderingFilter, SearchFilter
 from rest_framework.parsers import FormParser, MultiPartParser
@@ -23,6 +24,7 @@ from apps.audit.mixins import log_action
 from apps.authentication.permissions import IsAdminRole
 from apps.buildings.scoping import ensure_manages, managed_buildings
 
+from .approval import approve as approve_expense, can_decide, reject as reject_expense
 from .late_fees import waive_late_fee
 from .models import Expense, ExpenseCategory, LateFee, MediaFile
 from .serializers import (
@@ -107,7 +109,7 @@ class ExpenseViewSet(ModelViewSet):
     http_method_names = ["get", "post", "patch", "delete", "options", "head"]
 
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
-    filterset_fields = ["split_type", "is_recurring"]
+    filterset_fields = ["split_type", "is_recurring", "kind"]
     search_fields = ["title", "description"]
     ordering_fields = ["expense_date", "amount", "created_at"]
     ordering = ["-expense_date"]
@@ -143,10 +145,11 @@ class ExpenseViewSet(ModelViewSet):
     # ── Permissions ────────────────────────────────────────────────────────────
 
     def get_permissions(self):
-        write_actions = ("create", "partial_update", "update", "destroy", "upload", "mark_paid")
+        write_actions = ("create", "partial_update", "update", "destroy", "upload", "mark_paid")  # approve / reject / put_to_vote check the chair themselves
         if self.action in write_actions:
             return [IsAuthenticated(), IsAdminRole()]
-        return [IsAuthenticated()]
+        # Custom @actions declare their own permission_classes (e.g. import): honour them.
+        return super().get_permissions()
 
     # ── Write helpers ──────────────────────────────────────────────────────────
 
@@ -170,6 +173,116 @@ class ExpenseViewSet(ModelViewSet):
             notify_expense_created(expense, [ae.apartment for ae in ae_list])
         except Exception:
             pass
+
+    @action(
+        detail=False, methods=["post"], url_path="import",
+        permission_classes=[IsAuthenticated, IsAdminRole], parser_classes=[MultiPartParser, FormParser],
+    )
+    def import_expenses(self, request):
+        """
+        POST /expenses/import/   multipart: building_id, file (CSV), commit=true|false
+        Columns: title, amount, date (YYYY-MM-DD) required; category (a name that exists in the building),
+        split_type (equal_all | equal_apartments | equal_stores), due_date, description.
+        Each row goes through the normal expense rules (split, approval threshold). Without commit the file is only
+        checked and every row reported; with commit=true all rows are created, or none if any has a problem.
+        """
+        from apps.core.csv_import import read_rows
+
+        building_id = request.data.get("building_id")
+        ensure_manages(request.user, building_id)
+        building = managed_buildings(request.user).get(pk=building_id)
+        rows = read_rows(
+            request.FILES.get("file"), ["title", "amount", "date"],
+            ["title", "amount", "date", "category", "split_type", "due_date", "description"],
+        )
+        categories = {c.name.lower(): c for c in ExpenseCategory.objects.filter(building=building, is_active=True)}
+        report, valid = [], []
+        for number, row in enumerate(rows, start=2):  # row 1 is the header
+            problems = []
+            category = categories.get(row.get("category", "").lower())
+            if not category:
+                problems.append(_("category must be one of: %(names)s.") % {"names": ", ".join(sorted(c.name for c in categories.values())) or "-"})
+            data = {
+                "building_id": str(building.pk), "category_id": str(category.pk) if category else None,
+                "title": row.get("title", ""), "amount": row.get("amount", ""), "expense_date": row.get("date", ""),
+                "split_type": row.get("split_type") or "equal_all", "description": row.get("description", ""),
+            }
+            if row.get("due_date"):
+                data["due_date"] = row["due_date"]
+            serializer = ExpenseSerializer(data=data, context={"request": request})
+            if not serializer.is_valid():
+                for field, msgs in serializer.errors.items():
+                    problems.extend(f"{field}: {m}" for m in (msgs if isinstance(msgs, list) else [str(msgs)]))
+            report.append({"row": number, "title": row.get("title", ""), "ok": not problems, "problems": problems})
+            if not problems:
+                valid.append(serializer)
+
+        errors = sum(1 for r in report if not r["ok"])
+        created = 0
+        if str(request.data.get("commit", "")).lower() == "true" and errors == 0:
+            with transaction.atomic():
+                for serializer in valid:
+                    self.perform_create(serializer)
+            created = len(valid)
+        return Response({"rows": report, "total": len(report), "errors": errors, "created": created})
+
+    def _decider(self, request):
+        """The pending expense, if the user may decide on it (the chair, or an admin while no chair is named)."""
+        expense = self.get_object()
+        if not can_decide(request.user, expense.building):
+            raise PermissionDenied(_("Only the building's chair can decide on this expense."))
+        if expense.approval_status != "pending":
+            return expense, Response({"detail": _("This expense is not waiting for approval.")}, status=409)
+        return expense, None
+
+    @action(detail=True, methods=["post"], url_path="approve")
+    def approve(self, request, pk=None):
+        expense, conflict = self._decider(request)
+        if conflict:
+            return conflict
+        expense = approve_expense(expense, request.user, str(request.data.get("note") or ""))
+        log_action(user=request.user, action="update", entity="expense", entity_id=expense.pk, changes={"approval": "approved"}, request=request)
+        return Response(self.get_serializer(expense).data)
+
+    @action(detail=True, methods=["post"], url_path="reject")
+    def reject(self, request, pk=None):
+        expense, conflict = self._decider(request)
+        if conflict:
+            return conflict
+        expense = reject_expense(expense, request.user, str(request.data.get("note") or ""))
+        log_action(user=request.user, action="update", entity="expense", entity_id=expense.pk, changes={"approval": "rejected"}, request=request)
+        return Response(self.get_serializer(expense).data)
+
+    @action(detail=True, methods=["post"], url_path="put-to-vote")
+    def put_to_vote(self, request, pk=None):
+        """Let the residents decide: opens a poll (approve / reject, one vote per unit); its outcome settles the expense."""
+        from datetime import timedelta
+
+        from apps.governance.models import Poll, PollOption
+        from apps.notifications.models import NotificationType
+        from apps.notifications.services import notify_user
+
+        expense, conflict = self._decider(request)
+        if conflict:
+            return conflict
+        if expense.polls.filter(finalized_at__isnull=True).exists():
+            return Response({"detail": _("A vote on this expense is already open.")}, status=409)
+        ar = getattr(request.user, "preferred_language", "ar") == "ar"
+        poll = Poll.objects.create(
+            building=expense.building, expense=expense, created_by=request.user,
+            title=(f"الموافقة على مصروف: {expense.title} ({expense.amount})" if ar else f"Approve this expense: {expense.title} ({expense.amount})"),
+            description=expense.description, closes_at=timezone.now() + timedelta(days=int(request.data.get("days") or 3)),
+            quorum_percent=int(request.data.get("quorum_percent") or 0),
+        )
+        PollOption.objects.bulk_create([
+            PollOption(poll=poll, text="موافق" if ar else "Approve", order=0),
+            PollOption(poll=poll, text="غير موافق" if ar else "Reject", order=1),
+        ])
+        for member in expense.building.members.exclude(pk=request.user.pk):
+            notify_user(user=member, notification_type=NotificationType.ANNOUNCEMENT,
+                        title="تصويت جديد" if getattr(member, "preferred_language", "en") == "ar" else "New vote",
+                        body=poll.title, category="announcements", metadata={"poll_id": str(poll.pk)})
+        return Response({"poll_id": str(poll.pk)}, status=201)
 
     def perform_update(self, serializer):
         tracked = {

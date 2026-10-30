@@ -23,6 +23,8 @@ import {
   DialogTitle,
   Divider,
   FormControl,
+  ToggleButton,
+  ToggleButtonGroup,
   IconButton,
   InputLabel,
   MenuItem,
@@ -51,9 +53,13 @@ import {
   HourglassEmpty as HourglassIcon,
   Cancel as CancelIcon,
   Repeat as RepeatIcon,
+  EventRepeat as SubscriptionIcon,
+  ReportProblem as LateFeeIcon,
   Visibility as ViewIcon,
 } from "@mui/icons-material";
 import { expensesApi } from "../../api/expensesApi";
+import ReasonDialog from "../../components/ReasonDialog";
+import CsvImportDialog from "../../components/CsvImportDialog";
 import { buildingsApi } from "../../api/buildingsApi";
 import { useAuth } from "../../hooks/useAuth";
 import { useTranslation } from "react-i18next";
@@ -166,6 +172,11 @@ export default function ExpensesPage() {
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(false);
   const [selectedBuilding, setSelectedBuilding] = useState("");
+  // "" = everything a unit is billed; otherwise cost | subscription | late_fee
+  const [filterKind, setFilterKind] = useState("");
+  // the chair (or an admin while no chair is named) decides on large costs
+  const [decision, setDecision] = useState(null);
+  const [importOpen, setImportOpen] = useState(false);
 
   const [detailExpense, setDetailExpense] = useState(null);
   const [formOpen, setFormOpen] = useState(false);
@@ -216,6 +227,23 @@ export default function ExpensesPage() {
     }
   }, []);
 
+  const decide = async (note) => {
+    const { expense, action } = decision;
+    await (action === "approve" ? expensesApi.approve(expense.id, note) : expensesApi.reject(expense.id, note));
+    setDecision(null);
+    setSnack({ open: true, msg: t(action === "approve" ? "approved_msg" : "rejected_msg"), severity: "success" });
+    loadExpenses();
+  };
+
+  const putToVote = async (expense) => {
+    try {
+      await expensesApi.putToVote(expense.id);
+      setSnack({ open: true, msg: t("vote_started"), severity: "success" });
+    } catch (err) {
+      setSnack({ open: true, msg: err.response?.data?.detail || t("load_error"), severity: "error" });
+    }
+  };
+
   const loadExpenses = useCallback(async () => {
     if (!selectedBuilding) return;
     setLoading(true);
@@ -224,6 +252,7 @@ export default function ExpensesPage() {
       if (filterDateFrom) params.date_from = filterDateFrom;
       if (filterDateTo) params.date_to = filterDateTo;
       if (filterCategory) params.category_id = filterCategory;
+      if (filterKind) params.kind = filterKind;
       const res = await expensesApi.list(params);
       setExpenses(res.data.results ?? res.data);
     } catch {
@@ -231,7 +260,7 @@ export default function ExpensesPage() {
     } finally {
       setLoading(false);
     }
-  }, [selectedBuilding, filterDateFrom, filterDateTo, filterCategory]);
+  }, [selectedBuilding, filterDateFrom, filterDateTo, filterCategory, filterKind]);
 
   const loadCategories = useCallback(async () => {
     if (!selectedBuilding) return;
@@ -412,9 +441,12 @@ export default function ExpensesPage() {
           {t("page_title")}
         </Typography>
         {isAdmin && (
-          <Button id="add-expense-btn" variant="contained" startIcon={<AddIcon />} onClick={openCreate}>
-            {t("add_expense")}
-          </Button>
+          <Stack direction="row" spacing={1}>
+            <Button variant="outlined" onClick={() => setImportOpen(true)} disabled={!selectedBuilding}>{t("import_csv")}</Button>
+            <Button id="add-expense-btn" variant="contained" startIcon={<AddIcon />} onClick={openCreate}>
+              {t("add_expense")}
+            </Button>
+          </Stack>
         )}
       </Stack>
 
@@ -435,6 +467,19 @@ export default function ExpensesPage() {
               ))}
             </Select>
           </FormControl>
+
+          <ToggleButtonGroup
+            exclusive
+            size="small"
+            value={filterKind}
+            onChange={(_, value) => setFilterKind(value ?? "")}
+            aria-label={t("kind_filter")}
+          >
+            <ToggleButton value="">{t("kind_all")}</ToggleButton>
+            <ToggleButton value="cost">{t("kind_cost")}</ToggleButton>
+            <ToggleButton value="subscription">{t("kind_subscription")}</ToggleButton>
+            <ToggleButton value="late_fee">{t("kind_late_fee")}</ToggleButton>
+          </ToggleButtonGroup>
 
           <TextField
             size="small"
@@ -520,6 +565,25 @@ export default function ExpensesPage() {
                           {exp.title}
                         </Typography>
                       </Tooltip>
+                      {exp.kind === "subscription" && (
+                        <Chip size="small" variant="outlined" color="info" icon={<SubscriptionIcon />} label={t("kind_subscription")} sx={{ mt: 0.5 }} />
+                      )}
+                      {exp.kind === "late_fee" && (
+                        <Chip size="small" variant="outlined" color="warning" icon={<LateFeeIcon />} label={t("kind_late_fee")} sx={{ mt: 0.5 }} />
+                      )}
+                      {exp.approval_status === "pending" && (
+                        <Chip size="small" color="warning" icon={<HourglassIcon />} label={t("approval_pending")} sx={{ mt: 0.5 }} />
+                      )}
+                      {exp.approval_status === "rejected" && (
+                        <Chip size="small" color="error" icon={<CancelIcon />} label={t("approval_rejected")} sx={{ mt: 0.5 }} />
+                      )}
+                      {exp.can_decide && (
+                        <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap sx={{ mt: 0.5 }}>
+                          <Button size="small" variant="contained" color="success" onClick={() => setDecision({ expense: exp, action: "approve" })} sx={{ minHeight: 32 }}>{t("approve")}</Button>
+                          <Button size="small" variant="outlined" color="error" onClick={() => setDecision({ expense: exp, action: "reject" })} sx={{ minHeight: 32 }}>{t("reject")}</Button>
+                          <Button size="small" variant="outlined" onClick={() => putToVote(exp)} sx={{ minHeight: 32 }}>{t("put_to_vote")}</Button>
+                        </Stack>
+                      )}
                     </TableCell>
                     <TableCell>
                       <Typography variant="body2" fontWeight={500}>
@@ -1054,6 +1118,27 @@ export default function ExpensesPage() {
         </Alert>
       </Snackbar>
     </Box>
+      <CsvImportDialog
+        open={importOpen}
+        title={t("import_csv_title")}
+        help={t("import_csv_help")}
+        columns="title,amount,date,category,split_type,due_date,description"
+        sample={"title,amount,date,category,split_type,due_date\nStairs cleaning,200,2026-10-01,Cleaning,equal_all,2026-10-15\n"}
+        filename="expenses.csv"
+        upload={(file, commit) => expensesApi.importCsv(selectedBuilding, file, commit)}
+        onClose={() => setImportOpen(false)}
+        onDone={() => loadExpenses()}
+      />
+      <ReasonDialog
+        open={!!decision}
+        title={decision ? t(decision.action === "approve" ? "approve_title" : "reject_title", { title: decision.expense.title }) : ""}
+        description={t("decision_help")}
+        label={t("decision_note")}
+        confirmLabel={decision ? t(decision.action) : ""}
+        color={decision?.action === "reject" ? "error" : "success"}
+        onClose={() => setDecision(null)}
+        onConfirm={decide}
+      />
     </>
   );
 }

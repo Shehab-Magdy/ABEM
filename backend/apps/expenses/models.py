@@ -74,6 +74,15 @@ class Expense(models.Model):
     # Only "cost" rows are money the building spent. Subscriptions and late fees are charges to units,
     # so treasury, statement and dashboard totals leave them out.
     kind = models.CharField(max_length=12, choices=ExpenseKind.choices, default=ExpenseKind.COST)
+    # Large costs wait for approval before units are billed (see approval.py)
+    approval_status = models.CharField(
+        max_length=10, default="approved",
+        choices=[("approved", "Approved"), ("pending", "Pending approval"), ("rejected", "Rejected")],
+    )
+    approval_note = models.CharField(max_length=200, blank=True)
+    decided_by = models.ForeignKey("authentication.User", on_delete=models.SET_NULL, null=True, blank=True, related_name="+")
+    decided_at = models.DateTimeField(null=True, blank=True)
+    pending_split = models.JSONField(default=dict, blank=True)  # the split to apply once approved
     split_type = models.CharField(max_length=20, choices=SplitType.choices, default=SplitType.EQUAL_ALL)
     is_recurring = models.BooleanField(default=False)
     is_manually_paid = models.BooleanField(default=False)

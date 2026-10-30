@@ -6,6 +6,7 @@ import { maintenanceApi } from "../../api/maintenanceApi";
 import { useAuth } from "../../hooks/useAuth";
 import { PrivateSEO } from "../../components/seo/SEO";
 import ReportIssueDialog from "../../components/ReportIssueDialog";
+import WorkOrderDialog from "../../components/WorkOrderDialog";
 
 const STATUSES = ["open", "in_progress", "done"];
 const STATUS_COLOR = { open: "warning", in_progress: "info", done: "success" };
@@ -15,6 +16,7 @@ export default function MaintenancePage() {
   const { isAdmin } = useAuth();
   const [reports, setReports] = useState([]);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [orderReport, setOrderReport] = useState(null);
 
   const load = useCallback(async () => {
     try {
@@ -59,6 +61,24 @@ export default function MaintenancePage() {
                         {r.reporter_name} · {new Date(r.created_at).toLocaleDateString()}
                       </Typography>
                     </Box>
+                    {r.work_order && (
+                      <Box sx={{ mt: 1 }} data-testid="work-order-summary">
+                        <Chip size="small" variant="outlined" label={t(`wo_status_${r.work_order.status}`)} sx={{ me: 1, marginInlineEnd: 1 }} />
+                        <Typography variant="body2" component="span">
+                          {[
+                            r.work_order.contractor_name && t("wo_by", { name: r.work_order.contractor_name }),
+                            r.work_order.scheduled_on && t("wo_on", { date: r.work_order.scheduled_on }),
+                            r.work_order.completed_on && t("wo_done_on", { date: r.work_order.completed_on }),
+                            r.work_order.cost && t("wo_cost", { amount: Number(r.work_order.cost).toLocaleString() }),
+                          ].filter(Boolean).join(" · ")}
+                        </Typography>
+                      </Box>
+                    )}
+                    {r.can_manage && (
+                      <Button size="small" variant="outlined" onClick={() => setOrderReport(r)} sx={{ mt: 1, minHeight: 36, alignSelf: "flex-start" }}>
+                        {r.work_order ? t("wo_update") : t("wo_take_on")}
+                      </Button>
+                    )}
                     {isAdmin ? (
                       <TextField select size="small" value={r.status} onChange={(e) => changeStatus(r.id, e.target.value)} sx={{ minWidth: 150 }}>
                         {STATUSES.map((s) => <MenuItem key={s} value={s}>{t(`status_${s}`)}</MenuItem>)}
@@ -73,6 +93,7 @@ export default function MaintenancePage() {
           </Stack>
         )}
       </Box>
+      <WorkOrderDialog report={orderReport} onClose={() => setOrderReport(null)} onSaved={() => { setOrderReport(null); load(); }} />
       <ReportIssueDialog open={dialogOpen} onClose={() => setDialogOpen(false)} onSent={load} />
     </>
   );

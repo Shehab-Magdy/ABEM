@@ -62,7 +62,8 @@ class BuildingViewSet(ModelViewSet):
         write_actions = ("create", "partial_update", "update", "destroy", "assign_user", "deactivate", "activate")
         if self.action in write_actions:
             return [IsAuthenticated(), IsAdminRole()]
-        return [IsAuthenticated()]
+        # Custom @actions declare their own permission_classes (e.g. subscription, import-units): honour them.
+        return super().get_permissions()
 
     # ── Write helpers ──────────────────────────────────────────────────────────
 
@@ -201,6 +202,122 @@ class BuildingViewSet(ModelViewSet):
         )
         return Response(self.get_serializer(building).data)
 
+    @action(
+        detail=True, methods=["post"], url_path="import-units",
+        permission_classes=[IsAuthenticated, IsAdminRole], parser_classes=[MultiPartParser, FormParser],
+    )
+    def import_units(self, request, pk=None):
+        """
+        POST /buildings/{id}/import-units/   multipart: file (CSV), commit=true|false
+        Columns: unit_number (required), type (apartment | store, default apartment), floor, size_sqm.
+        Without commit it only checks the file and reports each row; with commit=true it creates every unit,
+        or none at all if any row has a problem.
+        """
+        from decimal import Decimal, InvalidOperation
+
+        from apps.apartments.models import Apartment
+        from apps.core.csv_import import read_rows
+
+        building = self.get_object()
+        rows = read_rows(request.FILES.get("file"), ["unit_number"], ["unit_number", "type", "floor", "size_sqm"])
+        existing = set(Apartment.objects.filter(building=building).values_list("unit_number", flat=True))
+        seen, report, clean = set(), [], []
+        kinds = {"apartment": "apartment", "شقة": "apartment", "store": "store", "محل": "store", "": "apartment"}
+
+        for number, row in enumerate(rows, start=2):  # row 1 is the header
+            problems = []
+            unit = row.get("unit_number", "")
+            if not unit:
+                problems.append(_("unit_number is required."))
+            elif unit in existing:
+                problems.append(_("This unit already exists in the building."))
+            elif unit in seen:
+                problems.append(_("This unit appears twice in the file."))
+            kind = kinds.get(row.get("type", "").lower())
+            if kind is None:
+                problems.append(_("type must be apartment or store."))
+            floor = 0
+            if row.get("floor", ""):
+                try:
+                    floor = int(row["floor"])
+                    if not 0 <= floor <= building.num_floors:
+                        problems.append(_("floor must be between 0 and %(n)s.") % {"n": building.num_floors})
+                except ValueError:
+                    problems.append(_("floor must be a whole number."))
+            size = None
+            if row.get("size_sqm", ""):
+                try:
+                    size = Decimal(row["size_sqm"])
+                    if size <= 0:
+                        raise InvalidOperation
+                except InvalidOperation:
+                    problems.append(_("size_sqm must be a positive number."))
+            seen.add(unit)
+            report.append({"row": number, "unit_number": unit, "ok": not problems, "problems": problems})
+            if not problems:
+                clean.append(Apartment(building=building, unit_number=unit, unit_type=kind, floor=floor, size_sqm=size))
+
+        errors = sum(1 for r in report if not r["ok"])
+        created = 0
+        if str(request.data.get("commit", "")).lower() == "true" and errors == 0:
+            with transaction.atomic():
+                Apartment.objects.bulk_create(clean)
+            created = len(clean)
+            log_action(user=request.user, action="create", entity="apartment", entity_id=building.pk,
+                       changes={"imported": created}, request=request)
+        return Response({"rows": report, "total": len(report), "errors": errors, "created": created})
+
+    @action(detail=True, methods=["get", "post"], url_path="board", permission_classes=[IsAuthenticated])
+    def board(self, request, pk=None):
+        """
+        GET  /buildings/{id}/board/                 – who holds each title (chair, treasurer, secretary); visible to members
+        POST /buildings/{id}/board/ {user_id, role} – an admin of the building gives a member a title ("" removes it)
+        The chair approves large expenses, the treasurer confirms InstaPay transfers, the secretary keeps the minutes.
+        """
+        from .scoping import BOARD_ROLES, managed_buildings
+
+        building = self.get_object()
+        is_manager = managed_buildings(request.user).filter(pk=building.pk).exists()
+
+        if request.method == "POST":
+            if not is_manager:
+                return Response({"detail": _("Only the building's admins can assign board titles.")}, status=403)
+            role = request.data.get("role", "")
+            if role not in ("",) + BOARD_ROLES:
+                return Response({"detail": _("Choose chair, treasurer or secretary.")}, status=400)
+            member = UserBuilding.objects.filter(building=building, user_id=request.data.get("user_id")).first() \
+                if request.data.get("user_id") else None
+            if member is None:
+                return Response({"detail": _("That person is not a member of this building.")}, status=400)
+            with transaction.atomic():
+                if role:  # one holder per title: the previous holder (if any) loses it
+                    UserBuilding.objects.filter(building=building, board_role=role).exclude(pk=member.pk).update(board_role="")
+                member.board_role = role
+                member.save(update_fields=["board_role"])
+            log_action(
+                user=request.user, action="update", entity="board", entity_id=building.pk,
+                changes={"user": str(member.user_id), "role": role}, request=request,
+            )
+
+        holders = {ub.board_role: ub for ub in UserBuilding.objects.filter(building=building).exclude(board_role="").select_related("user")}
+        data = {
+            "board": [
+                {
+                    "role": role,
+                    "user_id": str(holders[role].user_id) if role in holders else None,
+                    "name": (holders[role].user.get_full_name() or holders[role].user.email) if role in holders else "",
+                }
+                for role in BOARD_ROLES
+            ],
+        }
+        if is_manager:  # who an admin can pick from
+            data["candidates"] = [
+                {"user_id": str(ub.user_id), "name": ub.user.get_full_name() or ub.user.email, "board_role": ub.board_role}
+                for ub in UserBuilding.objects.filter(building=building).select_related("user").order_by("user__first_name")
+                if ub.user.is_active
+            ]
+        return Response(data)
+
     @action(detail=True, methods=["get", "post"], url_path="subscription", permission_classes=[IsAuthenticated, IsAdminRole])
     def subscription(self, request, pk=None):
         """
@@ -328,7 +445,7 @@ class BuildingViewSet(ModelViewSet):
         received = Payment.objects.filter(apartment__building=building).aggregate(s=Sum("amount_paid"))["s"] or zero
         sales = AssetSale.objects.filter(asset__building=building).aggregate(s=Sum("sale_price"))["s"] or zero
         spent = (
-            Expense.objects.filter(building=building, deleted_at__isnull=True, kind="cost").aggregate(s=Sum("amount"))["s"] or zero
+            Expense.objects.filter(building=building, deleted_at__isnull=True, kind="cost", approval_status="approved").aggregate(s=Sum("amount"))["s"] or zero
         )
         billed_ids = list(
             ApartmentExpense.objects.filter(expense__building=building, expense__deleted_at__isnull=True)

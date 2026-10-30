@@ -24,7 +24,7 @@ class UserSerializer(serializers.ModelSerializer):
         fields = [
             "id", "email", "first_name", "last_name", "full_name",
             "phone", "profile_picture", "role", "is_active",
-            "must_change_password", "preferred_language", "preferred_theme",
+            "must_change_password", "preferred_language", "preferred_theme", "notification_preferences",
             "messaging_blocked", "individual_messaging_blocked",
             "created_at", "updated_at", "buildings", "apartment_ids",
         ]
@@ -358,7 +358,15 @@ class ProfileUpdateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ["first_name", "last_name", "phone", "profile_picture", "preferred_language", "preferred_theme"]
+        fields = ["first_name", "last_name", "phone", "profile_picture", "preferred_language", "preferred_theme", "notification_preferences"]
+
+    def validate_notification_preferences(self, value):
+        """Only the known switches, each on or off; anything not listed stays on."""
+        from apps.notifications.services import PREFERENCE_KEYS
+
+        if not isinstance(value, dict) or any(k not in PREFERENCE_KEYS or not isinstance(v, bool) for k, v in value.items()):
+            raise serializers.ValidationError(_("Notification preferences must be on/off switches for: %(keys)s.") % {"keys": ", ".join(PREFERENCE_KEYS)})
+        return value
 
 
 class ChangePasswordSerializer(serializers.Serializer):

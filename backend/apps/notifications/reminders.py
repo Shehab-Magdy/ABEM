@@ -12,7 +12,7 @@ from apps.expenses.utils import paid_toward_expense
 
 from .email_service import send_notification_email
 from .models import NotificationType, ReminderKind, ReminderLog
-from .services import _get_content, _get_user_lang, notify_user
+from .services import _get_content, _get_user_lang, notify_user, wants
 
 logger = logging.getLogger(__name__)
 
@@ -80,9 +80,10 @@ def send_payment_reminders(today=None) -> dict:
                 title=title,
                 body=body,
                 message_key=message_key,
+                category="payment_reminders",
                 metadata={"expense_id": str(share.expense_id), "apartment_id": str(share.apartment_id)},
             )
-            if user.email:
+            if user.email and wants(user, "payment_reminders") and wants(user, "email"):
                 sent = send_notification_email(
                     "payment_overdue" if kind == ReminderKind.OVERDUE else "payment_reminder",
                     user.email,
