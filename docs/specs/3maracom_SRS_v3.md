@@ -32,9 +32,9 @@ This Software Requirements Specification (SRS) document defines the functional a
 
 Provides full administrative capabilities: system configuration, building setup, user management, expense tracking with flexible split logic, payment recording, receipt generation, dashboard analytics, in-app messaging, building asset management, data exports, and a full audit trail — all accessible via a browser.
 
-#### 1.2.2 Mobile Experience (Installable PWA — Planned)
+#### 1.2.2 Mobile Experience (Installable PWA — Implemented)
 
-Android and iOS users will use the same React web application, installed from the browser as a Progressive Web App (web manifest, service worker, responsive and RTL layout). It uses the same backend APIs; no separate native codebase is maintained. Installability, offline behavior and push support on iOS are subject to platform limits and are validated on real devices.
+Android and iOS users use the same React web application, installed from the browser as a Progressive Web App (web manifest, service worker, responsive and RTL layout). It uses the same backend APIs; no separate native codebase is maintained. Installability, offline behavior and push support on iOS are subject to platform limits and are validated on real devices.
 
 #### 1.2.3 Backend & Infrastructure
 
@@ -106,6 +106,8 @@ Centralized backend built with Django + Django REST Framework (DRF), connected t
 
 ### 2.2 User Roles & Permissions Matrix
 
+Roles: `admin`, `owner` and `renter` (R-4, a resident who lives in a unit without owning it). Inside a building a resident can also hold a board title (R-5): chair, treasurer or secretary. The columns below describe the `admin` and `owner` roles; a renter has the owner's read access to the unit they live in, can report payments and maintenance problems, and cannot invite or remove other residents. Board titles add powers for one building: the treasurer reviews InstaPay claims and records payments and expenses, the chair approves large expenses, the secretary sends announcements and edits minutes. Co-admins keep full admin powers.
+
 | Feature | Admin | Owner | Unauthenticated |
 |---|---|---|---|
 | Login / Logout | Full | Full | Login Only |
@@ -116,6 +118,8 @@ Centralized backend built with Django + Django REST Framework (DRF), connected t
 | Activate / Deactivate Buildings | Full | None | None |
 | Manage Units (CRUD, floor, status) | Full | View Own | None |
 | Invite Owner to Unit | Full | None | None |
+| Invite / Remove Renter in Unit | Full | Own unit | None |
+| Assign Board Roles (chair, treasurer, secretary) | Full | None | None |
 | Claim Unit (via registration code) | Full | Full | None |
 | Assign Additional Owners to Unit | Full | None | None |
 | Manage Expense Categories | Full | None | None |
@@ -143,7 +147,7 @@ Centralized backend built with Django + Django REST Framework (DRF), connected t
 
 ### 3.1 User Management
 
-Role-based access control governs all user interactions. The system supports two primary roles: Admin and Owner.
+Role-based access control governs all user interactions. The system supports three roles: `admin` (full CRUD within the buildings they administer, including co-admins), `owner` (read-only view of own unit data) and `renter` (R-4: lives in a unit without owning it; invited by the unit's owner or a building admin). Within a building, a resident can additionally hold one board title (R-5): chair (رئيس), treasurer (أمين الصندوق) or secretary (أمين السر), one holder per title. Platform owners (Django superusers) manage plans and see platform analytics; they are not a building role.
 
 **Authentication & Session Management:**
 - JWT-based authentication with access tokens (15-minute TTL) and refresh tokens (7-day TTL).
@@ -163,7 +167,7 @@ Role-based access control governs all user interactions. The system supports two
 - Password change requires current password confirmation.
 
 **Admin User Management:**
-- Admin can create users directly (assigning role: admin or owner).
+- Admin can create users directly (assigning role: admin, owner or renter).
 - Admin can activate or deactivate users (`is_active` flag; deactivated users cannot log in).
 - Admin can reset any user's password without requiring the current password.
 - Users list is scoped to the admin's managed buildings (users in buildings the admin administers).
@@ -214,7 +218,7 @@ Manual payment recording by admins with full balance lifecycle management.
 - Apartment running balance is updated: `balance -= amount_paid` (positive = owes, negative = credit/overpayment).
 - **Payments are immutable** — no edits or deletions are permitted after creation.
 
-**Payment Methods:** Cash, Bank Transfer, Cheque, Mobile Wallet, InstaPay, Other (requires custom detail text if "Other" is selected).
+**Payment Methods:** `cash`, `bank_transfer`, `cheque`, `mobile_wallet`, `instapay`, `other` (the `PaymentMethod` choices in `payments/models.py`). Any extra detail for "Other" goes in the payment notes; there is no separate detail field.
 
 **PDF Receipts:** Each payment generates a downloadable PDF receipt (via WeasyPrint) in A6 page format, bilingual (Arabic/English) containing: Building info, unit number + first owner's full name, receipt ID (first 8 chars of UUID), amount paid, payment method, linked expense titles, balance before/after, recorder's full name (no email), date, and عِمارة.كوم | 3mara.com branding. The PDF is streamed as a blob and opened in a new browser tab.
 
@@ -292,7 +296,9 @@ Admins track physical assets belonging to a building and record their sale.
 **In-App Notifications:**
 - In-app notification center accessible from the header bell icon with an unread count badge.
 - Notifications filtered by All / Unread.
-- Notification types (rendered as chips): Payment Due, Payment Overdue, Payment Confirmed, Expense Added, Expense Updated, User Registered, Announcement.
+- Notification types (rendered as chips): Payment Due, Payment Overdue, Payment Confirmed, Expense Added, Expense Updated, User Registered, Announcement, Message.
+- System notifications raised by features: payment reminders (due soon and overdue, daily command), plan reminders (plan or trial ending, sent to building admins), obligation reminders (R-16 contracts and recurring duties), claim outcomes (an InstaPay claim confirmed or rejected, sent to the resident in their language), unit owner changed (sent to the building admins with the balance at handover), board member left, work-order done (sent to the reporter) and new votes.
+- Users can switch off the preference groups `payment_reminders`, `expense_updates`, `announcements` and `email` in their profile (`notification_preferences`).
 - Each notification shows type, title, body, sender (if applicable), and timestamp.
 - "Mark as Read" button per unread notification.
 - Automatically triggered: on expense creation (notifies all affected unit owners), on payment recording (notifies the unit owner).
@@ -584,23 +590,42 @@ All tables include UUID primary keys. Multi-tenant isolation is enforced via bui
 
 | Table | Key Fields | Relationships | Notes |
 |---|---|---|---|
-| users | id (UUID), email (unique), first_name, last_name, phone, profile_picture, role (admin\|owner), is_active, failed_login_attempts, locked_until, messaging_blocked, individual_messaging_blocked, notification_preferences (JSON), created_at | — | Custom auth model. USERNAME_FIELD = email. |
+| users | id (UUID), email (unique), first_name, last_name, phone, profile_picture, role (admin\|owner\|renter), must_change_password, preferred_language, preferred_theme, is_active, failed_login_attempts, locked_until, messaging_blocked, individual_messaging_blocked, notification_preferences (JSON), created_at | — | Custom auth model. USERNAME_FIELD = email. |
 | buildings | id (UUID), name, address, city, country, num_floors, num_apartments, num_stores, photo, admin_id → users, is_active, deleted_at | admin → users | Primary admin FK. Co-admins via junction table. |
 | building_co_admins | user_id → users, building_id → buildings, added_at | users ↔ buildings | Multiple co-admins per building. |
-| user_buildings | user_id → users, building_id → buildings, joined_at | users ↔ buildings | Building membership for all users (admins + owners). |
-| apartments | id (UUID), building_id → buildings, owner_id → users (nullable), unit_number, floor, unit_type (apartment\|store), size_sqm, status (occupied\|vacant\|maintenance), balance (DECIMAL 10.2) | building → buildings, owner → users | Primary owner FK + M2M owners. Balance: positive = owes, negative = credit. |
+| user_buildings | user_id → users, building_id → buildings, joined_at, board_role (chair\|treasurer\|secretary, blank = none) | users ↔ buildings | Building membership for all users (admins + owners). |
+| apartments | id (UUID), building_id → buildings, owner_id → users (nullable), unit_number, floor, unit_type (apartment\|store), size_sqm, rate_factor, billing_paused, billing_pause_reason, status (occupied\|vacant\|maintenance), balance (DECIMAL 10.2) | building → buildings, owner → users | Primary owner FK + M2M owners. Balance: positive = owes, negative = credit. |
 | apartment_owners | apartment_id → apartments, user_id → users | apartments ↔ users (M2M) | All owners including primary. |
 | unit_invitations | id (UUID), token (UUID, unique), apartment_id → apartments, invited_email, registration_code (8 char, unique), invited_by → users, created_at, expires_at, used_at | apartment → apartments | `is_valid` property: used_at is None AND expires_at > now(). |
 | expense_categories | id (UUID), building_id → buildings, name, description, icon, color (hex), parent_id → self (nullable), is_active | building → buildings, parent → self | One level of subcategory depth. Unique (building, name). |
-| expenses | id (UUID), building_id → buildings, category_id → expense_categories, title, description, amount (DECIMAL 10.2), expense_date, due_date (nullable), split_type (equal_all\|equal_apartments\|equal_stores\|custom), is_recurring, deleted_at (nullable), created_by → users | building → buildings, category → expense_categories | Soft delete via deleted_at. |
+| expenses | id (UUID), building_id → buildings, category_id → expense_categories, title, description, amount (DECIMAL 10.2), expense_date, due_date (nullable), split_type (equal_all\|equal_apartments\|equal_stores\|custom), kind (cost\|subscription\|late_fee), approval_status (approved\|pending\|rejected), approval_note, decided_by → users, decided_at, pending_split (JSON), is_recurring, is_manually_paid, deleted_at (nullable), created_by → users | building → buildings, category → expense_categories | Soft delete via deleted_at. |
 | recurring_configs | id (UUID), expense_id → expenses (OneToOne), frequency (monthly\|quarterly\|annual), next_due, is_active | expense → expenses | One config per recurring expense. |
 | apartment_expenses | id (UUID), apartment_id → apartments, expense_id → expenses, share_amount (DECIMAL 10.2) | apartment → apartments, expense → expenses | Unique (apartment_id, expense_id). Individual share after split + rounding. |
-| payments | id (UUID), apartment_id → apartments, amount_paid (DECIMAL 10.2), payment_method (cash\|bank_transfer\|cheque\|other), payment_date, notes, balance_before (DECIMAL 10.2), balance_after (DECIMAL 10.2), recorded_by → users (nullable) | apartment → apartments | Immutable after creation. |
-| payment_expenses | payment_id → payments, expense_id → expenses | payments ↔ expenses (M2M) | Links payment to zero or more expenses. |
+| payments | id (UUID), apartment_id → apartments, amount_paid (DECIMAL 10.2), payment_method (cash\|bank_transfer\|cheque\|mobile_wallet\|instapay\|other), payment_date, notes, balance_before (DECIMAL 10.2), balance_after (DECIMAL 10.2), recorded_by → users (nullable), receipt_no (per-building number), reversal_of → payments (OneToOne, nullable), reversal_reason | apartment → apartments | Immutable after creation; a mistake is corrected by a linked negative reversal row (R-22). |
+| payment_expenses | payment_id → payments, expense_id → expenses, allocated_amount (DECIMAL, nullable = legacy) | payments ↔ expenses (M2M) | Links payment to zero or more expenses. |
 | building_assets | id (UUID), building_id → buildings, name, description, asset_type (vehicle\|equipment\|furniture\|electronics\|property\|other), acquisition_date (nullable), acquisition_value (DECIMAL 12.2, nullable), is_sold (bool), created_by → users | building → buildings | |
 | asset_sales | id (UUID), asset_id → building_assets (OneToOne), sale_date, sale_price (DECIMAL 12.2), buyer_name, buyer_contact, notes, recorded_by → users | asset → building_assets | Immutable after creation. |
 | notifications | id (UUID), user_id → users, sender_id → users (nullable), notification_type, channel (in_app\|email\|push), title, body, is_read, metadata (JSON), created_at, expires_at (nullable) | user → users | User's own notifications. |
 | audit_logs | id (UUID), user_id → users (nullable), action, entity, entity_id (UUID, nullable), changes (JSON), ip_address, user_agent, created_at | user → users | Append-only. |
+| unit_claim_requests | id (UUID), apartment_id → apartments, user_id → users, status (pending\|approved\|rejected), created_at, reviewed_by → users, reviewed_at | apartment → apartments | A resident asks to be made owner of a unit; an admin approves or rejects. |
+| payment_claims | id (UUID), apartment_id → apartments, amount, reference, status (pending\|confirmed\|rejected), created_by → users, created_at, reviewed_by → users, reviewed_at, payment_id → payments (OneToOne, nullable) | apartment → apartments | InstaPay transfer reported by a resident; confirming creates the payment. |
+| subscription_plans | id (UUID), building_id → buildings (OneToOne), amount, billing_day, due_days, starts_on, is_active, late_fee_type (none\|fixed\|percent), late_fee_value, grace_days | building → buildings | The building's monthly unit subscription (expenses app). |
+| subscription_runs | plan_id → subscription_plans, month, expense_id → expenses (OneToOne) | plan, expense | One row per billed month. |
+| late_fees | id (UUID), share_id → apartment_expenses (OneToOne), expense_id → expenses (OneToOne), waived_at, waived_reason, waived_by → users, created_at | share, expense | One late fee per overdue subscription share; can be waived. |
+| plans | code (PK), name_ar, name_en, price_monthly, price_yearly, max_units (nullable), features (JSON: annual_report, subscriptions), is_active, sort_order | — | Free / Standard / Plus. |
+| platform_settings | instapay_address, trial_days, grace_days | — | Single row. |
+| building_plans | building_id → buildings (OneToOne), plan_id → plans, paid_until | building, plan | The plan a building has paid for. |
+| plan_payments | id (UUID), building_id → buildings, plan_id → plans, period (monthly\|yearly), amount, reference, status (pending\|confirmed\|rejected), created_by → users, created_at, reviewed_at | building, plan | InstaPay payment for a plan; platform owners confirm. |
+| polls | id (UUID), building_id → buildings, title, description, created_by → users, created_at, closes_at, closed_at, expense_id → expenses (nullable), finalized_at, quorum_percent, majority (simple\|two_thirds) | building, expense | One vote per unit. |
+| poll_options | id (UUID), poll_id → polls, text, order | poll | 2-10 per poll. |
+| votes | id (UUID), poll_id → polls, apartment_id → apartments, option_id → poll_options, cast_by → users, updated_at | poll, apartment | Unique (poll, apartment). |
+| meetings | id (UUID), building_id → buildings, title, held_on, attendees, agenda, notes, decisions, created_by → users | building | Meeting minutes. |
+| building_documents | id (UUID), building_id → buildings, title, kind (contract\|bylaws\|receipt\|minutes\|other), file, mime_type, size_bytes, meeting_id → meetings (nullable), uploaded_by → users | building, meeting | |
+| contractors | id (UUID), building_id → buildings, name, trade, phone, notes, contract_start, contract_end, is_active, last_reminded_on | building | Renewal reminders start 30 days before `contract_end`. |
+| obligations | id (UUID), building_id → buildings, title, due_date, repeat (none\|monthly\|quarterly\|yearly), contractor_id → contractors (nullable), notes, remind_days, is_active, last_done_on, last_reminded_on | building, contractor | |
+| maintenance_reports | id (UUID), building_id → buildings, apartment_id → apartments (nullable), reporter_id → users, category (elevator\|stairs\|cleaning\|electricity\|water\|other), description, status (open\|in_progress\|done), created_at, updated_at | building, reporter | |
+| work_orders | id (UUID), report_id → maintenance_reports (OneToOne), contractor_id → contractors (nullable), scheduled_on, status (assigned\|in_progress\|done), completed_on, notes, expense_id → expenses (nullable), created_by → users | report, contractor, expense | |
+| support_tickets | id (UUID), user_id → users, message, screenshot, page, status (open\|closed), created_at | user | Read by the team in the Django admin. |
 | media_files | id (UUID), entity_type (e.g. "expense"), entity_id (UUID), url, mime_type, file_size_bytes, uploaded_by → users, created_at | polymorphic | Central media file registry. |
 
 ---
@@ -617,7 +642,11 @@ Base path: `/api/v1/`
 | POST | `/auth/logout/` | IsAuthenticated | Blacklists refresh token. |
 | POST | `/auth/refresh/` | AllowAny | Returns new access token from refresh token. |
 | POST | `/auth/register/` | IsAdminRole | Admin creates a new user (any role). |
-| POST | `/auth/self-register/` | AllowAny | Public self-registration; enforces `role=owner`. |
+| POST | `/auth/self-register/` | AllowAny | Public self-registration; the caller picks `role` (`admin`, `owner` or `renter`, default `owner`) and must accept the terms. Returns tokens and the user. |
+| POST | `/auth/forgot-password/` | AllowAny | Body `{email}`. Always answers 200 so emails cannot be probed; sends a reset link. Throttled. |
+| POST | `/auth/reset-password/` | AllowAny | Body `{uid, token, password, confirm_password}`. Sets a new password from the emailed link; 400 when the link is invalid or expired. Throttled. |
+| POST | `/auth/force-change-password/` | IsAuthenticated | Sets a new password when `must_change_password` is true (e.g. after an admin reset); 400 otherwise. |
+| POST | `/auth/delete-account/` | IsAuthenticated | Body `{password, confirm_balance?}`. Deactivates and anonymises the account but keeps the books (R-31): rejects the user's pending claims, answers 409 `{detail, balance, requires_confirmation}` while a unit balance is owed until `confirm_balance: true`, notifies the building admins when a board member leaves, and answers 409 for the last platform owner or a building's primary admin (who must hand the building over first). |
 | PATCH | `/auth/change-password/` | IsAuthenticated | Change password (requires current password). |
 | GET/PATCH | `/auth/profile/` | IsAuthenticated | Retrieve or update own profile (name, phone, profile picture). |
 
@@ -649,6 +678,14 @@ Base path: `/api/v1/`
 | POST | `/buildings/{id}/deactivate/` | IsAdminRole | Set `is_active=False`. |
 | GET | `/buildings/directory/` | IsAuthenticated | List active buildings the user administers or belongs to (used in sign-up wizard). |
 | GET | `/buildings/{id}/apartments/` | IsAuthenticated | List units in a building. Admin sees all; owner sees own only. Supports `?page_size`. |
+| GET | `/buildings/{id}/members/` | IsAuthenticated | List the building's members. |
+| GET/POST | `/buildings/{id}/board/` | IsAuthenticated | GET: current board titles. POST: building admin assigns a board title (chair, treasurer, secretary) to a member (R-5). |
+| GET/POST | `/buildings/{id}/subscription/` | IsAdminRole | Read or set the monthly unit subscription (amount, billing day, due days, late fee type and value, grace days). Requires a plan with the `subscriptions` feature. |
+| GET | `/buildings/{id}/statement/` | IsAuthenticated | Monthly statement. `?month=YYYY-MM`, `?file_format=pdf` optional. Admins and residents of the building; units are shown by number only. |
+| GET | `/buildings/{id}/annual-report/` | IsAuthenticated | Annual report for the general assembly. `?year=YYYY`, `?file_format=pdf` optional. Requires a plan with the `annual_report` feature. |
+| GET | `/buildings/{id}/treasury/` | IsAuthenticated | Current building balance (treasury), visible to admins and residents. |
+| POST | `/buildings/{id}/transfer-admin/` | IsAdminRole | Body `{user_id}`. The primary admin hands the building to a co-admin; the previous admin stays on as co-admin (R-6). |
+| POST | `/buildings/{id}/import-units/` | IsAdminRole | Bulk unit import from a CSV file (multipart). |
 
 ### 7.4 Apartments / Units
 
@@ -665,6 +702,11 @@ Base path: `/api/v1/`
 | GET | `/apartments/invite/validate/` | AllowAny | Validate invite by `?token=` or `?code=`. Returns unit/building info for registration UI. |
 | POST | `/apartments/invite/use/` | IsAuthenticated | Redeem invite via `{token}` or `{code}`. Claims unit for the authenticated user. |
 | GET | `/apartments/{id}/balance/` | IsAuthenticated | Balance summary for a unit (admin: any unit; owner: own only). |
+| POST | `/apartments/{id}/invite-renter/` | IsAuthenticated | The unit's owner (or a building admin) invites a renter to live in the unit. Renters cannot call it. |
+| POST | `/apartments/{id}/remove-renter/` | IsAuthenticated | Body `{user_id}`. Ends a renter's link to the unit. |
+| GET | `/apartments/claim-requests/` | IsAuthenticated | Admins: unit claim requests in managed buildings; residents: their own. |
+| POST | `/apartments/claim-requests/{id}/approve/` | IsAuthenticated | Admin makes the requester an owner of the unit. |
+| POST | `/apartments/claim-requests/{id}/reject/` | IsAuthenticated | Admin declines the request. |
 
 ### 7.5 Expenses
 
@@ -680,6 +722,13 @@ Base path: `/api/v1/`
 | POST | `/expenses/categories/` | IsAdminRole | Create expense category. |
 | PATCH | `/expenses/categories/{id}/` | IsAdminRole | Update expense category. |
 | DELETE | `/expenses/categories/{id}/` | IsAdminRole | Soft delete category (set `is_active=False`). |
+| POST | `/expenses/{id}/mark_paid/` | IsAdminRole | Mark an expense as manually paid. |
+| POST | `/expenses/{id}/approve/` | IsAuthenticated | Approve a pending large expense (R-7). Only the building's chair decides; while no chair is named, the building's admins do. 409 when the expense is not pending. |
+| POST | `/expenses/{id}/reject/` | IsAuthenticated | Reject a pending expense. Body `{note}` optional. |
+| POST | `/expenses/{id}/put-to-vote/` | IsAuthenticated | Open an approve/reject poll for the residents (one vote per unit); its outcome settles the expense. Body `{days, quorum_percent}` optional. 409 if a vote is already open. |
+| POST | `/expenses/import/` | IsAdminRole | Bulk expense import from a CSV file (multipart); columns `title, amount, date` required, plus `category, split_type, due_date, description`. |
+| GET | `/expenses/late-fees/` | IsAdminRole | List late fees in managed buildings. |
+| POST | `/expenses/late-fees/{id}/waive/` | IsAdminRole | Waive a late fee. Body `{reason}`; audited. |
 
 ### 7.6 Payments
 
@@ -692,6 +741,11 @@ Base path: `/api/v1/`
 | POST | `/payments/assets/` | IsAdminRole | Create building asset. |
 | PATCH | `/payments/assets/{id}/` | IsAdminRole | Update building asset. |
 | POST | `/payments/assets/{id}/sell/` | IsAdminRole | Record asset sale; marks asset as sold permanently. |
+| POST | `/payments/{id}/reverse/` | IsAdminRole | Body `{reason}`. Cancels a payment without rewriting history: adds a linked reversal row with the negative amount, restores the unit balance, and audits it. One reversal per payment (R-22). |
+| GET | `/payments/claims/` | IsAuthenticated | InstaPay claims: own (resident) or in managed buildings (admin, treasurer). |
+| POST | `/payments/claims/` | IsAuthenticated | A resident of the unit reports an InstaPay transfer (`apartment`, `amount`, `reference`). |
+| POST | `/payments/claims/{id}/confirm/` | IsAuthenticated | The building's admins or treasurer record the payment and reduce the unit balance; nobody can review a claim for a unit they own or rent (R-28). The resident is notified. |
+| POST | `/payments/claims/{id}/reject/` | IsAuthenticated | Admins or the treasurer reject the claim; the resident is notified. |
 
 ### 7.7 Dashboard
 
@@ -722,6 +776,59 @@ Base path: `/api/v1/`
 |---|---|---|---|
 | GET | `/exports/payments/` | IsAdminRole | Export payment records to CSV. Supports `?apartment_id=`, `?date_from=`, `?date_to=`. |
 | GET | `/exports/expenses/` | IsAdminRole | Export expense records. Supports `?building_id=`, `?date_from=`, `?date_to=`, `?file_format=csv\|xlsx`. |
+| GET | `/exports/asset-sales/` | IsAdminRole | Export asset sales to CSV. Supports `?building_id=`, `?date_from=`, `?date_to=`. |
+| GET | `/exports/building/{building_id}/` | IsAdminRole | Full building export (R-33): one XLSX with sheets Units, Residents, Expenses, Payments (reversals included), Claims, Late fees and Audit log. 404 for a building the caller does not manage. The export is audited. |
+
+### 7.11 Plans & Platform
+
+| Method | Endpoint | Permission | Description |
+|---|---|---|---|
+| GET | `/plans/tiers/` | IsAuthenticated | List the plans (Free, Standard, Plus): prices, `max_units`, `features`. Superusers also see inactive plans. |
+| POST/PATCH | `/plans/tiers/` and `/plans/tiers/{code}/` | Platform owner | Create or change a plan's prices and limits. |
+| GET | `/plans/current/` | IsAuthenticated | `?building_id=` required. The plan a building is on, `paid_until`, `on_trial`, unit count and the InstaPay address. 404 if the building is not visible to the caller. |
+| GET/PATCH | `/plans/settings/` | Platform owner | `instapay_address`, `trial_days`, `grace_days`. |
+| GET | `/plans/payments/` | IsAuthenticated | Plan payments: own buildings (admin) or all (platform owner). |
+| POST | `/plans/payments/` | IsAuthenticated | A building admin reports an InstaPay transfer for a plan (`building_id`, `plan_code`, `period`, `reference`). One pending payment per building. |
+| POST | `/plans/payments/{id}/confirm/` | Platform owner | Confirm the payment and extend the building's plan. |
+| POST | `/plans/payments/{id}/reject/` | Platform owner | Reject the payment. |
+| GET | `/analytics/platform/` | Platform owner | Usage numbers across all buildings. |
+
+### 7.12 Governance (polls, minutes, documents)
+
+| Method | Endpoint | Permission | Description |
+|---|---|---|---|
+| GET | `/governance/polls/` | IsAuthenticated | Admins: polls in managed buildings; residents: their building's polls. |
+| POST | `/governance/polls/` | IsAuthenticated | Admin creates a poll (2-10 options, `closes_at`, optional `quorum_percent` and `majority` = `simple`\|`two_thirds`). |
+| GET | `/governance/polls/{id}/` | IsAuthenticated | Poll with options and results. |
+| POST | `/governance/polls/{id}/vote/` | IsAuthenticated | Body `{option_id, apartment_id}`. One vote per unit; 409 once closed. |
+| POST | `/governance/polls/{id}/close/` | IsAuthenticated | Admin closes the poll early. |
+| GET/POST | `/governance/meetings/` | IsAuthenticated | List or record meeting minutes (R-8); the secretary and admins write. |
+| GET/PATCH/DELETE | `/governance/meetings/{id}/` | IsAuthenticated | Read, edit or delete minutes. |
+| GET | `/governance/meetings/{id}/pdf/` | IsAuthenticated | Minutes as a PDF. |
+| GET/POST | `/governance/documents/` | IsAuthenticated | List or upload building documents (`contract`, `bylaws`, `receipt`, `minutes`, `other`). |
+| GET/DELETE | `/governance/documents/{id}/` | IsAuthenticated | Read or delete a document. |
+
+### 7.13 Operations (contractors and obligations)
+
+| Method | Endpoint | Permission | Description |
+|---|---|---|---|
+| GET/POST | `/operations/contractors/` | IsAuthenticated | List or add contractors (trade, phone, contract start and end). Writes: admins and the board. |
+| GET/PATCH/DELETE | `/operations/contractors/{id}/` | IsAuthenticated | Read, edit or delete a contractor. |
+| GET/POST | `/operations/obligations/` | IsAuthenticated | List or add obligations (title, `due_date`, `repeat`, `remind_days`). |
+| GET/PATCH/DELETE | `/operations/obligations/{id}/` | IsAuthenticated | Read, edit or delete an obligation. |
+| POST | `/operations/obligations/{id}/done/` | IsAuthenticated | Mark an obligation done; repeating ones roll to the next date. |
+
+### 7.14 Maintenance & Support
+
+| Method | Endpoint | Permission | Description |
+|---|---|---|---|
+| GET | `/maintenance/` | IsAuthenticated | Admins: reports in managed buildings; residents: their building's reports. |
+| POST | `/maintenance/` | IsAuthenticated | Any member files a report (`building`, `category`, `description`, optional `apartment`). |
+| PATCH | `/maintenance/{id}/` | IsAuthenticated | Admins change the status (`open`, `in_progress`, `done`). |
+| GET/POST | `/maintenance/work-orders/` | IsAuthenticated | List or create a work order for a report (`report_id`, optional `contractor_id`, `scheduled_on`, `notes`). Admins and board write. |
+| PATCH | `/maintenance/work-orders/{id}/` | IsAuthenticated | Update `status` (`assigned`, `in_progress`, `done`), `completed_on`, `expense_id`, `notes`; the report follows and the reporter is told when it is done. |
+| GET | `/support/tickets/` | IsAuthenticated | The caller's own problem reports. |
+| POST | `/support/tickets/` | IsAuthenticated | Send a problem report (`message`, optional `screenshot`, `page`); emailed to support when configured. |
 
 ---
 
@@ -744,7 +851,7 @@ There is no Celery or Redis in the stack: dashboards query PostgreSQL directly, 
 - HTTPS enforced across all endpoints (TLS 1.2 minimum).
 - Passwords hashed with PBKDF2 (Django default).
 - JWT tokens signed with HS256; refresh tokens blacklisted on logout.
-- API rate limiting configured via django-ratelimit.
+- API rate limiting uses DRF throttling (`DEFAULT_THROTTLE_RATES` in `config/settings/base.py`): anonymous 30/min, authenticated 60/min; sensitive endpoints (forgot-password, invite validate/use) apply the throttles explicitly.
 - Account lockout after N failed login attempts (configurable; currently returns HTTP 423).
 - File upload: type whitelist (JPEG, PNG, PDF for bills; JPEG, PNG, WEBP for profile pictures), max size enforced.
 - CORS configured to allow only known frontend origins.
@@ -757,6 +864,15 @@ There is no Celery or Redis in the stack: dashboards query PostgreSQL directly, 
 - Target uptime: 99.5% (production).
 - Automated database backups: daily full backup, retained 30 days.
 - Health check endpoint: `GET /api/health/` — returns system status.
+- Scheduled jobs run as management commands from the host scheduler (no Celery or Redis; see DEPLOYMENT.md section 12). Run them daily in this order, billing and fees before reminders:
+  1. `generate_recurring_expenses` — creates recurring expenses that fell due.
+  2. `bill_subscriptions` — charges each unit its monthly subscription on the billing day.
+  3. `apply_late_fees` — adds a late fee to overdue subscription shares.
+  4. `finalize_polls` — settles expense-approval votes whose time is up.
+  5. `send_obligation_reminders` — reminds admins and the board of obligations and contracts coming due.
+  6. `send_plan_reminders` — tells building admins their plan or trial is ending.
+  7. `send_payment_reminders` — due-soon and overdue payment reminders.
+  (DEPLOYMENT.md calls these "the six commands" but lists seven; `seed_expense_categories` is a one-off seeding command, not scheduled.)
 - OpenAPI 3.0 documentation available at `GET /api/schema/` (auto-generated by drf-spectacular).
 
 ### 8.4 Maintainability
@@ -829,10 +945,10 @@ There is no Celery or Redis in the stack: dashboards query PostgreSQL directly, 
 | 17 | Recurring expenses (monthly/quarterly/annual) | ✅ Implemented | Daily management command |
 | 18 | Expense detail view with per-unit breakdown + shares total | ✅ Implemented | |
 | 19 | Payment recording (atomic, balance snapshots) | ✅ Implemented | select_for_update |
-| 20 | Payment method tracking (Cash/BankTransfer/Cheque/Other) | ✅ Implemented | |
+| 20 | Payment method tracking (Cash/BankTransfer/Cheque/MobileWallet/InstaPay/Other) | ✅ Implemented | |
 | 21 | Link payment to specific expenses (M2M) | ✅ Implemented | |
 | 22 | Payment immutability (no edit/delete) | ✅ Implemented | |
-| 23 | PDF payment receipt (ReportLab, B5, name-only recorder, owner name) | ✅ Implemented | |
+| 23 | PDF payment receipt (WeasyPrint, A6, bilingual, numbered, name-only recorder, owner name) | ✅ Implemented | |
 | 24 | Running balance per unit (carry-forward credit) | ✅ Implemented | |
 | 25 | Admin dashboard (income, expenses, overdue, chart) | ✅ Implemented | |
 | 26 | Owner dashboard (balance card, pie chart, recent payments) | ✅ Implemented | |
@@ -845,13 +961,13 @@ There is no Celery or Redis in the stack: dashboards query PostgreSQL directly, 
 | 33 | OpenAPI 3.0 documentation (drf-spectacular) | ✅ Implemented | `/api/schema/` |
 | 34 | Admin dashboard export/print report | ✅ Implemented | Browser print API |
 | 35 | Claim unit by registration code from owner dashboard | ✅ Implemented | |
-| 36 | Expense approval workflow | 🔲 Planned | Phase 2, R-7 (approvals & votes) |
+| 36 | Expense approval workflow | ✅ Implemented | Phase 2, R-7 (approve, reject or put to a resident vote) |
 | 37 | Bulk expense import via CSV | ✅ Implemented | Phase 3, R-13 |
 | 38 | Payment due date reminders (in-app + email + WhatsApp link) | ✅ Implemented | Phase 1, R-1; needs the daily scheduler (DEPLOYMENT section 12) |
 | 39 | Multi-currency support | ❌ Descoped | EGP only |
 | 40 | Redis caching for dashboard aggregations | 🔲 Pending | Not implemented; no Redis in the stack |
 | 41 | Notification preferences UI | ✅ Implemented | Phase 3, R-13 |
-| 42 | Unit tests & integration test suite | 🔲 Pending | Sprint 10 |
+| 42 | Unit tests & integration test suite | ✅ Implemented | `backend/tests` (pytest, PostgreSQL, 70% coverage gate) and the black-box suite in `tests/playwright` |
 | 43 | Production deployment + monitoring | 🔲 Pending | Sprint 11 |
 | 44 | Installable PWA for Android & iOS (manifest, service worker, install banner) | ✅ Implemented | Replaces the dropped Flutter app; store listing is R-19 |
 | 45 | Building photo upload | ✅ Implemented | On the building form |
@@ -969,7 +1085,7 @@ Source: the business-gap review of 2026-10-30 (SRS audit plus code review). Orde
 | **R-31** | Safer account deletion | Deletion rejects pending claims of the user, warns when the user has an outstanding balance (requires confirmation), tells the building admin when a board member leaves, and is blocked for the last platform owner. | ✅ Done. delete-account rejects the user's pending claims, returns 409 `{detail, balance, requires_confirmation}` while they owe a unit balance until `confirm_balance: true` is sent, notifies the building admins when a board member leaves, and returns 409 for the last active platform owner. |
 | **R-32** | Arabic completeness | Every backend `_()` string has an Arabic translation; hard-coded Arabic or English strings in views move to translations; the receipt PDF uses a bundled font, not Google Fonts. | ✅ Done. 27 missing Arabic strings added to `locale/ar` (plans, support, subscriptions, auth serializers) and `django.mo` rebuilt; the put-to-vote poll title, options and notification use gettext in the recipient's language; the receipt Google Fonts `@import` was removed (the stack falls back to system fonts, no binary added); `tests/test_translation_completeness.py` fails when a literal `_()`/gettext string has no Arabic msgstr. The `_two/_few/_many` keys in `ar/notifications.json` are kept: they are Arabic plural forms i18next needs. The receipt label tables stay as per-language dictionaries (the receipt language is chosen at render time). |
 | **R-33** | Full building export | An admin can download one file per building with units, owners, expenses, payments, claims, late fees and audit log. | ✅ Done. `GET /api/v1/exports/building/{building_id}/` (admin only, scoped with `managed_buildings`, 404 for other buildings) returns one XLSX with sheets Units, Residents (owners and renters), Expenses, Payments (reversals included), Claims, Late fees and Audit log; the export itself is audited. Download button on the Records page. Tests: `tests/test_building_export.py`. |
-| **D-1** | SRS drift cleanup | Status rows 20, 23, 36, 42, heading 1.2.2, roles in 2.2 and 3.1, rate limiting in 8.2, and sections 6 and 7 match the code. | 🔲 Planned |
+| **D-1** | SRS drift cleanup | Status rows 20, 23, 36, 42, heading 1.2.2, roles in 2.2 and 3.1, rate limiting in 8.2, and sections 6 and 7 match the code. | ✅ Done. Status rows 20, 23, 36 and 42, heading 1.2.2, roles in 2.2 and 3.1 (renter and board titles), notification types in 3.7, DRF throttling in 8.2 and the scheduled commands in 8.3 now match the code. Section 6 gained the tables for claims, subscriptions, late fees, plans, polls, minutes, documents, contractors, obligations, maintenance, work orders and support; section 7 gained 7.11 to 7.14 and the missing auth, building, apartment, expense, payment and export endpoints, each checked against the `urls.py` files and views. |
 
 ### 11.7 Deferred and not planned
 
