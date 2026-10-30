@@ -27,6 +27,7 @@ i18n
       "exports",
       "tutorial",
       "maintenance",
+      "statement",
     ],
     backend: { loadPath: "/locales/{{lng}}/{{ns}}.json" },
     detection: {

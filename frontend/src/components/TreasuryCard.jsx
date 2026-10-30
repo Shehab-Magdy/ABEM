@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Card, CardContent, LinearProgress, Stack, Typography } from "@mui/material";
+import { Link as RouterLink } from "react-router-dom";
+import { Button, Card, CardContent, LinearProgress, Stack, Typography } from "@mui/material";
 import { buildingsApi } from "../api/buildingsApi";
 import { formatCurrency } from "../utils/formatters";
 
@@ -63,6 +64,14 @@ export default function TreasuryCard() {
               />
             </>
           )}
+          <Button
+            component={RouterLink}
+            to="/statement"
+            size="small"
+            sx={{ mt: 1.5, color: "inherit", textDecoration: "underline", minHeight: 36 }}
+          >
+            {t("treasury_statement")}
+          </Button>
         </CardContent>
       </Card>
     );

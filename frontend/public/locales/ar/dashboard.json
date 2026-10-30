@@ -91,5 +91,6 @@
   "remind_col": "تذكير",
   "remind_whatsapp": "تذكير عبر واتساب",
   "remind_no_phone": "لا يوجد رقم هاتف",
-  "remind_whatsapp_text": "مرحباً {{name}}، تذكير ودّي من إدارة {{building}}: متبقي على وحدتك {{unit}} مبلغ {{amount}}. شكراً لتعاونك — عِمارة.كوم"
+  "remind_whatsapp_text": "مرحباً {{name}}، تذكير ودّي من إدارة {{building}}: متبقي على وحدتك {{unit}} مبلغ {{amount}}. شكراً لتعاونك — عِمارة.كوم",
+  "treasury_statement": "عرض كشف حساب الشهر ←"
 }

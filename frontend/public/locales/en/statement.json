@@ -1,0 +1,20 @@
+{
+  "title": "Monthly statement",
+  "building": "Building",
+  "month": "Month",
+  "share": "Share",
+  "download": "Download PDF",
+  "opening": "Opening balance",
+  "received": "Received",
+  "spent": "Expenses",
+  "closing": "Closing balance",
+  "date": "Date",
+  "unit": "Unit",
+  "amount": "Amount",
+  "details": "Details",
+  "units": "Units that paid this month",
+  "units_hint": "Green = paid this month. The amount next to a unit is what it still owes.",
+  "none": "None this month",
+  "load_error": "Could not load the statement.",
+  "pdf_error": "Could not create the PDF."
+}

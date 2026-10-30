@@ -170,6 +170,51 @@ class BuildingViewSet(ModelViewSet):
             status=http_status,
         )
 
+    @action(detail=True, methods=["get"], url_path="statement", permission_classes=[IsAuthenticated])
+    def statement(self, request, pk=None):
+        """
+        GET /buildings/{id}/statement/?month=YYYY-MM[&file_format=pdf]
+        Monthly statement: opening balance, money received, expenses, closing balance and which units
+        paid. Read-only; visible to the building's admins and residents. Units are shown by number only.
+        """
+        from django.http import HttpResponse
+
+        from .statement import build_statement, parse_month, render_statement_pdf
+
+        building = self.get_object()
+        try:
+            first_day = parse_month(request.query_params.get("month"))
+        except (ValueError, TypeError):
+            return Response({"detail": _("month must look like 2026-10.")}, status=400)
+
+        data = build_statement(building, first_day)
+        if (request.query_params.get("file_format") or "").lower() == "pdf":
+            lang = getattr(request.user, "preferred_language", None) or "ar"
+            try:
+                pdf = render_statement_pdf(data, lang)
+            except Exception as exc:  # WeasyPrint or its system libraries missing
+                return Response({"detail": f"PDF generation failed: {exc}"}, status=503)
+            response = HttpResponse(pdf, content_type="application/pdf")
+            response["Content-Disposition"] = f'inline; filename="statement_{data["month"]}.pdf"'
+            return response
+
+        def money(value):
+            return str(value)
+
+        return Response({
+            "building": data["building"],
+            "month": data["month"],
+            "opening_balance": money(data["opening_balance"]),
+            "total_received": money(data["total_received"]),
+            "total_expenses": money(data["total_expenses"]),
+            "closing_balance": money(data["closing_balance"]),
+            "received": [{**r, "amount": money(r["amount"])} for r in data["received"]],
+            "expenses": [{**e, "amount": money(e["amount"])} for e in data["expenses"]],
+            "units": [{**u, "balance_due": money(u["balance_due"])} for u in data["units"]],
+            "units_paid": data["units_paid"],
+            "units_total": data["units_total"],
+        })
+
     @action(detail=True, methods=["get"], url_path="treasury", permission_classes=[IsAuthenticated])
     def treasury(self, request, pk=None):
         """

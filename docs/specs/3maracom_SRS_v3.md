@@ -886,7 +886,7 @@ Phases are delivered in order; within a phase, requirements are independent unle
 - The admin's unpaid-units table has a "Remind on WhatsApp" action that opens a pre-filled message to the owner's phone (no WhatsApp Business API required).
 - Out of scope in Phase 1: sending via the WhatsApp Business API, SMS.
 
-**R-2 Monthly statement (كشف حساب شهري)** — 🔲 Planned. *Why:* transparency is the brand promise and the statement is what residents forward.
+**R-2 Monthly statement (كشف حساب شهري)** — ✅ Implemented (`GET /buildings/{id}/statement/`, screen `/statement`, bilingual PDF). *Why:* transparency is the brand promise and the statement is what residents forward.
 - `GET /buildings/{id}/statement/?month=YYYY-MM` returns the opening balance, payments received (per unit), expenses (with category and date), closing balance, and which units have paid for the month.
 - The same data is downloadable as a one-page bilingual PDF (`format=pdf`).
 - Visible to the building's admins and residents (read-only); never to other buildings.

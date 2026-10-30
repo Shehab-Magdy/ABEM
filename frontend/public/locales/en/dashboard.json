@@ -91,5 +91,6 @@
   "remind_col": "Reminder",
   "remind_whatsapp": "Remind on WhatsApp",
   "remind_no_phone": "No phone number",
-  "remind_whatsapp_text": "Hello {{name}}, a friendly reminder from {{building}}: unit {{unit}} still owes {{amount}}. Thank you — 3maracom"
+  "remind_whatsapp_text": "Hello {{name}}, a friendly reminder from {{building}}: unit {{unit}} still owes {{amount}}. Thank you — 3maracom",
+  "treasury_statement": "View this month's statement →"
 }
