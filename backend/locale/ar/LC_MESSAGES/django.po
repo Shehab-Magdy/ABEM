@@ -565,3 +565,24 @@ msgstr "هذا المستأجر لا يسكن في هذه الوحدة."
 
 msgid "Renters join a unit through an invite from its owner."
 msgstr "ينضم المستأجر إلى الوحدة عبر دعوة من مالكها."
+
+msgid "This vote is closed."
+msgstr "هذا التصويت مغلق."
+
+msgid "Choose one of this vote's options for your unit."
+msgstr "اختر أحد خيارات التصويت لوحدتك."
+
+msgid "This vote is already closed."
+msgstr "تم إغلاق هذا التصويت من قبل."
+
+msgid "Only an owner of this unit can vote for it."
+msgstr "مالك الوحدة وحده يمكنه التصويت عنها."
+
+msgid "The closing time must be in the future."
+msgstr "يجب أن يكون وقت الإغلاق في المستقبل."
+
+msgid "More than half of the votes cast"
+msgstr "أكثر من نصف الأصوات"
+
+msgid "At least two thirds of the votes cast"
+msgstr "ثلثا الأصوات على الأقل"

@@ -29,6 +29,7 @@ i18n
       "maintenance",
       "statement",
       "legal",
+      "governance",
     ],
     backend: { loadPath: "/locales/{{lng}}/{{ns}}.json" },
     detection: {
