@@ -32,6 +32,7 @@ import {
   Assessment,
   Build,
   Description,
+  HelpOutline,
   EventRepeat,
   HowToVote,
   Groups,
@@ -174,6 +175,7 @@ export default function DashboardLayout() {
 
   const accountItems = [
     { to: "/profile", icon: <AccountCircle />, label: t("common:profile", "Profile"), show: true },
+    { to: "/help", icon: <HelpOutline />, label: t("common:help", "Help & support"), show: true },
   ];
 
   const drawerContent = (

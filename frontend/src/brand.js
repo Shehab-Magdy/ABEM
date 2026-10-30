@@ -13,6 +13,8 @@ export const BRAND = {
     "تطبيق عِمارة.كوم (3maracom) هو الحل الأسهل والأسرع لإدارة اتحاد الملاك، تحصيل الاشتراكات شهرياً، ومتابعة مصاريف الصيانة والخزينة بكل شفافية وبلمسة زر.",
   // Shown on the legal pages when set. Set before launch.
   supportEmail: "cegres1@gmail.com",
+  // International format without + or spaces, e.g. "201001234567". WhatsApp button shows only when set.
+  supportWhatsapp: "",
   // The policy texts are drafts until a lawyer has reviewed them; the pages say so while this is true.
   legalDraft: true,
   keywords:

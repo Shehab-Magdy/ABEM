@@ -51,6 +51,7 @@ LOCAL_APPS = [
     "apps.governance",
     "apps.operations",
     "apps.analytics",
+    "apps.support",
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -220,6 +221,8 @@ EMAIL_USE_TLS = True
 EMAIL_HOST_USER = config("EMAIL_HOST_USER", default="")
 EMAIL_HOST_PASSWORD = config("EMAIL_HOST_PASSWORD", default="")
 # Public URL of the web app, used in emailed links (password reset)
+# Where in-app problem reports are emailed (public address, not a secret)
+SUPPORT_EMAIL = config("SUPPORT_EMAIL", default="cegres1@gmail.com")
 FRONTEND_URL = config("FRONTEND_URL", default="http://localhost:5173")
 DEFAULT_FROM_EMAIL = config("DEFAULT_FROM_EMAIL", default="عِمارة.كوم <noreply@3mara.com>")
 

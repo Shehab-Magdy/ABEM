@@ -943,7 +943,7 @@ Phases are delivered in order; within a phase, requirements are independent unle
 
 **R-17 Product analytics & platform KPIs** — ✅ Done (`GET /analytics/platform/`, superusers only, derived from existing data; "Platform" page). Privacy-respecting usage events (sign-ups, activation, payments recorded, reminders sent, monthly active buildings) and an internal dashboard so the business can see which buildings are healthy.
 
-**R-18 Support channel** — 🔲 Planned. An in-app help entry (WhatsApp or email), an FAQ in Arabic, and a way to attach a screenshot to a problem report.
+**R-18 Support channel** — ✅ Done (Help page with Arabic FAQ, email/WhatsApp buttons, problem report with screenshot stored as `SupportTicket`, read in Django admin and emailed to `SUPPORT_EMAIL`; set `BRAND.supportWhatsapp` to show the WhatsApp button). An in-app help entry (WhatsApp or email), an FAQ in Arabic, and a way to attach a screenshot to a problem report.
 
 **R-19 Store distribution** — 🔲 Planned. Optional Google Play listing by wrapping the PWA (Trusted Web Activity) once a production domain exists; iOS requires a native wrapper and Apple review and is a separate decision.
 
