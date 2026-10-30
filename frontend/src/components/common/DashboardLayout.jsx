@@ -107,7 +107,7 @@ function NavSection({ title, items, currentPath }) {
 }
 
 export default function DashboardLayout() {
-  const { user, isAdmin } = useAuth();
+  const { user, isAdmin, isPlatformOwner } = useAuth();
   const { logout, refreshToken } = useAuthStore();
   const { t, i18n } = useTranslation(["common", "auth"]);
   const theme = useTheme();
@@ -169,6 +169,7 @@ export default function DashboardLayout() {
     { to: "/expense-categories", icon: <Category />, label: t("common:categories", "Categories"), show: isAdmin },
     { to: "/subscription", icon: <EventRepeat />, label: t("common:subscription", "Monthly subscription"), show: isAdmin },
     { to: "/assets", icon: <AccountBalance />, label: t("common:assets", "Assets"), show: isAdmin },
+    { to: "/platform", icon: <Assessment />, label: t("common:platform", "Platform"), show: isPlatformOwner },
   ].filter((i) => i.show);
 
   const accountItems = [

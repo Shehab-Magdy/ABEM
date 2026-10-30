@@ -34,6 +34,7 @@ i18n
       "board",
       "records",
       "operations",
+      "platform",
     ],
     backend: { loadPath: "/locales/{{lng}}/{{ns}}.json" },
     detection: {

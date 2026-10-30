@@ -941,7 +941,7 @@ Phases are delivered in order; within a phase, requirements are independent unle
 
 **R-16 Payment gateway integration** — ⏸ Deferred until demand is proven. Replace InstaPay "display and confirm" with an integrated flow (card, wallet or InstaPay through a licensed aggregator), automatic reconciliation of payments, and receipts without manual admin confirmation. Needs a provider decision and, likely, legal and fee review.
 
-**R-17 Product analytics & platform KPIs** — 🔲 Planned. Privacy-respecting usage events (sign-ups, activation, payments recorded, reminders sent, monthly active buildings) and an internal dashboard so the business can see which buildings are healthy.
+**R-17 Product analytics & platform KPIs** — ✅ Done (`GET /analytics/platform/`, superusers only, derived from existing data; "Platform" page). Privacy-respecting usage events (sign-ups, activation, payments recorded, reminders sent, monthly active buildings) and an internal dashboard so the business can see which buildings are healthy.
 
 **R-18 Support channel** — 🔲 Planned. An in-app help entry (WhatsApp or email), an FAQ in Arabic, and a way to attach a screenshot to a problem report.
 

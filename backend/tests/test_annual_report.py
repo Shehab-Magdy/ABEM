@@ -15,7 +15,9 @@ pytestmark = pytest.mark.django_db
 
 @pytest.fixture
 def building(admin_user):
-    b = Building.objects.create(name="Tower", address="1 Nile St", admin=admin_user, starting_balance=Decimal("1000.00"))
+    b = Building.objects.create(
+        name="Tower", address="1 Nile St", admin=admin_user, starting_balance=Decimal("1000.00")
+    )
     unit = Apartment.objects.create(building=b, unit_number="1", balance=Decimal("75.00"))
     Apartment.objects.create(building=b, unit_number="2")
     lift = ExpenseCategory.objects.create(building=b, name="Lift")

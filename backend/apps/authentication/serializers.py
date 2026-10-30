@@ -18,11 +18,12 @@ class UserSerializer(serializers.ModelSerializer):
     full_name = serializers.SerializerMethodField(read_only=True)
     buildings = serializers.SerializerMethodField(read_only=True)
     apartment_ids = serializers.SerializerMethodField(read_only=True)
+    is_platform_owner = serializers.BooleanField(source="is_superuser", read_only=True)
 
     class Meta:
         model = User
         fields = [
-            "id", "email", "first_name", "last_name", "full_name",
+            "id", "email", "is_platform_owner", "first_name", "last_name", "full_name",
             "phone", "profile_picture", "role", "is_active",
             "must_change_password", "preferred_language", "preferred_theme", "notification_preferences",
             "messaging_blocked", "individual_messaging_blocked",

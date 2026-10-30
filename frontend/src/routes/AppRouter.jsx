@@ -17,6 +17,7 @@ import ServerErrorPage from "../pages/errors/ServerErrorPage";
 const LandingPage = lazy(() => import("../pages/landing/LandingPage"));
 const LoginPage = lazy(() => import("../pages/auth/LoginPage"));
 const JoinPage = lazy(() => import("../pages/auth/JoinPage"));
+const PlatformPage = lazy(() => import("../pages/platform/PlatformPage"));
 const OperationsPage = lazy(() => import("../pages/operations/OperationsPage"));
 const RecordsPage = lazy(() => import("../pages/records/RecordsPage"));
 const BoardPage = lazy(() => import("../pages/board/BoardPage"));
@@ -74,6 +75,13 @@ function RequireAdmin({ children }) {
   const { user } = useAuthStore();
   if (!user) return <Navigate to="/login" replace />;
   if (user.role !== "admin") return <ForbiddenPage />;
+  return children;
+}
+
+function RequirePlatformOwner({ children }) {
+  const { user } = useAuthStore();
+  if (!user) return <Navigate to="/login" replace />;
+  if (!user.is_platform_owner) return <ForbiddenPage />;
   return children;
 }
 
@@ -142,6 +150,7 @@ export default function AppRouter() {
         <Route path="polls" element={<PollsPage />} />
         <Route path="board" element={<BoardPage />} />
         <Route path="records" element={<RecordsPage />} />
+        <Route path="platform" element={<RequirePlatformOwner><PlatformPage /></RequirePlatformOwner>} />
         <Route path="operations" element={<OperationsPage />} />
         <Route path="subscription" element={<RequireAdmin><SubscriptionPage /></RequireAdmin>} />
         <Route path="audit" element={<RequireAdmin><AuditLogPage /></RequireAdmin>} />

@@ -154,5 +154,6 @@
   "csv_imported": "Imported {{n}} rows.",
   "csv_row": "Row",
   "csv_problem": "Problem",
-  "footer_support": "Support"
+  "footer_support": "Support",
+  "platform": "Platform"
 }
