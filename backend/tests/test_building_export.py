@@ -6,15 +6,13 @@ from decimal import Decimal
 
 import openpyxl
 import pytest
-from django.contrib.auth import get_user_model
-from rest_framework.test import APIClient
-
 from apps.apartments.models import Apartment
 from apps.audit.models import AuditLog
 from apps.buildings.models import Building
-from apps.expenses.models import (ApartmentExpense, Expense, ExpenseCategory,
-                                  ExpenseKind, LateFee)
+from apps.expenses.models import ApartmentExpense, Expense, ExpenseCategory, ExpenseKind, LateFee
 from apps.payments.models import Payment, PaymentClaim
+from django.contrib.auth import get_user_model
+from rest_framework.test import APIClient
 
 pytestmark = pytest.mark.django_db
 
@@ -33,10 +31,7 @@ def _client(user):
 
 def _sheets(response):
     wb = openpyxl.load_workbook(io.BytesIO(response.content))
-    return {
-        ws.title: [[c for c in row] for row in ws.iter_rows(values_only=True)]
-        for ws in wb.worksheets
-    }
+    return {ws.title: [[c for c in row] for row in ws.iter_rows(values_only=True)] for ws in wb.worksheets}
 
 
 @pytest.fixture
@@ -46,13 +41,9 @@ def building(admin_user):
 
 @pytest.fixture
 def populated(building, admin_user, owner_user):
-    unit = Apartment.objects.create(
-        building=building, unit_number="7", owner=owner_user
-    )
+    unit = Apartment.objects.create(building=building, unit_number="7", owner=owner_user)
     unit.owners.add(owner_user)
-    renter = User.objects.create_user(
-        email="renter@abem.test", password="RenterPass1!", role="renter"
-    )
+    renter = User.objects.create_user(email="renter@abem.test", password="RenterPass1!", role="renter")
     unit.owners.add(renter)
     category = ExpenseCategory.objects.create(building=building, name="Cleaning")
     expense = Expense.objects.create(
@@ -62,9 +53,7 @@ def populated(building, admin_user, owner_user):
         amount=Decimal("100.00"),
         expense_date=date(2026, 10, 1),
     )
-    share = ApartmentExpense.objects.create(
-        apartment=unit, expense=expense, share_amount=Decimal("100.00")
-    )
+    share = ApartmentExpense.objects.create(apartment=unit, expense=expense, share_amount=Decimal("100.00"))
     fee = Expense.objects.create(
         building=building,
         category=category,
@@ -88,12 +77,8 @@ def populated(building, admin_user, owner_user):
         reversal_of=pay,
         reversal_reason="entered twice",
     )
-    PaymentClaim.objects.create(
-        apartment=unit, amount=Decimal("10.00"), reference="IP-1", created_by=owner_user
-    )
-    AuditLog.objects.create(
-        user=admin_user, action="create", entity="expense", entity_id=expense.pk
-    )
+    PaymentClaim.objects.create(apartment=unit, amount=Decimal("10.00"), reference="IP-1", created_by=owner_user)
+    AuditLog.objects.create(user=admin_user, action="create", entity="expense", entity_id=expense.pk)
     return unit
 
 
@@ -115,40 +100,28 @@ def test_admin_downloads_workbook_with_all_sheets(admin_user, building, populate
     assert {r[1] for r in sheets["Residents"][1:]} == {"owner", "renter"}
     assert {r[1] for r in sheets["Expenses"][1:]} == {"Stairs", "Late fee"}
     assert len(sheets["Payments"]) == 3  # header + payment + its reversal
-    assert any(
-        r[8] for r in sheets["Payments"][1:]
-    )  # the reversal row references the original
+    assert any(r[8] for r in sheets["Payments"][1:])  # the reversal row references the original
     assert sheets["Claims"][1][3] == "IP-1"
     assert len(sheets["Late fees"]) == 2
     assert any(r[2] == "create" and r[3] == "expense" for r in sheets["Audit log"][1:])
 
 
 def test_other_admin_cannot_export_my_building(building, populated):
-    other = User.objects.create_user(
-        email="other@abem.test", password="OtherPass1!", role="admin"
-    )
+    other = User.objects.create_user(email="other@abem.test", password="OtherPass1!", role="admin")
     Building.objects.create(name="Elsewhere", address="2 Nile St", admin=other)
     assert _client(other).get(_url(building)).status_code == 404
 
 
 def test_export_excludes_other_buildings_data(admin_user, building, populated):
-    other_admin = User.objects.create_user(
-        email="other@abem.test", password="OtherPass1!", role="admin"
-    )
-    theirs = Building.objects.create(
-        name="Elsewhere", address="2 Nile St", admin=other_admin
-    )
+    other_admin = User.objects.create_user(email="other@abem.test", password="OtherPass1!", role="admin")
+    theirs = Building.objects.create(name="Elsewhere", address="2 Nile St", admin=other_admin)
     Apartment.objects.create(building=theirs, unit_number="SECRET")
     theirs_unit = Apartment.objects.get(building=theirs, unit_number="SECRET")
     # a co-admin shared by both buildings acts on the OTHER building's entities
-    shared = User.objects.create_user(
-        email="shared@abem.test", password="SharedPass1!", role="admin"
-    )
+    shared = User.objects.create_user(email="shared@abem.test", password="SharedPass1!", role="admin")
     building.co_admins.add(shared)
     theirs.co_admins.add(shared)
-    AuditLog.objects.create(
-        user=shared, action="update", entity="apartment", entity_id=theirs_unit.pk
-    )
+    AuditLog.objects.create(user=shared, action="update", entity="apartment", entity_id=theirs_unit.pk)
     AuditLog.objects.create(
         user=shared,
         action="create",
