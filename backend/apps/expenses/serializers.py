@@ -18,6 +18,7 @@ from .models import (
     RecurringFrequency,
     SplitType,
 )
+from .utils import has_payments
 
 
 # ── Category ───────────────────────────────────────────────────────────────────
@@ -203,6 +204,8 @@ class ExpenseSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError(
                     {"custom_split_apartments": _("Every unit in a custom split must belong to this building.")}
                 )
+        if self.instance is not None and has_payments(self.instance):
+            self._reject_money_changes(data)
         is_recurring = data.get("is_recurring", getattr(self.instance, "is_recurring", False))
         frequency = data.get("frequency")
         if is_recurring and not frequency:
@@ -212,6 +215,21 @@ class ExpenseSerializer(serializers.ModelSerializer):
         return data
 
     # ── Helpers ────────────────────────────────────────────────────────────────
+
+    def _reject_money_changes(self, data):
+        """Once paid toward, only descriptive fields may change; corrections go through a credit note or reversal."""
+        current_units = {str(ae.apartment_id) for ae in self.instance.apartment_expenses.all()}
+        changed = (
+            ("amount" in data and data["amount"] != self.instance.amount)
+            or ("split_type" in data and data["split_type"] != self.instance.split_type)
+            or (data.get("custom_split_apartments") and {str(i) for i in data["custom_split_apartments"]} != current_units)
+            or (data.get("custom_split_weights") and {str(i) for i in data["custom_split_weights"]} != current_units)
+        )
+        if changed:
+            raise serializers.ValidationError(
+                {"detail": _("This expense has payments. Its amount, split and units cannot be changed; "
+                             "reverse the payments or add a credit note instead.")}
+            )
 
     can_decide = serializers.SerializerMethodField()
 
@@ -302,6 +320,10 @@ class ExpenseSerializer(serializers.ModelSerializer):
         frequency = validated_data.pop("frequency", None)
         custom_apartment_ids = validated_data.pop("custom_split_apartments", [])
         custom_weights = validated_data.pop("custom_split_weights", {})
+
+        if has_payments(instance):
+            # frozen money: change only the descriptive fields and leave the shares and balances untouched
+            return super().update(instance, validated_data)
 
         # Remember the previous shares: an edit that does not resend the custom split
         # (e.g. only the title changed) must keep the same units, not widen to all.

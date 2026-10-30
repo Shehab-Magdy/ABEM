@@ -307,6 +307,15 @@ class ExpenseViewSet(ModelViewSet):
 
     def perform_destroy(self, instance):
         from django.core.files.storage import default_storage
+        from rest_framework.exceptions import ValidationError
+
+        from .utils import has_payments
+
+        if has_payments(instance):
+            raise ValidationError(
+                {"detail": _("This expense has payments and cannot be deleted. "
+                             "Reverse the payments or add a credit note instead.")}
+            )
 
         # Delete physical files and MediaFile records before soft-deleting
         media_files = MediaFile.objects.filter(entity_type="expense", entity_id=instance.pk)

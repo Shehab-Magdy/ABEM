@@ -751,3 +751,9 @@ msgstr "تم إلغاء هذه الدفعة مسبقاً."
 
 msgid "sale_price must be greater than zero."
 msgstr "سعر البيع يجب أن يكون أكبر من صفر."
+
+msgid "This expense has payments. Its amount, split and units cannot be changed; reverse the payments or add a credit note instead."
+msgstr "عليه مدفوعات. لا يمكن تغيير مبلغ هذا المصروف أو تقسيمه أو وحداته؛ قم بإلغاء المدفوعات أو أضف إشعار دائن بدلاً من ذلك."
+
+msgid "This expense has payments and cannot be deleted. Reverse the payments or add a credit note instead."
+msgstr "عليه مدفوعات ولا يمكن حذفه. قم بإلغاء المدفوعات أو أضف إشعار دائن بدلاً من ذلك."
