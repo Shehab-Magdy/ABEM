@@ -10,6 +10,7 @@ from django.db.models import Q
 from apps.apartments.models import Apartment
 from apps.audit.models import AuditLog
 from apps.expenses.models import Expense, LateFee
+from apps.exports.safe import safe_row
 from apps.payments.models import Payment, PaymentClaim
 from apps.plans.models import PlanPayment
 
@@ -255,7 +256,7 @@ def build_workbook(building) -> bytes:
     for title, rows_fn in SHEETS:
         ws = wb.create_sheet(title)
         for row in rows_fn(building):
-            ws.append(row)
+            ws.append(safe_row(row))
     buf = io.BytesIO()
     wb.save(buf)
     return buf.getvalue()

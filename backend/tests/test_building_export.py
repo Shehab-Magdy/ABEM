@@ -167,3 +167,20 @@ def test_owner_cannot_export(owner_user, building):
 
 def test_anonymous_cannot_export(building):
     assert APIClient().get(_url(building)).status_code == 401
+
+
+def test_formula_like_strings_are_neutralised(admin_user, building):
+    Apartment.objects.create(building=building, unit_number="=1+1", floor=-1)
+    Apartment.objects.create(building=building, unit_number="@SUM(A1)")
+    sheets = _sheets(_client(admin_user).get(_url(building)))
+    units = {r[0] for r in sheets["Units"][1:]}
+    assert units == {"'=1+1", "'@SUM(A1)"}
+
+
+def test_safe_cell_leaves_numbers_and_dates_alone():
+    from apps.exports.safe import safe_cell
+
+    assert safe_cell(5) == 5
+    assert safe_cell(date(2026, 1, 1)) == date(2026, 1, 1)
+    assert safe_cell("-5 off") == "'-5 off"
+    assert safe_cell("plain") == "plain"

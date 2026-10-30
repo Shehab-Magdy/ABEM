@@ -11,6 +11,7 @@ from rest_framework.views import APIView
 
 from apps.authentication.permissions import IsAdminRole
 from apps.buildings.scoping import managed_buildings
+from apps.exports.safe import safe_row
 from apps.expenses.models import Expense
 from apps.payments.models import AssetSale, Payment
 
@@ -91,7 +92,7 @@ class ExportPaymentsView(APIView):
         writer = csv.writer(response)
         writer.writerow(self._HEADERS)
         for row in self._rows(qs, asset_qs):
-            writer.writerow(row)
+            writer.writerow(safe_row(row))
         return response
 
 
@@ -153,7 +154,7 @@ class ExportExpensesView(APIView):
         writer = csv.writer(response)
         writer.writerow(self._HEADERS)
         for row in self._rows(qs):
-            writer.writerow(row)
+            writer.writerow(safe_row(row))
         return response
 
     def _xlsx_response(self, qs):
@@ -164,7 +165,7 @@ class ExportExpensesView(APIView):
         ws.title = "Expenses"
         ws.append(self._HEADERS)
         for row in self._rows(qs):
-            ws.append(row)
+            ws.append(safe_row(row))
 
         buf = io.BytesIO()
         wb.save(buf)
