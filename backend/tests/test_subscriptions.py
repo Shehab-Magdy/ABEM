@@ -132,3 +132,29 @@ def test_admin_can_pause_a_unit_through_the_unit_api(admin_user, units):
         f"/api/v1/apartments/{units[1].pk}/", {"billing_paused": True, "billing_pause_reason": "Vacant"}, format="json"
     )
     assert resp.status_code == 200 and resp.data["billing_paused"] is True
+
+
+def test_expense_list_labels_and_filters_by_kind(plan, units, admin_user, building):
+    from apps.expenses.models import ExpenseCategory
+
+    bill_subscriptions(date(2026, 10, 5))
+    category = ExpenseCategory.objects.create(building=building, name="Lift")
+    Expense.objects.create(building=building, category=category, title="Repair", amount=Decimal("90.00"),
+                           expense_date=date(2026, 10, 6), created_by=admin_user)
+    url = f"/api/v1/expenses/?building_id={building.pk}"
+    everything = _client(admin_user).get(url).data["results"]
+    assert {e["kind"] for e in everything} == {"cost", "subscription"}
+    only_subs = _client(admin_user).get(url + "&kind=subscription").data["results"]
+    assert [e["kind"] for e in only_subs] == ["subscription"]
+    assert [e["kind"] for e in _client(admin_user).get(url + "&kind=cost").data["results"]] == ["cost"]
+
+
+def test_kind_cannot_be_set_through_the_expense_api(admin_user, building):
+    from apps.expenses.models import ExpenseCategory
+
+    category = ExpenseCategory.objects.create(building=building, name="Lift")
+    resp = _client(admin_user).post("/api/v1/expenses/", {
+        "building_id": str(building.pk), "category_id": str(category.pk), "title": "Sneaky", "amount": "50.00",
+        "expense_date": "2026-10-06", "split_type": "equal_all", "kind": "subscription",
+    }, format="json")
+    assert resp.status_code == 201 and Expense.objects.get(title="Sneaky").kind == "cost"

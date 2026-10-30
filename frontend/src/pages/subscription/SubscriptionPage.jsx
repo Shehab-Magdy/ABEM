@@ -1,14 +1,16 @@
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  Alert, Box, Button, Card, CardContent, FormControlLabel, MenuItem, Stack, Switch, Table, TableBody, TableCell,
+  Alert, Box, Button, Card, CardContent, Chip, FormControlLabel, MenuItem, Stack, Switch, Table, TableBody, TableCell,
   TableHead, TableRow, TextField, Typography,
 } from "@mui/material";
+import { PauseCircle } from "@mui/icons-material";
 import { buildingsApi } from "../../api/buildingsApi";
-import { apartmentsApi } from "../../api/apartmentsApi";
 import { expensesApi } from "../../api/expensesApi";
 import { formatCurrency } from "../../utils/formatters";
 import { PrivateSEO } from "../../components/seo/SEO";
+import ReasonDialog from "../../components/ReasonDialog";
+import UnitBillingDialog from "../../components/UnitBillingDialog";
 
 const EMPTY = { amount: "", billing_day: 1, due_days: 10, is_active: true, late_fee_type: "none", late_fee_value: 0, grace_days: 0 };
 
@@ -21,6 +23,8 @@ export default function SubscriptionPage() {
   const [hasPlan, setHasPlan] = useState(false);
   const [units, setUnits] = useState([]);
   const [lateFees, setLateFees] = useState([]);
+  const [billingUnit, setBillingUnit] = useState(null);
+  const [waiveTarget, setWaiveTarget] = useState(null);
   const [message, setMessage] = useState(null);
   const [error, setError] = useState(null);
   const [saving, setSaving] = useState(false);
@@ -77,37 +81,10 @@ export default function SubscriptionPage() {
     }
   };
 
-  const togglePause = async (unit) => {
-    const paused = !unit.billing_paused;
-    const reason = paused ? window.prompt(t("pause_reason_prompt"), unit.billing_pause_reason || "") ?? "" : "";
-    try {
-      await apartmentsApi.update(unit.id, { billing_paused: paused, billing_pause_reason: reason });
-      load();
-    } catch {
-      setError(t("error"));
-    }
-  };
-
-  const saveRate = async (unit, value) => {
-    if (String(value) === String(unit.rate_factor)) return;
-    try {
-      await apartmentsApi.update(unit.id, { rate_factor: value });
-      load();
-    } catch (err) {
-      setError(err.response?.data?.errors?.rate_factor?.[0] || t("error"));
-      load();
-    }
-  };
-
-  const waive = async (fee) => {
-    const reason = window.prompt(t("waive_prompt"), "") ?? null;
-    if (reason === null) return;
-    try {
-      await expensesApi.waiveLateFee(fee.id, reason);
-      load();
-    } catch {
-      setError(t("error"));
-    }
+  const waive = async (reason) => {
+    await expensesApi.waiveLateFee(waiveTarget.id, reason);
+    setWaiveTarget(null);
+    load();
   };
 
   const billable = units.filter((u) => !u.billing_paused).length;
@@ -168,29 +145,31 @@ export default function SubscriptionPage() {
         <Card>
           <Table size="small">
             <TableHead>
-              <TableRow><TableCell>{t("unit")}</TableCell><TableCell>{t("rate")}</TableCell><TableCell>{t("billed")}</TableCell><TableCell>{t("pause_reason")}</TableCell></TableRow>
+              <TableRow><TableCell>{t("unit")}</TableCell><TableCell>{t("billing")}</TableCell><TableCell>{t("billing_reason")}</TableCell><TableCell /></TableRow>
             </TableHead>
             <TableBody>
-              {units.map((u) => (
-                <TableRow key={u.id}>
-                  <TableCell>{u.unit_number}</TableCell>
-                  <TableCell>
-                    <TextField
-                      key={`${u.id}-${u.rate_factor}`}
-                      type="number"
-                      size="small"
-                      defaultValue={u.rate_factor}
-                      inputProps={{ min: 0.1, max: 10, step: "0.05", "aria-label": t("rate") }}
-                      onBlur={(e) => saveRate(u, e.target.value)}
-                      sx={{ width: 90 }}
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <Switch checked={!u.billing_paused} onChange={() => togglePause(u)} inputProps={{ "aria-label": t("billed") }} />
-                  </TableCell>
-                  <TableCell>{u.billing_paused ? u.billing_pause_reason || "—" : ""}</TableCell>
-                </TableRow>
-              ))}
+              {units.map((u) => {
+                const paused = u.billing_paused;
+                const pct = Math.round(Number(u.rate_factor) * 100);
+                return (
+                  <TableRow key={u.id}>
+                    <TableCell>{u.unit_number}</TableCell>
+                    <TableCell>
+                      {paused ? (
+                        <Chip size="small" color="warning" icon={<PauseCircle />} label={t("status_paused")} />
+                      ) : pct !== 100 ? (
+                        <Chip size="small" color="info" variant="outlined" label={t("status_percent", { pct })} />
+                      ) : (
+                        <Chip size="small" variant="outlined" label={t("status_full")} />
+                      )}
+                    </TableCell>
+                    <TableCell>{paused || pct !== 100 ? u.billing_pause_reason || "—" : ""}</TableCell>
+                    <TableCell align="right">
+                      <Button size="small" onClick={() => setBillingUnit(u)} sx={{ minHeight: 36 }}>{t("edit_billing")}</Button>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
         </Card>
@@ -209,7 +188,7 @@ export default function SubscriptionPage() {
                       <TableCell>{f.unit_number}</TableCell>
                       <TableCell>{formatCurrency(f.amount)}</TableCell>
                       <TableCell align="right">
-                        <Button size="small" color="warning" onClick={() => waive(f)} sx={{ minHeight: 36 }}>{t("waive")}</Button>
+                        <Button size="small" color="warning" onClick={() => setWaiveTarget(f)} sx={{ minHeight: 36 }}>{t("waive")}</Button>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -219,6 +198,17 @@ export default function SubscriptionPage() {
           </>
         )}
       </Box>
+      <UnitBillingDialog unit={billingUnit} onClose={() => setBillingUnit(null)} onSaved={() => { setBillingUnit(null); load(); }} />
+      <ReasonDialog
+        open={!!waiveTarget}
+        title={t("waive_title")}
+        description={t("waive_description")}
+        label={t("waive_prompt")}
+        confirmLabel={t("waive")}
+        color="warning"
+        onClose={() => setWaiveTarget(null)}
+        onConfirm={waive}
+      />
     </>
   );
 }

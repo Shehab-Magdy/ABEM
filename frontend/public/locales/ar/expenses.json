@@ -89,5 +89,10 @@
   "freq_quarterly": "ربع سنوي",
   "freq_annual": "سنوي",
   "unit_type_apartment": "شقة سكنية",
-  "unit_type_store": "محل تجاري"
+  "unit_type_store": "محل تجاري",
+  "kind_filter": "نوع البند",
+  "kind_all": "الكل",
+  "kind_cost": "مصروفات",
+  "kind_subscription": "اشتراكات",
+  "kind_late_fee": "غرامات تأخير"
 }

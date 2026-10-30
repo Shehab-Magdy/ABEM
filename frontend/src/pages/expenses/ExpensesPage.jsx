@@ -23,6 +23,8 @@ import {
   DialogTitle,
   Divider,
   FormControl,
+  ToggleButton,
+  ToggleButtonGroup,
   IconButton,
   InputLabel,
   MenuItem,
@@ -51,6 +53,8 @@ import {
   HourglassEmpty as HourglassIcon,
   Cancel as CancelIcon,
   Repeat as RepeatIcon,
+  EventRepeat as SubscriptionIcon,
+  ReportProblem as LateFeeIcon,
   Visibility as ViewIcon,
 } from "@mui/icons-material";
 import { expensesApi } from "../../api/expensesApi";
@@ -166,6 +170,8 @@ export default function ExpensesPage() {
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(false);
   const [selectedBuilding, setSelectedBuilding] = useState("");
+  // "" = everything a unit is billed; otherwise cost | subscription | late_fee
+  const [filterKind, setFilterKind] = useState("");
 
   const [detailExpense, setDetailExpense] = useState(null);
   const [formOpen, setFormOpen] = useState(false);
@@ -224,6 +230,7 @@ export default function ExpensesPage() {
       if (filterDateFrom) params.date_from = filterDateFrom;
       if (filterDateTo) params.date_to = filterDateTo;
       if (filterCategory) params.category_id = filterCategory;
+      if (filterKind) params.kind = filterKind;
       const res = await expensesApi.list(params);
       setExpenses(res.data.results ?? res.data);
     } catch {
@@ -231,7 +238,7 @@ export default function ExpensesPage() {
     } finally {
       setLoading(false);
     }
-  }, [selectedBuilding, filterDateFrom, filterDateTo, filterCategory]);
+  }, [selectedBuilding, filterDateFrom, filterDateTo, filterCategory, filterKind]);
 
   const loadCategories = useCallback(async () => {
     if (!selectedBuilding) return;
@@ -436,6 +443,19 @@ export default function ExpensesPage() {
             </Select>
           </FormControl>
 
+          <ToggleButtonGroup
+            exclusive
+            size="small"
+            value={filterKind}
+            onChange={(_, value) => setFilterKind(value ?? "")}
+            aria-label={t("kind_filter")}
+          >
+            <ToggleButton value="">{t("kind_all")}</ToggleButton>
+            <ToggleButton value="cost">{t("kind_cost")}</ToggleButton>
+            <ToggleButton value="subscription">{t("kind_subscription")}</ToggleButton>
+            <ToggleButton value="late_fee">{t("kind_late_fee")}</ToggleButton>
+          </ToggleButtonGroup>
+
           <TextField
             size="small"
             label={t("date_from")}
@@ -520,6 +540,12 @@ export default function ExpensesPage() {
                           {exp.title}
                         </Typography>
                       </Tooltip>
+                      {exp.kind === "subscription" && (
+                        <Chip size="small" variant="outlined" color="info" icon={<SubscriptionIcon />} label={t("kind_subscription")} sx={{ mt: 0.5 }} />
+                      )}
+                      {exp.kind === "late_fee" && (
+                        <Chip size="small" variant="outlined" color="warning" icon={<LateFeeIcon />} label={t("kind_late_fee")} sx={{ mt: 0.5 }} />
+                      )}
                     </TableCell>
                     <TableCell>
                       <Typography variant="body2" fontWeight={500}>

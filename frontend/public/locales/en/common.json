@@ -145,5 +145,6 @@
   "maintenance": "Maintenance",
   "statement": "Statement",
   "polls": "Votes",
-  "subscription": "Monthly subscription"
+  "subscription": "Monthly subscription",
+  "something_went_wrong": "Something went wrong. Please try again."
 }

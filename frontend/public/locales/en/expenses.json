@@ -89,5 +89,10 @@
   "freq_quarterly": "Quarterly",
   "freq_annual": "Annual",
   "unit_type_apartment": "Apartment",
-  "unit_type_store": "Store"
+  "unit_type_store": "Store",
+  "kind_filter": "Kind of charge",
+  "kind_all": "All",
+  "kind_cost": "Costs",
+  "kind_subscription": "Subscriptions",
+  "kind_late_fee": "Late fees"
 }

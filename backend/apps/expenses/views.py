@@ -107,7 +107,7 @@ class ExpenseViewSet(ModelViewSet):
     http_method_names = ["get", "post", "patch", "delete", "options", "head"]
 
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
-    filterset_fields = ["split_type", "is_recurring"]
+    filterset_fields = ["split_type", "is_recurring", "kind"]
     search_fields = ["title", "description"]
     ordering_fields = ["expense_date", "amount", "created_at"]
     ordering = ["-expense_date"]

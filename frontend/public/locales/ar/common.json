@@ -145,5 +145,6 @@
   "maintenance": "الصيانة",
   "statement": "كشف الحساب",
   "polls": "التصويت",
-  "subscription": "الاشتراك الشهري"
+  "subscription": "الاشتراك الشهري",
+  "something_went_wrong": "حدث خطأ. حاول مرة أخرى."
 }

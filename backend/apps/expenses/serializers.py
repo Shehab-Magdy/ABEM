@@ -151,6 +151,7 @@ class ExpenseSerializer(serializers.ModelSerializer):
             "amount",
             "expense_date",
             "due_date",
+            "kind",
             "split_type",
             "is_recurring",
             "frequency",
@@ -165,7 +166,8 @@ class ExpenseSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
         ]
-        read_only_fields = ["id", "created_at", "updated_at"]
+        read_only_fields = [
+            "kind", "id", "created_at", "updated_at"]
 
     # ── Field-level validation ─────────────────────────────────────────────────
 
