@@ -2,6 +2,7 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from django.db.models import Q
+from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from .validators import validate_password_complexity
 
@@ -390,17 +391,23 @@ class SelfRegisterSerializer(serializers.ModelSerializer):
         validators=[validate_password_complexity],
     )
     confirm_password = serializers.CharField(write_only=True)
+    accept_terms = serializers.BooleanField(write_only=True)
     role = serializers.ChoiceField(choices=["admin", "owner"], default="owner")
 
     class Meta:
         model = User
-        fields = ["id", "email", "first_name", "last_name", "phone", "role", "password", "confirm_password", "preferred_language"]
+        fields = ["id", "email", "first_name", "last_name", "phone", "role", "password", "confirm_password", "preferred_language", "accept_terms"]
         read_only_fields = ["id"]
 
     def validate_email(self, value):
         if User.objects.filter(email__iexact=value).exists():
             raise serializers.ValidationError(_("A user with this email already exists."))
         return value.lower()
+
+    def validate_accept_terms(self, value):
+        if value is not True:
+            raise serializers.ValidationError(_("You must accept the Terms of Service and Privacy Policy."))
+        return value
 
     def validate(self, data):
         if data["password"] != data.pop("confirm_password"):
@@ -409,7 +416,8 @@ class SelfRegisterSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         password = validated_data.pop("password")
-        user = User(**validated_data)
+        validated_data.pop("accept_terms", None)
+        user = User(terms_accepted_at=timezone.now(), **validated_data)
         user.set_password(password)
         user.save()
         return user

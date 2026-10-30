@@ -46,3 +46,33 @@ class TestShareableInvite:
         # one-time: the same link cannot be used again
         again = api_client.get("/api/v1/apartments/invite/validate/", {"token": token})
         assert again.status_code == 410
+
+
+@pytest.mark.django_db
+class TestInviteHardening:
+    def _invite(self, admin_client, unit, email=""):
+        return admin_client.post(f"/api/v1/apartments/{unit.id}/invite/", {"email": email}, format="json").data
+
+    def test_invite_for_an_email_cannot_be_redeemed_by_someone_else(self, api_client, admin_client, owner_user, unit):
+        invite = self._invite(admin_client, unit, email="someone-else@abem.test")
+        api_client.force_authenticate(owner_user)
+        resp = api_client.post("/api/v1/apartments/invite/use/", {"token": invite["token"]}, format="json")
+        assert resp.status_code == 403
+        unit.refresh_from_db()
+        assert unit.owner is None
+
+    def test_invite_for_an_email_works_for_that_account(self, api_client, admin_client, owner_user, unit):
+        invite = self._invite(admin_client, unit, email=owner_user.email.upper())
+        api_client.force_authenticate(owner_user)
+        resp = api_client.post("/api/v1/apartments/invite/use/", {"token": invite["token"]}, format="json")
+        assert resp.status_code == 200
+
+    def test_malformed_token_is_404_not_500(self, api_client):
+        assert api_client.get("/api/v1/apartments/invite/validate/", {"token": "not-a-uuid"}).status_code == 404
+
+    def test_code_lookup_does_not_reveal_the_invited_email(self, api_client, admin_client, unit):
+        invite = self._invite(admin_client, unit, email="private@abem.test")
+        by_code = api_client.get("/api/v1/apartments/invite/validate/", {"code": invite["registration_code"]})
+        by_token = api_client.get("/api/v1/apartments/invite/validate/", {"token": invite["token"]})
+        assert by_code.data["invited_email"] == ""
+        assert by_token.data["invited_email"] == "private@abem.test"

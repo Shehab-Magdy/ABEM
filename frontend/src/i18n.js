@@ -26,6 +26,9 @@ i18n
       "audit",
       "exports",
       "tutorial",
+      "maintenance",
+      "statement",
+      "legal",
     ],
     backend: { loadPath: "/locales/{{lng}}/{{ns}}.json" },
     detection: {

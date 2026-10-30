@@ -54,6 +54,8 @@ class UserViewSet(AuditLogMixin, ModelViewSet):
         base = User.objects.filter(is_superuser=False)
 
         if building_id:
+            from apps.buildings.scoping import ensure_manages
+            ensure_manages(requesting_admin, building_id)
             # Members of this building PLUS owner-role users created by the
             # requesting admin who have no building yet (so freshly admin-created
             # owners appear in the invite / assign-owner autocomplete).

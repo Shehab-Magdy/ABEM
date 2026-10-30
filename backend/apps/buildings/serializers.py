@@ -61,6 +61,7 @@ class BuildingSerializer(serializers.ModelSerializer):
             "co_admin_ids",
             "photo",
             "starting_balance",
+            "instapay_address",
             "is_active",
             "created_at",
             "updated_at",

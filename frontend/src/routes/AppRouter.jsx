@@ -17,6 +17,10 @@ import ServerErrorPage from "../pages/errors/ServerErrorPage";
 const LandingPage = lazy(() => import("../pages/landing/LandingPage"));
 const LoginPage = lazy(() => import("../pages/auth/LoginPage"));
 const JoinPage = lazy(() => import("../pages/auth/JoinPage"));
+const LegalPage = lazy(() => import("../pages/legal/LegalPage"));
+const StatementPage = lazy(() => import("../pages/statement/StatementPage"));
+const MaintenancePage = lazy(() => import("../pages/maintenance/MaintenancePage"));
+const ResetPasswordPage = lazy(() => import("../pages/auth/ResetPasswordPage"));
 const RegisterPage = lazy(() => import("../pages/auth/RegisterPage"));
 const ForgotPasswordPage = lazy(() => import("../pages/auth/ForgotPasswordPage"));
 const ForceChangePasswordPage = lazy(() => import("../pages/auth/ForceChangePasswordPage"));
@@ -87,6 +91,9 @@ export default function AppRouter() {
           which would otherwise cause an immediate redirect away before the user finishes the wizard. */}
       <Route path="/register" element={<RegisterPage />} />
       <Route path="/join/:token" element={<JoinPage />} />
+      <Route path="/reset-password" element={<ResetPasswordPage />} />
+      <Route path="/privacy" element={<LegalPage doc="privacy" />} />
+      <Route path="/terms" element={<LegalPage doc="terms" />} />
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
 
       {/* Forced password change — accessible only when must_change_password is true */}
@@ -125,6 +132,8 @@ export default function AppRouter() {
         <Route path="expenses" element={<ExpensesPage />} />
         <Route path="payments" element={<PaymentsPage />} />
         <Route path="notifications" element={<NotificationCenterPage />} />
+        <Route path="maintenance" element={<MaintenancePage />} />
+        <Route path="statement" element={<StatementPage />} />
         <Route path="audit" element={<RequireAdmin><AuditLogPage /></RequireAdmin>} />
         <Route path="expense-categories" element={<RequireAdmin><ExpenseCategoriesPage /></RequireAdmin>} />
         <Route path="assets" element={<RequireAdmin><AssetsPage /></RequireAdmin>} />

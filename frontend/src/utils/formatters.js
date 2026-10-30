@@ -128,3 +128,17 @@ export function deepConvertEasternArabic(value) {
   }
   return value; // number, boolean, null, undefined — pass through
 }
+
+
+/**
+ * A wa.me link that opens WhatsApp with a ready message to `phone` (null if the number is unusable).
+ * Egyptian local numbers (01xxxxxxxxx) become +20 1xxxxxxxxx; numbers with a country code are kept.
+ */
+export function whatsappLink(phone, message) {
+  const digits = easternArabicToAscii(String(phone || "")).replace(/[^\d+]/g, "");
+  let intl = digits.replace(/^\+/, "");
+  if (digits.startsWith("00")) intl = digits.slice(2);
+  else if (/^0\d{9,10}$/.test(digits)) intl = `20${digits.slice(1)}`;
+  if (!/^\d{10,15}$/.test(intl)) return null;
+  return `https://wa.me/${intl}?text=${encodeURIComponent(message)}`;
+}

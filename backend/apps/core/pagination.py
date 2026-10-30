@@ -8,12 +8,12 @@ class ABEMPagination(PageNumberPagination):
     Standard pagination for all list endpoints.
 
     Clients may override the page size via the ``page_size`` query param
-    up to a ceiling of 100 items.  Default page size is 20.
+    up to a ceiling of 500 items.  Default page size is 20.
     """
 
     page_size = 20
     page_size_query_param = "page_size"
-    max_page_size = 100
+    max_page_size = 500
 
     def get_page_size(self, request):
         if self.page_size_query_param:

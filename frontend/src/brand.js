@@ -11,6 +11,10 @@ export const BRAND = {
   sloganCommunity: "عِمارة.كوم.. عمارة منظمة، وجيرة مرتاحة.",
   description:
     "تطبيق عِمارة.كوم (3maracom) هو الحل الأسهل والأسرع لإدارة اتحاد الملاك، تحصيل الاشتراكات شهرياً، ومتابعة مصاريف الصيانة والخزينة بكل شفافية وبلمسة زر.",
+  // Shown on the legal pages when set. Set before launch.
+  supportEmail: "",
+  // The policy texts are drafts until a lawyer has reviewed them; the pages say so while this is true.
+  legalDraft: true,
   keywords:
     "اتحاد ملاك, إدارة عمارة, مصاريف السكن, حسابات العمارة, صيانة المصعد, اشتراك العمارة شهرياً, 3maracom, عمارة كوم",
 };

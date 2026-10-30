@@ -79,5 +79,18 @@
   "treasury_balance": "رصيد الخزينة الحالي",
   "treasury_income": "إجمالي ما دخل الخزينة",
   "treasury_expenses": "إجمالي المصروفات",
-  "collected_pct": "{{pct}}٪ من الوحدات سدّدت اشتراكاتها"
+  "collected_pct": "{{pct}}٪ من الوحدات سدّدت اشتراكاتها",
+  "found_unit": "تم العثور على الوحدة {{unit}} في {{building}}",
+  "claim_err_taken": "هذه الوحدة تم تسجيلها بالفعل لمالك آخر.",
+  "claim_err_used": "هذا الكود استُخدم من قبل أو انتهت صلاحيته.",
+  "claim_err_generic": "تعذّر تسجيل الوحدة.",
+  "claim_req_title": "{{count}} طلب انضمام إلى وحدة بانتظار موافقتك",
+  "claim_req_approve": "موافقة",
+  "claim_req_reject": "رفض",
+  "claim_req_waiting": "طلبك للانضمام إلى الوحدة {{unit}} في {{building}} بانتظار موافقة مدير العمارة.",
+  "remind_col": "تذكير",
+  "remind_whatsapp": "تذكير عبر واتساب",
+  "remind_no_phone": "لا يوجد رقم هاتف",
+  "remind_whatsapp_text": "مرحباً {{name}}، تذكير ودّي من إدارة {{building}}: متبقي على وحدتك {{unit}} مبلغ {{amount}}. شكراً لتعاونك — عِمارة.كوم",
+  "treasury_statement": "عرض كشف حساب الشهر ←"
 }

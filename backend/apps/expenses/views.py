@@ -4,6 +4,8 @@ from __future__ import annotations
 import os
 
 from django.conf import settings
+from django.db import transaction
+from django.db.models import F
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.decorators import action
@@ -16,8 +18,10 @@ from rest_framework.viewsets import ModelViewSet
 from django_filters.rest_framework import DjangoFilterBackend
 
 from django.utils.translation import gettext_lazy as _
+from apps.apartments.models import Apartment
 from apps.audit.mixins import log_action
 from apps.authentication.permissions import IsAdminRole
+from apps.buildings.scoping import ensure_manages, managed_buildings
 
 from .models import Expense, ExpenseCategory, MediaFile
 from .serializers import (
@@ -46,6 +50,10 @@ class ExpenseCategoryViewSet(ModelViewSet):
 
     def get_queryset(self):
         qs = ExpenseCategory.objects.filter(is_active=True).select_related("building")
+        if self.request.user.role == "admin":
+            qs = qs.filter(building__in=managed_buildings(self.request.user))
+        else:
+            qs = qs.filter(building__members=self.request.user).distinct()
         building_id = self.request.query_params.get("building_id")
         if building_id:
             qs = qs.filter(building_id=building_id)
@@ -61,6 +69,7 @@ class ExpenseCategoryViewSet(ModelViewSet):
     # ── Write helpers ──────────────────────────────────────────────────────────
 
     def perform_create(self, serializer):
+        ensure_manages(self.request.user, serializer.validated_data["building"])
         category = serializer.save()
         log_action(
             user=self.request.user,
@@ -127,7 +136,7 @@ class ExpenseViewSet(ModelViewSet):
             qs = qs.filter(category_id=category_id)
 
         if self.request.user.role == "admin":
-            return qs
+            return qs.filter(building__in=managed_buildings(self.request.user))
         return qs.filter(building__members=self.request.user)
 
     # ── Permissions ────────────────────────────────────────────────────────────
@@ -141,6 +150,7 @@ class ExpenseViewSet(ModelViewSet):
     # ── Write helpers ──────────────────────────────────────────────────────────
 
     def perform_create(self, serializer):
+        ensure_manages(self.request.user, serializer.validated_data["building"])
         expense = serializer.save(created_by=self.request.user)
         log_action(
             user=self.request.user,
@@ -205,8 +215,15 @@ class ExpenseViewSet(ModelViewSet):
             entity_id=instance.pk,
             request=self.request,
         )
-        instance.deleted_at = timezone.now()
-        instance.save()
+        with transaction.atomic():
+            # Take the expense's shares back off each apartment's balance
+            for share in instance.apartment_expenses.all():
+                Apartment.objects.filter(pk=share.apartment_id).update(
+                    balance=F("balance") - share.share_amount
+                )
+            instance.apartment_expenses.all().delete()
+            instance.deleted_at = timezone.now()
+            instance.save()
 
     # ── Mark as paid ──────────────────────────────────────────────────────────
 

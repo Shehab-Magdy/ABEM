@@ -88,5 +88,7 @@
   "starting_balance_helper": "الوضع المالي المبدئي قبل استخدام النظام (يقبل قيمًا سالبة للعجز)",
   "invite_email_optional": "البريد الإلكتروني (اختياري)",
   "share_whatsapp": "مشاركة عبر واتساب",
-  "invite_whatsapp_text": "تمت دعوتك للانضمام إلى {{building}} — الوحدة {{unit}} على عِمارة.كوم: {{link}}"
+  "invite_whatsapp_text": "تمت دعوتك للانضمام إلى {{building}} — الوحدة {{unit}} على عِمارة.كوم: {{link}}",
+  "instapay_address": "عنوان إنستا باي",
+  "instapay_address_helper": "يظهر للسكان عند دفع الاشتراك"
 }

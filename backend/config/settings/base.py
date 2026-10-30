@@ -35,7 +35,6 @@ THIRD_PARTY_APPS = [
     "django_filters",
     "cloudinary",
     "cloudinary_storage",
-    "django_celery_beat",
     "rosetta",
 ]
 
@@ -48,6 +47,7 @@ LOCAL_APPS = [
     "apps.notifications",
     "apps.audit",
     "apps.dashboard",
+    "apps.maintenance",
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -167,6 +167,8 @@ REST_FRAMEWORK = {
     ),
     "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticated",),
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+    # Only applied to views that opt in with throttle_classes (public invite endpoints)
+    "DEFAULT_THROTTLE_RATES": {"anon": "30/min", "user": "60/min"},
     "DEFAULT_FILTER_BACKENDS": [
         "django_filters.rest_framework.DjangoFilterBackend",
         "rest_framework.filters.SearchFilter",
@@ -198,26 +200,12 @@ CORS_ALLOWED_ORIGINS = config("CORS_ALLOWED_ORIGINS", default="http://localhost:
 CORS_ALLOW_CREDENTIALS = True
 
 # ---------------------------------------------------------------------------
-# Redis & Celery
+# Cache (used for API rate limiting)
 # ---------------------------------------------------------------------------
-REDIS_URL = config("REDIS_URL", default="redis://localhost:6379/0")
-
-CACHES = {
-    "default": {
-        "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": REDIS_URL,
-        "OPTIONS": {"CLIENT_CLASS": "django_redis.client.DefaultClient"},
-        "TIMEOUT": 300,
-    }
-}
-
-CELERY_BROKER_URL = REDIS_URL
-CELERY_RESULT_BACKEND = REDIS_URL
-CELERY_ACCEPT_CONTENT = ["json"]
-CELERY_TASK_SERIALIZER = "json"
-CELERY_RESULT_SERIALIZER = "json"
-CELERY_TIMEZONE = TIME_ZONE
-CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
+# In-process cache: no extra service to run. Rate-limit counters are kept per server
+# process, so the effective limit is per worker. Recurring expenses are created by the
+# `generate_recurring_expenses` management command, run daily by the host scheduler.
+CACHES = {"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}}
 
 # ---------------------------------------------------------------------------
 # Email
@@ -228,7 +216,9 @@ EMAIL_PORT = config("EMAIL_PORT", default=587, cast=int)
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = config("EMAIL_HOST_USER", default="")
 EMAIL_HOST_PASSWORD = config("EMAIL_HOST_PASSWORD", default="")
-DEFAULT_FROM_EMAIL = config("DEFAULT_FROM_EMAIL", default="ABEM <noreply@abem.app>")
+# Public URL of the web app, used in emailed links (password reset)
+FRONTEND_URL = config("FRONTEND_URL", default="http://localhost:5173")
+DEFAULT_FROM_EMAIL = config("DEFAULT_FROM_EMAIL", default="عِمارة.كوم <noreply@3mara.com>")
 
 # ---------------------------------------------------------------------------
 # Firebase (FCM)
@@ -240,9 +230,9 @@ FIREBASE_CREDENTIALS_PATH = config("FIREBASE_CREDENTIALS_PATH", default="")
 # ---------------------------------------------------------------------------
 SPECTACULAR_SETTINGS = {
     # ── Identity ───────────────────────────────────────────────────────────────
-    "TITLE": "ABEM API",
+    "TITLE": "3maracom API",
     "DESCRIPTION": (
-        "**Apartment & Building Expense Management** — multi-tenant financial platform.\n\n"
+        "**عِمارة.كوم (3maracom)** — building expense management for owners' associations and residents.\n\n"
         "Manages buildings, apartments, shared expenses, payments, notifications, and audit logs.\n\n"
         "### Authentication\n"
         "All endpoints (except `/auth/login/` and `/auth/register/`) require a **Bearer JWT** token.\n"
@@ -257,7 +247,7 @@ SPECTACULAR_SETTINGS = {
     ),
     "VERSION": "1.0.0",
     "CONTACT": {
-        "name": "ABEM Support",
+        "name": "3maracom Support",
         "email": "cegres1@yahoo.com",
     },
     "LICENSE": {"name": "Proprietary"},

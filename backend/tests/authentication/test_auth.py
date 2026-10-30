@@ -202,6 +202,14 @@ class TestProfile:
 class TestUserManagement:
     USERS_URL = "/api/v1/users/"
 
+    @pytest.fixture(autouse=True)
+    def _building(self, db, admin_user, owner_user):
+        """Admins only manage users in their own buildings, so give them one."""
+        from apps.buildings.models import Building, UserBuilding
+
+        building = Building.objects.create(name="Test Building", address="1 Test St", admin=admin_user)
+        UserBuilding.objects.create(user=owner_user, building=building)
+
     def test_admin_can_list_users(self, admin_client, admin_user, owner_user):
         response = admin_client.get(self.USERS_URL)
         assert response.status_code == status.HTTP_200_OK

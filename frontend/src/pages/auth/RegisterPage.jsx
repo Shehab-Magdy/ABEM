@@ -20,6 +20,7 @@ import {
   CircularProgress,
   Divider,
   FormControl,
+  Checkbox,
   FormControlLabel,
   FormLabel,
   IconButton,
@@ -78,6 +79,7 @@ function AccountStep({ onDone, prefillEmail }) {
         password: data.password,
         confirm_password: data.confirm_password,
         preferred_language: i18n.language || "en",
+        accept_terms: data.accept_terms === true,
       });
       const { access, refresh, user } = res.data;
       login(user, access, refresh);
@@ -166,6 +168,21 @@ function AccountStep({ onDone, prefillEmail }) {
               </RadioGroup>
             )}
           />
+        </FormControl>
+        <FormControl error={!!errors.accept_terms}>
+          <FormControlLabel
+            control={<Controller name="accept_terms" control={control} defaultValue={false} rules={{ validate: (v) => v === true || t("accept_terms_required") }}
+              render={({ field }) => <Checkbox checked={field.value} onChange={(e) => field.onChange(e.target.checked)} />} />}
+            label={
+              <Typography variant="body2">
+                {t("accept_terms_prefix")}{" "}
+                <Link component={RouterLink} to="/terms" target="_blank" underline="hover">{t("terms_link")}</Link>
+                {" "}{t("and")}{(i18n.language || "").startsWith("ar") ? "" : " "}
+                <Link component={RouterLink} to="/privacy" target="_blank" underline="hover">{t("privacy_link")}</Link>
+              </Typography>
+            }
+          />
+          {errors.accept_terms && <Typography variant="caption" color="error">{errors.accept_terms.message}</Typography>}
         </FormControl>
         <Button type="submit" variant="contained" size="large" fullWidth disabled={loading}>
           {loading ? <CircularProgress size={24} color="inherit" /> : t("continue")}
@@ -297,6 +314,7 @@ function ClaimUnitStep({ onDone, onSkip, isAdmin }) {
   const [loadingBuildings, setLoadingBuildings] = useState(true);
   const [loadingApts, setLoadingApts] = useState(false);
   const [claiming, setClaiming] = useState(false);
+  const [requestSent, setRequestSent] = useState(false);
   const [error, setError] = useState(null);
 
   // Registration code entry
@@ -328,8 +346,12 @@ function ClaimUnitStep({ onDone, onSkip, isAdmin }) {
     setError(null);
     setClaiming(true);
     try {
-      await apartmentsApi.claim(selectedApartment);
-      onDone();
+      const res = await apartmentsApi.claim(selectedApartment);
+      if (res.status === 202) {
+        setRequestSent(true);
+      } else {
+        onDone();
+      }
     } catch (err) {
       setError(err.response?.data?.detail || t("errors:server_error"));
     } finally {
@@ -368,6 +390,15 @@ function ClaimUnitStep({ onDone, onSkip, isAdmin }) {
       setClaimingCode(false);
     }
   };
+
+  if (requestSent) {
+    return (
+      <Stack spacing={2}>
+        <Alert severity="success">{t("claim_request_sent")}</Alert>
+        <Button variant="contained" fullWidth onClick={onDone}>{t("continue")}</Button>
+      </Stack>
+    );
+  }
 
   if (loadingBuildings) return <Box display="flex" justifyContent="center" p={4}><CircularProgress /></Box>;
 
@@ -469,7 +500,7 @@ function ClaimUnitStep({ onDone, onSkip, isAdmin }) {
       {codeError && <Alert severity="error" onClose={() => setCodeError(null)}>{codeError}</Alert>}
       {codeInfo && (
         <Alert severity="success">
-          Found: <strong>Unit {codeInfo.unit_number}</strong> in <strong>{codeInfo.building_name}</strong>
+          {t("found_unit", { unit: codeInfo.unit_number, building: codeInfo.building_name })}
         </Alert>
       )}
       <Stack direction="row" spacing={1} alignItems="flex-start">
@@ -494,7 +525,7 @@ function ClaimUnitStep({ onDone, onSkip, isAdmin }) {
       </Stack>
       {codeInfo && (
         <Button variant="contained" color="success" fullWidth disabled={claimingCode} onClick={handleClaimCode}>
-          {claimingCode ? <CircularProgress size={22} color="inherit" /> : `Claim Unit ${codeInfo.unit_number}`}
+          {claimingCode ? <CircularProgress size={22} color="inherit" /> : t("claim_unit_number", { unit: codeInfo.unit_number })}
         </Button>
       )}
     </Stack>
@@ -543,8 +574,8 @@ function InviteClaimStep({ inviteToken, inviteInfo, onDone }) {
       <Alert severity="success" icon={false}>
         <Typography fontWeight={600}>{t("invite_title")}</Typography>
         <Typography variant="body2">
-          Claim <strong>Unit {inviteInfo.unit_number}</strong> in{" "}
-          <strong>{inviteInfo.building_name}</strong> ({inviteInfo.building_city})
+          {t("join_unit_in_building", { unit: inviteInfo.unit_number, building: inviteInfo.building_name })}
+          {inviteInfo.building_city ? ` (${inviteInfo.building_city})` : ""}
         </Typography>
       </Alert>
       {error && <Alert severity="error">{error}</Alert>}
@@ -585,7 +616,7 @@ export default function RegisterPage() {
     if (!inviteToken) return;
     apartmentsApi.validateInvite(inviteToken)
       .then((res) => setInviteInfo(res.data))
-      .catch((err) => setInviteError(err.response?.data?.detail || "Invalid or expired invite link."))
+      .catch((err) => setInviteError(err.response?.data?.detail || t("invite_error")))
       .finally(() => setInviteLoading(false));
   }, [inviteToken]);
 

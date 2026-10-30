@@ -1,0 +1,22 @@
+{
+  "page_title": "بلاغات الصيانة",
+  "report_title": "بلاغ صيانة سريع",
+  "building": "العمارة",
+  "category": "ما المشكلة؟",
+  "description": "تفاصيل (اختياري)",
+  "send": "إرسال",
+  "sent": "تم إرسال البلاغ. سيصل لمدير العمارة.",
+  "close": "إغلاق",
+  "empty": "لا توجد بلاغات حتى الآن.",
+  "load_error": "تعذّر تحميل بياناتك.",
+  "send_error": "تعذّر إرسال البلاغ.",
+  "cat_elevator": "المصعد",
+  "cat_stairs": "السلم",
+  "cat_cleaning": "النظافة",
+  "cat_electricity": "الكهرباء",
+  "cat_water": "المياه",
+  "cat_other": "أخرى",
+  "status_open": "مفتوح",
+  "status_in_progress": "جاري الإصلاح",
+  "status_done": "تم"
+}

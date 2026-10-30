@@ -9,6 +9,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 
 from apps.authentication.permissions import IsAdminRole
+from apps.buildings.scoping import managed_buildings
 from apps.expenses.models import Expense
 from apps.payments.models import AssetSale, Payment
 
@@ -31,7 +32,9 @@ class ExportPaymentsView(APIView):
     _HEADERS = ["Row Type", "ID", "Apartment", "Amount", "Method", "Date", "Balance Before", "Balance After"]
 
     def get(self, request):
-        qs = Payment.objects.select_related("apartment__building").order_by("-payment_date", "-created_at")
+        qs = Payment.objects.select_related("apartment__building").filter(
+            apartment__building__in=managed_buildings(request.user)
+        ).order_by("-payment_date", "-created_at")
         p = request.query_params
 
         building_id = p.get("building_id")
@@ -45,7 +48,9 @@ class ExportPaymentsView(APIView):
             qs = qs.filter(payment_date__lte=d_to)
 
         # Asset sale rows
-        asset_qs = AssetSale.objects.select_related("asset__building").order_by("-sale_date")
+        asset_qs = AssetSale.objects.select_related("asset__building").filter(
+            asset__building__in=managed_buildings(request.user)
+        ).order_by("-sale_date")
         if building_id:
             asset_qs = asset_qs.filter(asset__building_id=building_id)
         if d_from:
@@ -108,7 +113,9 @@ class ExportExpensesView(APIView):
 
     def get(self, request):
         qs = (
-            Expense.objects.filter(deleted_at__isnull=True)
+            Expense.objects.filter(
+                deleted_at__isnull=True, building__in=managed_buildings(request.user)
+            )
             .select_related("building", "category")
             .order_by("-expense_date")
         )
@@ -187,7 +194,9 @@ class ExportAssetSalesView(APIView):
     _HEADERS = ["ID", "Asset Name", "Building", "Sale Date", "Sale Price", "Buyer Name", "Buyer Contact"]
 
     def get(self, request):
-        qs = AssetSale.objects.select_related("asset__building").order_by("-sale_date")
+        qs = AssetSale.objects.select_related("asset__building").filter(
+            asset__building__in=managed_buildings(request.user)
+        ).order_by("-sale_date")
         p = request.query_params
         if bld_id := p.get("building_id"):
             qs = qs.filter(asset__building_id=bld_id)

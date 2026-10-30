@@ -4,7 +4,7 @@ from django.utils.translation import gettext_lazy as _
 
 from apps.buildings.models import Building
 from apps.authentication.models import User
-from .models import Apartment, UnitType
+from .models import Apartment, UnitClaimRequest, UnitType
 
 
 class ApartmentSerializer(serializers.ModelSerializer):
@@ -84,3 +84,18 @@ class ApartmentSerializer(serializers.ModelSerializer):
                     }
                 )
         return data
+
+
+class UnitClaimRequestSerializer(serializers.ModelSerializer):
+    unit_number = serializers.CharField(source="apartment.unit_number", read_only=True)
+    building_name = serializers.CharField(source="apartment.building.name", read_only=True)
+    user_name = serializers.SerializerMethodField()
+    user_email = serializers.EmailField(source="user.email", read_only=True)
+
+    class Meta:
+        model = UnitClaimRequest
+        fields = ["id", "unit_number", "building_name", "user_name", "user_email", "status", "created_at"]
+        read_only_fields = fields
+
+    def get_user_name(self, obj):
+        return obj.user.get_full_name()

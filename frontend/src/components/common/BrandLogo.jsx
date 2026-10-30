@@ -15,7 +15,8 @@ export default function BrandLogo({ light = false, size = 36 }) {
       <Box component="img" src="/abem-app-icon.svg" alt="" sx={{ height: size, width: size, borderRadius: 1 }} />
       <Box sx={{ lineHeight: 1.1 }}>
         <Typography component="span" fontWeight={700} sx={{ display: "block", color, fontSize: size * 0.5, fontFamily: "Cairo, Inter, sans-serif" }}>
-          {BRAND.nameAr}
+          {BRAND.nameAr.replace(".كوم", "")}
+          <Box component="span" sx={{ color: light ? "#E27A4A" : "secondary.main" }}>.كوم</Box>
         </Typography>
         <Typography component="span" sx={{ display: "block", color, opacity: 0.7, fontSize: size * 0.33, letterSpacing: 0.5 }}>
           {BRAND.nameEn}

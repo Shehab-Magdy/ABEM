@@ -14,6 +14,7 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
+import { authApi } from "../../api/authApi";
 import { PublicSEO } from "../../components/seo/SEO";
 import LanguageSwitcher from "../../components/LanguageSwitcher";
 import BrandLogo from "../../components/common/BrandLogo";
@@ -28,10 +29,13 @@ export default function ForgotPasswordPage() {
     formState: { errors },
   } = useForm();
 
-  const onSubmit = async () => {
+  const onSubmit = async ({ email }) => {
     setIsLoading(true);
-    // TODO: Wire to backend forgot-password endpoint when available
-    await new Promise((r) => setTimeout(r, 1000));
+    try {
+      await authApi.forgotPassword(email);
+    } catch {
+      // The API answers the same either way; a network failure still shows the neutral message
+    }
     setIsLoading(false);
     setSubmitted(true);
   };

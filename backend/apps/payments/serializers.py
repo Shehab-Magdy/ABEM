@@ -10,7 +10,7 @@ from apps.apartments.models import Apartment
 from apps.buildings.models import Building
 from apps.expenses.models import ApartmentExpense, Expense
 
-from .models import AssetSale, BuildingAsset, Payment, PaymentExpense
+from .models import PaymentClaim, AssetSale, BuildingAsset, Payment, PaymentExpense
 
 
 class AssetSaleSerializer(serializers.ModelSerializer):
@@ -178,8 +178,31 @@ class PaymentSerializer(serializers.ModelSerializer):
         # Remove allocations from validated_data (handled by the view's perform_create)
         validated_data.pop("allocations", None)
         payment = Payment.objects.create(**validated_data)
-        # Create through-table rows for linked expenses (without allocation;
-        # allocations are set by the view after save if provided).
+        # Link the chosen expenses at 0; the view fills in the real allocation right after
+        # (a null allocation would be read as a legacy payment spread evenly).
         for expense in expenses:
-            PaymentExpense.objects.get_or_create(payment=payment, expense=expense)
+            PaymentExpense.objects.get_or_create(
+                payment=payment, expense=expense, defaults={"allocated_amount": Decimal("0.00")}
+            )
         return payment
+
+
+class PaymentClaimSerializer(serializers.ModelSerializer):
+    """A resident's "I paid" claim. Residents send apartment_id, amount and reference."""
+
+    apartment_id = serializers.PrimaryKeyRelatedField(source="apartment", queryset=Apartment.objects.all())
+    unit_number = serializers.CharField(source="apartment.unit_number", read_only=True)
+    building_name = serializers.CharField(source="apartment.building.name", read_only=True)
+
+    class Meta:
+        model = PaymentClaim
+        fields = [
+            "id", "apartment_id", "unit_number", "building_name",
+            "amount", "reference", "status", "created_at", "reviewed_at",
+        ]
+        read_only_fields = ["id", "status", "created_at", "reviewed_at"]
+
+    def validate_amount(self, value):
+        if value <= Decimal("0.00"):
+            raise serializers.ValidationError(_("amount must be greater than zero."))
+        return value

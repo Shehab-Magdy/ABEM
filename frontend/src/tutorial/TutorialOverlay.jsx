@@ -13,7 +13,7 @@
  *   2. In DashboardLayout (or any header component), render <TutorialButton />.
  *
  *   3. Every DOM element used as an anchor MUST carry the id listed in
- *      TUTORIAL_ANCHORS.md.  Search the codebase for those ids before removing
+ *      docs/TUTORIAL_ANCHORS.md.  Search the codebase for those ids before removing
  *      or renaming elements.
  *
  *   4. The tour role is auto-detected from the logged-in user's role.

@@ -1,5 +1,5 @@
 """Apartment / unit models."""
-import random
+import secrets
 import string
 import uuid
 from decimal import Decimal
@@ -93,7 +93,7 @@ class UnitInvitation(models.Model):
     def save(self, *args, **kwargs):
         if not self.registration_code:
             while True:
-                code = ''.join(random.choices(string.ascii_uppercase + string.digits, k=8))
+                code = ''.join(secrets.choice(string.ascii_uppercase + string.digits) for _ in range(8))
                 if not UnitInvitation.objects.filter(registration_code=code).exists():
                     self.registration_code = code
                     break
@@ -102,3 +102,37 @@ class UnitInvitation(models.Model):
     @property
     def is_valid(self):
         return self.used_at is None and self.expires_at > timezone.now()
+
+
+class ClaimStatus(models.TextChoices):
+    PENDING = "pending", "Pending"
+    APPROVED = "approved", "Approved"
+    REJECTED = "rejected", "Rejected"
+
+
+class UnitClaimRequest(models.Model):
+    """A resident asks to become the owner of a unit; the building's admin approves or rejects."""
+    objects: models.Manager["UnitClaimRequest"]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    apartment = models.ForeignKey(Apartment, on_delete=models.CASCADE, related_name="claim_requests")
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="unit_claim_requests")
+    status = models.CharField(max_length=10, choices=ClaimStatus.choices, default=ClaimStatus.PENDING)
+    created_at = models.DateTimeField(auto_now_add=True)
+    reviewed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
+    )
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["apartment", "user"],
+                condition=models.Q(status="pending"),
+                name="one_pending_claim_per_user_and_unit",
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.user} -> {self.apartment} ({self.status})"

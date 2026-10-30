@@ -4,7 +4,7 @@ ABEM – Production settings.
 from .base import *  # noqa: F401, F403
 import sentry_sdk
 from sentry_sdk.integrations.django import DjangoIntegration
-from decouple import config
+from decouple import Csv, config
 
 DEBUG = False
 
@@ -32,20 +32,14 @@ if SENTRY_DSN:
         send_default_pii=False,
     )
 
-ALLOWED_HOSTS = [
-    "https://abem-5.onrender.com",
-]
+# Host names only (no scheme). Override with DJANGO_ALLOWED_HOSTS if the host changes.
+ALLOWED_HOSTS = config("DJANGO_ALLOWED_HOSTS", default="3mara.com,www.3mara.com", cast=Csv())
 
-MIDDLEWARE = [
-    "django.contrib.sessions.middleware.SessionMiddleware",
-    "django.middleware.common.CommonMiddleware",
-    "django.middleware.csrf.CsrfViewMiddleware",
-    "django.contrib.auth.middleware.AuthenticationMiddleware",
-    "django.contrib.messages.middleware.MessageMiddleware",
-    "django.middleware.clickjacking.XFrameOptionsMiddleware",
-    "django.middleware.security.SecurityMiddleware",
-    "whitenoise.middleware.WhiteNoiseMiddleware"
-]
+# TLS is terminated by the proxy (nginx / hosting platform); trust its forwarded scheme
+# so SECURE_SSL_REDIRECT does not loop.
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
+# MIDDLEWARE is inherited from base.py (it already includes security, whitenoise, CORS and language).
 
 STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
@@ -54,6 +48,13 @@ STATICFILES_STORAGE = (
     "whitenoise.storage.CompressedManifestStaticFilesStorage"
 )
 
+CORS_ALLOWED_ORIGINS = config(
+    "CORS_ALLOWED_ORIGINS", default="https://3mara.com,https://www.3mara.com", cast=Csv()
+)
+CSRF_TRUSTED_ORIGINS = config(
+    "CSRF_TRUSTED_ORIGINS", default="https://3mara.com,https://www.3mara.com", cast=Csv()
+)
+# Vercel preview deployments of the frontend
 CORS_ALLOWED_ORIGIN_REGEXES = [
-    r"https://abem-.*\.vercel\.app",
+    r"^https://abem-.*\.vercel\.app$",
 ]

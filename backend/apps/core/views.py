@@ -10,7 +10,7 @@ class HealthCheckView(APIView):
     permission_classes = [AllowAny]
 
     def get(self, request):
-        return Response({"status": "ok", "service": "ABEM API"})
+        return Response({"status": "ok", "service": "3maracom API"})
 
 
 _SITEMAP_FILENAME = "sitemap.xml"
@@ -39,17 +39,17 @@ def sitemap_xml(_request):
     xml = """<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://abem.app/</loc>
+    <loc>https://3mara.com/</loc>
     <changefreq>monthly</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://abem.app/login</loc>
+    <loc>https://3mara.com/login</loc>
     <changefreq>yearly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://abem.app/register</loc>
+    <loc>https://3mara.com/register</loc>
     <changefreq>yearly</changefreq>
     <priority>0.7</priority>
   </url>

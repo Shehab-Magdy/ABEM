@@ -29,6 +29,9 @@ import { useTranslation } from "react-i18next";
 import axiosClient from "../../api/axiosClient";
 import { apartmentsApi } from "../../api/apartmentsApi";
 import { PrivateSEO } from "../../components/seo/SEO";
+import TreasuryCard from "../../components/TreasuryCard";
+import QuickActions from "../../components/QuickActions";
+import UnitClaimRequestsCard from "../../components/UnitClaimRequestsCard";
 import { formatCurrency } from "../../utils/formatters";
 
 const PAYMENT_METHOD_KEYS = {
@@ -101,11 +104,11 @@ export default function OwnerDashboardPage() {
       const status = err.response?.status;
       const detail = err.response?.data?.detail;
       if (status === 409) {
-        setCodeError("This unit has already been claimed by another owner.");
+        setCodeError(t("claim_err_taken"));
       } else if (status === 410) {
-        setCodeError("This code has already been used or has expired.");
+        setCodeError(t("claim_err_used"));
       } else {
-        setCodeError(detail || "Could not claim unit.");
+        setCodeError(detail || t("claim_err_generic"));
       }
     } finally {
       setClaiming(false);
@@ -150,6 +153,12 @@ export default function OwnerDashboardPage() {
         {t("owner_dashboard")}
       </Typography>
 
+      <UnitClaimRequestsCard />
+
+      <QuickActions />
+
+      <TreasuryCard />
+
       {/* ── Claim unit by code ── */}
       <Card variant="outlined" sx={{ mb: 3 }}>
         <CardContent sx={{ pb: claimOpen ? undefined : "16px !important" }}>
@@ -172,7 +181,8 @@ export default function OwnerDashboardPage() {
               )}
               {codeInfo && (
                 <Alert severity="success">
-                  Found: <strong>Unit {codeInfo.unit_number}</strong> in <strong>{codeInfo.building_name}</strong> — {codeInfo.building_city}
+                  {t("found_unit", { unit: codeInfo.unit_number, building: codeInfo.building_name })}
+                  {codeInfo.building_city ? ` — ${codeInfo.building_city}` : ""}
                 </Alert>
               )}
               <Stack direction="row" spacing={1} alignItems="flex-start">

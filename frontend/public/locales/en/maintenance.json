@@ -1,0 +1,22 @@
+{
+  "page_title": "Maintenance reports",
+  "report_title": "Quick maintenance report",
+  "building": "Building",
+  "category": "What is wrong?",
+  "description": "Details (optional)",
+  "send": "Send",
+  "sent": "Report sent. Your building admin will see it.",
+  "close": "Close",
+  "empty": "No reports yet.",
+  "load_error": "Could not load your details.",
+  "send_error": "Could not send the report.",
+  "cat_elevator": "Elevator",
+  "cat_stairs": "Stairs",
+  "cat_cleaning": "Cleaning",
+  "cat_electricity": "Electricity",
+  "cat_water": "Water",
+  "cat_other": "Other",
+  "status_open": "Open",
+  "status_in_progress": "In progress",
+  "status_done": "Done"
+}

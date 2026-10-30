@@ -50,9 +50,10 @@ frontend/.env
 logs/
 
 # ── Test artifacts (generated; not source) ─────────────────────────────────────
-abem-automation/screenshots/
-abem-automation/reports/
+tests/selenium-legacy/screenshots/
+tests/selenium-legacy/reports/
 
 # ── Claude Code ────────────────────────────────────────────────────────────────
 .claude/
 _agents_workspace/
+.playwright-mcp/

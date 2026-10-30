@@ -49,11 +49,12 @@ class BuildingViewSet(ModelViewSet):
         # Owners only see active buildings; admins see active + inactive (so they can reactivate)
         if not self.request.user.role == "admin":
             qs = qs.filter(is_active=True)
-        return qs.filter(
-            models.Q(admin=self.request.user)
-            | models.Q(co_admins=self.request.user)
-            | models.Q(members=self.request.user)
-        ).distinct()
+        if self.request.user.role == "admin":
+            # Admins only manage buildings they administer (primary admin or co-admin)
+            return qs.filter(
+                models.Q(admin=self.request.user) | models.Q(co_admins=self.request.user)
+            ).distinct()
+        return qs.filter(members=self.request.user).distinct()
 
     # ── Permissions ────────────────────────────────────────────────────────────
 
@@ -168,6 +169,90 @@ class BuildingViewSet(ModelViewSet):
             {"detail": _("User '%(email)s' assigned to building '%(name)s'.") % {"email": user.email, "name": building.name}},
             status=http_status,
         )
+
+    @action(detail=True, methods=["get"], url_path="statement", permission_classes=[IsAuthenticated])
+    def statement(self, request, pk=None):
+        """
+        GET /buildings/{id}/statement/?month=YYYY-MM[&file_format=pdf]
+        Monthly statement: opening balance, money received, expenses, closing balance and which units
+        paid. Read-only; visible to the building's admins and residents. Units are shown by number only.
+        """
+        from django.http import HttpResponse
+
+        from .statement import build_statement, parse_month, render_statement_pdf
+
+        building = self.get_object()
+        try:
+            first_day = parse_month(request.query_params.get("month"))
+        except (ValueError, TypeError):
+            return Response({"detail": _("month must look like 2026-10.")}, status=400)
+
+        data = build_statement(building, first_day)
+        if (request.query_params.get("file_format") or "").lower() == "pdf":
+            lang = getattr(request.user, "preferred_language", None) or "ar"
+            try:
+                pdf = render_statement_pdf(data, lang)
+            except Exception as exc:  # WeasyPrint or its system libraries missing
+                return Response({"detail": f"PDF generation failed: {exc}"}, status=503)
+            response = HttpResponse(pdf, content_type="application/pdf")
+            response["Content-Disposition"] = f'inline; filename="statement_{data["month"]}.pdf"'
+            return response
+
+        def money(value):
+            return str(value)
+
+        return Response({
+            "building": data["building"],
+            "month": data["month"],
+            "opening_balance": money(data["opening_balance"]),
+            "total_received": money(data["total_received"]),
+            "total_expenses": money(data["total_expenses"]),
+            "closing_balance": money(data["closing_balance"]),
+            "received": [{**r, "amount": money(r["amount"])} for r in data["received"]],
+            "expenses": [{**e, "amount": money(e["amount"])} for e in data["expenses"]],
+            "units": [{**u, "balance_due": money(u["balance_due"])} for u in data["units"]],
+            "units_paid": data["units_paid"],
+            "units_total": data["units_total"],
+        })
+
+    @action(detail=True, methods=["get"], url_path="treasury", permission_classes=[IsAuthenticated])
+    def treasury(self, request, pk=None):
+        """
+        GET /buildings/{id}/treasury/
+        The building's current balance (خزينة العمارة): starting balance + payments received
+        + asset sales - expenses. Read-only; visible to the building's admins and its residents.
+        """
+        from decimal import Decimal
+
+        from django.db.models import Sum
+
+        from apps.apartments.models import Apartment
+        from apps.expenses.models import ApartmentExpense, Expense
+        from apps.payments.models import AssetSale, Payment
+
+        building = self.get_object()
+        zero = Decimal("0.00")
+        received = Payment.objects.filter(apartment__building=building).aggregate(s=Sum("amount_paid"))["s"] or zero
+        sales = AssetSale.objects.filter(asset__building=building).aggregate(s=Sum("sale_price"))["s"] or zero
+        spent = (
+            Expense.objects.filter(building=building, deleted_at__isnull=True).aggregate(s=Sum("amount"))["s"] or zero
+        )
+        billed_ids = list(
+            ApartmentExpense.objects.filter(expense__building=building, expense__deleted_at__isnull=True)
+            .values_list("apartment_id", flat=True)
+            .distinct()
+        )
+        paid_units = Apartment.objects.filter(id__in=billed_ids, balance__lte=0).count()
+
+        return Response({
+            "building_id": str(building.pk),
+            "balance": str(building.starting_balance + received + sales - spent),
+            "starting_balance": str(building.starting_balance),
+            "total_received": str(received + sales),
+            "total_expenses": str(spent),
+            "units_billed": len(billed_ids),
+            "units_paid": paid_units,
+        })
 
     @action(
         detail=True,

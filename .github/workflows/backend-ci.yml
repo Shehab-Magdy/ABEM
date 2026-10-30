@@ -56,15 +56,6 @@ jobs:
           --health-timeout 5s
           --health-retries 5
 
-      redis:
-        image: redis:7-alpine
-        ports:
-          - 6379:6379
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
 
     env:
       DJANGO_SECRET_KEY: ci-test-secret-key-not-for-production
@@ -75,7 +66,6 @@ jobs:
       POSTGRES_PASSWORD: testpassword
       POSTGRES_HOST: localhost
       POSTGRES_PORT: "5432"
-      REDIS_URL: redis://localhost:6379/0
       CLOUDINARY_CLOUD_NAME: test
       CLOUDINARY_API_KEY: test
       CLOUDINARY_API_SECRET: test

@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useForm, Controller } from "react-hook-form";
 import {
@@ -9,6 +10,10 @@ import {
   Card,
   CardContent,
   CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   FormControl,
   IconButton,
   InputLabel,
@@ -98,6 +103,27 @@ export default function ProfilePage() {
       setPwError(typeof detail === "string" ? detail : "Failed to change password.");
     } finally {
       setSavingPw(false);
+    }
+  };
+
+  // ── Delete my account ───────────────────────────────────────────────────────
+  const navigate = useNavigate();
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deletePw, setDeletePw] = useState("");
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState(null);
+
+  const handleDeleteAccount = async () => {
+    setDeleting(true);
+    setDeleteError(null);
+    try {
+      await authApi.deleteAccount(deletePw);
+      useAuthStore.getState().logout();
+      navigate("/login", { replace: true });
+    } catch (err) {
+      setDeleteError(err.response?.data?.detail || t("errors:server_error"));
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -304,6 +330,33 @@ export default function ProfilePage() {
           </Box>
         </CardContent>
       </Card>
+
+      {/* ── Delete my account ── */}
+      <Card sx={{ mt: 3, border: "1px solid", borderColor: "error.light" }}>
+        <CardContent>
+          <Typography variant="h6" color="error" gutterBottom>{t("delete_account")}</Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>{t("delete_account_help")}</Typography>
+          <Button variant="outlined" color="error" onClick={() => { setDeleteOpen(true); setDeleteError(null); setDeletePw(""); }} sx={{ minHeight: 44 }}>
+            {t("delete_account")}
+          </Button>
+        </CardContent>
+      </Card>
+      <Dialog open={deleteOpen} onClose={() => setDeleteOpen(false)} fullWidth maxWidth="xs">
+        <DialogTitle>{t("delete_account_confirm_title")}</DialogTitle>
+        <DialogContent>
+          <Stack spacing={2} sx={{ mt: 1 }}>
+            {deleteError && <Alert severity="error">{deleteError}</Alert>}
+            <Typography variant="body2">{t("delete_account_confirm_text")}</Typography>
+            <TextField type="password" label={t("currentPassword")} value={deletePw} onChange={(e) => setDeletePw(e.target.value)} autoComplete="current-password" />
+          </Stack>
+        </DialogContent>
+        <DialogActions sx={{ p: 2 }}>
+          <Button onClick={() => setDeleteOpen(false)} sx={{ minHeight: 44 }}>{t("cancel")}</Button>
+          <Button color="error" variant="contained" disabled={deleting || !deletePw} onClick={handleDeleteAccount} sx={{ minHeight: 44 }}>
+            {deleting ? <CircularProgress size={22} color="inherit" /> : t("delete_account_confirm")}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
     </Box>
     </>
