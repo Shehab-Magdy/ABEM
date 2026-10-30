@@ -82,3 +82,12 @@ def test_a_deleted_account_cannot_sign_in(owner_user, api_client):
     _client(owner_user).post("/api/v1/auth/delete-account/", {"password": "OwnerPass1!"}, format="json")
     resp = api_client.post("/api/v1/auth/login/", {"email": "owner@abem.test", "password": "OwnerPass1!"}, format="json")
     assert resp.status_code in (400, 401, 403)
+
+
+def test_api_errors_come_back_in_arabic_when_asked(owner_user):
+    client = _client(owner_user)
+    resp = client.post(
+        "/api/v1/auth/delete-account/", {"password": "wrong"}, format="json", HTTP_ACCEPT_LANGUAGE="ar"
+    )
+    assert resp.status_code == 400
+    assert resp.data["detail"] == "كلمة المرور غير صحيحة."

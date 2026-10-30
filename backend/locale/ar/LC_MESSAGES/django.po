@@ -443,3 +443,107 @@ msgstr "English"
 #: config/settings/base.py:129
 msgid "العربية"
 msgstr "العربية"
+
+# Messages added with the payments, invites, reminders and account features
+
+msgid "Allocated amount cannot be negative."
+msgstr "لا يمكن أن يكون المبلغ المخصّص سالباً."
+
+msgid "Allocation for '%(title)s' (%(value)s) is more than this apartment still owes (%(remaining)s)."
+msgstr "المبلغ المخصّص للمصروف «%(title)s» (%(value)s) أكبر مما لا يزال مستحقاً على هذه الوحدة (%(remaining)s)."
+
+msgid "An allocated expense is not owed by this apartment (or is already paid)."
+msgstr "أحد المصروفات المخصّص لها مبلغ غير مستحق على هذه الوحدة (أو مدفوع بالفعل)."
+
+msgid "Cleaning"
+msgstr "النظافة"
+
+msgid "Confirmed"
+msgstr "مؤكَّد"
+
+msgid "Done"
+msgstr "تم"
+
+msgid "Due soon"
+msgstr "يستحق قريباً"
+
+msgid "Each allocation needs a valid amount."
+msgstr "يلزم لكل تخصيص مبلغ صحيح."
+
+msgid "Each expense can appear only once."
+msgstr "يمكن ذكر كل مصروف مرة واحدة فقط."
+
+msgid "Electricity"
+msgstr "الكهرباء"
+
+msgid "Elevator"
+msgstr "المصعد"
+
+msgid "If that email is registered, a reset link has been sent."
+msgstr "إذا كان هذا البريد مسجلاً لدينا فقد أرسلنا إليه رابط إعادة التعيين."
+
+msgid "In progress"
+msgstr "جاري الإصلاح"
+
+msgid "InstaPay"
+msgstr "إنستا باي"
+
+msgid "InstaPay transfer reference"
+msgstr "رقم عملية التحويل عبر إنستا باي"
+
+msgid "Open"
+msgstr "مفتوح"
+
+msgid "Password has been reset. You can now sign in."
+msgstr "تمت إعادة تعيين كلمة المرور. يمكنك تسجيل الدخول الآن."
+
+msgid "Password is incorrect."
+msgstr "كلمة المرور غير صحيحة."
+
+msgid "Pending"
+msgstr "قيد الانتظار"
+
+msgid "Rejected"
+msgstr "مرفوض"
+
+msgid "Request sent. The building admin will review it."
+msgstr "تم إرسال الطلب. سيراجعه مدير العمارة."
+
+msgid "Stairs"
+msgstr "السلم"
+
+msgid "This claim was already reviewed."
+msgstr "تمت مراجعة هذا الطلب من قبل."
+
+msgid "This invite was sent to a different email address."
+msgstr "هذه الدعوة أُرسلت إلى بريد إلكتروني آخر."
+
+msgid "This request was already reviewed."
+msgstr "تمت مراجعة هذا الطلب من قبل."
+
+msgid "This reset link is invalid or has expired."
+msgstr "رابط إعادة التعيين غير صالح أو انتهت صلاحيته."
+
+msgid "Total allocated (%(sum)s) cannot exceed amount paid (%(amount)s)."
+msgstr "مجموع المبالغ المخصّصة (%(sum)s) لا يمكن أن يزيد على المبلغ المدفوع (%(amount)s)."
+
+msgid "Water"
+msgstr "المياه"
+
+msgid "You already asked to claim this unit."
+msgstr "لقد طلبت الانضمام إلى هذه الوحدة من قبل."
+
+msgid "You are the administrator of a building. Hand it over to another admin before deleting your account."
+msgstr "أنت مدير لإحدى العمارات. سلّمها لمدير آخر قبل حذف حسابك."
+
+msgid "You must accept the Terms of Service and Privacy Policy."
+msgstr "يجب الموافقة على شروط الاستخدام وسياسة الخصوصية."
+
+msgid "Your account has been deleted."
+msgstr "تم حذف حسابك."
+
+msgid "amount must be greater than zero."
+msgstr "يجب أن يكون المبلغ أكبر من صفر."
+
+msgid "month must look like 2026-10."
+msgstr "الشهر يجب أن يكون بصيغة 2026-10."
