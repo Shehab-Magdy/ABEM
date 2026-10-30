@@ -4,6 +4,7 @@ export const paymentsApi = {
   list: (params, { signal } = {}) => axiosClient.get("/payments/", { params, signal }),
   get: (id, { signal } = {}) => axiosClient.get(`/payments/${id}/`, { signal }),
   create: (data) => axiosClient.post("/payments/", data),
+  reverse: (id, reason) => axiosClient.post(`/payments/${id}/reverse/`, { reason }),
   getApartmentBalance: (apartmentId, { signal } = {}) =>
     axiosClient.get(`/apartments/${apartmentId}/balance/`, { signal }),
   /** InstaPay display-and-confirm: residents report a transfer, admins confirm it. */

@@ -115,6 +115,26 @@ export default function PaymentsPage() {
   const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
   const [dialogExpenses, setDialogExpenses] = useState([]);
   const [loadingReceipt, setLoadingReceipt] = useState(null); // payment id currently generating
+  const [reverseTarget, setReverseTarget] = useState(null); // payment being reversed
+  const [reverseReason, setReverseReason] = useState("");
+  const [reversing, setReversing] = useState(false);
+
+  const handleReverse = async () => {
+    setReversing(true);
+    try {
+      await paymentsApi.reverse(reverseTarget.id, reverseReason.trim());
+      setReverseTarget(null);
+      setReverseReason("");
+      setSnackbar({ open: true, message: t("reverseDone"), severity: "success" });
+      await Promise.all([loadPayments(selectedApartment), loadBalance(selectedApartment)]);
+    } catch (err) {
+      const data = err?.response?.data;
+      const msg = data?.reason?.[0] ?? data?.detail ?? t("reverseError");
+      setSnackbar({ open: true, message: msg, severity: "error" });
+    } finally {
+      setReversing(false);
+    }
+  };
 
   // ── Data fetching ────────────────────────────────────────────────────────────
 
@@ -407,6 +427,7 @@ export default function PaymentsPage() {
           <TableHead>
             <TableRow sx={{ backgroundColor: "primary.main" }}>
               {[
+                { key: "colReceiptNo", label: t("colReceiptNo") },
                 { key: "colDate", label: t("colDate") },
                 { key: "colAmount", label: t("colAmount") },
                 { key: "colMethod", label: t("colMethod") },
@@ -423,13 +444,13 @@ export default function PaymentsPage() {
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={6} align="center" sx={{ py: 4 }}>
+                <TableCell colSpan={7} align="center" sx={{ py: 4 }}>
                   <CircularProgress size={28} />
                 </TableCell>
               </TableRow>
             ) : payments.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={isAdmin ? 6 : 5} align="center" sx={{ py: 4, color: "text.secondary" }}>
+                <TableCell colSpan={7} align="center" sx={{ py: 4, color: "text.secondary" }}>
                   {selectedApartment
                     ? t("noPaymentHistory")
                     : t("selectApartmentPrompt")}
@@ -437,7 +458,14 @@ export default function PaymentsPage() {
               </TableRow>
             ) : (
               payments.map((p) => (
-                <TableRow key={p.id} hover>
+                <TableRow key={p.id} hover sx={p.is_voided ? { opacity: 0.6 } : undefined}>
+                  <TableCell>
+                    {p.receipt_no ? `#${p.receipt_no}` : "—"}
+                    {p.is_voided && <Chip label={t("voided")} color="error" size="small" sx={{ ml: 1 }} />}
+                    {p.is_reversal && (
+                      <Chip label={t("reversal")} color="warning" size="small" sx={{ ml: 1 }} title={p.reversal_reason} />
+                    )}
+                  </TableCell>
                   <TableCell>{p.payment_date}</TableCell>
                   <TableCell>{parseFloat(p.amount_paid).toFixed(2)}</TableCell>
                   <TableCell>{methodLabel(p.payment_method, t)}</TableCell>
@@ -526,6 +554,17 @@ export default function PaymentsPage() {
                     >
                       {loadingReceipt === p.id ? t("generating") : t("colReceipt")}
                     </Button>
+                    {isAdmin && !p.is_voided && !p.is_reversal && (
+                      <Button
+                        size="small"
+                        color="error"
+                        sx={{ ml: 1 }}
+                        data-testid="reverse-payment"
+                        onClick={() => setReverseTarget(p)}
+                      >
+                        {t("reverse")}
+                      </Button>
+                    )}
                   </TableCell>
                 </TableRow>
               ))
@@ -733,6 +772,32 @@ export default function PaymentsPage() {
             disabled={saving || !form.amount_paid || !form.payment_date || !form.apartment_id || (form.payment_method === "other" && !form.other_method_detail) || allocationExceeds}
           >
             {saving ? <CircularProgress size={18} /> : t("record")}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Reverse payment dialog */}
+      <Dialog open={Boolean(reverseTarget)} onClose={() => setReverseTarget(null)} maxWidth="xs" fullWidth>
+        <DialogTitle>{t("reverseTitle")}</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" sx={{ mb: 2 }}>
+            {t("reverseHint")}
+          </Typography>
+          <TextField
+            autoFocus
+            fullWidth
+            multiline
+            minRows={2}
+            label={t("reverseReason")}
+            value={reverseReason}
+            onChange={(e) => setReverseReason(e.target.value)}
+            inputProps={{ "data-testid": "reverse-reason" }}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setReverseTarget(null)}>{t("cancel")}</Button>
+          <Button color="error" variant="contained" disabled={reversing || !reverseReason.trim()} onClick={handleReverse}>
+            {reversing ? <CircularProgress size={18} /> : t("reverse")}
           </Button>
         </DialogActions>
       </Dialog>

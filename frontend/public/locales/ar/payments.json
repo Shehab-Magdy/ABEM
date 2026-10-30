@@ -93,5 +93,14 @@
   "pay_send_error": "تعذّر إرسال الطلب.",
   "claims_title": "{{count}} تحويل إنستا باي بانتظار التأكيد",
   "claims_confirm": "تأكيد",
-  "claims_reject": "رفض"
+  "claims_reject": "رفض",
+  "colReceiptNo": "رقم الإيصال",
+  "voided": "ملغي",
+  "reversal": "إلغاء",
+  "reverse": "إلغاء الدفعة",
+  "reverseTitle": "إلغاء هذه الدفعة",
+  "reverseHint": "الإلغاء لا يحذف الدفعة. يضيف قيداً سالباً مرتبطاً بها ويعيد المبلغ إلى رصيد الوحدة.",
+  "reverseReason": "السبب (مطلوب)",
+  "reverseDone": "تم إلغاء الدفعة.",
+  "reverseError": "تعذر إلغاء الدفعة."
 }
