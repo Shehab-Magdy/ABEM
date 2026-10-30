@@ -975,6 +975,7 @@ python manage.py send_payment_reminders        # due-soon (3 days before) and ov
 python manage.py bill_subscriptions            # charges each unit its monthly subscription on the billing day
 python manage.py apply_late_fees               # adds a late fee to overdue subscription shares (buildings that use them)
 python manage.py finalize_polls                # settles expense-approval votes whose time is up
+python manage.py send_plan_reminders           # tells building admins their plan or trial is ending, and when billing stops
 python manage.py send_obligation_reminders     # reminds admins and the board of obligations coming due and contracts ending
 ```
 
@@ -982,7 +983,7 @@ Run it from whatever scheduler your host provides (both are safe to run more tha
 
 | Host | How |
 |------|-----|
-| Docker on a VPS | `crontab -e` → `5 2 * * * cd /opt/abem && docker compose -f docker-compose.prod.yml exec -T backend sh -c 'python manage.py generate_recurring_expenses && python manage.py bill_subscriptions && python manage.py apply_late_fees && python manage.py finalize_polls && python manage.py send_obligation_reminders && python manage.py send_payment_reminders'` |
+| Docker on a VPS | `crontab -e` → `5 2 * * * cd /opt/abem && docker compose -f docker-compose.prod.yml exec -T backend sh -c 'python manage.py generate_recurring_expenses && python manage.py bill_subscriptions && python manage.py apply_late_fees && python manage.py finalize_polls && python manage.py send_obligation_reminders && python manage.py send_plan_reminders && python manage.py send_payment_reminders'` |
 | Render / Railway | Add a **Cron Job** that runs the six commands daily (billing and fees before reminders) |
 | Anything else | GitHub Actions `schedule`, systemd timer, or a cloud scheduler calling the same command |
 
@@ -1122,21 +1123,23 @@ docker stats
 
 ## 17. Post-Deployment Smoke Tests
 
-Run the Sprint 10 smoke suite immediately after every deployment:
+Run the Playwright smoke suite immediately after every deployment:
 
 ```bash
-cd /opt/abem/tests/selenium-legacy
-source .venv/bin/activate
+cd /opt/abem/tests/playwright
+python -m venv .venv && source .venv/bin/activate   # first time only
+pip install -r requirements.txt && playwright install chromium
 
-# Point at production
-export TEST_ENV=production          # or set in environments.yaml
+# Point at production (or set these in tests/playwright/.env)
+export API_BASE_URL=https://abem.yourdomain.com
+export BASE_URL=https://abem.yourdomain.com
 
-# Run all 15 smoke tests (should complete in < 60 seconds)
-pytest -m smoke --tb=short -q
-
-# Expected output:
-# 15 passed in Xs
+# Run the smoke tests (API-only, should complete in < 60 seconds)
+pytest tests/smoke/ -m smoke --tb=short -q
 ```
+
+The suite logs in with `ADMIN_EMAIL`/`ADMIN_PASSWORD` and the owner equivalents
+from `tests/playwright/config/settings.py`; use a dedicated smoke account on production.
 
 ### Manual Verification Checklist
 

@@ -721,3 +721,6 @@ msgstr "المساحة يجب أن تكون رقماً موجباً."
 
 msgid "category must be one of: %(names)s."
 msgstr "الفئة يجب أن تكون إحدى: %(names)s."
+
+msgid "year must look like 2026."
+msgstr "السنة يجب أن تكون بالشكل 2026."

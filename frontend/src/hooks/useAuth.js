@@ -11,6 +11,7 @@ export function useAuth() {
     accessToken,
     isAuthenticated: !!accessToken,
     isAdmin: user?.role === "admin",
+    isPlatformOwner: !!user?.is_platform_owner,
     isOwner: user?.role === "owner",
     login,
     logout,

@@ -935,19 +935,19 @@ Phases are delivered in order; within a phase, requirements are independent unle
 
 ### 11.5 Phase 4 — Business & Scale
 
-**R-14 Plans & pricing** — 🔲 Planned. Define the commercial model: a free tier up to N units per building with paid features (for example WhatsApp reminders and statements, multiple buildings, board roles). Limits are enforced by the platform and explained in the app. *Open decision:* tier boundaries and prices.
+**R-14 Plans & pricing** — ✅ Done. Plans are data (`Plan`), edited by platform owners on the Platform page or Django admin: names, monthly/yearly price, unit limit (empty = unlimited) and features (`subscriptions`, `annual_report`). Seeded: Free (10 units), Standard 99/990 EGP (40 units, subscriptions), Plus 249/2490 EGP (unlimited, adds annual report). Each building has its own plan; new buildings get a trial of the top plan (`PlatformSettings.trial_days`, default 14); a lapsed paid plan falls back to Free. Limits are enforced on creating units (single and CSV) and on the gated features; nothing existing is deleted when a limit is passed. Admin page: "Plan". After a paid plan or trial ends, monthly billing and late fees keep running for `PlatformSettings.grace_days` (default 7) and then stop; building admins are reminded at 7, 3, 1 and 0 days before the end and when billing stops (`send_plan_reminders`, run daily).
 
-**R-15 Platform billing** — 🔲 Planned. Charging buildings for 3maracom: subscription state per building, invoices, grace period and downgrade rules. Depends on R-14.
+**R-15 Platform billing** — ✅ Done (manual). A building admin picks a plan and period, sends the amount to the platform InstaPay address (`PlatformSettings.instapay_address`) and reports the reference (`PlanPayment`, price frozen at request). A platform owner confirms or rejects it on the Platform page; confirming sets the plan and extends `paid_until` by one period (from the old end date while still running). Invoices and gateway charging stay with R-16.
 
 **R-16 Payment gateway integration** — ⏸ Deferred until demand is proven. Replace InstaPay "display and confirm" with an integrated flow (card, wallet or InstaPay through a licensed aggregator), automatic reconciliation of payments, and receipts without manual admin confirmation. Needs a provider decision and, likely, legal and fee review.
 
-**R-17 Product analytics & platform KPIs** — 🔲 Planned. Privacy-respecting usage events (sign-ups, activation, payments recorded, reminders sent, monthly active buildings) and an internal dashboard so the business can see which buildings are healthy.
+**R-17 Product analytics & platform KPIs** — ✅ Done (`GET /analytics/platform/`, superusers only, derived from existing data; "Platform" page). Privacy-respecting usage events (sign-ups, activation, payments recorded, reminders sent, monthly active buildings) and an internal dashboard so the business can see which buildings are healthy.
 
-**R-18 Support channel** — 🔲 Planned. An in-app help entry (WhatsApp or email), an FAQ in Arabic, and a way to attach a screenshot to a problem report.
+**R-18 Support channel** — ✅ Done (Help page with Arabic FAQ, email/WhatsApp buttons, problem report with screenshot stored as `SupportTicket`, read in Django admin and emailed to `SUPPORT_EMAIL`; set `BRAND.supportWhatsapp` to show the WhatsApp button). An in-app help entry (WhatsApp or email), an FAQ in Arabic, and a way to attach a screenshot to a problem report.
 
 **R-19 Store distribution** — 🔲 Planned. Optional Google Play listing by wrapping the PWA (Trusted Web Activity) once a production domain exists; iOS requires a native wrapper and Apple review and is a separate decision.
 
-**R-20 Annual report** — 🔲 Planned. A yearly summary for the general assembly: collections by month, expenses by category, balance sheet and unpaid dues, as PDF.
+**R-20 Annual report** — ✅ Done (`GET /buildings/{id}/annual-report/?year=**R-20 Annual report** — 🔲 Planned.file_format=pdf`; "Annual" tab on the statement page). A yearly summary for the general assembly: collections by month, expenses by category, balance sheet and unpaid dues, as PDF.
 
 ### 11.6 Deferred and not planned
 

@@ -38,6 +38,10 @@ def units(building, owner_user):
 
 @pytest.fixture
 def plan(building):
+    from apps.plans.models import BuildingPlan
+
+    # a paid plan, so the test dates below are not past the new-building trial
+    BuildingPlan.objects.create(building=building, plan_id="standard", paid_until=date(2027, 12, 31))
     return SubscriptionPlan.objects.create(
         building=building, amount=Decimal("150.00"), billing_day=5, due_days=10, starts_on=date(2026, 10, 1)
     )

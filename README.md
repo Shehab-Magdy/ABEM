@@ -46,8 +46,7 @@ Multi-tenant financial management platform for managing buildings, apartments, s
 │       ├── routes/             # Protected route setup
 │       └── theme/              # MUI theme
 ├── tests/
-│   ├── playwright/             # Active black-box suite: api / ui / e2e / db / smoke / load
-│   └── selenium-legacy/        # Older sprint-based Selenium suite (sprint_0 – sprint_10)
+│   └── playwright/             # Black-box suite: api / ui / e2e / db / smoke / load
 ├── docs/
 │   ├── DEPLOYMENT.md           # Step-by-step production deployment guide
 │   ├── FEATURES.md             # Feature inventory
@@ -156,26 +155,14 @@ All endpoints require **Bearer JWT** authentication (except `/auth/login/` and `
 ### Run Automation Suite
 
 ```bash
-cd tests/selenium-legacy
-python -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
+./scripts/test.sh [smoke|api|ui|e2e|db]   # creates tests/playwright/.venv on first run
 ```
 
 ```bash
-# All tests
-pytest
-
-# By sprint
-pytest -m sprint_10
-
-# Smoke tests only (post-deployment gate — 15 tests, < 60 seconds)
-pytest -m smoke --tb=short -q
-
-# API tests only
-pytest -m api
-
-# Full regression run (all 480+ tests)
-pytest --tb=short -q
+cd tests/playwright
+pytest tests/smoke/ -m smoke --tb=short -q   # post-deployment gate
+pytest tests/api -m api                      # API tests only
+pytest tests --tb=short -q                   # full regression run
 ```
 
 ### By Layer

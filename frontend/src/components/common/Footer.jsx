@@ -6,10 +6,19 @@ import { Box, Container, Divider, Grid, Link, Stack, Typography } from "@mui/mat
 import { Link as RouterLink } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import BrandLogo from "./BrandLogo";
+import { BRAND } from "../../brand";
+import { useAuth } from "../../hooks/useAuth";
+
+const RESIDENT_LINKS = [["/dashboard", "dashboard"], ["/expenses", "expenses"], ["/payments", "payments"]];
+const ADMIN_LINKS = [["/dashboard", "dashboard"], ["/buildings", "buildings"], ["/expenses", "expenses"], ["/payments", "payments"]];
+const MANAGEMENT_LINKS = [["/users", "users"], ["/assets", "assets"], ["/expense-categories", "categories"]];
 
 export default function Footer() {
   const { t } = useTranslation("common");
+  const { isAdmin } = useAuth();
   const year = new Date().getFullYear();
+  const productLinks = isAdmin ? ADMIN_LINKS : RESIDENT_LINKS;
+  const managementLinks = MANAGEMENT_LINKS;
 
   return (
     <Box
@@ -33,47 +42,38 @@ export default function Footer() {
             </Typography>
           </Grid>
 
-          {/* Product */}
-          <Grid item xs={6} sm={3} md={2}>
+          {/* Product: residents only see what they can open */}
+          <Grid item xs={6} sm={3} md={3}>
             <Typography variant="subtitle2" fontWeight={600} gutterBottom>
               {t("footer_product", "Product")}
             </Typography>
             <Stack spacing={0.75}>
-              <Link component={RouterLink} to="/dashboard" variant="body2" color="text.secondary" underline="hover">
-                {t("dashboard")}
-              </Link>
-              <Link component={RouterLink} to="/buildings" variant="body2" color="text.secondary" underline="hover">
-                {t("buildings")}
-              </Link>
-              <Link component={RouterLink} to="/expenses" variant="body2" color="text.secondary" underline="hover">
-                {t("expenses")}
-              </Link>
-              <Link component={RouterLink} to="/payments" variant="body2" color="text.secondary" underline="hover">
-                {t("payments")}
-              </Link>
+              {productLinks.map(([to, key]) => (
+                <Link key={to} component={RouterLink} to={to} variant="body2" color="text.secondary" underline="hover">
+                  {t(key)}
+                </Link>
+              ))}
             </Stack>
           </Grid>
 
-          {/* Management */}
-          <Grid item xs={6} sm={3} md={2}>
-            <Typography variant="subtitle2" fontWeight={600} gutterBottom>
-              {t("footer_management", "Management")}
-            </Typography>
-            <Stack spacing={0.75}>
-              <Link component={RouterLink} to="/users" variant="body2" color="text.secondary" underline="hover">
-                {t("users")}
-              </Link>
-              <Link component={RouterLink} to="/assets" variant="body2" color="text.secondary" underline="hover">
-                {t("assets")}
-              </Link>
-              <Link component={RouterLink} to="/expense-categories" variant="body2" color="text.secondary" underline="hover">
-                {t("categories")}
-              </Link>
-            </Stack>
-          </Grid>
+          {/* Management: admins only */}
+          {isAdmin && (
+            <Grid item xs={6} sm={3} md={3}>
+              <Typography variant="subtitle2" fontWeight={600} gutterBottom>
+                {t("footer_management", "Management")}
+              </Typography>
+              <Stack spacing={0.75}>
+                {managementLinks.map(([to, key]) => (
+                  <Link key={to} component={RouterLink} to={to} variant="body2" color="text.secondary" underline="hover">
+                    {t(key)}
+                  </Link>
+                ))}
+              </Stack>
+            </Grid>
+          )}
 
           {/* Account */}
-          <Grid item xs={6} sm={3} md={2}>
+          <Grid item xs={6} sm={3} md={3}>
             <Typography variant="subtitle2" fontWeight={600} gutterBottom>
               {t("account_section")}
             </Typography>
@@ -84,27 +84,11 @@ export default function Footer() {
               <Link component={RouterLink} to="/notifications" variant="body2" color="text.secondary" underline="hover">
                 {t("notifications")}
               </Link>
-            </Stack>
-          </Grid>
-
-          {/* Coming Soon */}
-          <Grid item xs={6} sm={3} md={3}>
-            <Typography variant="subtitle2" fontWeight={600} gutterBottom>
-              {t("footer_coming_soon", "Coming Soon")}
-            </Typography>
-            <Stack spacing={0.75}>
-              <Typography variant="body2" color="text.disabled">
-                {t("footer_mobile_app", "Mobile App (iOS & Android)")}
-              </Typography>
-              <Typography variant="body2" color="text.disabled">
-                {t("footer_reports", "Advanced Reports")}
-              </Typography>
-              <Typography variant="body2" color="text.disabled">
-                {t("footer_integrations", "Payment Gateway Integration")}
-              </Typography>
-              <Typography variant="body2" color="text.disabled">
-                {t("footer_multi_currency", "Multi-Currency Support")}
-              </Typography>
+              {BRAND.supportEmail && (
+                <Link href={`mailto:${BRAND.supportEmail}`} variant="body2" color="text.secondary" underline="hover">
+                  {t("footer_support", "Support")}
+                </Link>
+              )}
             </Stack>
           </Grid>
         </Grid>

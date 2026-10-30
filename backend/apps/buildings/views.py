@@ -260,6 +260,12 @@ class BuildingViewSet(ModelViewSet):
         errors = sum(1 for r in report if not r["ok"])
         created = 0
         if str(request.data.get("commit", "")).lower() == "true" and errors == 0:
+            from apps.plans.services import unit_room
+
+            if not unit_room(building, len(clean)):
+                return Response(
+                    {"detail": _("Your plan's unit limit is reached. Upgrade the plan to add more units.")}, status=403
+                )
             with transaction.atomic():
                 Apartment.objects.bulk_create(clean)
             created = len(clean)
@@ -343,6 +349,11 @@ class BuildingViewSet(ModelViewSet):
         if request.method == "GET":
             return Response({"plan": out(plan)})  # POST below creates or updates the plan
 
+        from apps.plans.services import has_feature
+
+        if not has_feature(building, "subscriptions"):
+            return Response({"detail": _("Monthly subscription billing is part of the Standard and Plus plans.")}, status=403)
+
         data = request.data
         try:
             amount = Decimal(str(data.get("amount")))
@@ -423,6 +434,58 @@ class BuildingViewSet(ModelViewSet):
             "units": [{**u, "balance_due": money(u["balance_due"])} for u in data["units"]],
             "units_paid": data["units_paid"],
             "units_total": data["units_total"],
+        })
+
+    @action(detail=True, methods=["get"], url_path="annual-report", permission_classes=[IsAuthenticated])
+    def annual_report(self, request, pk=None):
+        """
+        GET /buildings/{id}/annual-report/?year=YYYY[&file_format=pdf]
+        The year for the general assembly: collections and expenses by month, expenses by category,
+        opening/closing balance and unpaid dues. Read-only; visible to the building's admins and residents.
+        """
+        from datetime import date
+
+        from django.http import HttpResponse
+
+        from .annual import build_annual_report, render_annual_pdf
+
+        building = self.get_object()
+        from apps.plans.services import has_feature
+
+        if not has_feature(building, "annual_report"):
+            return Response({"detail": _("The annual report is part of the Plus plan.")}, status=403)
+        try:
+            year = int(request.query_params.get("year") or date.today().year)
+            if not 2000 <= year <= 2100:
+                raise ValueError
+        except ValueError:
+            return Response({"detail": _("year must look like 2026.")}, status=400)
+
+        data = build_annual_report(building, year)
+        if (request.query_params.get("file_format") or "").lower() == "pdf":
+            lang = getattr(request.user, "preferred_language", None) or "ar"
+            try:
+                pdf = render_annual_pdf(data, lang)
+            except Exception as exc:  # WeasyPrint or its system libraries missing
+                return Response({"detail": f"PDF generation failed: {exc}"}, status=503)
+            response = HttpResponse(pdf, content_type="application/pdf")
+            response["Content-Disposition"] = f'inline; filename="annual_report_{year}.pdf"'
+            return response
+
+        def money(value):
+            return str(value)
+
+        return Response({
+            "building": data["building"],
+            "year": year,
+            "opening_balance": money(data["opening_balance"]),
+            "total_collected": money(data["total_collected"]),
+            "total_expenses": money(data["total_expenses"]),
+            "closing_balance": money(data["closing_balance"]),
+            "months": [{**m, "collected": money(m["collected"]), "expenses": money(m["expenses"])} for m in data["months"]],
+            "expenses_by_category": [{**c, "amount": money(c["amount"])} for c in data["expenses_by_category"]],
+            "unpaid_units": [{**u, "balance_due": money(u["balance_due"])} for u in data["unpaid_units"]],
+            "total_unpaid": money(data["total_unpaid"]),
         })
 
     @action(detail=True, methods=["get"], url_path="treasury", permission_classes=[IsAuthenticated])

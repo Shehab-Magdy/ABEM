@@ -2,11 +2,12 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Alert, Box, Button, Card, CardContent, Chip, CircularProgress, MenuItem, Stack, Table, TableBody,
-  TableCell, TableHead, TableRow, TextField, Typography,
+  TableCell, TableHead, TableRow, TextField, ToggleButton, ToggleButtonGroup, Typography,
 } from "@mui/material";
 import { Download, Share } from "@mui/icons-material";
 import { buildingsApi } from "../../api/buildingsApi";
 import { formatCurrency } from "../../utils/formatters";
+import AnnualReportPanel from "./AnnualReportPanel";
 import { PrivateSEO } from "../../components/seo/SEO";
 
 const thisMonth = () => new Date().toISOString().slice(0, 7);
@@ -16,6 +17,7 @@ export default function StatementPage() {
   const { t } = useTranslation("statement");
   const [buildings, setBuildings] = useState([]);
   const [buildingId, setBuildingId] = useState("");
+  const [view, setView] = useState("month");
   const [month, setMonth] = useState(thisMonth());
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -34,7 +36,7 @@ export default function StatementPage() {
   }, [t]);
 
   useEffect(() => {
-    if (!buildingId || !month) return;
+    if (view !== "month" || !buildingId || !month) return;
     setLoading(true);
     setError(null);
     buildingsApi
@@ -42,7 +44,7 @@ export default function StatementPage() {
       .then((res) => setData(res.data))
       .catch(() => setError(t("load_error")))
       .finally(() => setLoading(false));
-  }, [buildingId, month, t]);
+  }, [buildingId, month, view, t]);
 
   const getPdf = async () => {
     const res = await buildingsApi.statementPdf(buildingId, month);
@@ -93,7 +95,21 @@ export default function StatementPage() {
       <PrivateSEO title="3maracom – Statement" />
       <Box sx={{ p: { xs: 2, sm: 3 } }}>
         <Typography variant="h5" fontWeight={700} gutterBottom>{t("title")}</Typography>
-        <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5} sx={{ mb: 2 }}>
+        <ToggleButtonGroup exclusive size="small" value={view} onChange={(_, v) => v && setView(v)} sx={{ mb: 2 }}>
+          <ToggleButton value="month">{t("view_month")}</ToggleButton>
+          <ToggleButton value="year" data-testid="view-annual">{t("view_year")}</ToggleButton>
+        </ToggleButtonGroup>
+        {view === "year" && (
+          <>
+            {buildings.length > 1 && (
+              <TextField select size="small" label={t("building")} value={buildingId} onChange={(e) => setBuildingId(e.target.value)} sx={{ mb: 2, minWidth: 200, display: "block" }}>
+                {buildings.map((b) => <MenuItem key={b.id} value={b.id}>{b.name}</MenuItem>)}
+              </TextField>
+            )}
+            <AnnualReportPanel buildingId={buildingId} />
+          </>
+        )}
+        {view === "month" && <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5} sx={{ mb: 2 }}>
           {buildings.length > 1 && (
             <TextField select size="small" label={t("building")} value={buildingId} onChange={(e) => setBuildingId(e.target.value)} sx={{ minWidth: 200 }}>
               {buildings.map((b) => <MenuItem key={b.id} value={b.id}>{b.name}</MenuItem>)}
@@ -106,10 +122,10 @@ export default function StatementPage() {
           <Button variant="outlined" startIcon={<Download />} onClick={download} disabled={busy || !data} sx={{ minHeight: 40 }}>
             {t("download")}
           </Button>
-        </Stack>
-        {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
-        {loading && <CircularProgress />}
-        {data && !loading && (
+        </Stack>}
+        {view === "month" && error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+        {view === "month" && loading && <CircularProgress />}
+        {view === "month" && data && !loading && (
           <Stack spacing={2}>
             <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5}>
               {[

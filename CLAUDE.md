@@ -34,9 +34,8 @@ npm run format                  # prettier
 ```
 No frontend unit-test runner is configured.
 
-### Test projects (both are black-box suites against a *running* stack, not unit tests)
-- `tests/playwright/` — the active suite (what `scripts/test.sh` runs). Layers: `tests/{api,ui,e2e,db,smoke,load}`; `--strict-markers` is on, so new markers must be registered in `pytest.ini`. Per-feature targets in its `Makefile`; Locust for load. Per-test timeout 30s.
-- `tests/selenium-legacy/` — older sprint-organized suite (`tests/sprint_0..10`, markers `sprint_N`, `api`, `web`, `smoke`) with Selenium drivers and typed API wrappers in `api/`. Example: `pytest -m smoke --tb=short -q`.
+### Test project (black-box suite against a *running* stack, not unit tests)
+- `tests/playwright/` — the black-box suite (what `scripts/test.sh` runs). Layers: `tests/{api,ui,e2e,db,smoke,load}`; `--strict-markers` is on, so new markers must be registered in `pytest.ini`. Per-feature targets in its `Makefile`; Locust for load. Per-test timeout 30s.
 
 ## Architecture
 
