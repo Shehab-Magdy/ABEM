@@ -9,7 +9,7 @@ i18n
   .use(initReactI18next)
   .init({
     defaultNS: "common",
-    fallbackLng: "en",
+    fallbackLng: "ar", // Arabic-first: visitors who have not picked a language get Arabic
     supportedLngs: ["en", "ar"],
     ns: [
       "common",
@@ -33,7 +33,8 @@ i18n
     ],
     backend: { loadPath: "/locales/{{lng}}/{{ns}}.json" },
     detection: {
-      order: ["localStorage", "navigator", "htmlTag"],
+      // Saved choice first, then <html lang="ar">; the phone/browser language is deliberately not used
+      order: ["localStorage", "htmlTag"],
       caches: ["localStorage"],
       lookupLocalStorage: "abem_language",
     },

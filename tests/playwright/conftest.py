@@ -46,6 +46,9 @@ from fixtures.file_uploads import *  # noqa: F401, F403
 from fixtures.payments import *  # noqa: F401, F403
 from fixtures.users import *  # noqa: F401, F403
 
+# The app is Arabic by default; these suites assert English text, so pin the saved language.
+ENGLISH_UI = "try { localStorage.setItem('abem_language', 'en'); } catch (e) {}"
+
 logger = logging.getLogger(__name__)
 
 
@@ -83,6 +86,7 @@ def browser_context(playwright_browser: Browser) -> BrowserContext:
         locale=LOCALE,
         timezone_id=TIMEZONE_ID,
     )
+    context.add_init_script(ENGLISH_UI)
     context.set_default_timeout(DEFAULT_TIMEOUT)
     context.set_default_navigation_timeout(NAVIGATION_TIMEOUT)
     yield context
@@ -128,6 +132,7 @@ def _ensure_admin_storage_state(playwright: Playwright, browser: Browser) -> str
         locale=LOCALE,
         timezone_id=TIMEZONE_ID,
     )
+    context.add_init_script(ENGLISH_UI)
     pg = context.new_page()
     pg.goto(f"{settings.BASE_URL}/login")
     pg.get_by_label("Email address").fill(settings.ADMIN_EMAIL)
@@ -153,6 +158,7 @@ def _ensure_owner_storage_state(playwright: Playwright, browser: Browser) -> str
         locale=LOCALE,
         timezone_id=TIMEZONE_ID,
     )
+    context.add_init_script(ENGLISH_UI)
     pg = context.new_page()
     pg.goto(f"{settings.BASE_URL}/login")
     pg.get_by_label("Email address").fill(settings.OWNER_EMAIL)
@@ -177,6 +183,7 @@ def admin_page(playwright: Playwright, playwright_browser: Browser) -> Page:
         locale=LOCALE,
         timezone_id=TIMEZONE_ID,
     )
+    context.add_init_script(ENGLISH_UI)
     context.set_default_timeout(DEFAULT_TIMEOUT)
     context.set_default_navigation_timeout(NAVIGATION_TIMEOUT)
     pg = context.new_page()
@@ -195,6 +202,7 @@ def owner_page(playwright: Playwright, playwright_browser: Browser) -> Page:
         locale=LOCALE,
         timezone_id=TIMEZONE_ID,
     )
+    context.add_init_script(ENGLISH_UI)
     context.set_default_timeout(DEFAULT_TIMEOUT)
     context.set_default_navigation_timeout(NAVIGATION_TIMEOUT)
     pg = context.new_page()
