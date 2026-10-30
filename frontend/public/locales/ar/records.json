@@ -32,5 +32,7 @@
   "delete_title": "تأكيد الحذف",
   "delete_text": "سيُحذف «{{name}}» نهائياً.",
   "error": "تعذّر إتمام العملية.",
-  "pdf_error": "تعذّر إنشاء ملف PDF."
+  "pdf_error": "تعذّر إنشاء ملف PDF.",
+  "export_building": "تنزيل تصدير كامل للمبنى (Excel)",
+  "export_error": "تعذّر إنشاء ملف التصدير."
 }
