@@ -29,7 +29,9 @@ class PlanSerializer(serializers.ModelSerializer):
 class PlanPaymentSerializer(serializers.ModelSerializer):
     building_name = serializers.CharField(source="building.name", read_only=True)
     plan_name = serializers.SerializerMethodField()
-    building_id = serializers.PrimaryKeyRelatedField(source="building", queryset=Building.objects.filter(deleted_at__isnull=True))
+    building_id = serializers.PrimaryKeyRelatedField(
+        source="building", queryset=Building.objects.filter(deleted_at__isnull=True)
+    )
     plan_code = serializers.PrimaryKeyRelatedField(source="plan", queryset=Plan.objects.filter(is_active=True))
 
     class Meta:

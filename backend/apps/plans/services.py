@@ -18,7 +18,7 @@ def free_plan() -> Plan:
 
 
 def effective_plan(building, today: date | None = None) -> tuple[Plan, date | None, bool]:
-    """(plan, paid_until, on_trial). A lapsed paid plan falls back to free; new buildings get a short trial of the top plan."""
+    """(plan, paid_until, on_trial). A lapsed paid plan falls back to free; new buildings get a short trial."""
     today = today or date.today()
     row = BuildingPlan.objects.select_related("plan").filter(building=building).first()
     if row and row.paid_until >= today:

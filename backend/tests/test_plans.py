@@ -61,7 +61,8 @@ def test_api_blocks_the_eleventh_unit_and_gated_features(admin_user, old_buildin
     resp = client.post("/api/v1/apartments/", {"building": str(old_building.pk), "unit_number": "99"}, format="json")
     assert resp.status_code == 400
     assert client.get(f"/api/v1/buildings/{old_building.pk}/annual-report/").status_code == 403
-    assert client.post(f"/api/v1/buildings/{old_building.pk}/subscription/", {"amount": "100"}, format="json").status_code == 403
+    url = f"/api/v1/buildings/{old_building.pk}/subscription/"
+    assert client.post(url, {"amount": "100"}, format="json").status_code == 403
 
 
 def test_extend_adds_a_period_from_the_old_end_when_still_running(old_building):
@@ -116,6 +117,8 @@ def test_current_plan_and_settings(admin_user, superuser, old_building):
     data = _client(admin_user).get(f"/api/v1/plans/current/?building_id={old_building.pk}").data
     assert data["plan"]["code"] == "free" and data["units"] == 0
     assert _client(admin_user).get("/api/v1/plans/settings/").status_code == 403
-    resp = _client(superuser).patch("/api/v1/plans/settings/", {"instapay_address": "3mara@instapay", "trial_days": 7}, format="json")
+    body = {"instapay_address": "3mara@instapay", "trial_days": 7}
+    resp = _client(superuser).patch("/api/v1/plans/settings/", body, format="json")
     assert resp.data == {"instapay_address": "3mara@instapay", "trial_days": 7}
-    assert _client(admin_user).get(f"/api/v1/plans/current/?building_id={old_building.pk}").data["instapay_address"] == "3mara@instapay"
+    current = _client(admin_user).get(f"/api/v1/plans/current/?building_id={old_building.pk}").data
+    assert current["instapay_address"] == "3mara@instapay"
