@@ -149,5 +149,14 @@
   "something_went_wrong": "حدث خطأ. حاول مرة أخرى.",
   "board": "الهيئة الإدارية",
   "records": "المحاضر والمستندات",
-  "operations": "الصيانة الدورية والمقاولون"
+  "operations": "الصيانة الدورية والمقاولون",
+  "csv_download_sample": "تحميل ملف نموذجي",
+  "csv_choose_file": "اختر ملف CSV",
+  "csv_check": "فحص الملف",
+  "csv_import": "استيراد",
+  "csv_ready": "الملف سليم: {{n}} صفاً جاهزاً للاستيراد.",
+  "csv_has_problems": "في {{errors}} من {{total}} صفاً مشاكل. لن يُستورد شيء قبل إصلاحها.",
+  "csv_imported": "تم استيراد {{n}} صفاً.",
+  "csv_row": "السطر",
+  "csv_problem": "المشكلة"
 }

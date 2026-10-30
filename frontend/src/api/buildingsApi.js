@@ -21,6 +21,13 @@ export const buildingsApi = {
   /** Board titles (chair / treasurer / secretary): everyone reads, building admins assign. */
   board: (id) => axiosClient.get(`/buildings/${id}/board/`),
   setBoardRole: (id, userId, role) => axiosClient.post(`/buildings/${id}/board/`, { user_id: userId, role }),
+  /** Bulk-create units from a CSV; commit=false only checks the file. */
+  importUnits: (id, file, commit) => {
+    const form = new FormData();
+    form.append("file", file);
+    form.append("commit", commit ? "true" : "false");
+    return axiosClient.post(`/buildings/${id}/import-units/`, form, multipartConfig);
+  },
   list: (params, { signal } = {}) => axiosClient.get("/buildings/", { params, signal }),
   get: (id, { signal } = {}) => axiosClient.get(`/buildings/${id}/`, { signal }),
   create: (data) => axiosClient.post("/buildings/", data, data instanceof FormData ? multipartConfig : undefined),

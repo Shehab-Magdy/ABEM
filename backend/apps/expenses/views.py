@@ -148,7 +148,8 @@ class ExpenseViewSet(ModelViewSet):
         write_actions = ("create", "partial_update", "update", "destroy", "upload", "mark_paid")  # approve / reject / put_to_vote check the chair themselves
         if self.action in write_actions:
             return [IsAuthenticated(), IsAdminRole()]
-        return [IsAuthenticated()]
+        # Custom @actions declare their own permission_classes (e.g. import): honour them.
+        return super().get_permissions()
 
     # ── Write helpers ──────────────────────────────────────────────────────────
 
@@ -172,6 +173,58 @@ class ExpenseViewSet(ModelViewSet):
             notify_expense_created(expense, [ae.apartment for ae in ae_list])
         except Exception:
             pass
+
+    @action(
+        detail=False, methods=["post"], url_path="import",
+        permission_classes=[IsAuthenticated, IsAdminRole], parser_classes=[MultiPartParser, FormParser],
+    )
+    def import_expenses(self, request):
+        """
+        POST /expenses/import/   multipart: building_id, file (CSV), commit=true|false
+        Columns: title, amount, date (YYYY-MM-DD) required; category (a name that exists in the building),
+        split_type (equal_all | equal_apartments | equal_stores), due_date, description.
+        Each row goes through the normal expense rules (split, approval threshold). Without commit the file is only
+        checked and every row reported; with commit=true all rows are created, or none if any has a problem.
+        """
+        from apps.core.csv_import import read_rows
+
+        building_id = request.data.get("building_id")
+        ensure_manages(request.user, building_id)
+        building = managed_buildings(request.user).get(pk=building_id)
+        rows = read_rows(
+            request.FILES.get("file"), ["title", "amount", "date"],
+            ["title", "amount", "date", "category", "split_type", "due_date", "description"],
+        )
+        categories = {c.name.lower(): c for c in ExpenseCategory.objects.filter(building=building, is_active=True)}
+        report, valid = [], []
+        for number, row in enumerate(rows, start=2):  # row 1 is the header
+            problems = []
+            category = categories.get(row.get("category", "").lower())
+            if not category:
+                problems.append(_("category must be one of: %(names)s.") % {"names": ", ".join(sorted(c.name for c in categories.values())) or "-"})
+            data = {
+                "building_id": str(building.pk), "category_id": str(category.pk) if category else None,
+                "title": row.get("title", ""), "amount": row.get("amount", ""), "expense_date": row.get("date", ""),
+                "split_type": row.get("split_type") or "equal_all", "description": row.get("description", ""),
+            }
+            if row.get("due_date"):
+                data["due_date"] = row["due_date"]
+            serializer = ExpenseSerializer(data=data, context={"request": request})
+            if not serializer.is_valid():
+                for field, msgs in serializer.errors.items():
+                    problems.extend(f"{field}: {m}" for m in (msgs if isinstance(msgs, list) else [str(msgs)]))
+            report.append({"row": number, "title": row.get("title", ""), "ok": not problems, "problems": problems})
+            if not problems:
+                valid.append(serializer)
+
+        errors = sum(1 for r in report if not r["ok"])
+        created = 0
+        if str(request.data.get("commit", "")).lower() == "true" and errors == 0:
+            with transaction.atomic():
+                for serializer in valid:
+                    self.perform_create(serializer)
+            created = len(valid)
+        return Response({"rows": report, "total": len(report), "errors": errors, "created": created})
 
     def _decider(self, request):
         """The pending expense, if the user may decide on it (the chair, or an admin while no chair is named)."""

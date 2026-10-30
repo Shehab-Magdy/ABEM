@@ -59,6 +59,7 @@ import {
 } from "@mui/icons-material";
 import { expensesApi } from "../../api/expensesApi";
 import ReasonDialog from "../../components/ReasonDialog";
+import CsvImportDialog from "../../components/CsvImportDialog";
 import { buildingsApi } from "../../api/buildingsApi";
 import { useAuth } from "../../hooks/useAuth";
 import { useTranslation } from "react-i18next";
@@ -175,6 +176,7 @@ export default function ExpensesPage() {
   const [filterKind, setFilterKind] = useState("");
   // the chair (or an admin while no chair is named) decides on large costs
   const [decision, setDecision] = useState(null);
+  const [importOpen, setImportOpen] = useState(false);
 
   const [detailExpense, setDetailExpense] = useState(null);
   const [formOpen, setFormOpen] = useState(false);
@@ -439,9 +441,12 @@ export default function ExpensesPage() {
           {t("page_title")}
         </Typography>
         {isAdmin && (
-          <Button id="add-expense-btn" variant="contained" startIcon={<AddIcon />} onClick={openCreate}>
-            {t("add_expense")}
-          </Button>
+          <Stack direction="row" spacing={1}>
+            <Button variant="outlined" onClick={() => setImportOpen(true)} disabled={!selectedBuilding}>{t("import_csv")}</Button>
+            <Button id="add-expense-btn" variant="contained" startIcon={<AddIcon />} onClick={openCreate}>
+              {t("add_expense")}
+            </Button>
+          </Stack>
         )}
       </Stack>
 
@@ -1113,6 +1118,17 @@ export default function ExpensesPage() {
         </Alert>
       </Snackbar>
     </Box>
+      <CsvImportDialog
+        open={importOpen}
+        title={t("import_csv_title")}
+        help={t("import_csv_help")}
+        columns="title,amount,date,category,split_type,due_date,description"
+        sample={"title,amount,date,category,split_type,due_date\nStairs cleaning,200,2026-10-01,Cleaning,equal_all,2026-10-15\n"}
+        filename="expenses.csv"
+        upload={(file, commit) => expensesApi.importCsv(selectedBuilding, file, commit)}
+        onClose={() => setImportOpen(false)}
+        onDone={() => loadExpenses()}
+      />
       <ReasonDialog
         open={!!decision}
         title={decision ? t(decision.action === "approve" ? "approve_title" : "reject_title", { title: decision.expense.title }) : ""}

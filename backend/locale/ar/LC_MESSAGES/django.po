@@ -676,3 +676,48 @@ msgstr "تم الإسناد"
 
 msgid "Notification preferences must be on/off switches for: %(keys)s."
 msgstr "تفضيلات الإشعارات يجب أن تكون مفاتيح تشغيل/إيقاف للبنود: %(keys)s."
+
+msgid "Attach a CSV file."
+msgstr "أرفق ملف CSV."
+
+msgid "The file is too large (1 MB at most)."
+msgstr "الملف كبير جداً (1 ميجابايت كحد أقصى)."
+
+msgid "Save the file as UTF-8 CSV."
+msgstr "احفظ الملف بصيغة CSV وترميز UTF-8."
+
+msgid "Missing columns: %(cols)s."
+msgstr "أعمدة ناقصة: %(cols)s."
+
+msgid "Unknown columns: %(cols)s."
+msgstr "أعمدة غير معروفة: %(cols)s."
+
+msgid "The file has no rows."
+msgstr "الملف لا يحتوي على صفوف."
+
+msgid "At most %(n)s rows per file."
+msgstr "الحد الأقصى %(n)s صف في الملف."
+
+msgid "unit_number is required."
+msgstr "رقم الوحدة مطلوب."
+
+msgid "This unit already exists in the building."
+msgstr "هذه الوحدة موجودة بالفعل في العمارة."
+
+msgid "This unit appears twice in the file."
+msgstr "هذه الوحدة مكررة في الملف."
+
+msgid "type must be apartment or store."
+msgstr "النوع يجب أن يكون apartment أو store."
+
+msgid "floor must be between 0 and %(n)s."
+msgstr "الطابق يجب أن يكون بين 0 و%(n)s."
+
+msgid "floor must be a whole number."
+msgstr "الطابق يجب أن يكون رقماً صحيحاً."
+
+msgid "size_sqm must be a positive number."
+msgstr "المساحة يجب أن تكون رقماً موجباً."
+
+msgid "category must be one of: %(names)s."
+msgstr "الفئة يجب أن تكون إحدى: %(names)s."

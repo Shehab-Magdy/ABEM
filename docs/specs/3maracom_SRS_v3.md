@@ -846,16 +846,16 @@ There is no Celery or Redis in the stack: dashboards query PostgreSQL directly, 
 | 34 | Admin dashboard export/print report | ✅ Implemented | Browser print API |
 | 35 | Claim unit by registration code from owner dashboard | ✅ Implemented | |
 | 36 | Expense approval workflow | 🔲 Planned | Phase 2, R-7 (approvals & votes) |
-| 37 | Bulk expense import via CSV | 🔲 Planned | Phase 3, R-13 |
+| 37 | Bulk expense import via CSV | ✅ Implemented | Phase 3, R-13 |
 | 38 | Payment due date reminders (in-app + email + WhatsApp link) | ✅ Implemented | Phase 1, R-1; needs the daily scheduler (DEPLOYMENT section 12) |
 | 39 | Multi-currency support | ❌ Descoped | EGP only |
 | 40 | Redis caching for dashboard aggregations | 🔲 Pending | Not implemented; no Redis in the stack |
-| 41 | Notification preferences UI | 🔲 Planned | Phase 3, R-13 |
+| 41 | Notification preferences UI | ✅ Implemented | Phase 3, R-13 |
 | 42 | Unit tests & integration test suite | 🔲 Pending | Sprint 10 |
 | 43 | Production deployment + monitoring | 🔲 Pending | Sprint 11 |
 | 44 | Installable PWA for Android & iOS (manifest, service worker, install banner) | ✅ Implemented | Replaces the dropped Flutter app; store listing is R-19 |
-| 45 | Building photo upload | 🔲 Pending | Model field exists; UI not built |
-| 46 | Bulk apartment import via CSV | 🔲 Planned | Phase 3, R-13 |
+| 45 | Building photo upload | ✅ Implemented | On the building form |
+| 46 | Bulk apartment import via CSV | ✅ Implemented | Phase 3, R-13 |
 | 47 | Interactive guided tutorial (Admin 9-step + Owner 5-step tours, auto-role) | ✅ Implemented | React (web and PWA); anchor IDs in TUTORIAL_ANCHORS.md |
 | 48 | Multiple owners per unit with shared payment/dashboard visibility | ✅ Implemented | M2M owners; Q-filter on all owner queries |
 
@@ -931,7 +931,7 @@ Phases are delivered in order; within a phase, requirements are independent unle
 
 **R-12 Maintenance report to work order to expense** — ✅ Implemented (`/maintenance/work-orders/`, dialog on the Maintenance screen). Admins and board members assign a contractor and date, follow the status, and link the expense that recorded the cost; the report follows the order and the resident who reported it is told when it is done. The status, contractor, dates and cost show on the report to everyone who can see it. An admin can turn a maintenance report into a work order assigned to a contractor, and link the resulting expense to it. The report shows status, cost and completion date to the reporting resident.
 
-**R-13 Carry-over items** — 🔲 Planned. Notification preferences UI (status item 41), building photo upload UI (45), bulk apartment import via CSV (46), bulk expense import (37).
+**R-13 Carry-over items** — ✅ Implemented. Notification preferences: a Notifications card on the profile (payment reminders, new expenses, announcements and votes, email). Building photo upload: already on the building form (the earlier "UI not built" note was out of date). Bulk unit import (`POST /buildings/{id}/import-units/`) and bulk expense import (`POST /expenses/import/`): CSV, UTF-8 or Excel-style, checked first then imported all-or-nothing, with every problem row listed. Notification preferences UI (status item 41), building photo upload UI (45), bulk apartment import via CSV (46), bulk expense import (37).
 
 ### 11.5 Phase 4 — Business & Scale
 

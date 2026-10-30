@@ -62,7 +62,7 @@ class BuildingViewSet(ModelViewSet):
         write_actions = ("create", "partial_update", "update", "destroy", "assign_user", "deactivate", "activate")
         if self.action in write_actions:
             return [IsAuthenticated(), IsAdminRole()]
-        # Custom @actions declare their own permission_classes (e.g. subscription): honour them.
+        # Custom @actions declare their own permission_classes (e.g. subscription, import-units): honour them.
         return super().get_permissions()
 
     # ── Write helpers ──────────────────────────────────────────────────────────
@@ -201,6 +201,71 @@ class BuildingViewSet(ModelViewSet):
             changes={"admin": {"before": str(request.user.pk), "after": str(target.pk)}}, request=request,
         )
         return Response(self.get_serializer(building).data)
+
+    @action(
+        detail=True, methods=["post"], url_path="import-units",
+        permission_classes=[IsAuthenticated, IsAdminRole], parser_classes=[MultiPartParser, FormParser],
+    )
+    def import_units(self, request, pk=None):
+        """
+        POST /buildings/{id}/import-units/   multipart: file (CSV), commit=true|false
+        Columns: unit_number (required), type (apartment | store, default apartment), floor, size_sqm.
+        Without commit it only checks the file and reports each row; with commit=true it creates every unit,
+        or none at all if any row has a problem.
+        """
+        from decimal import Decimal, InvalidOperation
+
+        from apps.apartments.models import Apartment
+        from apps.core.csv_import import read_rows
+
+        building = self.get_object()
+        rows = read_rows(request.FILES.get("file"), ["unit_number"], ["unit_number", "type", "floor", "size_sqm"])
+        existing = set(Apartment.objects.filter(building=building).values_list("unit_number", flat=True))
+        seen, report, clean = set(), [], []
+        kinds = {"apartment": "apartment", "شقة": "apartment", "store": "store", "محل": "store", "": "apartment"}
+
+        for number, row in enumerate(rows, start=2):  # row 1 is the header
+            problems = []
+            unit = row.get("unit_number", "")
+            if not unit:
+                problems.append(_("unit_number is required."))
+            elif unit in existing:
+                problems.append(_("This unit already exists in the building."))
+            elif unit in seen:
+                problems.append(_("This unit appears twice in the file."))
+            kind = kinds.get(row.get("type", "").lower())
+            if kind is None:
+                problems.append(_("type must be apartment or store."))
+            floor = 0
+            if row.get("floor", ""):
+                try:
+                    floor = int(row["floor"])
+                    if not 0 <= floor <= building.num_floors:
+                        problems.append(_("floor must be between 0 and %(n)s.") % {"n": building.num_floors})
+                except ValueError:
+                    problems.append(_("floor must be a whole number."))
+            size = None
+            if row.get("size_sqm", ""):
+                try:
+                    size = Decimal(row["size_sqm"])
+                    if size <= 0:
+                        raise InvalidOperation
+                except InvalidOperation:
+                    problems.append(_("size_sqm must be a positive number."))
+            seen.add(unit)
+            report.append({"row": number, "unit_number": unit, "ok": not problems, "problems": problems})
+            if not problems:
+                clean.append(Apartment(building=building, unit_number=unit, unit_type=kind, floor=floor, size_sqm=size))
+
+        errors = sum(1 for r in report if not r["ok"])
+        created = 0
+        if str(request.data.get("commit", "")).lower() == "true" and errors == 0:
+            with transaction.atomic():
+                Apartment.objects.bulk_create(clean)
+            created = len(clean)
+            log_action(user=request.user, action="create", entity="apartment", entity_id=building.pk,
+                       changes={"imported": created}, request=request)
+        return Response({"rows": report, "total": len(report), "errors": errors, "created": created})
 
     @action(detail=True, methods=["get", "post"], url_path="board", permission_classes=[IsAuthenticated])
     def board(self, request, pk=None):
