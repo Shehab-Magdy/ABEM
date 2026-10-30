@@ -6,12 +6,12 @@ Owners' Association & Building Expense Management — formerly ABEM
 
 *Web Application — Implemented Edition*
 
-Version 3.2 | October 2026
+Version 3.3 | October 2026
 
 | Document Info | Details |
 |---|---|
 | Status | Implemented — Web Application |
-| Version | 3.2 |
+| Version | 3.3 |
 | Audience | Dev / QA / Stakeholders |
 | Platform | Web and installable PWA for Android and iOS (React + Django REST Framework) |
 | Note | This document describes the web application as fully built. Android and iOS are served by the web application as an installable Progressive Web App (PWA); native Flutter apps were dropped. |
@@ -845,19 +845,125 @@ There is no Celery or Redis in the stack: dashboards query PostgreSQL directly, 
 | 33 | OpenAPI 3.0 documentation (drf-spectacular) | ✅ Implemented | `/api/schema/` |
 | 34 | Admin dashboard export/print report | ✅ Implemented | Browser print API |
 | 35 | Claim unit by registration code from owner dashboard | ✅ Implemented | |
-| 36 | Expense approval workflow | ❌ Descoped | Not in current scope |
-| 37 | Bulk expense import via CSV | ❌ Descoped | Not in current scope |
-| 38 | Payment due date automated email reminders | ❌ Descoped | Email delivery not configured |
+| 36 | Expense approval workflow | 🔲 Planned | Phase 2, R-7 (approvals & votes) |
+| 37 | Bulk expense import via CSV | 🔲 Planned | Phase 3, R-13 |
+| 38 | Payment due date reminders (in-app + email + WhatsApp link) | 🟡 In progress | Phase 1, R-1 |
 | 39 | Multi-currency support | ❌ Descoped | EGP only |
 | 40 | Redis caching for dashboard aggregations | 🔲 Pending | Not implemented; no Redis in the stack |
-| 41 | Notification preferences UI | 🔲 Pending | Model field exists; UI not built |
+| 41 | Notification preferences UI | 🔲 Planned | Phase 3, R-13 |
 | 42 | Unit tests & integration test suite | 🔲 Pending | Sprint 10 |
 | 43 | Production deployment + monitoring | 🔲 Pending | Sprint 11 |
-| 44 | Installable PWA for Android & iOS (manifest, service worker) | 🔲 Pending | Planned (Sprint 12+); replaces the dropped Flutter app |
+| 44 | Installable PWA for Android & iOS (manifest, service worker, install banner) | ✅ Implemented | Replaces the dropped Flutter app; store listing is R-19 |
 | 45 | Building photo upload | 🔲 Pending | Model field exists; UI not built |
-| 46 | Bulk apartment import via CSV | 🔲 Pending | |
+| 46 | Bulk apartment import via CSV | 🔲 Planned | Phase 3, R-13 |
 | 47 | Interactive guided tutorial (Admin 9-step + Owner 5-step tours, auto-role) | ✅ Implemented | React (web and PWA); anchor IDs in TUTORIAL_ANCHORS.md |
 | 48 | Multiple owners per unit with shared payment/dashboard visibility | ✅ Implemented | M2M owners; Q-filter on all owner queries |
+
+---
+
+## 11. Roadmap: Business Gaps & Phases
+
+This section records what the product still lacks to run as a business for owners' associations (اتحاد الملاك) in Egypt and the Arab world, grouped into delivery phases. Each requirement has an id (R-n), acceptance criteria, and a status. Statuses: ✅ Implemented · 🟡 In progress · 🔲 Planned · ⏸ Deferred.
+
+### 11.1 Phase overview
+
+| Phase | Goal | Requirements | Exit criteria |
+|---|---|---|---|
+| **1 — Collect & Show** | Residents pay on time; the building can see and share where the money is | R-1 Payment reminders, R-2 Monthly statement, R-3 Legal pages & account deletion | An admin never has to chase payers by hand; a monthly statement can be shared in the building's WhatsApp group; the app can be launched publicly |
+| **2 — People & Governance** | Model who actually lives and decides in a building | R-4 Tenant role, R-5 Board roles, R-6 Admin handover, R-7 Approvals & votes, R-8 Meeting minutes | Tenants can pay; large spending needs approval; a new treasurer takes over without losing history |
+| **3 — Plans & Operations** | Predictable income and organised upkeep | R-9 Monthly subscription plan, R-10 Per-unit rates & late fees, R-11 Contractors & obligations calendar, R-12 Maintenance to work order to expense, R-13 Carry-over items | Each unit is billed automatically each month; recurring obligations are tracked and reminded |
+| **4 — Business & Scale** | Make 3maracom itself a sustainable product | R-14 Plans & pricing, R-15 Platform billing, R-16 Payment gateway, R-17 Product analytics, R-18 Support channel, R-19 Store distribution, R-20 Annual report | Outside buildings can sign up, pay for 3maracom and be supported |
+
+Phases are delivered in order; within a phase, requirements are independent unless a dependency is listed.
+
+### 11.2 Phase 1 — Collect & Show
+
+**R-1 Automatic payment reminders** — 🟡 In progress. *Why:* chasing late payers is the admin's biggest chore.
+- A daily management command (`send_payment_reminders`, run by the host scheduler) finds each unit's unpaid share of every expense that has a due date.
+- Reminders are sent 3 days before the due date, and when overdue: on the first day, then at most once every 7 days. A unit is never reminded twice for the same share on the same day (reminder log).
+- Recipients are the unit's owners. Channels: in-app notification and email. Reminder text is bilingual (Arabic first) and states the building, unit, amount still owed and due date.
+- Shares already paid (including by manual mark-as-paid) are never reminded.
+- The admin's unpaid-units table has a "Remind on WhatsApp" action that opens a pre-filled message to the owner's phone (no WhatsApp Business API required).
+- Out of scope in Phase 1: sending via the WhatsApp Business API, SMS.
+
+**R-2 Monthly statement (كشف حساب شهري)** — 🔲 Planned. *Why:* transparency is the brand promise and the statement is what residents forward.
+- `GET /buildings/{id}/statement/?month=YYYY-MM` returns the opening balance, payments received (per unit), expenses (with category and date), closing balance, and which units have paid for the month.
+- The same data is downloadable as a one-page bilingual PDF (`format=pdf`).
+- Visible to the building's admins and residents (read-only); never to other buildings.
+- The web app has a statement screen with a month picker, a PDF download and a Share action (system share sheet where supported, download otherwise).
+- Opening balance + received − expenses = closing balance, using the same rules as the treasury (starting balance + payments + asset sales − expenses).
+
+**R-3 Legal pages & account deletion** — 🔲 Planned. *Why:* required before a public or store launch and for user trust.
+- Privacy Policy and Terms of Service pages in Arabic and English, reachable without signing in and linked from the footer and the sign-up form.
+- Sign-up requires accepting the terms (checkbox); acceptance time is stored.
+- A signed-in user can delete their account (password confirmation). Deletion deactivates the account and removes personal data (name, email, phone, picture) while keeping financial records (payments, expense shares, audit log) attached to an anonymised user.
+- The sole administrator of a building cannot delete their account until another administrator takes over (see R-6).
+- *Note:* the policy text is a draft for legal review before launch; local legal requirements for handling residents' data must be confirmed.
+
+### 11.3 Phase 2 — People & Governance
+
+**R-4 Tenant (مستأجر) role** — 🔲 Planned. Tenants live in a unit but do not own it; they often pay the subscription.
+- New role `tenant` linked to a unit by the owner or the admin. A tenant sees the unit's dues and the building's treasury and statement, can report maintenance and use "Pay subscription", and cannot see other units' balances or change data.
+- The owner remains responsible for the unit; owners see that a tenant is linked and can end the link.
+- Invite links can create either an owner or a tenant link.
+
+**R-5 Board roles** — 🔲 Planned. Roles inside a building: chair (رئيس), treasurer (أمين الصندوق), secretary (أمين السر). Treasurer can record payments and expenses; secretary can send announcements and edit minutes; chair can approve spending. Co-admins keep full powers until roles are assigned.
+
+**R-6 Admin handover** — 🔲 Planned. The primary administrator can transfer the building to another member; the previous admin becomes co-admin or a resident. All history (payments, audit log) stays intact and the transfer itself is audited. Required by R-3 for admins who want to delete their account.
+
+**R-7 Approvals & votes** — 🔲 Planned. (Replaces descoped item 36.)
+- A building sets an approval threshold. An expense above it is created as "pending approval" and does not bill units until approved by the chair or by a resident vote.
+- Polls: an admin creates a question with options and a closing date; each unit gets one vote (co-owners share it); results are visible after closing, with quorum and majority rules set per poll.
+- Decisions are recorded with date and result in the audit log and can be attached to minutes.
+
+**R-8 Meeting minutes & documents** — 🔲 Planned. The secretary records meeting minutes (date, attendees, decisions) and uploads documents (contracts, receipts of work, bylaws). Residents can read; only board roles can edit. Minutes are exportable as PDF.
+
+### 11.4 Phase 3 — Plans & Operations
+
+**R-9 Fixed monthly subscription per unit** — 🔲 Planned. *Why:* buildings collect a regular monthly amount (الاشتراك الشهري).
+- An admin defines a subscription amount for the building and a billing day. Each month the system bills every unit automatically (daily command), creating a due item that reminders (R-1) and statements (R-2) already understand.
+- Amounts can differ by unit type (apartment, store) or by a unit coefficient (R-10).
+- Pausing a unit (vacant) is possible with a reason and is audited.
+
+**R-10 Per-unit rates & late fees** — 🔲 Planned. Optional per-unit coefficient (e.g. shops pay 1.5×, large flats 1.2×). Optional late fee (fixed amount or percentage) after a grace period; fees are added as separate, visible lines and can be waived by an admin with a recorded reason.
+
+**R-11 Contractors & obligations calendar** — 🔲 Planned. A directory of contractors per building (name, trade, phone, contract dates, notes) and a calendar of recurring obligations (elevator maintenance contract renewal, fire-extinguisher inspection, tank cleaning). Obligations remind the board before their due date (same reminder mechanism as R-1).
+
+**R-12 Maintenance report to work order to expense** — 🔲 Planned. An admin can turn a maintenance report into a work order assigned to a contractor, and link the resulting expense to it. The report shows status, cost and completion date to the reporting resident.
+
+**R-13 Carry-over items** — 🔲 Planned. Notification preferences UI (status item 41), building photo upload UI (45), bulk apartment import via CSV (46), bulk expense import (37).
+
+### 11.5 Phase 4 — Business & Scale
+
+**R-14 Plans & pricing** — 🔲 Planned. Define the commercial model: a free tier up to N units per building with paid features (for example WhatsApp reminders and statements, multiple buildings, board roles). Limits are enforced by the platform and explained in the app. *Open decision:* tier boundaries and prices.
+
+**R-15 Platform billing** — 🔲 Planned. Charging buildings for 3maracom: subscription state per building, invoices, grace period and downgrade rules. Depends on R-14.
+
+**R-16 Payment gateway integration** — ⏸ Deferred until demand is proven. Replace InstaPay "display and confirm" with an integrated flow (card, wallet or InstaPay through a licensed aggregator), automatic reconciliation of payments, and receipts without manual admin confirmation. Needs a provider decision and, likely, legal and fee review.
+
+**R-17 Product analytics & platform KPIs** — 🔲 Planned. Privacy-respecting usage events (sign-ups, activation, payments recorded, reminders sent, monthly active buildings) and an internal dashboard so the business can see which buildings are healthy.
+
+**R-18 Support channel** — 🔲 Planned. An in-app help entry (WhatsApp or email), an FAQ in Arabic, and a way to attach a screenshot to a problem report.
+
+**R-19 Store distribution** — 🔲 Planned. Optional Google Play listing by wrapping the PWA (Trusted Web Activity) once a production domain exists; iOS requires a native wrapper and Apple review and is a separate decision.
+
+**R-20 Annual report** — 🔲 Planned. A yearly summary for the general assembly: collections by month, expenses by category, balance sheet and unpaid dues, as PDF.
+
+### 11.6 Deferred and not planned
+
+| Item | Decision |
+|---|---|
+| Multi-currency | Not planned; EGP only |
+| Visitor and parking management | Not planned; outside the core money-and-upkeep scope |
+| Redis caching | Not planned; the stack runs without Redis |
+| WhatsApp Business API / SMS | Deferred; Phase 1 uses WhatsApp share links |
+
+### 11.7 Cross-cutting rules for every phase
+
+- Every new screen and message is written Arabic-first, with English, and works in RTL and on a phone.
+- Every new endpoint is scoped to the caller's buildings (admins) or membership (residents) and has tests for cross-building access.
+- Money-moving actions are audited and idempotent.
+- Each requirement ships with backend tests and, where it has UI, a build and lint pass.
 
 ---
 
