@@ -673,3 +673,6 @@ msgstr "لهذا البلاغ أمر عمل بالفعل."
 
 msgid "Assigned"
 msgstr "تم الإسناد"
+
+msgid "Notification preferences must be on/off switches for: %(keys)s."
+msgstr "تفضيلات الإشعارات يجب أن تكون مفاتيح تشغيل/إيقاف للبنود: %(keys)s."

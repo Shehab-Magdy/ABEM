@@ -37,5 +37,16 @@
   "delete_account_confirm_title": "هل تريد حذف حسابك؟",
   "delete_account_confirm_text": "لا يمكن التراجع عن هذا. أدخل كلمة المرور للتأكيد.",
   "delete_account_confirm": "حذف نهائياً",
-  "cancel": "إلغاء"
+  "cancel": "إلغاء",
+  "prefs_title": "الإشعارات",
+  "prefs_help": "اختر ما تريد أن يصلك. كل شيء مفعّل حتى توقفه.",
+  "pref_payment_reminders": "تذكيرات الدفع",
+  "pref_payment_reminders_help": "قبل موعد الاستحقاق وعند التأخر.",
+  "pref_expense_updates": "المصروفات الجديدة",
+  "pref_expense_updates_help": "عندما يُضاف مصروف على وحدتك.",
+  "pref_announcements": "الإعلانات والتصويتات",
+  "pref_announcements_help": "إعلانات الإدارة وفتح تصويت جديد.",
+  "pref_email": "رسائل البريد الإلكتروني",
+  "pref_email_help": "إيقافه يُبقي الإشعارات داخل التطبيق فقط.",
+  "prefs_error": "تعذّر حفظ التفضيلات."
 }

@@ -228,7 +228,7 @@ class ExpenseViewSet(ModelViewSet):
         for member in expense.building.members.exclude(pk=request.user.pk):
             notify_user(user=member, notification_type=NotificationType.ANNOUNCEMENT,
                         title="تصويت جديد" if getattr(member, "preferred_language", "en") == "ar" else "New vote",
-                        body=poll.title, metadata={"poll_id": str(poll.pk)})
+                        body=poll.title, category="announcements", metadata={"poll_id": str(poll.pk)})
         return Response({"poll_id": str(poll.pk)}, status=201)
 
     def perform_update(self, serializer):

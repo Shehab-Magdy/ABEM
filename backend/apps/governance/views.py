@@ -58,6 +58,7 @@ class PollViewSet(ModelViewSet):
                 notification_type=NotificationType.ANNOUNCEMENT,
                 title="تصويت جديد" if getattr(member, "preferred_language", "en") == "ar" else "New vote",
                 body=poll.title,
+                category="announcements",
                 metadata={"poll_id": str(poll.pk)},
             )
 

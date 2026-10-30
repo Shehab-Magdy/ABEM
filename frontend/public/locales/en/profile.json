@@ -37,5 +37,16 @@
   "delete_account_confirm_title": "Delete your account?",
   "delete_account_confirm_text": "This cannot be undone. Enter your password to confirm.",
   "delete_account_confirm": "Delete permanently",
-  "cancel": "Cancel"
+  "cancel": "Cancel",
+  "prefs_title": "Notifications",
+  "prefs_help": "Choose what you want to receive. Everything is on until you switch it off.",
+  "pref_payment_reminders": "Payment reminders",
+  "pref_payment_reminders_help": "Before something is due and when it is late.",
+  "pref_expense_updates": "New expenses",
+  "pref_expense_updates_help": "When an expense is added to your unit.",
+  "pref_announcements": "Announcements and votes",
+  "pref_announcements_help": "Notices from the admin and new votes.",
+  "pref_email": "Email",
+  "pref_email_help": "Turning it off keeps notifications inside the app only.",
+  "prefs_error": "Could not save your preferences."
 }
