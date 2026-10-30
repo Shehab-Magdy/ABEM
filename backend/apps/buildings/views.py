@@ -62,7 +62,8 @@ class BuildingViewSet(ModelViewSet):
         write_actions = ("create", "partial_update", "update", "destroy", "assign_user", "deactivate", "activate")
         if self.action in write_actions:
             return [IsAuthenticated(), IsAdminRole()]
-        return [IsAuthenticated()]
+        # Custom @actions declare their own permission_classes (e.g. subscription): honour them.
+        return super().get_permissions()
 
     # ── Write helpers ──────────────────────────────────────────────────────────
 
