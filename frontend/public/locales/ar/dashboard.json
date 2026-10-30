@@ -92,5 +92,18 @@
   "remind_whatsapp": "تذكير عبر واتساب",
   "remind_no_phone": "لا يوجد رقم هاتف",
   "remind_whatsapp_text": "مرحباً {{name}}، تذكير ودّي من إدارة {{building}}: متبقي على وحدتك {{unit}} مبلغ {{amount}}. شكراً لتعاونك — عِمارة.كوم",
-  "treasury_statement": "عرض كشف حساب الشهر ←"
+  "treasury_statement": "عرض كشف حساب الشهر ←",
+  "renters_title": "المستأجرون",
+  "renters_help": "ادعُ مستأجر وحدتك برابط. المستأجر يرى مستحقات الوحدة ويدفع ويبلّغ عن الأعطال ويطّلع على خزينة العمارة، ولا يمكنه دعوة غيره.",
+  "renters_unit": "الوحدة",
+  "renters_current": "المستأجرون الحاليون",
+  "renters_remove": "إنهاء ارتباط المستأجر",
+  "renters_invite": "إنشاء رابط دعوة للمستأجر",
+  "renters_link_ready": "الرابط جاهز. يعمل مرة واحدة فقط.",
+  "renters_copy": "نسخ",
+  "renters_share": "مشاركة عبر واتساب",
+  "renters_close": "إغلاق",
+  "renters_load_error": "تعذّر إتمام العملية.",
+  "renters_whatsapp_text": "تمت دعوتك للسكن في الوحدة {{unit}} على عِمارة.كوم: {{link}}",
+  "renter_dashboard": "بيتي"
 }

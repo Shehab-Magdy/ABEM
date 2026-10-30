@@ -363,8 +363,9 @@ class BuildingViewSet(ModelViewSet):
         from apps.apartments.serializers import ApartmentSerializer
 
         qs = Apartment.objects.filter(building=building)
-        if request.user.role == "owner":
-            qs = qs.filter(owner=request.user)
+        if request.user.role != "admin":
+            # residents (owners, co-owners, renters) see only their own unit(s)
+            qs = qs.filter(models.Q(owner=request.user) | models.Q(owners=request.user)).distinct()
 
         page = self.paginate_queryset(qs)
         serializer = ApartmentSerializer(

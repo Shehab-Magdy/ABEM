@@ -92,5 +92,18 @@
   "remind_whatsapp": "Remind on WhatsApp",
   "remind_no_phone": "No phone number",
   "remind_whatsapp_text": "Hello {{name}}, a friendly reminder from {{building}}: unit {{unit}} still owes {{amount}}. Thank you — 3maracom",
-  "treasury_statement": "View this month's statement →"
+  "treasury_statement": "View this month's statement →",
+  "renters_title": "Renters",
+  "renters_help": "Invite your unit's renter with a link. A renter sees the unit's dues, pays, reports problems and reads the building treasury, but cannot invite others.",
+  "renters_unit": "Unit",
+  "renters_current": "Current renters",
+  "renters_remove": "End this renter's link",
+  "renters_invite": "Create a renter invite link",
+  "renters_link_ready": "The link is ready. It works once.",
+  "renters_copy": "Copy",
+  "renters_share": "Share on WhatsApp",
+  "renters_close": "Close",
+  "renters_load_error": "Could not complete that.",
+  "renters_whatsapp_text": "You are invited to live in unit {{unit}} on 3maracom: {{link}}",
+  "renter_dashboard": "My home"
 }

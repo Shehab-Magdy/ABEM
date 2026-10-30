@@ -417,7 +417,7 @@ export default function UsersPage() {
       width: 110,
       renderCell: ({ value }) => (
         <Chip
-          label={value === "admin" ? t("roleAdmin") : t("roleOwner")}
+          label={value === "admin" ? t("roleAdmin") : value === "renter" ? t("roleRenter") : t("roleOwner")}
           size="small"
           color={value === "admin" ? "primary" : "default"}
         />

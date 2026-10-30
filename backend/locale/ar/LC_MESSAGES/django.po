@@ -553,3 +553,15 @@ msgstr "المدير الأساسي للعمارة هو وحده من يمكنه
 
 msgid "Choose one of the building's co-admins. Add them as a co-admin first."
 msgstr "اختر أحد المديرين المشاركين في العمارة. أضفه كمدير مشارك أولاً."
+
+msgid "Renters cannot invite other residents."
+msgstr "لا يمكن للمستأجر دعوة سكان آخرين."
+
+msgid "Renters cannot remove other residents."
+msgstr "لا يمكن للمستأجر إنهاء ارتباط سكان آخرين."
+
+msgid "That renter does not live in this unit."
+msgstr "هذا المستأجر لا يسكن في هذه الوحدة."
+
+msgid "Renters join a unit through an invite from its owner."
+msgstr "ينضم المستأجر إلى الوحدة عبر دعوة من مالكها."

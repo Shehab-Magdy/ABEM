@@ -28,6 +28,7 @@ import { PieChart } from "@mui/x-charts/PieChart";
 import { useTranslation } from "react-i18next";
 import axiosClient from "../../api/axiosClient";
 import { apartmentsApi } from "../../api/apartmentsApi";
+import { useAuth } from "../../hooks/useAuth";
 import { PrivateSEO } from "../../components/seo/SEO";
 import TreasuryCard from "../../components/TreasuryCard";
 import QuickActions from "../../components/QuickActions";
@@ -44,6 +45,7 @@ const PAYMENT_METHOD_KEYS = {
 
 export default function OwnerDashboardPage() {
   const { t, i18n } = useTranslation(["dashboard", "payments"]);
+  const { user } = useAuth();
   const isRtl = (i18n.language || "en").startsWith("ar");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
@@ -150,7 +152,7 @@ export default function OwnerDashboardPage() {
       </Box>
 
       <Typography variant="h4" fontWeight={700} gutterBottom>
-        {t("owner_dashboard")}
+        {t(user?.role === "renter" ? "renter_dashboard" : "owner_dashboard")}
       </Typography>
 
       <UnitClaimRequestsCard />
@@ -160,6 +162,7 @@ export default function OwnerDashboardPage() {
       <TreasuryCard />
 
       {/* ── Claim unit by code ── */}
+      {user?.role !== "renter" && (
       <Card variant="outlined" sx={{ mb: 3 }}>
         <CardContent sx={{ pb: claimOpen ? undefined : "16px !important" }}>
           <Stack direction="row" alignItems="center" justifyContent="space-between">
@@ -214,6 +217,7 @@ export default function OwnerDashboardPage() {
           </Collapse>
         </CardContent>
       </Card>
+      )}
 
       {/* ── Filters ── */}
       <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap", mb: 3 }}>

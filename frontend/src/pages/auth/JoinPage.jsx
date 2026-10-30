@@ -61,7 +61,7 @@ export default function JoinPage() {
               ) : (
                 <>
                   <Stack alignItems="center" spacing={0.5} textAlign="center">
-                    <Typography variant="h6" fontWeight={700}>{t("join_title")}</Typography>
+                    <Typography variant="h6" fontWeight={700}>{t(info.role === "renter" ? "join_title_renter" : "join_title")}</Typography>
                     <Typography>
                       {t("join_unit_in_building", { unit: info.unit_number, building: info.building_name })}
                     </Typography>

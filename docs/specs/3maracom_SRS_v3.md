@@ -902,7 +902,7 @@ Phases are delivered in order; within a phase, requirements are independent unle
 
 ### 11.3 Phase 2 — People & Governance
 
-**R-4 Tenant (مستأجر) role** — 🔲 Planned. Tenants live in a unit but do not own it; they often pay the subscription.
+**R-4 Tenant (مستأجر) role** — ✅ Implemented as role `renter` (in code, "tenant" already means a building). Owners invite and remove renters from the app; building admins can do the same through the API (admin screen not built yet). Tenants live in a unit but do not own it; they often pay the subscription.
 - New role `tenant` linked to a unit by the owner or the admin. A tenant sees the unit's dues and the building's treasury and statement, can report maintenance and use "Pay subscription", and cannot see other units' balances or change data.
 - The owner remains responsible for the unit; owners see that a tenant is linked and can end the link.
 - Invite links can create either an owner or a tenant link.

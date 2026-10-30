@@ -55,7 +55,7 @@ import BrandLogo from "../../components/common/BrandLogo";
 
 // ── Step 1: Account ────────────────────────────────────────────────────────────
 
-function AccountStep({ onDone, prefillEmail }) {
+function AccountStep({ onDone, prefillEmail, fixedRole }) {
   const { t, i18n } = useTranslation("auth");
   const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -75,7 +75,7 @@ function AccountStep({ onDone, prefillEmail }) {
         last_name: data.last_name,
         email: data.email,
         phone: data.phone || "",
-        role: data.role,
+        role: fixedRole || data.role,
         password: data.password,
         confirm_password: data.confirm_password,
         preferred_language: i18n.language || "en",
@@ -155,7 +155,7 @@ function AccountStep({ onDone, prefillEmail }) {
             required: t("common:required"),
             validate: (v) => v === password || t("passwords_dont_match"),
           })} />
-        <FormControl component="fieldset">
+        {!fixedRole && <FormControl component="fieldset">
           <FormLabel>{t("i_am_a")}</FormLabel>
           <Controller
             name="role"
@@ -168,7 +168,7 @@ function AccountStep({ onDone, prefillEmail }) {
               </RadioGroup>
             )}
           />
-        </FormControl>
+        </FormControl>}
         <FormControl error={!!errors.accept_terms}>
           <FormControlLabel
             control={<Controller name="accept_terms" control={control} defaultValue={false} rules={{ validate: (v) => v === true || t("accept_terms_required") }}
@@ -582,7 +582,7 @@ function InviteClaimStep({ inviteToken, inviteInfo, onDone }) {
       <Stack direction="row" spacing={2}>
         <Button variant="outlined" fullWidth onClick={onDone}>{t("skip_for_now")}</Button>
         <Button variant="contained" fullWidth disabled={claiming} onClick={handleClaim}>
-          {claiming ? <CircularProgress size={22} color="inherit" /> : t("claim_unit")}
+          {claiming ? <CircularProgress size={22} color="inherit" /> : t("join_claim")}
         </Button>
       </Stack>
     </Stack>
@@ -683,6 +683,7 @@ export default function RegisterPage() {
               {step === 0 && (
                 <AccountStep
                   prefillEmail={inviteInfo?.invited_email}
+                  fixedRole={inviteInfo?.role === "renter" ? "renter" : undefined}
                   onDone={(r) => { setRole(r); setStep(1); }}
                 />
               )}
