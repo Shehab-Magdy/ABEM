@@ -637,3 +637,27 @@ msgstr "هذا المصروف لا ينتظر الاعتماد."
 
 msgid "A vote on this expense is already open."
 msgstr "يوجد تصويت مفتوح على هذا المصروف بالفعل."
+
+msgid "Only the building's secretary or admins can keep the minutes."
+msgstr "أمين السر أو مديرو العمارة وحدهم يمكنهم تدوين المحاضر وحفظ المستندات."
+
+msgid "Attach a file."
+msgstr "أرفق ملفاً."
+
+msgid "Only PDF, JPEG or PNG files are allowed."
+msgstr "يُسمح بملفات PDF أو صور JPEG وPNG فقط."
+
+msgid "The file is too large."
+msgstr "حجم الملف كبير جداً."
+
+msgid "Contract"
+msgstr "عقد"
+
+msgid "Bylaws"
+msgstr "لائحة"
+
+msgid "Receipt / proof of work"
+msgstr "إيصال / إثبات عمل"
+
+msgid "Minutes"
+msgstr "محضر"

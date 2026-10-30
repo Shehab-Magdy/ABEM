@@ -68,3 +68,50 @@ class Vote(models.Model):
 
     class Meta:
         constraints = [models.UniqueConstraint(fields=["poll", "apartment"], name="one_vote_per_unit_per_poll")]
+
+
+class Meeting(models.Model):
+    """Minutes of a meeting of the owners' association (محضر اجتماع), kept by the secretary."""
+    objects: models.Manager["Meeting"]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    building = models.ForeignKey(Building, on_delete=models.CASCADE, related_name="meetings")
+    title = models.CharField(max_length=200)
+    held_on = models.DateField()
+    attendees = models.TextField(blank=True)
+    agenda = models.TextField(blank=True)
+    notes = models.TextField(blank=True)
+    decisions = models.TextField(blank=True)
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name="+")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-held_on", "-created_at"]
+
+
+class DocumentKind(models.TextChoices):
+    CONTRACT = "contract", "Contract"
+    BYLAWS = "bylaws", "Bylaws"
+    RECEIPT = "receipt", "Receipt / proof of work"
+    MINUTES = "minutes", "Minutes"
+    OTHER = "other", "Other"
+
+
+class BuildingDocument(models.Model):
+    """A file the building keeps: a contract, the bylaws, proof of work, signed minutes."""
+    objects: models.Manager["BuildingDocument"]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    building = models.ForeignKey(Building, on_delete=models.CASCADE, related_name="documents")
+    title = models.CharField(max_length=200)
+    kind = models.CharField(max_length=10, choices=DocumentKind.choices, default=DocumentKind.OTHER)
+    file = models.FileField(upload_to="building_documents/")
+    mime_type = models.CharField(max_length=60)
+    size_bytes = models.PositiveIntegerField(default=0)
+    meeting = models.ForeignKey(Meeting, on_delete=models.SET_NULL, null=True, blank=True, related_name="documents")
+    uploaded_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name="+")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]

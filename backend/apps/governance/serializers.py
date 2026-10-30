@@ -3,7 +3,7 @@ from rest_framework import serializers
 
 from apps.buildings.models import Building
 
-from .models import Majority, Poll, PollOption
+from .models import BuildingDocument, Majority, Meeting, Poll, PollOption
 from .results import poll_results
 
 
@@ -62,3 +62,30 @@ def _my_units(user, building):
     if user.role == "renter":
         return Apartment.objects.none()
     return Apartment.objects.filter(building=building).filter(Q(owner=user) | Q(owners=user)).distinct()
+
+
+class MeetingSerializer(serializers.ModelSerializer):
+    building_id = serializers.PrimaryKeyRelatedField(source="building", queryset=Building.objects.all())
+    building_name = serializers.CharField(source="building.name", read_only=True)
+
+    class Meta:
+        model = Meeting
+        fields = ["id", "building_id", "building_name", "title", "held_on", "attendees", "agenda", "notes", "decisions", "created_at", "updated_at"]
+        read_only_fields = ["id", "created_at", "updated_at"]
+
+
+class DocumentSerializer(serializers.ModelSerializer):
+    building_id = serializers.PrimaryKeyRelatedField(source="building", queryset=Building.objects.all())
+    url = serializers.SerializerMethodField()
+    uploaded_by_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = BuildingDocument
+        fields = ["id", "building_id", "title", "kind", "url", "mime_type", "size_bytes", "meeting", "uploaded_by_name", "created_at"]
+        read_only_fields = ["id", "mime_type", "size_bytes", "created_at"]
+
+    def get_url(self, obj):
+        return obj.file.url if obj.file else ""
+
+    def get_uploaded_by_name(self, obj):
+        return obj.uploaded_by.get_full_name() if obj.uploaded_by else ""

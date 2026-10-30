@@ -32,6 +32,7 @@ i18n
       "governance",
       "subscription",
       "board",
+      "records",
     ],
     backend: { loadPath: "/locales/{{lng}}/{{ns}}.json" },
     detection: {

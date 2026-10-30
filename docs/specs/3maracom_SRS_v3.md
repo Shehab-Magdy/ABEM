@@ -916,7 +916,7 @@ Phases are delivered in order; within a phase, requirements are independent unle
 - Polls: an admin creates a question with options and a closing date; each unit gets one vote (co-owners share it); results are visible after closing, with quorum and majority rules set per poll.
 - Decisions are recorded with date and result in the audit log and can be attached to minutes.
 
-**R-8 Meeting minutes & documents** — 🔲 Planned. The secretary records meeting minutes (date, attendees, decisions) and uploads documents (contracts, receipts of work, bylaws). Residents can read; only board roles can edit. Minutes are exportable as PDF.
+**R-8 Meeting minutes & documents** — ✅ Implemented (`/records` screen; `/governance/meetings/` with a bilingual PDF, `/governance/documents/` for PDF/JPEG/PNG up to the upload limit). The secretary and building admins write; members read. Files are stored like expense bills (public but unguessable URLs). The secretary records meeting minutes (date, attendees, decisions) and uploads documents (contracts, receipts of work, bylaws). Residents can read; only board roles can edit. Minutes are exportable as PDF.
 
 ### 11.4 Phase 3 — Plans & Operations
 
