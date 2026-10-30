@@ -547,3 +547,9 @@ msgstr "يجب أن يكون المبلغ أكبر من صفر."
 
 msgid "month must look like 2026-10."
 msgstr "الشهر يجب أن يكون بصيغة 2026-10."
+
+msgid "Only the building's primary administrator can hand it over."
+msgstr "المدير الأساسي للعمارة هو وحده من يمكنه نقل الإدارة."
+
+msgid "Choose one of the building's co-admins. Add them as a co-admin first."
+msgstr "اختر أحد المديرين المشاركين في العمارة. أضفه كمدير مشارك أولاً."

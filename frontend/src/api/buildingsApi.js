@@ -13,6 +13,8 @@ export const buildingsApi = {
       responseType: "blob",
       timeout: 90000,
     }),
+  /** Primary admin hands the building to one of its co-admins. */
+  transferAdmin: (id, userId) => axiosClient.post(`/buildings/${id}/transfer-admin/`, { user_id: userId }),
   list: (params, { signal } = {}) => axiosClient.get("/buildings/", { params, signal }),
   get: (id, { signal } = {}) => axiosClient.get(`/buildings/${id}/`, { signal }),
   create: (data) => axiosClient.post("/buildings/", data, data instanceof FormData ? multipartConfig : undefined),

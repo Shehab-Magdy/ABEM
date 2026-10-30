@@ -909,7 +909,7 @@ Phases are delivered in order; within a phase, requirements are independent unle
 
 **R-5 Board roles** — 🔲 Planned. Roles inside a building: chair (رئيس), treasurer (أمين الصندوق), secretary (أمين السر). Treasurer can record payments and expenses; secretary can send announcements and edit minutes; chair can approve spending. Co-admins keep full powers until roles are assigned.
 
-**R-6 Admin handover** — 🔲 Planned. The primary administrator can transfer the building to another member; the previous admin becomes co-admin or a resident. All history (payments, audit log) stays intact and the transfer itself is audited. Required by R-3 for admins who want to delete their account.
+**R-6 Admin handover** — ✅ Implemented (`POST /buildings/{id}/transfer-admin/` to a co-admin; "Hand over" action on the Buildings screen). The primary administrator can transfer the building to another member; the previous admin becomes co-admin or a resident. All history (payments, audit log) stays intact and the transfer itself is audited. Required by R-3 for admins who want to delete their account.
 
 **R-7 Approvals & votes** — 🔲 Planned. (Replaces descoped item 36.)
 - A building sets an approval threshold. An expense above it is created as "pending approval" and does not bill units until approved by the chair or by a resident vote.
