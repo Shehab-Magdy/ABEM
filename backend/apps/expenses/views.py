@@ -7,7 +7,8 @@ import os
 from django.conf import settings
 from django.db import transaction
 from django.db.models import F
-from django.utils import timezone
+from django.utils import timezone, translation
+from django.utils.translation import gettext
 from rest_framework import status
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.decorators import action
@@ -271,20 +272,26 @@ class ExpenseViewSet(ModelViewSet):
             return conflict
         if expense.polls.filter(finalized_at__isnull=True).exists():
             return Response({"detail": _("A vote on this expense is already open.")}, status=409)
-        ar = getattr(request.user, "preferred_language", "ar") == "ar"
+        with translation.override(getattr(request.user, "preferred_language", None) or "ar"):
+            title = gettext("Approve this expense: %(title)s (%(amount)s)") % {
+                "title": expense.title,
+                "amount": expense.amount,
+            }
+            approve_text, reject_text = gettext("Approve"), gettext("Reject")
         poll = Poll.objects.create(
-            building=expense.building, expense=expense, created_by=request.user,
-            title=(f"الموافقة على مصروف: {expense.title} ({expense.amount})" if ar else f"Approve this expense: {expense.title} ({expense.amount})"),
+            building=expense.building, expense=expense, created_by=request.user, title=title,
             description=expense.description, closes_at=timezone.now() + timedelta(days=int(request.data.get("days") or 3)),
             quorum_percent=int(request.data.get("quorum_percent") or 0),
         )
         PollOption.objects.bulk_create([
-            PollOption(poll=poll, text="موافق" if ar else "Approve", order=0),
-            PollOption(poll=poll, text="غير موافق" if ar else "Reject", order=1),
+            PollOption(poll=poll, text=approve_text, order=0),
+            PollOption(poll=poll, text=reject_text, order=1),
         ])
         for member in expense.building.members.exclude(pk=request.user.pk):
+            with translation.override(getattr(member, "preferred_language", None) or "en"):
+                vote_title = gettext("New vote")
             notify_user(user=member, notification_type=NotificationType.ANNOUNCEMENT,
-                        title="تصويت جديد" if getattr(member, "preferred_language", "en") == "ar" else "New vote",
+                        title=vote_title,
                         body=poll.title, category="announcements", metadata={"poll_id": str(poll.pk)})
         return Response({"poll_id": str(poll.pk)}, status=201)
 

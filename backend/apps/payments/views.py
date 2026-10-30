@@ -392,7 +392,6 @@ class PaymentViewSet(ModelViewSet):
 <head>
 <meta charset="utf-8">
 <style>
-  @import url("https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;700&family=Noto+Sans+Arabic:wght@400;700&display=swap");
   @page {{ size: A6; margin: 0; }}
   * {{ box-sizing: border-box; margin: 0; padding: 0; }}
   body {{
