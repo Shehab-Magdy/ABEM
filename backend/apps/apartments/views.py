@@ -98,12 +98,56 @@ class ApartmentViewSet(ModelViewSet):
             request=self.request,
         )
 
+    def _hand_over(self, instance, previous):
+        """R-25: the previous owner loses the unit and, unless they hold another one, the building."""
+        from apps.buildings.models import UserBuilding
+        from apps.notifications.services import building_admins, tell
+
+        instance.owners.remove(previous)
+        if instance.owner is not None:
+            instance.owners.add(instance.owner)
+        still_there = (
+            Apartment.objects.filter(building=instance.building)
+            .filter(Q(owner=previous) | Q(owners=previous))
+            .exists()
+        )
+        if not still_there and previous.pk not in {u.pk for u in building_admins(instance.building)}:
+            UserBuilding.objects.filter(user=previous, building=instance.building).delete()
+        log_action(
+            user=self.request.user,
+            action="owner_changed",
+            entity="apartment",
+            entity_id=instance.pk,
+            changes={
+                "before": str(previous.pk),
+                "after": str(instance.owner_id) if instance.owner_id else None,
+                "balance": str(instance.balance),
+            },
+            request=self.request,
+        )
+        for admin in building_admins(instance.building):
+            tell(
+                admin,
+                (
+                    "Unit owner changed",
+                    f"Unit {instance.unit_number} changed owner. Balance at handover: {instance.balance} EGP.",
+                ),
+                (
+                    "تغيير مالك وحدة",
+                    f"تغيّر مالك الوحدة {instance.unit_number}. الرصيد وقت التسليم: {instance.balance} ج.م.",
+                ),
+                {"apartment_id": str(instance.pk)},
+            )
+
     def perform_update(self, serializer):
         old = {
             field: getattr(serializer.instance, field)
             for field in serializer.validated_data
         }
+        previous_owner = serializer.instance.owner
         instance = serializer.save()
+        if "owner" in serializer.validated_data and previous_owner and previous_owner.pk != instance.owner_id:
+            self._hand_over(instance, previous_owner)
         changes = {
             field: {
                 "before": str(old.get(field, "")),

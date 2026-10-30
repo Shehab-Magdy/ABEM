@@ -79,12 +79,37 @@ class ApartmentSerializer(serializers.ModelSerializer):
     def get_owner_names(self, obj):
         return [o.get_full_name() or o.email for o in obj.owners.all() if o.role != "renter"]
 
+    @staticmethod
+    def _in_building(user, building):
+        """True when `user` already belongs to `building` (member, admin, or on one of its units)."""
+        from django.db.models import Q
+
+        from apps.buildings.models import UserBuilding
+
+        return (
+            UserBuilding.objects.filter(user=user, building=building).exists()
+            or building.admin_id == user.pk
+            or building.co_admins.filter(pk=user.pk).exists()
+            or Apartment.objects.filter(building=building).filter(Q(owner=user) | Q(owners=user)).exists()
+        )
+
     def validate(self, data):
         """Cross-field: floor must not exceed the building's num_floors."""
         if self.instance is not None and "building" in data and data["building"].pk != self.instance.building_id:
             raise serializers.ValidationError({"building_id": _("A unit cannot be moved to another building.")})
         building = data.get("building", getattr(self.instance, "building", None))
         floor = data.get("floor", getattr(self.instance, "floor", None))
+
+        # R-25: owners come from people already in the building (others join by invite)
+        if building is not None:
+            candidates = list(data.get("owners", []))
+            if data.get("owner") is not None:
+                candidates.append(data["owner"])
+            for user in candidates:
+                if not self._in_building(user, building):
+                    raise serializers.ValidationError(
+                        {"owner_id": _("Only people already in the building can be made owners. Invite them instead.")}
+                    )
 
         if building is not None and floor is not None:
             if floor > building.num_floors:

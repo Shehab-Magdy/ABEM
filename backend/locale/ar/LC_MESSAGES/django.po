@@ -757,3 +757,6 @@ msgstr "عليه مدفوعات. لا يمكن تغيير مبلغ هذا الم
 
 msgid "This expense has payments and cannot be deleted. Reverse the payments or add a credit note instead."
 msgstr "عليه مدفوعات ولا يمكن حذفه. قم بإلغاء المدفوعات أو أضف إشعار دائن بدلاً من ذلك."
+
+msgid "Only people already in the building can be made owners. Invite them instead."
+msgstr "لا يمكن تعيين مالك إلا من الأشخاص الموجودين في المبنى. قم بدعوته بدلاً من ذلك."
