@@ -146,5 +146,6 @@
   "statement": "Statement",
   "polls": "Votes",
   "subscription": "Monthly subscription",
-  "something_went_wrong": "Something went wrong. Please try again."
+  "something_went_wrong": "Something went wrong. Please try again.",
+  "board": "Board"
 }

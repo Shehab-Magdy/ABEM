@@ -12,7 +12,8 @@ export default function PendingClaimsCard() {
   const load = useCallback(async () => {
     try {
       const res = await paymentsApi.claims({ status: "pending" });
-      setClaims(res.data?.results ?? res.data ?? []);
+      // only transfers this person may act on (building admins and the treasurer)
+      setClaims((res.data?.results ?? res.data ?? []).filter((c) => c.can_review));
     } catch {
       setClaims([]);
     }

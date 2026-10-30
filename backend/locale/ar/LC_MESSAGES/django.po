@@ -607,3 +607,24 @@ msgstr "يجب أن يكون المعامل بين 0.1 و10."
 
 msgid "Late fee: choose none, a fixed amount or a percent (up to 100), and 0-60 grace days."
 msgstr "غرامة التأخير: اختر بدون أو مبلغاً ثابتاً أو نسبة (حتى 100) وأيام سماح من 0 إلى 60."
+
+msgid "Only the building's admins can assign board titles."
+msgstr "مديرو العمارة وحدهم يمكنهم تعيين المناصب."
+
+msgid "Choose chair, treasurer or secretary."
+msgstr "اختر رئيساً أو أمين صندوق أو أمين سر."
+
+msgid "That person is not a member of this building."
+msgstr "هذا الشخص ليس عضواً في هذه العمارة."
+
+msgid "Only the building's admins or treasurer can review this."
+msgstr "مديرو العمارة أو أمين الصندوق وحدهم يمكنهم مراجعة هذا."
+
+msgid "Chair"
+msgstr "الرئيس"
+
+msgid "Treasurer"
+msgstr "أمين الصندوق"
+
+msgid "Secretary"
+msgstr "أمين السر"

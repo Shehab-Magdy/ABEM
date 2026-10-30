@@ -201,6 +201,57 @@ class BuildingViewSet(ModelViewSet):
         )
         return Response(self.get_serializer(building).data)
 
+    @action(detail=True, methods=["get", "post"], url_path="board", permission_classes=[IsAuthenticated])
+    def board(self, request, pk=None):
+        """
+        GET  /buildings/{id}/board/                 – who holds each title (chair, treasurer, secretary); visible to members
+        POST /buildings/{id}/board/ {user_id, role} – an admin of the building gives a member a title ("" removes it)
+        The chair approves large expenses, the treasurer confirms InstaPay transfers, the secretary keeps the minutes.
+        """
+        from .scoping import BOARD_ROLES, managed_buildings
+
+        building = self.get_object()
+        is_manager = managed_buildings(request.user).filter(pk=building.pk).exists()
+
+        if request.method == "POST":
+            if not is_manager:
+                return Response({"detail": _("Only the building's admins can assign board titles.")}, status=403)
+            role = request.data.get("role", "")
+            if role not in ("",) + BOARD_ROLES:
+                return Response({"detail": _("Choose chair, treasurer or secretary.")}, status=400)
+            member = UserBuilding.objects.filter(building=building, user_id=request.data.get("user_id")).first() \
+                if request.data.get("user_id") else None
+            if member is None:
+                return Response({"detail": _("That person is not a member of this building.")}, status=400)
+            with transaction.atomic():
+                if role:  # one holder per title: the previous holder (if any) loses it
+                    UserBuilding.objects.filter(building=building, board_role=role).exclude(pk=member.pk).update(board_role="")
+                member.board_role = role
+                member.save(update_fields=["board_role"])
+            log_action(
+                user=request.user, action="update", entity="board", entity_id=building.pk,
+                changes={"user": str(member.user_id), "role": role}, request=request,
+            )
+
+        holders = {ub.board_role: ub for ub in UserBuilding.objects.filter(building=building).exclude(board_role="").select_related("user")}
+        data = {
+            "board": [
+                {
+                    "role": role,
+                    "user_id": str(holders[role].user_id) if role in holders else None,
+                    "name": (holders[role].user.get_full_name() or holders[role].user.email) if role in holders else "",
+                }
+                for role in BOARD_ROLES
+            ],
+        }
+        if is_manager:  # who an admin can pick from
+            data["candidates"] = [
+                {"user_id": str(ub.user_id), "name": ub.user.get_full_name() or ub.user.email, "board_role": ub.board_role}
+                for ub in UserBuilding.objects.filter(building=building).select_related("user").order_by("user__first_name")
+                if ub.user.is_active
+            ]
+        return Response(data)
+
     @action(detail=True, methods=["get", "post"], url_path="subscription", permission_classes=[IsAuthenticated, IsAdminRole])
     def subscription(self, request, pk=None):
         """

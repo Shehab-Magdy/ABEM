@@ -67,6 +67,11 @@ class UserBuilding(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     building = models.ForeignKey(Building, on_delete=models.CASCADE)
     joined_at = models.DateTimeField(auto_now_add=True)
+    # Title on the building's board (الهيئة الإدارية). One holder per title per building.
+    board_role = models.CharField(
+        max_length=10, blank=True, default="",
+        choices=[("chair", "Chair"), ("treasurer", "Treasurer"), ("secretary", "Secretary")],
+    )
 
     class Meta:
         unique_together = ("user", "building")

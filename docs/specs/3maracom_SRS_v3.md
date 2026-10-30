@@ -907,7 +907,7 @@ Phases are delivered in order; within a phase, requirements are independent unle
 - The owner remains responsible for the unit; owners see that a tenant is linked and can end the link.
 - Invite links can create either an owner or a tenant link.
 
-**R-5 Board roles** — 🔲 Planned. Roles inside a building: chair (رئيس), treasurer (أمين الصندوق), secretary (أمين السر). Treasurer can record payments and expenses; secretary can send announcements and edit minutes; chair can approve spending. Co-admins keep full powers until roles are assigned.
+**R-5 Board roles** — ✅ Implemented (`/board` screen, `GET/POST /buildings/{id}/board/`). One holder per title. The treasurer reviews InstaPay transfers for their building (they see and confirm them from their home screen); the chair approves large expenses (R-7) and the secretary keeps the minutes (R-8). Building admins keep full powers. Roles inside a building: chair (رئيس), treasurer (أمين الصندوق), secretary (أمين السر). Treasurer can record payments and expenses; secretary can send announcements and edit minutes; chair can approve spending. Co-admins keep full powers until roles are assigned.
 
 **R-6 Admin handover** — ✅ Implemented (`POST /buildings/{id}/transfer-admin/` to a co-admin; "Hand over" action on the Buildings screen). The primary administrator can transfer the building to another member; the previous admin becomes co-admin or a resident. All history (payments, audit log) stays intact and the transfer itself is audited. Required by R-3 for admins who want to delete their account.
 

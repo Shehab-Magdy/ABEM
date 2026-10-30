@@ -17,7 +17,7 @@ from django.utils.translation import gettext_lazy as _
 from apps.apartments.models import Apartment
 from apps.audit.mixins import log_action
 from apps.authentication.permissions import IsAdminRole
-from apps.buildings.scoping import ensure_manages, managed_buildings
+from apps.buildings.scoping import board_building_ids, ensure_manages, has_board_role, managed_buildings
 
 from .allocation import AllocationError, auto_allocate, record_allocations, resolve_allocations
 from .models import AssetSale, BuildingAsset, ClaimStatus, Payment, PaymentClaim, PaymentExpense, PaymentMethod
@@ -525,15 +525,26 @@ class PaymentClaimViewSet(ModelViewSet):
         if user.role == "admin":
             qs = qs.filter(apartment__building__in=managed_buildings(user))
         else:
-            qs = qs.filter(Q(apartment__owner=user) | Q(apartment__owners=user)).distinct()
+            # residents see their own claims; a building's treasurer also sees (and reviews) its claims
+            qs = qs.filter(
+                Q(apartment__owner=user) | Q(apartment__owners=user) | Q(apartment__building_id__in=board_building_ids(user, "treasurer"))
+            ).distinct()
         if status_param := self.request.query_params.get("status"):
             qs = qs.filter(status=status_param)
         return qs
 
     def get_permissions(self):
-        if self.action in ("confirm", "reject"):
-            return [IsAuthenticated(), IsAdminRole()]
         return [IsAuthenticated()]
+
+    def _ensure_can_review(self, claim):
+        """Admins of the building and its treasurer confirm or reject transfers; residents cannot."""
+        user = self.request.user
+        building_id = claim.apartment.building_id
+        allowed = (user.role == "admin" and managed_buildings(user).filter(pk=building_id).exists()) or has_board_role(
+            user, building_id, "treasurer"
+        )
+        if not allowed:
+            raise PermissionDenied("Only the building's admins or treasurer can review this.")
 
     def perform_create(self, serializer):
         user = self.request.user
@@ -545,6 +556,7 @@ class PaymentClaimViewSet(ModelViewSet):
 
     @action(detail=True, methods=["post"], url_path="confirm")
     def confirm(self, request, pk=None):
+        self._ensure_can_review(self.get_object())
         with transaction.atomic():
             claim = PaymentClaim.objects.select_for_update().select_related("apartment").get(pk=self.get_object().pk)
             if claim.status != ClaimStatus.PENDING:
@@ -575,6 +587,7 @@ class PaymentClaimViewSet(ModelViewSet):
     @action(detail=True, methods=["post"], url_path="reject")
     def reject(self, request, pk=None):
         claim = self.get_object()
+        self._ensure_can_review(claim)
         if claim.status != ClaimStatus.PENDING:
             return Response({"detail": _("This claim was already reviewed.")}, status=409)
         claim.status = ClaimStatus.REJECTED

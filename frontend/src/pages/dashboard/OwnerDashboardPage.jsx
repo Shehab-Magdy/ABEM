@@ -33,6 +33,7 @@ import { PrivateSEO } from "../../components/seo/SEO";
 import TreasuryCard from "../../components/TreasuryCard";
 import QuickActions from "../../components/QuickActions";
 import UnitClaimRequestsCard from "../../components/UnitClaimRequestsCard";
+import PendingClaimsCard from "../../components/PendingClaimsCard";
 import { formatCurrency } from "../../utils/formatters";
 
 const PAYMENT_METHOD_KEYS = {
@@ -156,6 +157,8 @@ export default function OwnerDashboardPage() {
       </Typography>
 
       <UnitClaimRequestsCard />
+
+      <PendingClaimsCard />
 
       <QuickActions />
 

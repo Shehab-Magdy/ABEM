@@ -18,6 +18,9 @@ export const buildingsApi = {
   /** Monthly subscription plan (الاشتراك الشهري): amount, billing day, days until due. */
   subscription: (id) => axiosClient.get(`/buildings/${id}/subscription/`),
   saveSubscription: (id, data) => axiosClient.post(`/buildings/${id}/subscription/`, data),
+  /** Board titles (chair / treasurer / secretary): everyone reads, building admins assign. */
+  board: (id) => axiosClient.get(`/buildings/${id}/board/`),
+  setBoardRole: (id, userId, role) => axiosClient.post(`/buildings/${id}/board/`, { user_id: userId, role }),
   list: (params, { signal } = {}) => axiosClient.get("/buildings/", { params, signal }),
   get: (id, { signal } = {}) => axiosClient.get(`/buildings/${id}/`, { signal }),
   create: (data) => axiosClient.post("/buildings/", data, data instanceof FormData ? multipartConfig : undefined),
