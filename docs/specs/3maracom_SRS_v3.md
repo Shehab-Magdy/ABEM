@@ -893,7 +893,7 @@ Phases are delivered in order; within a phase, requirements are independent unle
 - The web app has a statement screen with a month picker, a PDF download and a Share action (system share sheet where supported, download otherwise).
 - Opening balance + received − expenses = closing balance, using the same rules as the treasury (starting balance + payments + asset sales − expenses).
 
-**R-3 Legal pages & account deletion** — 🔲 Planned. *Why:* required before a public or store launch and for user trust.
+**R-3 Legal pages & account deletion** — ✅ Implemented (draft policy text; lawyer review and a support email are still needed before launch). *Why:* required before a public or store launch and for user trust.
 - Privacy Policy and Terms of Service pages in Arabic and English, reachable without signing in and linked from the footer and the sign-up form.
 - Sign-up requires accepting the terms (checkbox); acceptance time is stored.
 - A signed-in user can delete their account (password confirmation). Deletion deactivates the account and removes personal data (name, email, phone, picture) while keeping financial records (payments, expense shares, audit log) attached to an anonymised user.

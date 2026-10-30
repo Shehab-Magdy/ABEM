@@ -119,6 +119,7 @@ class AuthAPI:
             "first_name": first_name,
             "last_name": last_name,
             "role": role,
+            "accept_terms": True,  # sign-up requires accepting the Terms and Privacy Policy
         }
         if phone:
             payload["phone"] = phone

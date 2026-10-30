@@ -6,6 +6,7 @@ from datetime import timedelta
 
 from django.conf import settings
 from django.core.exceptions import ValidationError as DjangoValidationError
+from django.db import transaction
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
@@ -360,3 +361,60 @@ class ResetPasswordView(APIView):
         user.save(update_fields=["password", "must_change_password", "failed_login_attempts", "locked_until"])
         log_action(user=user, action="reset_password", entity="user", entity_id=user.id, request=request)
         return Response({"detail": _("Password has been reset. You can now sign in.")})
+
+
+# ── Delete my account ────────────────────────────────────────────────────────
+
+class DeleteAccountView(APIView):
+    """
+    POST /auth/delete-account/ {password}
+
+    Removes the person, keeps the books: the account is deactivated and its personal data
+    (name, email, phone, picture, memberships) is erased, while payments, expense shares and the
+    audit log stay attached to an anonymised user. The primary admin of a building must hand it
+    over first so no building is left without an administrator.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        from apps.apartments.models import Apartment
+        from apps.buildings.models import Building, BuildingCoAdmin, UserBuilding
+
+        user = request.user
+        if not user.check_password(request.data.get("password") or ""):
+            return Response({"detail": _("Password is incorrect.")}, status=status.HTTP_400_BAD_REQUEST)
+
+        owned = Building.objects.filter(admin=user, deleted_at__isnull=True)
+        if owned.exists():
+            return Response(
+                {"detail": _("You are the administrator of a building. Hand it over to another admin before deleting your account.")},
+                status=status.HTTP_409_CONFLICT,
+            )
+
+        with transaction.atomic():
+            for apt in Apartment.objects.filter(owner=user):
+                apt.owner = None
+                apt.save(update_fields=["owner", "updated_at"])
+            Apartment.owners.through.objects.filter(user_id=user.pk).delete()
+            UserBuilding.objects.filter(user=user).delete()
+            BuildingCoAdmin.objects.filter(user=user).delete()
+
+            log_action(user=user, action="delete_account", entity="user", entity_id=user.id, request=request)
+
+            user.email = f"deleted-{user.pk}@deleted.invalid"
+            user.first_name = ""
+            user.last_name = ""
+            user.phone = ""
+            user.profile_picture = None
+            user.is_active = False
+            user.set_unusable_password()
+            user.save()
+
+            # sign the person out everywhere
+            from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken, OutstandingToken
+
+            for token in OutstandingToken.objects.filter(user=user):
+                BlacklistedToken.objects.get_or_create(token=token)
+
+        return Response({"detail": _("Your account has been deleted.")})

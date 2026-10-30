@@ -20,6 +20,7 @@ import {
   CircularProgress,
   Divider,
   FormControl,
+  Checkbox,
   FormControlLabel,
   FormLabel,
   IconButton,
@@ -78,6 +79,7 @@ function AccountStep({ onDone, prefillEmail }) {
         password: data.password,
         confirm_password: data.confirm_password,
         preferred_language: i18n.language || "en",
+        accept_terms: data.accept_terms === true,
       });
       const { access, refresh, user } = res.data;
       login(user, access, refresh);
@@ -166,6 +168,21 @@ function AccountStep({ onDone, prefillEmail }) {
               </RadioGroup>
             )}
           />
+        </FormControl>
+        <FormControl error={!!errors.accept_terms}>
+          <FormControlLabel
+            control={<Controller name="accept_terms" control={control} defaultValue={false} rules={{ validate: (v) => v === true || t("accept_terms_required") }}
+              render={({ field }) => <Checkbox checked={field.value} onChange={(e) => field.onChange(e.target.checked)} />} />}
+            label={
+              <Typography variant="body2">
+                {t("accept_terms_prefix")}{" "}
+                <Link component={RouterLink} to="/terms" target="_blank" underline="hover">{t("terms_link")}</Link>
+                {" "}{t("and")}{(i18n.language || "").startsWith("ar") ? "" : " "}
+                <Link component={RouterLink} to="/privacy" target="_blank" underline="hover">{t("privacy_link")}</Link>
+              </Typography>
+            }
+          />
+          {errors.accept_terms && <Typography variant="caption" color="error">{errors.accept_terms.message}</Typography>}
         </FormControl>
         <Button type="submit" variant="contained" size="large" fullWidth disabled={loading}>
           {loading ? <CircularProgress size={24} color="inherit" /> : t("continue")}

@@ -28,6 +28,7 @@ i18n
       "tutorial",
       "maintenance",
       "statement",
+      "legal",
     ],
     backend: { loadPath: "/locales/{{lng}}/{{ns}}.json" },
     detection: {

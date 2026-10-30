@@ -33,6 +33,8 @@ class User(AbstractBaseUser, PermissionsMixin):
     first_name = models.CharField(max_length=150)
     last_name = models.CharField(max_length=150)
     phone = models.CharField(max_length=20, blank=True)
+    # When the user accepted the Terms of Service and Privacy Policy (set at self sign-up)
+    terms_accepted_at = models.DateTimeField(null=True, blank=True)
     profile_picture = models.ImageField(upload_to="profile_pictures/", null=True, blank=True)
     role = models.CharField(max_length=10, choices=UserRole.choices, default=UserRole.OWNER)
     is_active = models.BooleanField(default=True)

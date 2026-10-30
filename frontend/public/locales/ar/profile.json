@@ -15,7 +15,6 @@
   "password_changed": "تم تغيير كلمة المرور بنجاح",
   "language_region": "اللغة والمنطقة",
   "email_readonly": "البريد الإلكتروني (للقراءة فقط)",
-
   "title": "ملفي الشخصي",
   "profilePicture": "صورة الملف الشخصي",
   "changePhoto": "تغيير الصورة",
@@ -32,5 +31,11 @@
   "passwordChangedSuccess": "تم تغيير كلمة المرور بنجاح.",
   "currentPassword": "كلمة المرور الحالية",
   "newPassword": "كلمة المرور الجديدة",
-  "confirmNewPassword": "تأكيد كلمة المرور الجديدة"
+  "confirmNewPassword": "تأكيد كلمة المرور الجديدة",
+  "delete_account": "حذف حسابي",
+  "delete_account_help": "يمسح اسمك وبريدك وهاتفك وصورتك ويفصل حسابك عن العمارة. تبقى السجلات المالية للعمارة دون بياناتك الشخصية.",
+  "delete_account_confirm_title": "هل تريد حذف حسابك؟",
+  "delete_account_confirm_text": "لا يمكن التراجع عن هذا. أدخل كلمة المرور للتأكيد.",
+  "delete_account_confirm": "حذف نهائياً",
+  "cancel": "إلغاء"
 }

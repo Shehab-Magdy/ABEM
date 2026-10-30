@@ -122,12 +122,12 @@ export default function Footer() {
             © {year} عِمارة.كوم | 3maracom — {t("footer_rights", "All rights reserved.")}
           </Typography>
           <Stack direction="row" spacing={2}>
-            <Typography variant="caption" color="text.disabled">
+            <Link component={RouterLink} to="/privacy" variant="caption" color="text.secondary" underline="hover">
               {t("footer_privacy", "Privacy Policy")}
-            </Typography>
-            <Typography variant="caption" color="text.disabled">
+            </Link>
+            <Link component={RouterLink} to="/terms" variant="caption" color="text.secondary" underline="hover">
               {t("footer_terms", "Terms of Service")}
-            </Typography>
+            </Link>
           </Stack>
         </Stack>
       </Container>

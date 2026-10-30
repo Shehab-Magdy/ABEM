@@ -1,0 +1,69 @@
+{
+  "draft_notice": "Draft text, pending legal review before launch.",
+  "contact": "Contact",
+  "back_home": "Back to home",
+  "privacy_title": "Privacy Policy",
+  "privacy_intro": "What data we collect, how we use it and who can see it.",
+  "privacy_sections": [
+    {
+      "h": "What we collect",
+      "p": "Your name, email, phone number (optional) and password (stored hashed); the unit(s) linked to your account; the payments and expenses of your building; a profile picture if you add one; and your language and theme choices."
+    },
+    {
+      "h": "Why we use it",
+      "p": "To run your account and your building's books: recording expenses and payments, sending reminders and notifications, and producing receipts and statements. We do not sell your data and do not use it for advertising."
+    },
+    {
+      "h": "Who can see it",
+      "p": "Your building's admins see unit and payment data inside their own building only. Residents see the building treasury and the statement by unit number, without names. No admin can see another building's data."
+    },
+    {
+      "h": "Services we rely on",
+      "p": "We use providers to host the app and database, store images, and send email and notifications. Each provider receives only what it needs to do its job."
+    },
+    {
+      "h": "How long we keep it",
+      "p": "We keep your data while your account exists. A building's financial records (payments, expenses, audit log) remain after an account is deleted, without your personal details, because the building needs them for its accounts."
+    },
+    {
+      "h": "Your rights",
+      "p": "You can edit your details on your profile and delete your account at any time from the profile page. Deleting erases your name, email, phone and picture and removes your account from the building."
+    },
+    {
+      "h": "Security",
+      "p": "Passwords are hashed, connections are encrypted, and accounts lock after repeated failed sign-ins. No system is perfectly secure, so please tell us straight away if something looks wrong."
+    }
+  ],
+  "terms_title": "Terms of Service",
+  "terms_intro": "The simple rules for using 3maracom.",
+  "terms_sections": [
+    {
+      "h": "Using the service",
+      "p": "3maracom is a tool for keeping a building's accounts between its admin and residents. By using it you accept these terms and the Privacy Policy."
+    },
+    {
+      "h": "Your account",
+      "p": "You are responsible for the accuracy of your details and for keeping your password secret. Do not share your account. You must be an adult or be entitled to act for the unit linked to your account."
+    },
+    {
+      "h": "The building admin's responsibility",
+      "p": "The building admin is responsible for the accuracy of the expenses and payments they record and for confirming transfers. 3maracom is a bookkeeping tool; it does not receive or move money."
+    },
+    {
+      "h": "Paying through InstaPay",
+      "p": "The transfer happens outside the app, in your banking app. The app records the resident's statement that they paid, and it counts only after the building admin confirms it. Disputes about transfers are settled between resident and admin."
+    },
+    {
+      "h": "Acceptable use",
+      "p": "Do not try to reach another building's data, use the service for anything unlawful, or disrupt or abuse it."
+    },
+    {
+      "h": "Availability and liability",
+      "p": "We aim to keep the service running but do not promise it will be uninterrupted or error-free. To the extent the law allows, we are not liable for indirect losses from using the service."
+    },
+    {
+      "h": "Changes",
+      "p": "We may update these terms and will tell you about important changes in the app. Continuing to use the service after notice means you accept them."
+    }
+  ]
+}
