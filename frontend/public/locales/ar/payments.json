@@ -102,5 +102,7 @@
   "reverseHint": "الإلغاء لا يحذف الدفعة. يضيف قيداً سالباً مرتبطاً بها ويعيد المبلغ إلى رصيد الوحدة.",
   "reverseReason": "السبب (مطلوب)",
   "reverseDone": "تم إلغاء الدفعة.",
-  "reverseError": "تعذر إلغاء الدفعة."
+  "reverseError": "تعذر إلغاء الدفعة.",
+  "unit_option": "وحدة {{number}}",
+  "unit_option_store": "وحدة {{number}} (محل)"
 }

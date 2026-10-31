@@ -49,3 +49,29 @@ def test_numbers_follow_the_data(admin_user, superuser):
     health = {b["name"]: b["health"] for b in data["buildings"]}
     assert health == {"Busy": "active", "Empty": "new"}
     assert data["signups_by_month"]
+
+
+def test_building_rows_carry_their_plan(admin_user, superuser):
+    from datetime import timedelta
+
+    from apps.plans.models import BuildingPlan, Plan
+
+    paid = Building.objects.create(name="Paid", address="1 St", admin=admin_user)
+    lapsed = Building.objects.create(name="Lapsed", address="2 St", admin=admin_user)
+    old = Building.objects.create(name="Old", address="3 St", admin=admin_user)
+    Building.objects.create(name="NoPlan", address="4 St", admin=admin_user)
+    plus, _ = Plan.objects.get_or_create(code="plus", defaults={"name_en": "Plus", "name_ar": "متقدمة"})
+    today = date.today()
+    BuildingPlan.objects.create(building=paid, plan=plus, paid_until=today + timedelta(days=30))
+    BuildingPlan.objects.create(building=lapsed, plan=plus, paid_until=today - timedelta(days=2))
+    BuildingPlan.objects.create(building=old, plan=plus, paid_until=today - timedelta(days=400))
+
+    rows = {b["name"]: b for b in _get(superuser).data["buildings"]}
+    assert rows["Paid"]["plan"] == {
+        "code": "plus", "name_en": plus.name_en, "name_ar": plus.name_ar,
+        "paid_until": (today + timedelta(days=30)).isoformat(), "status": "active",
+    }
+    assert rows["Lapsed"]["plan"]["status"] == "grace"
+    assert rows["Old"]["plan"]["status"] == "expired"
+    assert rows["NoPlan"]["plan"] is None
+    assert {"id", "name", "units", "created_at", "last_activity", "health"} <= set(rows["Paid"])

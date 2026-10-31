@@ -45,9 +45,8 @@ const PAYMENT_METHOD_KEYS = {
 };
 
 export default function OwnerDashboardPage() {
-  const { t, i18n } = useTranslation(["dashboard", "payments"]);
+  const { t } = useTranslation(["dashboard", "payments"]);
   const { user } = useAuth();
-  const isRtl = (i18n.language || "en").startsWith("ar");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [data, setData] = useState(null);
@@ -137,21 +136,6 @@ export default function OwnerDashboardPage() {
     <>
     <PrivateSEO title="3maracom – Dashboard" />
     <Box sx={{ p: 3 }}>
-      {/* ── Dashboard header banner ── */}
-      <Box sx={{ mb: 3 }}>
-        <img
-          src="/abem-dashboard-header.svg"
-          alt="3maracom Dashboard"
-          style={{
-            width: '100%',
-            height: 'auto',
-            borderRadius: 8,
-            display: 'block',
-            transform: isRtl ? 'scaleX(-1)' : 'none',
-          }}
-        />
-      </Box>
-
       <Typography variant="h4" fontWeight={700} gutterBottom>
         {t(user?.role === "renter" ? "renter_dashboard" : "owner_dashboard")}
       </Typography>

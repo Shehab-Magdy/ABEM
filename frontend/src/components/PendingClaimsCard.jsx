@@ -37,8 +37,12 @@ export default function PendingClaimsCard() {
           {claims.map((c) => (
             <Stack key={c.id} direction={{ xs: "column", sm: "row" }} spacing={1} alignItems={{ sm: "center" }} justifyContent="space-between">
               <Typography>
-                {c.building_name} — {c.unit_number}: <strong>{formatCurrency(c.amount)}</strong>
-                {c.reference ? ` (${c.reference})` : ""}
+                <bdi>{c.building_name}</bdi> — <bdi>{c.unit_number}</bdi>: <strong><bdi>{formatCurrency(c.amount)}</bdi></strong>
+                {c.reference ? (
+                  <>
+                    {" "}(<bdi style={{ whiteSpace: "nowrap" }}>{c.reference}</bdi>)
+                  </>
+                ) : null}
               </Typography>
               <Stack direction="row" spacing={1}>
                 <Button variant="contained" color="success" sx={{ minHeight: 44 }} onClick={() => review(paymentsApi.confirmClaim, c.id)}>

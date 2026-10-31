@@ -8,6 +8,8 @@
   "units_of": "{{n}} of {{max}} units",
   "monthly": "Monthly",
   "yearly": "Yearly",
+  "save_percent": "Save {{pct}}%",
+  "save_with_yearly": "Save {{pct}}% with the yearly plan",
   "free": "Free",
   "limit_unlimited": "Unlimited units",
   "limit_units": "Up to {{n}} units",

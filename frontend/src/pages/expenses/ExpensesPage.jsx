@@ -452,8 +452,8 @@ export default function ExpensesPage() {
 
       {/* Building selector + filters */}
       <Paper sx={{ p: 2, mb: 2 }}>
-        <Stack direction="row" spacing={2} flexWrap="wrap" alignItems="center">
-          <FormControl size="small" sx={{ minWidth: 220 }}>
+        <Stack direction="row" spacing={1.5} useFlexGap flexWrap="wrap" alignItems="center">
+          <FormControl size="small" sx={{ minWidth: 180 }}>
             <InputLabel>{t("building")}</InputLabel>
             <Select
               label={t("building")}
@@ -498,7 +498,7 @@ export default function ExpensesPage() {
             InputLabelProps={{ shrink: true }}
           />
 
-          <FormControl size="small" sx={{ minWidth: 180 }}>
+          <FormControl size="small" sx={{ minWidth: 150 }}>
             <InputLabel>{t("category")}</InputLabel>
             <Select
               label={t("category")}
@@ -529,7 +529,7 @@ export default function ExpensesPage() {
         <TableContainer id="expenses-table" component={Paper}>
           <Table size="small">
             <TableHead>
-              <TableRow sx={{ bgcolor: "grey.100" }}>
+              <TableRow sx={{ bgcolor: "action.hover" }}>
                 <TableCell>{t("title")}</TableCell>
                 <TableCell>{t("amount")}</TableCell>
                 <TableCell>{t("date")}</TableCell>

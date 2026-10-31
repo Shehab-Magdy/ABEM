@@ -105,5 +105,7 @@
   "renters_close": "إغلاق",
   "renters_load_error": "تعذّر إتمام العملية.",
   "renters_whatsapp_text": "تمت دعوتك للسكن في الوحدة {{unit}} على عِمارة.كوم: {{link}}",
-  "renter_dashboard": "بيتي"
+  "renter_dashboard": "بيتي",
+  "progress_of": "{{paid}} من {{total}}",
+  "units_settled_of": "{{paid}} من {{total}} وحدة سدّدت"
 }

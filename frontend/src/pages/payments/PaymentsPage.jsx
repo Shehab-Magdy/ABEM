@@ -84,8 +84,8 @@ function balanceColor(balance) {
 function balanceLabel(balance, t) {
   const n = parseFloat(balance) || 0;
   if (n === 0) return t("balanceSettled");
-  if (n < 0) return `${t("balanceCredit")}: ${Math.abs(n).toFixed(2)}`;
-  return `${t("balanceOwes")}: ${n.toFixed(2)}`;
+  if (n < 0) return `${t("balanceCredit")}: ${formatCurrency(Math.abs(n))}`;
+  return `${t("balanceOwes")}: ${formatCurrency(n)}`;
 }
 
 function methodLabel(method, t) {
@@ -344,8 +344,8 @@ export default function PaymentsPage() {
 
       {/* Building + Apartment selectors */}
       <Paper sx={{ p: 2, mb: 2 }}>
-        <Stack direction="row" spacing={2} flexWrap="wrap" alignItems="center">
-          <FormControl size="small" sx={{ minWidth: 220 }}>
+        <Stack direction={{ xs: "column", sm: "row" }} spacing={2} alignItems={{ xs: "stretch", sm: "center" }}>
+          <FormControl size="small" sx={{ minWidth: { sm: 220 } }} fullWidth={false}>
             <InputLabel>{t("building")}</InputLabel>
             <Select
               label={t("building")}
@@ -358,7 +358,7 @@ export default function PaymentsPage() {
             </Select>
           </FormControl>
 
-          <FormControl size="small" sx={{ minWidth: 220 }}>
+          <FormControl size="small" sx={{ minWidth: { sm: 220 } }}>
             <InputLabel>{t("apartment")}</InputLabel>
             <Select
               label={t("apartment")}
@@ -368,7 +368,7 @@ export default function PaymentsPage() {
             >
               {apartments.map((a) => (
                 <MenuItem key={a.id} value={a.id}>
-                  Unit {a.unit_number}{a.owner_names?.length > 0 ? ` — ${a.owner_names.join(", ")}` : ""}
+                  {t("unit_option", { number: a.unit_number })}{a.owner_names?.length > 0 ? ` — ${a.owner_names.join(", ")}` : ""}
                 </MenuItem>
               ))}
             </Select>
@@ -389,13 +389,13 @@ export default function PaymentsPage() {
               <Grid item xs={6} sm={3}>
                 <Typography variant="body2" color="text.secondary">{t("totalOwed")}</Typography>
                 <Typography fontWeight={600}>
-                  {parseFloat(balance.total_owed).toFixed(2)}
+                  {formatCurrency(balance.total_owed)}
                 </Typography>
               </Grid>
               <Grid item xs={6} sm={3}>
                 <Typography variant="body2" color="text.secondary">{t("totalPaid")}</Typography>
                 <Typography fontWeight={600}>
-                  {parseFloat(balance.total_paid).toFixed(2)}
+                  {formatCurrency(balance.total_paid)}
                 </Typography>
               </Grid>
               <Grid item xs={6} sm={3}>
@@ -422,7 +422,7 @@ export default function PaymentsPage() {
       )}
 
       {/* Payment history table */}
-      <TableContainer id="payments-table" component={Paper}>
+      <TableContainer id="payments-table" component={Paper} sx={{ overflowX: "auto", maxWidth: "100%" }}>
         <Table size="small">
           <TableHead>
             <TableRow sx={{ backgroundColor: "primary.main" }}>
@@ -435,7 +435,7 @@ export default function PaymentsPage() {
                 { key: "colBalanceAfter", label: t("colBalanceAfter") },
                 { key: "colReceipt", label: t("colReceipt") },
               ].map((h) => (
-                <TableCell key={h.key} sx={{ color: "white", fontWeight: 600 }}>
+                <TableCell key={h.key} sx={{ color: "primary.contrastText", fontWeight: 600, whiteSpace: "nowrap" }}>
                   {h.label}
                 </TableCell>
               ))}
@@ -467,7 +467,7 @@ export default function PaymentsPage() {
                     )}
                   </TableCell>
                   <TableCell>{p.payment_date}</TableCell>
-                  <TableCell>{parseFloat(p.amount_paid).toFixed(2)}</TableCell>
+                  <TableCell sx={{ whiteSpace: "nowrap" }}>{formatCurrency(p.amount_paid)}</TableCell>
                   <TableCell>{methodLabel(p.payment_method, t)}</TableCell>
                   <TableCell
                     sx={{
@@ -589,7 +589,7 @@ export default function PaymentsPage() {
               >
                 {apartments.map((a) => (
                   <MenuItem key={a.id} value={a.id}>
-                    Unit {a.unit_number}{a.type === "store" ? " (Store)" : ""}
+                    {t(a.type === "store" ? "unit_option_store" : "unit_option", { number: a.unit_number })}
                     {a.owner_names?.length > 0 ? ` — ${a.owner_names.join(", ")}` : " — (Unoccupied)"}
                   </MenuItem>
                 ))}

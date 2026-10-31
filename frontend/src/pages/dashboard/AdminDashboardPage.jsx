@@ -37,7 +37,7 @@ import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../../hooks/useAuth";
 import axiosClient from "../../api/axiosClient";
-import { formatCurrency, whatsappLink } from "../../utils/formatters";
+import { formatCurrency, formatNumber, whatsappLink } from "../../utils/formatters";
 import { PrivateSEO } from "../../components/seo/SEO";
 import TreasuryCard from "../../components/TreasuryCard";
 import PendingClaimsCard from "../../components/PendingClaimsCard";
@@ -49,6 +49,7 @@ const MONTH_LABELS = [
 ];
 
 function TrendBadge({ pct, invertColors }) {
+  const { t } = useTranslation("dashboard");
   if (pct === null || pct === undefined) return null;
   const up = pct >= 0;
   // invertColors=true for expenses: rising expenses = bad (red)
@@ -59,7 +60,7 @@ function TrendBadge({ pct, invertColors }) {
     <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, mt: 0.5 }}>
       <Icon sx={{ fontSize: 14, color }} />
       <Typography variant="caption" sx={{ color, fontWeight: 600 }}>
-        {up ? "+" : ""}{pct}% vs last month
+        <bdi dir="ltr">{up ? "+" : ""}{formatNumber(pct)}%</bdi> {t("vs_last_month")}
       </Typography>
     </Box>
   );
@@ -67,8 +68,7 @@ function TrendBadge({ pct, invertColors }) {
 
 export default function AdminDashboardPage() {
   const theme = useTheme();
-  const { t, i18n } = useTranslation("dashboard");
-  const isRtl = (i18n.language || "en").startsWith("ar");
+  const { t } = useTranslation("dashboard");
   const { isAdmin } = useAuth();
   const navigate = useNavigate();
 
@@ -141,21 +141,6 @@ export default function AdminDashboardPage() {
     <>
     <PrivateSEO title="3maracom – Dashboard" />
     <Box sx={{ p: 3 }}>
-      {/* Dashboard header banner */}
-      <Box sx={{ mb: 3 }}>
-        <img
-          src="/abem-dashboard-header.svg"
-          alt="3maracom Dashboard"
-          style={{
-            width: '100%',
-            height: 'auto',
-            borderRadius: 8,
-            display: 'block',
-            transform: isRtl ? 'scaleX(-1)' : 'none',
-          }}
-        />
-      </Box>
-
       <Typography variant="h4" fontWeight={700} gutterBottom>
         {t("admin_dashboard")}
       </Typography>
@@ -223,7 +208,7 @@ export default function AdminDashboardPage() {
 
             {/* Total Income */}
             <Grid item xs={12} sm={6} md={3}>
-              <Card>
+              <Card sx={{ height: "100%", border: "2px solid transparent" }}>
                 <CardContent>
                   <Typography variant="overline" color="text.secondary">{t("total_income")}</Typography>
                   <Typography variant="h5" fontWeight={700} color="success.main" data-testid="total-income">
@@ -251,7 +236,7 @@ export default function AdminDashboardPage() {
 
             {/* Total Expenses */}
             <Grid item xs={12} sm={6} md={3}>
-              <Card>
+              <Card sx={{ height: "100%", border: "2px solid transparent" }}>
                 <CardContent>
                   <Typography variant="overline" color="text.secondary">{t("total_expenses")}</Typography>
                   <Typography variant="h5" fontWeight={700} color="warning.main" data-testid="total-expenses">
@@ -266,9 +251,10 @@ export default function AdminDashboardPage() {
             <Grid item xs={12} sm={6} md={3}>
               <Card
                 sx={{
+                  height: "100%",
                   cursor: data?.overdue_units_count > 0 ? "pointer" : "default",
-                  border: data?.overdue_units_count > 0 ? "2px solid" : undefined,
-                  borderColor: data?.overdue_units_count > 0 ? "error.main" : undefined,
+                  border: "2px solid",
+                  borderColor: data?.overdue_units_count > 0 ? "error.main" : "transparent",
                 }}
                 onClick={() => data?.overdue_units_count > 0 && navigate("/payments")}
                 data-testid="overdue-units-card"
@@ -298,7 +284,7 @@ export default function AdminDashboardPage() {
             {/* Buildings */}
             <Grid item xs={12} sm={6} md={3}>
               <Card
-                sx={{ cursor: "pointer" }}
+                sx={{ height: "100%", cursor: "pointer", border: "2px solid transparent" }}
                 onClick={() => navigate("/buildings")}
                 data-testid="buildings-card"
               >
@@ -335,7 +321,7 @@ export default function AdminDashboardPage() {
                     <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 0.5 }}>
                       <Box sx={{ flex: 1 }}>
                         <Tooltip
-                          title={`${data.payment_coverage.paid} of ${data.payment_coverage.total_billed} units settled`}
+                          title={t("units_settled_of", { paid: data.payment_coverage.paid, total: data.payment_coverage.total_billed })}
                         >
                           <LinearProgress
                             variant="determinate"
@@ -345,8 +331,8 @@ export default function AdminDashboardPage() {
                           />
                         </Tooltip>
                       </Box>
-                      <Typography variant="body2" fontWeight={600} sx={{ minWidth: 80 }}>
-                        {data.payment_coverage.paid} / {data.payment_coverage.total_billed}
+                      <Typography variant="body2" fontWeight={600} sx={{ minWidth: 80, whiteSpace: "nowrap" }}>
+                        {t("progress_of", { paid: formatNumber(data.payment_coverage.paid), total: formatNumber(data.payment_coverage.total_billed) })}
                       </Typography>
                       {data.payment_coverage.paid === data.payment_coverage.total_billed && (
                         <Chip label={t("all_paid")} color="success" size="small" />
@@ -371,7 +357,7 @@ export default function AdminDashboardPage() {
                 <TableContainer component={Paper} variant="outlined">
                   <Table size="small">
                     <TableHead>
-                      <TableRow sx={{ bgcolor: "grey.100" }}>
+                      <TableRow sx={{ bgcolor: "action.hover" }}>
                         <TableCell><strong>{t("expense")}</strong></TableCell>
                         <TableCell><strong>{t("category")}</strong></TableCell>
                         <TableCell align="right"><strong>{t("amount_egp")}</strong></TableCell>
@@ -424,7 +410,7 @@ export default function AdminDashboardPage() {
                 <TableContainer component={Paper} variant="outlined">
                   <Table size="small">
                     <TableHead>
-                      <TableRow sx={{ bgcolor: "grey.100" }}>
+                      <TableRow sx={{ bgcolor: "action.hover" }}>
                         {[
                           { label: t("unit_col"), field: "unit_number" },
                           { label: t("building_col"), field: "building_name" },
