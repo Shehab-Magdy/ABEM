@@ -20,7 +20,7 @@ import {
   Tooltip,
   Typography,
 } from "@mui/material";
-import { DataGrid } from "@mui/x-data-grid";
+import DataTable from "../../components/DataTable";
 import {
   Add,
   Block,
@@ -62,7 +62,10 @@ export default function UsersPage() {
   const { t } = useTranslation("users");
   const [rows, setRows] = useState([]);
   const [rowCount, setRowCount] = useState(0);
-  const [paginationModel, setPaginationModel] = useState({ page: 0, pageSize: 20 });
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [search, setSearch] = useState("");
+  const [sort, setSort] = useState({ id: "created_at", direction: "desc" });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -106,8 +109,10 @@ export default function UsersPage() {
     setLoading(true);
     try {
       const res = await usersApi.list({
-        page: paginationModel.page + 1,
-        page_size: paginationModel.pageSize,
+        page: page + 1,
+        page_size: rowsPerPage,
+        ...(search ? { search } : {}),
+        ordering: `${sort.direction === "desc" ? "-" : ""}${sort.id}`,
       });
       setRows(res.data.results);
       setRowCount(res.data.count);
@@ -116,7 +121,7 @@ export default function UsersPage() {
     } finally {
       setLoading(false);
     }
-  }, [paginationModel]);
+  }, [page, rowsPerPage, search, sort]);
 
   useEffect(() => { fetchUsers(); }, [fetchUsers]);
 
@@ -401,52 +406,44 @@ export default function UsersPage() {
     );
   };
 
-  // ── DataGrid columns ────────────────────────────────────────────────────────
+  // ── Table columns (server-driven: the API orders by email / role / created_at and searches email and names) ─────────
   const columns = [
-    { field: "email", headerName: t("colEmail"), flex: 1.5, minWidth: 200 },
+    { id: "email", label: t("colEmail") },
+    { id: "full_name", label: t("colName"), sortable: false, render: (row) => `${row.first_name} ${row.last_name}` },
     {
-      field: "full_name",
-      headerName: t("colName"),
-      flex: 1,
-      minWidth: 150,
-      valueGetter: (_, row) => `${row.first_name} ${row.last_name}`,
-    },
-    {
-      field: "role",
-      headerName: t("colRole"),
-      width: 110,
-      renderCell: ({ value }) => (
+      id: "role",
+      label: t("colRole"),
+      render: (row) => (
         <Chip
-          label={value === "admin" ? t("roleAdmin") : value === "renter" ? t("roleRenter") : t("roleOwner")}
+          label={row.role === "admin" ? t("roleAdmin") : row.role === "renter" ? t("roleRenter") : t("roleOwner")}
           size="small"
-          color={value === "admin" ? "primary" : "default"}
+          color={row.role === "admin" ? "primary" : "default"}
         />
       ),
     },
     {
-      field: "is_active",
-      headerName: t("colStatus"),
-      width: 110,
-      renderCell: ({ value }) => (
-        <Chip
-          label={value ? t("statusActive") : t("statusInactive")}
-          size="small"
-          color={value ? "success" : "error"}
-        />
-      ),
-    },
-    {
-      field: "created_at",
-      headerName: t("colCreated"),
-      width: 140,
-      valueFormatter: (value) => new Date(value).toLocaleDateString(),
-    },
-    {
-      field: "actions",
-      headerName: t("colActions"),
-      width: 200,
+      id: "is_active",
+      label: t("colStatus"),
       sortable: false,
-      renderCell: ({ row }) => (
+      render: (row) => (
+        <Chip
+          label={row.is_active ? t("statusActive") : t("statusInactive")}
+          size="small"
+          color={row.is_active ? "success" : "error"}
+        />
+      ),
+    },
+    {
+      id: "created_at",
+      label: t("colCreated"),
+      hideOnMobile: true,
+      render: (row) => new Date(row.created_at).toLocaleDateString(),
+    },
+    {
+      id: "actions",
+      label: t("colActions"),
+      sortable: false,
+      render: (row) => (
         <Stack direction="row" spacing={0.5}>
           <Tooltip title={t("editUser")}>
             <IconButton size="small" onClick={() => openEditDialog(row)}>
@@ -494,18 +491,20 @@ export default function UsersPage() {
 
       {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>{error}</Alert>}
 
-      <DataGrid
-        rows={rows}
+      <DataTable
         columns={columns}
-        rowCount={rowCount}
+        rows={rows}
+        rowKey="id"
         loading={loading}
-        paginationMode="server"
-        paginationModel={paginationModel}
-        onPaginationModelChange={setPaginationModel}
-        pageSizeOptions={[10, 20, 50]}
-        autoHeight
-        disableRowSelectionOnClick
-        sx={{ bgcolor: "background.paper" }}
+        total={rowCount}
+        page={page}
+        rowsPerPage={rowsPerPage}
+        onPageChange={setPage}
+        onRowsPerPageChange={(n) => { setRowsPerPage(n); setPage(0); }}
+        onSearchChange={setSearch}
+        sort={sort}
+        onSortChange={setSort}
+        testId="users-table"
       />
 
       {/* Create User Dialog */}
