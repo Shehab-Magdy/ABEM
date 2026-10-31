@@ -8,37 +8,26 @@ import {
   Alert,
   Box,
   Button,
-  CircularProgress,
-  Divider,
   FormControl,
-  IconButton,
   InputLabel,
   MenuItem,
   Paper,
   Select,
   Stack,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
   TextField,
   Tooltip,
   Typography,
 } from "@mui/material";
 import {
-  ChevronLeft,
-  ChevronRight,
   CloudDownload,
   FilterAlt,
 } from "@mui/icons-material";
 import axiosClient from "../../api/axiosClient";
 import { useAuth } from "../../hooks/useAuth";
+import DataTable from "../../components/DataTable";
 import { PrivateSEO } from "../../components/seo/SEO";
 
 const ENTITY_OPTIONS = ["", "expense", "payment", "user", "building", "apartment"];
-const PAGE_SIZE = 20;
 
 export default function AuditLogPage() {
   const { t } = useTranslation("audit");
@@ -56,9 +45,8 @@ export default function AuditLogPage() {
   // Data state
   const [logs, setLogs] = useState([]);
   const [count, setCount] = useState(0);
-  const [nextUrl, setNextUrl] = useState(null);
-  const [prevUrl, setPrevUrl] = useState(null);
-  const [page, setPage] = useState(1);
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -72,13 +60,9 @@ export default function AuditLogPage() {
         if (Array.isArray(data)) {
           setLogs(data);
           setCount(data.length);
-          setNextUrl(null);
-          setPrevUrl(null);
         } else {
           setLogs(data.results ?? []);
           setCount(data.count ?? 0);
-          setNextUrl(data.next ?? null);
-          setPrevUrl(data.previous ?? null);
         }
       } catch (err) {
         setError(err.response?.data?.detail || t("load_error", "Failed to load audit logs."));
@@ -90,46 +74,32 @@ export default function AuditLogPage() {
   );
 
   const buildUrl = useCallback(
-    (pageNum, filters) => {
+    (pageNum, pageSize, filters) => {
       const params = new URLSearchParams();
       if (filters.entity)   params.set("entity", filters.entity);
       if (filters.action)   params.set("action", filters.action);
       if (filters.dateFrom) params.set("date_from", filters.dateFrom);
       if (filters.dateTo)   params.set("date_to", filters.dateTo);
-      params.set("limit", PAGE_SIZE);
-      params.set("offset", (pageNum - 1) * PAGE_SIZE);
+      params.set("page", pageNum + 1);
+      params.set("page_size", pageSize);
       return `/audit/?${params.toString()}`;
     },
     []
   );
 
-  // Initial load and on applied filter change
+  // Load on applied-filter, page or page-size change (server-side pagination; page_size is honoured by the API).
   useEffect(() => {
-    setPage(1);
-    fetchPage(buildUrl(1, applied));
-  }, [applied, fetchPage, buildUrl]);
+    fetchPage(buildUrl(page, rowsPerPage, applied));
+  }, [applied, page, rowsPerPage, fetchPage, buildUrl]);
 
   const handleApplyFilters = () => {
+    setPage(0);
     setApplied({
       entity: filterEntity,
       action: filterAction,
       dateFrom: filterDateFrom,
       dateTo: filterDateTo,
     });
-  };
-
-  const handleNext = () => {
-    if (nextUrl) {
-      fetchPage(nextUrl);
-      setPage((p) => p + 1);
-    }
-  };
-
-  const handlePrev = () => {
-    if (prevUrl) {
-      fetchPage(prevUrl);
-      setPage((p) => Math.max(1, p - 1));
-    }
   };
 
   const handleExport = async (url, filename) => {
@@ -145,8 +115,6 @@ export default function AuditLogPage() {
       /* best-effort */
     }
   };
-
-  const totalPages = Math.max(1, Math.ceil(count / PAGE_SIZE));
 
   return (
     <>
@@ -253,73 +221,39 @@ export default function AuditLogPage() {
         </Alert>
       )}
 
-      {/* Loading */}
-      {loading && (
-        <Box display="flex" justifyContent="center" py={4}>
-          <CircularProgress />
-        </Box>
-      )}
-
-      {/* Empty state */}
-      {!loading && logs.length === 0 && !error && (
-        <Box py={6} textAlign="center" data-testid="audit-empty">
-          <Typography color="text.secondary">{t("noEntriesFound")}</Typography>
-        </Box>
-      )}
-
-      {/* Table */}
-      {!loading && logs.length > 0 && (
-        <TableContainer id="audit-table" component={Paper} variant="outlined">
-          <Table size="small" data-testid="audit-table">
-            <TableHead>
-              <TableRow>
-                <TableCell>{t("colTimestamp")}</TableCell>
-                <TableCell>{t("colUserEmail")}</TableCell>
-                <TableCell>{t("colAction")}</TableCell>
-                <TableCell>{t("colEntity")}</TableCell>
-                <TableCell>{t("colEntityId")}</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {logs.map((log) => (
-                <TableRow key={log.id} data-testid="audit-row">
-                  <TableCell sx={{ whiteSpace: "nowrap" }}>
-                    {new Date(log.created_at).toLocaleString()}
-                  </TableCell>
-                  <TableCell>{log.user_email ?? "—"}</TableCell>
-                  <TableCell>{log.action}</TableCell>
-                  <TableCell>{log.entity}</TableCell>
-                  <TableCell sx={{ fontFamily: "monospace", fontSize: 12 }}>
-                    {log.entity_id ?? "—"}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
-      )}
-
-      {/* Pagination */}
-      {!loading && count > PAGE_SIZE && (
-        <Stack
-          direction="row"
-          justifyContent="center"
-          alignItems="center"
-          spacing={1}
-          mt={2}
-          data-testid="audit-pagination"
-        >
-          <IconButton onClick={handlePrev} disabled={!prevUrl} aria-label="previous page">
-            <ChevronLeft />
-          </IconButton>
-          <Typography variant="body2">
-            {t("pageOf", { page, totalPages })}
-          </Typography>
-          <IconButton onClick={handleNext} disabled={!nextUrl} aria-label="next page">
-            <ChevronRight />
-          </IconButton>
-        </Stack>
-      )}
+      <DataTable
+        id="audit-table"
+        testId="audit-table"
+        columns={[
+          {
+            id: "created_at",
+            label: t("colTimestamp"),
+            sortValue: (log) => log.created_at,
+            render: (log) => <span style={{ whiteSpace: "nowrap" }}>{new Date(log.created_at).toLocaleString()}</span>,
+          },
+          { id: "user_email", label: t("colUserEmail"), render: (log) => log.user_email ?? "—" },
+          { id: "action", label: t("colAction") },
+          { id: "entity", label: t("colEntity") },
+          {
+            id: "entity_id",
+            label: t("colEntityId"),
+            hideOnMobile: true,
+            cellSx: { fontFamily: "monospace", fontSize: 12 },
+            render: (log) => log.entity_id ?? "—",
+          },
+        ]}
+        rows={logs}
+        rowKey="id"
+        size="small"
+        loading={loading}
+        total={count}
+        page={page}
+        rowsPerPage={rowsPerPage}
+        onPageChange={setPage}
+        onRowsPerPageChange={(n) => { setRowsPerPage(n); setPage(0); }}
+        rowProps={() => ({ "data-testid": "audit-row" })}
+        emptyMessage={t("noEntriesFound")}
+      />
     </Box>
     </>
   );
