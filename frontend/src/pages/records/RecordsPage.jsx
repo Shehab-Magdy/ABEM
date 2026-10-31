@@ -2,13 +2,14 @@ import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Accordion, AccordionDetails, AccordionSummary, Alert, Box, Button, Dialog, DialogActions, DialogContent, DialogTitle,
-  IconButton, Link, MenuItem, Stack, Tab, Table, TableBody, TableCell, TableHead, TableRow, Tabs, TextField, Tooltip, Typography,
+  IconButton, Link, MenuItem, Stack, Tab, Tabs, TextField, Tooltip, Typography,
 } from "@mui/material";
 import { Add, Delete, Download, Edit, ExpandMore, UploadFile } from "@mui/icons-material";
 import { governanceApi } from "../../api/governanceApi";
 import { buildingsApi } from "../../api/buildingsApi";
 import { useAuth } from "../../hooks/useAuth";
 import { PrivateSEO } from "../../components/seo/SEO";
+import DataTable from "../../components/DataTable";
 import ConfirmDialog from "../../components/ConfirmDialog";
 
 const KINDS = ["contract", "bylaws", "receipt", "minutes", "other"];
@@ -265,25 +266,38 @@ export default function RecordsPage() {
               <Button variant="contained" startIcon={<UploadFile />} onClick={() => setUploadOpen(true)} sx={{ mb: 2, minHeight: 44 }}>{t("upload_document")}</Button>
             )}
             {documents.length === 0 ? <Typography color="text.secondary">{t("no_documents")}</Typography> : (
-              <Table size="small">
-                <TableHead><TableRow><TableCell>{t("doc_title")}</TableCell><TableCell>{t("doc_kind")}</TableCell><TableCell>{t("date")}</TableCell><TableCell /></TableRow></TableHead>
-                <TableBody>
-                  {documents.map((d) => (
-                    <TableRow key={d.id}>
-                      <TableCell><Link href={d.url} target="_blank" rel="noopener noreferrer">{d.title}</Link></TableCell>
-                      <TableCell>{t(`kind_${d.kind}`)}</TableCell>
-                      <TableCell>{new Date(d.created_at).toLocaleDateString()}</TableCell>
-                      <TableCell align="right">
-                        {canWrite && (
-                          <Tooltip title={t("delete")}>
-                            <IconButton color="error" onClick={() => setRemoving({ type: "document", id: d.id, name: d.title })} aria-label={t("delete")}><Delete /></IconButton>
-                          </Tooltip>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+              <DataTable
+                size="small"
+                rowKey="id"
+                rows={documents}
+                testId="documents-table"
+                columns={[
+                  {
+                    id: "title",
+                    label: t("doc_title"),
+                    render: (d) => <Link href={d.url} target="_blank" rel="noopener noreferrer">{d.title}</Link>,
+                  },
+                  { id: "kind", label: t("doc_kind"), sortValue: (d) => t(`kind_${d.kind}`), render: (d) => t(`kind_${d.kind}`) },
+                  {
+                    id: "created_at",
+                    label: t("date"),
+                    searchable: false,
+                    render: (d) => new Date(d.created_at).toLocaleDateString(),
+                  },
+                  {
+                    id: "actions",
+                    label: t("actions", { ns: "common" }),
+                    sortable: false,
+                    align: "right",
+                    render: (d) =>
+                      canWrite && (
+                        <Tooltip title={t("delete")}>
+                          <IconButton color="error" onClick={() => setRemoving({ type: "document", id: d.id, name: d.title })} aria-label={t("delete")}><Delete /></IconButton>
+                        </Tooltip>
+                      ),
+                  },
+                ]}
+              />
             )}
           </>
         )}
