@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Alert, Box, Card, CardContent, Chip, CircularProgress, Stack, Table, TableBody, TableCell, TableHead, TableRow, Typography } from "@mui/material";
+import { Alert, Box, Card, CardContent, Chip, CircularProgress, Stack, Typography } from "@mui/material";
 import { analyticsApi } from "../../api/analyticsApi";
 import { formatDate } from "../../utils/formatters";
+import DataTable from "../../components/DataTable";
 import PlansAdmin from "./PlansAdmin";
 import { PrivateSEO } from "../../components/seo/SEO";
 
@@ -80,30 +81,36 @@ export default function PlatformPage() {
         <PlansAdmin />
 
         <Typography variant="subtitle1" fontWeight={700} gutterBottom>{t("health_list")}</Typography>
-        <Card>
-          <Table size="small">
-            <TableHead>
-              <TableRow>
-                <TableCell>{t("name")}</TableCell>
-                <TableCell>{t("plan")}</TableCell>
-                <TableCell>{t("units")}</TableCell>
-                <TableCell>{t("last_activity")}</TableCell>
-                <TableCell>{t("status")}</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {data.buildings.map((b) => (
-                <TableRow key={b.id}>
-                  <TableCell>{b.name}</TableCell>
-                  <TableCell>{planCell(b.plan, isAr, t)}</TableCell>
-                  <TableCell>{b.units}</TableCell>
-                  <TableCell>{b.last_activity ?? t("never")}</TableCell>
-                  <TableCell><Chip size="small" color={HEALTH_COLOR[b.health]} label={t(`health_${b.health}`)} /></TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </Card>
+        <DataTable
+          size="small"
+          rowKey="id"
+          rows={data.buildings}
+          testId="platform-buildings-table"
+          columns={[
+            { id: "name", label: t("name") },
+            {
+              id: "plan",
+              label: t("plan"),
+              sortValue: (b) => (b.plan && (isAr ? b.plan.name_ar || b.plan.name_en : b.plan.name_en || b.plan.name_ar)) || "",
+              render: (b) => planCell(b.plan, isAr, t),
+            },
+            { id: "units", label: t("units") },
+            {
+              id: "last_activity",
+              label: t("last_activity"),
+              hideOnMobile: true,
+              searchable: false,
+              render: (b) => b.last_activity ?? t("never"),
+            },
+            {
+              id: "health",
+              label: t("status"),
+              searchValue: (b) => t(`health_${b.health}`),
+              sortValue: (b) => t(`health_${b.health}`),
+              render: (b) => <Chip size="small" color={HEALTH_COLOR[b.health]} label={t(`health_${b.health}`)} />,
+            },
+          ]}
+        />
       </Box>
     </>
   );
