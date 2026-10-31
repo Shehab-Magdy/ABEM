@@ -157,5 +157,13 @@
   "footer_support": "Support",
   "platform": "Platform",
   "help": "Help & support",
-  "plan": "Plan"
+  "plan": "Plan",
+  "table_search": "Search...",
+  "table_no_results": "No matching records",
+  "table_displayed_rows": "{{from}}–{{to}} of {{count}}",
+  "table_sort_by": "Sort by",
+  "table_first_page": "First page",
+  "table_previous_page": "Previous page",
+  "table_next_page": "Next page",
+  "table_last_page": "Last page"
 }

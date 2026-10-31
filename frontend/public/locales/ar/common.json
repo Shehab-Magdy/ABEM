@@ -157,5 +157,13 @@
   "footer_support": "الدعم",
   "platform": "لوحة المنصة",
   "help": "المساعدة والدعم",
-  "plan": "الباقة"
+  "plan": "الباقة",
+  "table_search": "بحث...",
+  "table_no_results": "لا توجد سجلات مطابقة",
+  "table_displayed_rows": "{{from}}–{{to}} من {{count}}",
+  "table_sort_by": "ترتيب حسب",
+  "table_first_page": "الصفحة الأولى",
+  "table_previous_page": "الصفحة السابقة",
+  "table_next_page": "الصفحة التالية",
+  "table_last_page": "الصفحة الأخيرة"
 }
