@@ -36,6 +36,8 @@ services:
     environment:
       DJANGO_SETTINGS_MODULE: config.settings.development
       POSTGRES_HOST: db
+      # restart.sh --lan adds the machine's LAN IP here so phones can reach the API
+      DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:-localhost,127.0.0.1}
     depends_on:
       db:
         condition: service_healthy
