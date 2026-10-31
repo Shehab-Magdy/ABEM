@@ -2,12 +2,10 @@
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.viewsets import ReadOnlyModelViewSet
 
-from django.db.models import Q
-
 from apps.authentication.permissions import IsAdminRole
 from apps.buildings.scoping import managed_buildings
 
-from .models import AuditLog
+from .scope import audit_for_buildings
 from .serializers import AuditLogSerializer
 
 
@@ -29,13 +27,8 @@ class AuditLogViewSet(ReadOnlyModelViewSet):
     def get_queryset(self):
         me = self.request.user
         buildings = managed_buildings(me)
-        # Own actions plus actions of people who belong to a building this admin manages
-        qs = AuditLog.objects.select_related("user").filter(
-            Q(user=me)
-            | Q(user__buildings__in=buildings)
-            | Q(user__administered_buildings__in=buildings)
-            | Q(user__co_administered_buildings__in=buildings)
-        ).distinct()
+        # Rows about the buildings this admin manages, plus their own actions
+        qs = audit_for_buildings(buildings, own_user=me).select_related("user")
         p = self.request.query_params
 
         if entity := p.get("entity"):

@@ -6,12 +6,11 @@ import io
 
 import openpyxl
 from apps.apartments.models import Apartment
-from apps.audit.models import AuditLog
+from apps.audit.scope import audit_for_buildings
+from apps.buildings.models import Building
 from apps.expenses.models import Expense, LateFee
 from apps.exports.safe import safe_row
 from apps.payments.models import Payment, PaymentClaim
-from apps.plans.models import PlanPayment
-from django.db.models import Q
 
 
 def _text(value) -> str:
@@ -195,24 +194,7 @@ def _late_fees(building):
 
 def _audit(building):
     rows = [["When", "User", "Action", "Entity", "Entity ID", "Changes"]]
-    unit_ids = Apartment.objects.filter(building=building).values("id")
-    expense_ids = Expense.objects.filter(building=building).values("id")
-    payment_ids = Payment.objects.filter(apartment__building=building).values("id")
-    claim_ids = PaymentClaim.objects.filter(apartment__building=building).values("id")
-    plan_payment_ids = PlanPayment.objects.filter(building=building).values("id")
-    qs = (
-        AuditLog.objects.filter(
-            Q(entity_id=building.pk)
-            | Q(entity_id__in=unit_ids)
-            | Q(entity_id__in=expense_ids)
-            | Q(entity_id__in=payment_ids)
-            | Q(entity_id__in=claim_ids)
-            | Q(entity_id__in=plan_payment_ids)
-            | Q(changes__building_id=str(building.pk))
-        )
-        .select_related("user")
-        .order_by("-created_at")
-    )
+    qs = audit_for_buildings(Building.objects.filter(pk=building.pk)).select_related("user").order_by("-created_at")
     for log in qs:
         rows.append(
             [
