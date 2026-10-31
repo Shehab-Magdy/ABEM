@@ -111,3 +111,12 @@ class NotificationsPage(BasePage):
             return True
         except Exception:
             return False
+
+    # ── Notification center page: mark all read ───────────────
+
+    def mark_all_read(self) -> None:
+        """Click the page-level 'mark all as read' button (data-testid=mark-all-read-btn)."""
+        self._page.get_by_test_id("mark-all-read-btn").click()
+
+    def mark_all_read_button(self):
+        return self._page.get_by_test_id("mark-all-read-btn")

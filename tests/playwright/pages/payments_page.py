@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import re
+
 from playwright.sync_api import Page, expect
 
 from pages.base_page import BasePage
@@ -121,3 +123,49 @@ class PaymentsPage(BasePage):
             return True
         except Exception:
             return False
+
+    # ── Shared DataTable / reversal (Phase 5) ─────────────────
+
+    TABLE_ID = "payments-data-table"
+
+    def choose_building(self, building_name: str) -> None:
+        """Pick the building in the MUI Select (the label is not wired to the combobox, so find it by group)."""
+        group = self._page.locator(".MuiFormControl-root").filter(has_text="Building").first
+        group.get_by_role("combobox").click()
+        self._page.get_by_role("option", name=building_name).click()
+
+    def choose_unit(self, unit_number: str) -> None:
+        group = self._page.locator(".MuiFormControl-root").filter(has_text="Apartment").first
+        group.get_by_role("combobox").click()
+        self._page.get_by_role("option", name=re.compile(rf"Unit {re.escape(unit_number)}(\s|$)")).click()
+
+    def table(self):
+        from pages.data_table_page import DataTablePage
+
+        return DataTablePage(self._page, self.TABLE_ID)
+
+    def reverse_buttons(self):
+        return self._page.get_by_test_id("reverse-payment")
+
+    def click_reverse(self, row_index: int = 0) -> None:
+        self.reverse_buttons().nth(row_index).click()
+
+    def reverse_dialog(self):
+        return self._page.get_by_role("dialog").filter(has=self._page.get_by_test_id("reverse-reason"))
+
+    def fill_reverse_reason(self, reason: str) -> None:
+        self._page.get_by_test_id("reverse-reason").fill(reason)
+
+    def confirm_reverse(self) -> None:
+        self.reverse_dialog().get_by_role("button", name="Reverse", exact=True).click()
+
+    def voided_chips(self):
+        return self._page.get_by_test_id(self.TABLE_ID).get_by_text("Voided", exact=True)
+
+    def reversal_chips(self):
+        return self._page.get_by_test_id(self.TABLE_ID).get_by_text("Reversal", exact=True)
+
+    def receipt_numbers(self) -> list[str]:
+        """The '#<n>' receipt numbers shown in the first column."""
+        cells = self._page.get_by_test_id(self.TABLE_ID).locator("tbody tr td:first-child").all()
+        return [c.inner_text().strip().split("\n")[0] for c in cells]
