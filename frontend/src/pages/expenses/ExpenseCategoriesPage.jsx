@@ -10,7 +10,6 @@ import {
   Box,
   Button,
   Chip,
-  CircularProgress,
   Dialog,
   DialogActions,
   DialogContent,
@@ -19,22 +18,16 @@ import {
   IconButton,
   InputLabel,
   MenuItem,
-  Paper,
   Select,
   Snackbar,
   Stack,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
   TextField,
   Tooltip,
   Typography,
 } from "@mui/material";
 import { Add as AddIcon, Delete as DeleteIcon } from "@mui/icons-material";
 import { useTranslation } from "react-i18next";
+import DataTable from "../../components/DataTable";
 import { expensesApi } from "../../api/expensesApi";
 import { buildingsApi } from "../../api/buildingsApi";
 import { PrivateSEO } from "../../components/seo/SEO";
@@ -196,6 +189,79 @@ export default function ExpenseCategoriesPage() {
 
   // ── Render ───────────────────────────────────────────────────────────────────
 
+  const columns = [
+    {
+      id: "icon",
+      label: t("icon_color"),
+      searchable: false,
+      sortValue: (cat) => cat.icon || "",
+      render: (cat) => (
+        <Stack direction="row" spacing={1} alignItems="center">
+          <Box
+            sx={{
+              width: 20,
+              height: 20,
+              borderRadius: "50%",
+              bgcolor: cat.color || "#254A80",
+              flexShrink: 0,
+            }}
+          />
+          <Typography variant="caption" color="text.secondary">
+            {cat.icon || "—"}
+          </Typography>
+        </Stack>
+      ),
+    },
+    {
+      id: "name",
+      label: t("name"),
+      sortValue: (cat) => translateCategoryName(cat.name),
+      searchValue: (cat) => translateCategoryName(cat.name),
+      render: (cat) => (
+        <Box component="span" sx={cat.parent_id ? { pl: 3, display: "inline-block" } : undefined}>
+          {cat.parent_id ? "— " : ""}{translateCategoryName(cat.name)}
+        </Box>
+      ),
+    },
+    {
+      id: "description",
+      label: t("description"),
+      hideOnMobile: true,
+      cellSx: { color: "text.secondary" },
+      sortValue: (cat) => (cat.description ? t(cat.description, cat.description) : ""),
+      render: (cat) => (cat.description ? t(cat.description, cat.description) : "—"),
+    },
+    {
+      id: "parent",
+      label: t("subcategory_of"),
+      sortValue: (cat) => {
+        const parentCat = cat.parent_id ? categories.find((c) => c.id === cat.parent_id) : null;
+        return parentCat ? translateCategoryName(parentCat.name) : "";
+      },
+      render: (cat) => {
+        const parentCat = cat.parent_id ? categories.find((c) => c.id === cat.parent_id) : null;
+        return parentCat ? (
+          <Chip label={translateCategoryName(parentCat.name)} size="small" variant="outlined" />
+        ) : (
+          <Typography variant="caption" color="text.disabled">—</Typography>
+        );
+      },
+    },
+    {
+      id: "actions",
+      label: t("actions"),
+      align: "right",
+      sortable: false,
+      render: (cat) => (
+        <Tooltip title={t("remove_category")}>
+          <IconButton size="small" color="error" onClick={() => setDeleteTarget(cat)} sx={{ minWidth: 44, minHeight: 44 }}>
+            <DeleteIcon fontSize="small" />
+          </IconButton>
+        </Tooltip>
+      ),
+    },
+  ];
+
   return (
     <>
       <PrivateSEO title="3maracom – Expense Categories" />
@@ -231,86 +297,17 @@ export default function ExpenseCategoriesPage() {
         </Select>
       </FormControl>
 
-      {/* Categories table */}
-      {loading ? (
-        <Box display="flex" justifyContent="center" mt={6}>
-          <CircularProgress />
-        </Box>
-      ) : (
-        <TableContainer id="categories-table" component={Paper} variant="outlined">
-          <Table size="small">
-            <TableHead>
-              <TableRow>
-                <TableCell><strong>{t("icon_color")}</strong></TableCell>
-                <TableCell><strong>{t("name")}</strong></TableCell>
-                <TableCell><strong>{t("description")}</strong></TableCell>
-                <TableCell><strong>{t("subcategory_of")}</strong></TableCell>
-                <TableCell align="right"><strong>{t("actions")}</strong></TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {sortedCategories.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={5} align="center" sx={{ py: 4, color: "text.secondary" }}>
-                    {t("no_categories")}
-                  </TableCell>
-                </TableRow>
-              ) : (
-                sortedCategories.map((cat) => {
-                  const isChild = Boolean(cat.parent_id);
-                  const parentCat = cat.parent_id
-                    ? categories.find((c) => c.id === cat.parent_id)
-                    : null;
-                  return (
-                    <TableRow key={cat.id} hover>
-                      <TableCell>
-                        <Stack direction="row" spacing={1} alignItems="center">
-                          <Box
-                            sx={{
-                              width: 20,
-                              height: 20,
-                              borderRadius: "50%",
-                              bgcolor: cat.color || "#254A80",
-                              flexShrink: 0,
-                            }}
-                          />
-                          <Typography variant="caption" color="text.secondary">
-                            {cat.icon || "—"}
-                          </Typography>
-                        </Stack>
-                      </TableCell>
-                      <TableCell sx={isChild ? { pl: 4 } : undefined}>
-                        {isChild ? "— " : ""}{translateCategoryName(cat.name)}
-                      </TableCell>
-                      <TableCell sx={{ color: "text.secondary" }}>
-                        {cat.description ? t(cat.description, cat.description) : "—"}
-                      </TableCell>
-                      <TableCell>
-                        {parentCat ? (
-                          <Chip label={translateCategoryName(parentCat.name)} size="small" variant="outlined" />
-                        ) : (
-                          <Typography variant="caption" color="text.disabled">—</Typography>
-                        )}
-                      </TableCell>
-                      <TableCell align="right">
-                        <Tooltip title={t("remove_category")}>
-                          <IconButton
-                            size="small"
-                            color="error"
-                            onClick={() => setDeleteTarget(cat)}
-                          >
-                            <DeleteIcon fontSize="small" />
-                          </IconButton>
-                        </Tooltip>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })
-              )}
-            </TableBody>
-          </Table>
-        </TableContainer>
-      )}
+      {/* Categories table (default order keeps sub-categories under their parent until a header is clicked) */}
+      <DataTable
+        id="categories-table"
+        testId="categories-data-table"
+        columns={columns}
+        rows={sortedCategories}
+        rowKey="id"
+        size="small"
+        loading={loading}
+        emptyMessage={t("no_categories")}
+      />
 
       {/* Add category dialog */}
       <Dialog open={formOpen} onClose={() => setFormOpen(false)} maxWidth="xs" fullWidth>
