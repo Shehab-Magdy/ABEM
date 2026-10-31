@@ -55,6 +55,7 @@ import { useAuth } from "../../hooks/useAuth";
 import { authApi } from "../../api/authApi";
 import { useAuthStore } from "../../contexts/authStore";
 import ThemeModeToggle from "../ThemeModeToggle";
+import LanguageToggleButton from "../LanguageToggleButton";
 import { usePreferredLanguage } from "../../hooks/usePreferredLanguage";
 import axiosClient from "../../api/axiosClient";
 import { useNotificationStore } from "../../contexts/notificationStore";
@@ -259,6 +260,7 @@ export default function DashboardLayout() {
             </IconButton>
             <Box flex={1} />
             <TutorialButton />
+            <LanguageToggleButton />
             <ThemeModeToggle />
             <Tooltip title={t("common:notifications")}>
               <IconButton

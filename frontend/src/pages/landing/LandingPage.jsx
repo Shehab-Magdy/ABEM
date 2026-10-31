@@ -1,4 +1,5 @@
 import { useTranslation } from "react-i18next";
+import LanguageToggleButton from "../../components/LanguageToggleButton";
 import { Link as RouterLink } from "react-router-dom";
 import { Box, Button, Container, Grid, Stack, Typography } from "@mui/material";
 import {
@@ -65,12 +66,16 @@ export default function LandingPage() {
       {/* Hero */}
       <Box
         sx={{
+          position: "relative",
           bgcolor: "primary.main",
           color: "white",
           py: { xs: 8, md: 12 },
           textAlign: "center",
         }}
       >
+        <Box sx={{ position: "absolute", top: 12, insetInlineEnd: 12 }}>
+          <LanguageToggleButton sx={{ mr: 0, color: "white", border: "1px solid rgba(255,255,255,0.6)" }} />
+        </Box>
         <Container maxWidth="md">
           <Box sx={{ mb: 3 }}><BrandLogo light size={56} /></Box>
           <Typography variant="h3" fontWeight={700} gutterBottom>

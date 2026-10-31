@@ -137,6 +137,8 @@
   "install_dismiss": "Close",
   "switch_to_light": "Switch to light mode",
   "switch_to_dark": "Switch to dark mode",
+  "switch_to_english": "Switch to English",
+  "switch_to_arabic": "Switch to Arabic",
   "maintenance": "Maintenance",
   "statement": "Statement",
   "polls": "Votes",
