@@ -24,6 +24,25 @@ def _health(last, now):
     return "quiet" if age <= QUIET_DAYS else "dormant"
 
 
+def _plan_info(row, today, grace_days):
+    """The building's BuildingPlan as a small dict, or None when it has no row (free / trial)."""
+    if row is None:
+        return None
+    if row.paid_until >= today:
+        status = "active"
+    elif row.paid_until + timedelta(days=grace_days) >= today:
+        status = "grace"  # lapsed, but monthly billing keeps running (see plans.services.billing_allowed)
+    else:
+        status = "expired"
+    return {
+        "code": row.plan.code,
+        "name_en": row.plan.name_en,
+        "name_ar": row.plan.name_ar,
+        "paid_until": row.paid_until.isoformat(),
+        "status": status,
+    }
+
+
 def build_platform_kpis(now=None) -> dict:
     from apps.apartments.models import Apartment
     from apps.authentication.models import User
@@ -48,6 +67,12 @@ def build_platform_kpis(now=None) -> dict:
             if row[key] not in last or row["last"] > last[row[key]]:
                 last[row[key]] = row["last"]
 
+    from apps.plans.models import BuildingPlan, PlatformSettings
+
+    plan_rows = {bp.building_id: bp for bp in BuildingPlan.objects.select_related("plan")}
+    grace_days = PlatformSettings.load().grace_days
+    today = now.date()
+
     rows = []
     for b in buildings.annotate(units=Count("apartments", distinct=True)):
         when = last.get(b.pk)
@@ -58,6 +83,7 @@ def build_platform_kpis(now=None) -> dict:
             "created_at": b.created_at.date().isoformat(),
             "last_activity": when.date().isoformat() if when else None,
             "health": _health(when, now),
+            "plan": _plan_info(plan_rows.get(b.pk), today, grace_days),
         })
     rows.sort(key=lambda r: (r["last_activity"] or "", r["name"]), reverse=True)
 
