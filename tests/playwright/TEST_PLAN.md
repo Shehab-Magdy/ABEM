@@ -1207,4 +1207,23 @@ This matrix maps QA Strategy sprint areas to implemented test coverage:
 
 ---
 
+## Phase 5 additions (SRS 11.6)
+
+| Area | Layer | File | Covers |
+|------|-------|------|--------|
+| Payment reversal | API | `tests/api/phase5/test_payment_reversal.py` | linked negative entry, voided original, balance restored, 409 on double reversal, reason required, owner 403, other admin 403/404, receipt numbers, treasury total_payments/total_reversals |
+| Data rules | API | `tests/api/phase5/test_phase5_rules.py` | building_id immutable (unit/expense/asset), paid-expense lock and unlock after reversal, asset sale validation, owner must be a member (owner_id), one pending plan payment, account deletion 409 until confirm_balance |
+| Notification endpoints | API | `tests/api/phase5/test_notifications_menu_api.py` | unread filter, page_size 10 pagination, unread-count, mark-all-read idempotent and scoped to caller |
+| Audit and export | API | `tests/api/phase5/test_audit_and_export_scope.py` | audit list excludes other buildings, entity filter, page/page_size; building XLSX admin only, 404 for other admin |
+| Language switch | UI | `tests/ui/phase5/test_language_switch.py` | dir flips, PATCH preferred_language, persists after reload and on a fresh device, Arabic buildings/payments pages |
+| Notification menu | UI | `tests/ui/phase5/test_notification_menu.py` | popover instead of navigation, tabs, infinite scroll 10 per page, mark all read, open center, per-user scoping |
+| DataTable | UI | `tests/ui/phase5/test_datatable.py` | placeholder names columns, search, sort, pagination on Buildings, Users, Expenses, Payments |
+| Reversal UI | UI | `tests/ui/phase5/test_payments_reversal_ui.py` | dialog with required reason, Voided and Reversal chips, receipt number, owner has no button |
+| Plan / export | UI | `tests/ui/phase5/test_plan_and_records_ui.py` | yearly struck-through price and Save N%, building export downloads an XLSX |
+| Money path | E2E | `tests/e2e/test_money_path_cycle.py` | expense, payment, receipt PDF, expense lock, reversal from UI, balance restored, history kept |
+
+Not covered yet: claim self-review block (needs a resident who also administers the building).
+
+---
+
 > **Reference:** This test plan is aligned with the **ABEM QA & Test Automation Strategy v2.0** (February 2026). The QA Strategy defines 480+ total cases across API, Web, and Mobile layers across 10 sprints. This document covers all **implemented and automated** test cases in the `abem-playwright/` framework (Web + API layers). Mobile (Appium) test cases defined in the strategy are not yet automated in this framework.

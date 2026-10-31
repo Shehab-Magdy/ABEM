@@ -151,7 +151,11 @@ tests/playwright/
 │   ├── dashboard_page.py   # Dashboard KPI cards, filters, charts
 │   ├── buildings_page.py   # Building CRUD, unit management
 │   ├── expenses_page.py    # Expense form, split breakdown, filters
-│   ├── payments_page.py    # Payment recording, balance display
+│   ├── payments_page.py    # Payment recording, balance display, reversal dialog, Voided/Reversal chips
+│   ├── data_table_page.py  # Shared DataTable: search, sort, TablePagination
+│   ├── header_page.py      # Language switch + notification bell popover
+│   ├── plan_page.py        # /plan tiers and yearly discount
+│   ├── records_page.py     # /records and the building XLSX export
 │   ├── notifications_page.py
 │   ├── users_page.py
 │   ├── profile_page.py
@@ -161,6 +165,7 @@ tests/playwright/
 │
 ├── tests/
 │   ├── api/                # API-layer tests (no browser)
+│   │   └── phase5/         # Reversals, data rules, notification menu endpoints, audit scope, building export
 │   ├── ui/                 # Playwright UI tests
 │   │   ├── auth/           # Login, logout, RBAC
 │   │   ├── buildings/      # Building & apartment management
@@ -169,6 +174,7 @@ tests/playwright/
 │   │   ├── dashboard/      # Dashboard cards, charts, filters
 │   │   ├── notifications/  # Notification bell, broadcast
 │   │   ├── exports/        # Audit log, CSV/XLSX export
+│   │   ├── phase5/         # Language switch/RTL, notification menu, DataTable, reversal UI, plan, export
 │   │   ├── performance/    # Page load timing assertions
 │   │   └── accessibility/  # Keyboard nav, alt text, labels
 │   ├── e2e/                # Full user journey tests
@@ -183,6 +189,18 @@ tests/playwright/
 ├── utils/                  # API client, data factory, assertions, DB client
 └── config/                 # Environment settings loader
 ```
+
+## Phase 5 / shared DataTable notes
+
+- Tables are the shared plain MUI `DataTable` (no `role=grid`, no DataGrid classes). Use `pages/data_table_page.py`
+  with the table test id (`buildings-table`, `users-table`, `expenses-data-table`, `payments-data-table`, `audit-table`);
+  the search box is `<testId>-search`, headers sort through `TableSortLabel`, the pager is `TablePagination`.
+- Run only the new tests: `.venv/bin/pytest -m phase5` (or `-m datatable`, `-m i18n`, `-m money_path`).
+- Phase 5 fixtures live in `fixtures/phase5.py` and are loaded by `tests/{api,ui}/phase5/conftest.py` and
+  `tests/e2e/conftest.py`, not by the root conftest. `raw_admin_page` is an admin page WITHOUT the forced-English init
+  script (needed to test persisted language); tests using it restore the profile language to English afterwards.
+- The suite expects the three accounts from `.env` (admin, owner, admin2). They must exist in the target database with
+  those passwords; repeated failed logins lock an account for 15 minutes and every fixture then errors.
 
 ## Test Reports
 
