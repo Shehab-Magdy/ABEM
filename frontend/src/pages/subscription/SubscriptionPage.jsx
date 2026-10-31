@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import DataTable from "../../components/DataTable";
 import {
-  Alert, Box, Button, Card, CardContent, Chip, FormControlLabel, MenuItem, Stack, Switch, Table, TableBody, TableCell,
-  TableHead, TableRow, TextField, Typography,
+  Alert, Box, Button, Card, CardContent, Chip, FormControlLabel, MenuItem, Stack, Switch,
+  TextField, Typography,
 } from "@mui/material";
 import { PauseCircle } from "@mui/icons-material";
 import { buildingsApi } from "../../api/buildingsApi";
@@ -142,59 +143,76 @@ export default function SubscriptionPage() {
         </Card>
 
         <Typography variant="h6" fontWeight={700} gutterBottom>{t("units")}</Typography>
-        <Card>
-          <Table size="small">
-            <TableHead>
-              <TableRow><TableCell>{t("unit")}</TableCell><TableCell>{t("billing")}</TableCell><TableCell>{t("billing_reason")}</TableCell><TableCell /></TableRow>
-            </TableHead>
-            <TableBody>
-              {units.map((u) => {
-                const paused = u.billing_paused;
+        <DataTable
+          size="small"
+          rowKey="id"
+          rows={units}
+          testId="subscription-units-table"
+          columns={[
+            { id: "unit_number", label: t("unit") },
+            {
+              id: "billing",
+              label: t("billing"),
+              sortValue: (u) => (u.billing_paused ? 0 : Math.round(Number(u.rate_factor) * 100) !== 100 ? 1 : 2),
+              searchable: false,
+              render: (u) => {
                 const pct = Math.round(Number(u.rate_factor) * 100);
-                return (
-                  <TableRow key={u.id}>
-                    <TableCell>{u.unit_number}</TableCell>
-                    <TableCell>
-                      {paused ? (
-                        <Chip size="small" color="warning" icon={<PauseCircle />} label={t("status_paused")} />
-                      ) : pct !== 100 ? (
-                        <Chip size="small" color="info" variant="outlined" label={t("status_percent", { pct })} />
-                      ) : (
-                        <Chip size="small" variant="outlined" label={t("status_full")} />
-                      )}
-                    </TableCell>
-                    <TableCell>{paused || pct !== 100 ? u.billing_pause_reason || "—" : ""}</TableCell>
-                    <TableCell align="right">
-                      <Button size="small" onClick={() => setBillingUnit(u)} sx={{ minHeight: 36 }}>{t("edit_billing")}</Button>
-                    </TableCell>
-                  </TableRow>
+                return u.billing_paused ? (
+                  <Chip size="small" color="warning" icon={<PauseCircle />} label={t("status_paused")} />
+                ) : pct !== 100 ? (
+                  <Chip size="small" color="info" variant="outlined" label={t("status_percent", { pct })} />
+                ) : (
+                  <Chip size="small" variant="outlined" label={t("status_full")} />
                 );
-              })}
-            </TableBody>
-          </Table>
-        </Card>
+              },
+            },
+            {
+              id: "billing_pause_reason",
+              label: t("billing_reason"),
+              hideOnMobile: true,
+              render: (u) => (u.billing_paused || Math.round(Number(u.rate_factor) * 100) !== 100 ? u.billing_pause_reason || "—" : ""),
+            },
+            {
+              id: "actions",
+              label: t("actions", { ns: "common" }),
+              align: "right",
+              sortable: false,
+              render: (u) => (
+                <Button size="small" onClick={() => setBillingUnit(u)} sx={{ minHeight: 44 }}>{t("edit_billing")}</Button>
+              ),
+            },
+          ]}
+        />
 
         {lateFees.length > 0 && (
           <>
             <Typography variant="h6" fontWeight={700} sx={{ mt: 3 }} gutterBottom>{t("late_fees_list")}</Typography>
-            <Card>
-              <Table size="small">
-                <TableHead>
-                  <TableRow><TableCell>{t("unit")}</TableCell><TableCell>{t("fee")}</TableCell><TableCell /></TableRow>
-                </TableHead>
-                <TableBody>
-                  {lateFees.map((f) => (
-                    <TableRow key={f.id}>
-                      <TableCell>{f.unit_number}</TableCell>
-                      <TableCell>{formatCurrency(f.amount)}</TableCell>
-                      <TableCell align="right">
-                        <Button size="small" color="warning" onClick={() => setWaiveTarget(f)} sx={{ minHeight: 36 }}>{t("waive")}</Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </Card>
+            <DataTable
+              size="small"
+              rowKey="id"
+              rows={lateFees}
+              testId="subscription-late-fees-table"
+              minWidth={0}
+              columns={[
+                { id: "unit_number", label: t("unit") },
+                {
+                  id: "amount",
+                  label: t("fee"),
+                  sortValue: (f) => parseFloat(f.amount),
+                  searchValue: (f) => String(f.amount),
+                  render: (f) => formatCurrency(f.amount),
+                },
+                {
+                  id: "actions",
+                  label: t("actions", { ns: "common" }),
+                  align: "right",
+                  sortable: false,
+                  render: (f) => (
+                    <Button size="small" color="warning" onClick={() => setWaiveTarget(f)} sx={{ minHeight: 44 }}>{t("waive")}</Button>
+                  ),
+                },
+              ]}
+            />
           </>
         )}
       </Box>
