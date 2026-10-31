@@ -24,9 +24,12 @@ class NotificationViewSet(ReadOnlyModelViewSet):
     User-scoped notification centre.
 
     Endpoints:
-      GET  /notifications/              – list (filterable by is_read)
+      GET  /notifications/              – list (filter: is_read=true|false or unread=true;
+                                          page-number pagination, page_size up to 500)
       GET  /notifications/{id}/         – retrieve
+      GET  /notifications/unread-count/ – {"count": n}, cheap COUNT for the header badge
       POST /notifications/{id}/read/    – mark as read
+      POST /notifications/mark-all-read/ – mark every unread notification of the caller as read
       POST /notifications/broadcast/    – admin-only announcement
     """
 
@@ -38,10 +41,14 @@ class NotificationViewSet(ReadOnlyModelViewSet):
 
     def get_queryset(self):
         qs = Notification.objects.filter(user=self.request.user).select_related("sender")
-        is_read = self.request.query_params.get("is_read")
+        params = self.request.query_params
+        is_read = params.get("is_read")
         if is_read is not None:
             qs = qs.filter(is_read=is_read.lower() == "true")
-        return qs
+        elif params.get("unread", "").lower() == "true":
+            qs = qs.filter(is_read=False)
+        # Stable order so page-number pagination never repeats or skips rows.
+        return qs.order_by("-created_at", "-id")
 
     # ── Custom actions ──────────────────────────────────────────────────────────
 
@@ -52,6 +59,18 @@ class NotificationViewSet(ReadOnlyModelViewSet):
         notification.is_read = True
         notification.save(update_fields=["is_read"])
         return Response(NotificationSerializer(notification, context={"request": request}).data)
+
+    @action(detail=False, methods=["get"], url_path="unread-count")
+    def unread_count(self, request):
+        """GET /api/v1/notifications/unread-count/ — number of unread notifications of the caller."""
+        count = Notification.objects.filter(user=request.user, is_read=False).count()
+        return Response({"count": count})
+
+    @action(detail=False, methods=["post"], url_path="mark-all-read")
+    def mark_all_read(self, request):
+        """POST /api/v1/notifications/mark-all-read/ — mark all of the caller's notifications read."""
+        updated = Notification.objects.filter(user=request.user, is_read=False).update(is_read=True)
+        return Response({"updated": updated, "count": 0})
 
     @action(
         detail=False,
