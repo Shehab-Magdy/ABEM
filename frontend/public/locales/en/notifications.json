@@ -54,5 +54,12 @@
   "message_sent_one": "Message sent to 1 recipient.",
   "message_sent_other": "Message sent to {{count}} recipients.",
   "read_by_count": "Read by {{read}}/{{total}}",
-  "read_by": "Read by"
+  "read_by": "Read by",
+  "menu_open_center": "Open notification center",
+  "load_error": "Failed to load notifications.",
+  "retry": "Try again",
+  "bell_label_unread": "Notifications ({{count}} unread)",
+  "loading_more": "Loading more notifications",
+  "empty_unread": "You have no unread notifications.",
+  "mark_all_failed": "Could not mark all as read."
 }

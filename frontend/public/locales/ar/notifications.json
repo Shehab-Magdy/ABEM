@@ -57,5 +57,12 @@
   "message_sent_many": "تم إرسال الرسالة إلى {{count}} مستلمين.",
   "message_sent_other": "تم إرسال الرسالة إلى {{count}} مستلمين.",
   "read_by_count": "قرأها {{read}}/{{total}}",
-  "read_by": "قرأها"
+  "read_by": "قرأها",
+  "menu_open_center": "فتح مركز الإشعارات",
+  "load_error": "تعذّر تحميل الإشعارات.",
+  "retry": "حاول مرة أخرى",
+  "bell_label_unread": "الإشعارات ({{count}} غير مقروء)",
+  "loading_more": "جارٍ تحميل المزيد من الإشعارات",
+  "empty_unread": "ليس لديك إشعارات غير مقروءة.",
+  "mark_all_failed": "تعذّر تحديد الكل كمقروء."
 }

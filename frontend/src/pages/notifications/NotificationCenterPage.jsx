@@ -199,6 +199,9 @@ export default function NotificationCenterPage() {
   };
   const { isAdmin, user } = useAuth();
   const decrementUnread = useNotificationStore((s) => s.decrementUnread);
+  const storeUnread = useNotificationStore((s) => s.unreadCount);
+  const clearUnread = useNotificationStore((s) => s.clearUnread);
+  const refreshUnread = useNotificationStore((s) => s.refreshUnread);
   const [notifications, setNotifications] = useState([]);
   const [filter, setFilter] = useState("all");
   const [loading, setLoading] = useState(false);
@@ -232,7 +235,7 @@ export default function NotificationCenterPage() {
   const fetchNotifications = useCallback(() => {
     setLoading(true);
     setError("");
-    const params = filter === "unread" ? { is_read: "false" } : undefined;
+    const params = filter === "unread" ? { unread: "true" } : undefined;
     axiosClient
       .get("/notifications/", { params })
       .then((r) => {
@@ -288,7 +291,17 @@ export default function NotificationCenterPage() {
         decrementUnread();
         fetchNotifications();
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => refreshUnread());
+  };
+
+  const handleMarkAllRead = () => {
+    clearUnread();
+    axiosClient
+      .post("/notifications/mark-all-read/")
+      .then(() => fetchNotifications())
+      .catch(() => {})
+      .finally(() => refreshUnread());
   };
 
   const handleBroadcast = () => {
@@ -648,6 +661,10 @@ export default function NotificationCenterPage() {
                 clickable
                 data-testid="filter-unread"
               />
+              <Box sx={{ flex: 1 }} />
+              <Button size="small" onClick={handleMarkAllRead} disabled={storeUnread === 0} data-testid="mark-all-read-btn">
+                {t("mark_all_read")}
+              </Button>
             </Stack>
 
             {error && (

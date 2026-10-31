@@ -8,7 +8,6 @@ import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import {
   AppBar,
   Avatar,
-  Badge,
   Box,
   Divider,
   Drawer,
@@ -56,8 +55,8 @@ import { authApi } from "../../api/authApi";
 import { useAuthStore } from "../../contexts/authStore";
 import ThemeModeToggle from "../ThemeModeToggle";
 import LanguageToggleButton from "../LanguageToggleButton";
+import NotificationMenu from "../NotificationMenu";
 import { usePreferredLanguage } from "../../hooks/usePreferredLanguage";
-import axiosClient from "../../api/axiosClient";
 import { useNotificationStore } from "../../contexts/notificationStore";
 import { TutorialButton } from "../../tutorial/TutorialOverlay";
 import Footer from "./Footer";
@@ -120,7 +119,7 @@ export default function DashboardLayout() {
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
   const [anchorEl, setAnchorEl] = useState(null);
-  const { unreadCount, setUnreadCount } = useNotificationStore();
+  const refreshUnread = useNotificationStore((s) => s.refreshUnread);
 
   usePreferredLanguage();
 
@@ -131,18 +130,11 @@ export default function DashboardLayout() {
     if (isMobile) setSidebarOpen(false);
   }, [location.pathname, isMobile]);
 
+  // Reconcile the badge with the server on navigation (cheap COUNT endpoint; the menu also
+  // refreshes it on open and when the tab regains focus).
   useEffect(() => {
-    axiosClient
-      .get("/notifications/", { params: { is_read: "false" } })
-      .then((r) => {
-        const data = r.data;
-        const count = Array.isArray(data)
-          ? data.length
-          : (data.count ?? (data.results ?? []).length);
-        setUnreadCount(count);
-      })
-      .catch(() => {});
-  }, [location.pathname]);
+    refreshUnread();
+  }, [location.pathname, refreshUnread]);
 
   const handleLogout = async () => {
     try {
@@ -262,19 +254,7 @@ export default function DashboardLayout() {
             <TutorialButton />
             <LanguageToggleButton />
             <ThemeModeToggle />
-            <Tooltip title={t("common:notifications")}>
-              <IconButton
-                color="inherit"
-                onClick={() => navigate("/notifications")}
-                aria-label={t("common:notifications")}
-                data-testid="notification-bell"
-                sx={{ mr: 1 }}
-              >
-                <Badge badgeContent={unreadCount || null} color="error" data-testid="notification-badge">
-                  <Notifications />
-                </Badge>
-              </IconButton>
-            </Tooltip>
+            <NotificationMenu />
             <Tooltip title={t("common:account_section")}>
               <IconButton onClick={(e) => setAnchorEl(e.currentTarget)} size="small">
                 <Avatar
