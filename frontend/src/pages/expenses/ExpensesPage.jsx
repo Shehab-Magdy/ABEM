@@ -16,7 +16,6 @@ import {
   Button,
   Checkbox,
   Chip,
-  CircularProgress,
   Dialog,
   DialogActions,
   DialogContent,
@@ -32,12 +31,7 @@ import {
   Select,
   Snackbar,
   Stack,
-  Table,
-  TableBody,
   TableCell,
-  TableContainer,
-  TableFooter,
-  TableHead,
   TableRow,
   TextField,
   Tooltip,
@@ -60,6 +54,7 @@ import {
 import { expensesApi } from "../../api/expensesApi";
 import ReasonDialog from "../../components/ReasonDialog";
 import CsvImportDialog from "../../components/CsvImportDialog";
+import DataTable from "../../components/DataTable";
 import { buildingsApi } from "../../api/buildingsApi";
 import { useAuth } from "../../hooks/useAuth";
 import { useTranslation } from "react-i18next";
@@ -169,6 +164,11 @@ export default function ExpensesPage() {
 
   const [buildings, setBuildings] = useState([]);
   const [expenses, setExpenses] = useState([]);
+  const [expenseTotal, setExpenseTotal] = useState(0);
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [search, setSearch] = useState("");
+  const [sort, setSort] = useState({ id: "expense_date", direction: "desc" });
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(false);
   const [selectedBuilding, setSelectedBuilding] = useState("");
@@ -248,19 +248,26 @@ export default function ExpensesPage() {
     if (!selectedBuilding) return;
     setLoading(true);
     try {
-      const params = { building_id: selectedBuilding };
+      const params = {
+        building_id: selectedBuilding,
+        page: page + 1,
+        page_size: rowsPerPage,
+        ordering: `${sort.direction === "desc" ? "-" : ""}${sort.id}`,
+      };
+      if (search) params.search = search;
       if (filterDateFrom) params.date_from = filterDateFrom;
       if (filterDateTo) params.date_to = filterDateTo;
       if (filterCategory) params.category_id = filterCategory;
       if (filterKind) params.kind = filterKind;
       const res = await expensesApi.list(params);
       setExpenses(res.data.results ?? res.data);
+      setExpenseTotal(res.data.count ?? (res.data.results ?? res.data).length);
     } catch {
       setSnack({ open: true, msg: t("load_error", "Failed to load expenses"), severity: "error" });
     } finally {
       setLoading(false);
     }
-  }, [selectedBuilding, filterDateFrom, filterDateTo, filterCategory, filterKind]);
+  }, [selectedBuilding, filterDateFrom, filterDateTo, filterCategory, filterKind, page, rowsPerPage, search, sort]);
 
   const loadCategories = useCallback(async () => {
     if (!selectedBuilding) return;
@@ -275,6 +282,11 @@ export default function ExpensesPage() {
   useEffect(() => {
     loadBuildings();
   }, [loadBuildings]);
+
+  // A different building or filter starts again from the first page.
+  useEffect(() => {
+    setPage(0);
+  }, [selectedBuilding, filterDateFrom, filterDateTo, filterCategory, filterKind]);
 
   useEffect(() => {
     loadExpenses();
@@ -431,6 +443,165 @@ export default function ExpensesPage() {
 
   // ── Render ─────────────────────────────────────────────────────────────────
 
+  // Server-driven: the API orders by expense_date / amount and searches title and description.
+  const columns = [
+    { id: "title", label: t("title"), sortable: false,
+      render: (exp) => (
+          <>
+        <Tooltip title={exp.description || ""} placement="top">
+          <Typography
+            variant="body2"
+            sx={{
+              maxWidth: 200,
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {exp.title}
+          </Typography>
+        </Tooltip>
+        {exp.kind === "subscription" && (
+          <Chip size="small" variant="outlined" color="info" icon={<SubscriptionIcon />} label={t("kind_subscription")} sx={{ mt: 0.5 }} />
+        )}
+        {exp.kind === "late_fee" && (
+          <Chip size="small" variant="outlined" color="warning" icon={<LateFeeIcon />} label={t("kind_late_fee")} sx={{ mt: 0.5 }} />
+        )}
+        {exp.approval_status === "pending" && (
+          <Chip size="small" color="warning" icon={<HourglassIcon />} label={t("approval_pending")} sx={{ mt: 0.5 }} />
+        )}
+        {exp.approval_status === "rejected" && (
+          <Chip size="small" color="error" icon={<CancelIcon />} label={t("approval_rejected")} sx={{ mt: 0.5 }} />
+        )}
+        {exp.can_decide && (
+          <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap sx={{ mt: 0.5 }}>
+            <Button size="small" variant="contained" color="success" onClick={() => setDecision({ expense: exp, action: "approve" })} sx={{ minHeight: 32 }}>{t("approve")}</Button>
+            <Button size="small" variant="outlined" color="error" onClick={() => setDecision({ expense: exp, action: "reject" })} sx={{ minHeight: 32 }}>{t("reject")}</Button>
+            <Button size="small" variant="outlined" onClick={() => putToVote(exp)} sx={{ minHeight: 32 }}>{t("put_to_vote")}</Button>
+          </Stack>
+        )}
+          </>
+        ),
+    },
+    { id: "amount", label: t("amount"),
+      render: (exp) => (
+          <>
+        <Typography variant="body2" fontWeight={500}>
+          {parseFloat(
+            !isAdmin && exp.my_share_amount != null
+              ? exp.my_share_amount
+              : exp.amount
+          ).toLocaleString("en-US", { minimumFractionDigits: 2 })}
+        </Typography>
+        {!isAdmin && exp.my_share_amount != null && (
+          <Typography variant="caption" color="text.secondary" display="block">
+            {t("your_share")}
+          </Typography>
+        )}
+          </>
+        ),
+    },
+    { id: "expense_date", label: t("date"), render: (exp) => exp.expense_date },
+    { id: "split_type", label: t("split_type"), sortable: false, hideOnMobile: true,
+      render: (exp) => (
+          <>
+        <Chip
+          label={
+            SPLIT_TYPES.find((s) => s.value === exp.split_type)?.label ??
+            exp.split_type
+          }
+          size="small"
+          variant="outlined"
+        />
+          </>
+        ),
+    },
+    { id: "status", label: t("status"), sortable: false, render: (exp) => statusChip(exp, t, isAdmin) },
+    { id: "recurring", label: t("recurring"), sortable: false, hideOnMobile: true,
+      render: (exp) => (
+          <>
+        {exp.is_recurring && (
+          <Chip
+            icon={<RepeatIcon fontSize="small" />}
+            label={
+              FREQUENCIES.find((f) => f.value === exp.recurring_config?.frequency)?.label ??
+              exp.recurring_config?.frequency ??
+              t("recurring")
+            }
+            size="small"
+            color="info"
+            variant="outlined"
+          />
+        )}
+          </>
+        ),
+    },
+    { id: "bill", label: t("bill"), align: "center", sortable: false, hideOnMobile: true,
+      render: (exp) => (
+          <>
+        {exp.attachments?.length > 0 && (
+          <Tooltip title={`${exp.attachments.length} attachment(s)`}>
+            <IconButton
+              size="small"
+              component="a"
+              href={mediaUrl(exp.attachments[0].url)}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <AttachFileIcon fontSize="small" color="action" />
+            </IconButton>
+          </Tooltip>
+        )}
+          </>
+        ),
+    },
+    { id: "actions", label: t("actions"), align: "right", sortable: false,
+      render: (exp) => (
+          <>
+        <Stack id="expense-actions-btn" direction="row" spacing={0.5} justifyContent="flex-end">
+          <Tooltip title={t("view_details")}>
+            <IconButton size="small" onClick={() => setDetailExpense(exp)}>
+              <ViewIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+          {isAdmin && (
+            <>
+              <Tooltip title={t("edit")}>
+                <IconButton size="small" onClick={() => openEdit(exp)}>
+                  <EditIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title={t("upload_bill")}>
+                <IconButton size="small" onClick={() => setUploadTarget(exp)}>
+                  <AttachFileIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title={exp.is_manually_paid ? t("marked_paid") : t("mark_as_paid")}>
+                <IconButton
+                  size="small"
+                  color={exp.is_manually_paid ? "success" : "default"}
+                  onClick={() => handleMarkPaid(exp)}
+                >
+                  <CheckCircleIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title={t("delete")}>
+                <IconButton
+                  size="small"
+                  color="error"
+                  onClick={() => setDeleteTarget(exp)}
+                >
+                  <DeleteIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+            </>
+          )}
+        </Stack>
+          </>
+        ),
+    },
+  ];
+
   return (
     <>
       <PrivateSEO title="3maracom – Expenses" />
@@ -521,174 +692,24 @@ export default function ExpensesPage() {
       </Paper>
 
       {/* Expense table */}
-      {loading ? (
-        <Box display="flex" justifyContent="center" p={4}>
-          <CircularProgress />
-        </Box>
-      ) : (
-        <TableContainer id="expenses-table" component={Paper}>
-          <Table size="small">
-            <TableHead>
-              <TableRow sx={{ bgcolor: "action.hover" }}>
-                <TableCell>{t("title")}</TableCell>
-                <TableCell>{t("amount")}</TableCell>
-                <TableCell>{t("date")}</TableCell>
-                <TableCell>{t("split_type")}</TableCell>
-                <TableCell>{t("status")}</TableCell>
-                <TableCell>{t("recurring")}</TableCell>
-                <TableCell align="center">{t("bill")}</TableCell>
-                <TableCell align="right">{t("actions")}</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {expenses.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={8} align="center" sx={{ py: 4, color: "text.secondary" }}>
-                    {t("no_expenses")}{" "}
-                    {isAdmin && t("no_expenses_hint")}
-                  </TableCell>
-                </TableRow>
-              ) : (
-                expenses.map((exp) => (
-                  <TableRow key={exp.id} hover>
-                    <TableCell>
-                      <Tooltip title={exp.description || ""} placement="top">
-                        <Typography
-                          variant="body2"
-                          sx={{
-                            maxWidth: 200,
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                            whiteSpace: "nowrap",
-                          }}
-                        >
-                          {exp.title}
-                        </Typography>
-                      </Tooltip>
-                      {exp.kind === "subscription" && (
-                        <Chip size="small" variant="outlined" color="info" icon={<SubscriptionIcon />} label={t("kind_subscription")} sx={{ mt: 0.5 }} />
-                      )}
-                      {exp.kind === "late_fee" && (
-                        <Chip size="small" variant="outlined" color="warning" icon={<LateFeeIcon />} label={t("kind_late_fee")} sx={{ mt: 0.5 }} />
-                      )}
-                      {exp.approval_status === "pending" && (
-                        <Chip size="small" color="warning" icon={<HourglassIcon />} label={t("approval_pending")} sx={{ mt: 0.5 }} />
-                      )}
-                      {exp.approval_status === "rejected" && (
-                        <Chip size="small" color="error" icon={<CancelIcon />} label={t("approval_rejected")} sx={{ mt: 0.5 }} />
-                      )}
-                      {exp.can_decide && (
-                        <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap sx={{ mt: 0.5 }}>
-                          <Button size="small" variant="contained" color="success" onClick={() => setDecision({ expense: exp, action: "approve" })} sx={{ minHeight: 32 }}>{t("approve")}</Button>
-                          <Button size="small" variant="outlined" color="error" onClick={() => setDecision({ expense: exp, action: "reject" })} sx={{ minHeight: 32 }}>{t("reject")}</Button>
-                          <Button size="small" variant="outlined" onClick={() => putToVote(exp)} sx={{ minHeight: 32 }}>{t("put_to_vote")}</Button>
-                        </Stack>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="body2" fontWeight={500}>
-                        {parseFloat(
-                          !isAdmin && exp.my_share_amount != null
-                            ? exp.my_share_amount
-                            : exp.amount
-                        ).toLocaleString("en-US", { minimumFractionDigits: 2 })}
-                      </Typography>
-                      {!isAdmin && exp.my_share_amount != null && (
-                        <Typography variant="caption" color="text.secondary" display="block">
-                          {t("your_share")}
-                        </Typography>
-                      )}
-                    </TableCell>
-                    <TableCell>{exp.expense_date}</TableCell>
-                    <TableCell>
-                      <Chip
-                        label={
-                          SPLIT_TYPES.find((s) => s.value === exp.split_type)?.label ??
-                          exp.split_type
-                        }
-                        size="small"
-                        variant="outlined"
-                      />
-                    </TableCell>
-                    <TableCell>{statusChip(exp, t, isAdmin)}</TableCell>
-                    <TableCell>
-                      {exp.is_recurring && (
-                        <Chip
-                          icon={<RepeatIcon fontSize="small" />}
-                          label={
-                            FREQUENCIES.find((f) => f.value === exp.recurring_config?.frequency)?.label ??
-                            exp.recurring_config?.frequency ??
-                            t("recurring")
-                          }
-                          size="small"
-                          color="info"
-                          variant="outlined"
-                        />
-                      )}
-                    </TableCell>
-                    <TableCell align="center">
-                      {exp.attachments?.length > 0 && (
-                        <Tooltip title={`${exp.attachments.length} attachment(s)`}>
-                          <IconButton
-                            size="small"
-                            component="a"
-                            href={mediaUrl(exp.attachments[0].url)}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                          >
-                            <AttachFileIcon fontSize="small" color="action" />
-                          </IconButton>
-                        </Tooltip>
-                      )}
-                    </TableCell>
-                    <TableCell align="right">
-                      <Stack id="expense-actions-btn" direction="row" spacing={0.5} justifyContent="flex-end">
-                        <Tooltip title={t("view_details")}>
-                          <IconButton size="small" onClick={() => setDetailExpense(exp)}>
-                            <ViewIcon fontSize="small" />
-                          </IconButton>
-                        </Tooltip>
-                        {isAdmin && (
-                          <>
-                            <Tooltip title={t("edit")}>
-                              <IconButton size="small" onClick={() => openEdit(exp)}>
-                                <EditIcon fontSize="small" />
-                              </IconButton>
-                            </Tooltip>
-                            <Tooltip title={t("upload_bill")}>
-                              <IconButton size="small" onClick={() => setUploadTarget(exp)}>
-                                <AttachFileIcon fontSize="small" />
-                              </IconButton>
-                            </Tooltip>
-                            <Tooltip title={exp.is_manually_paid ? t("marked_paid") : t("mark_as_paid")}>
-                              <IconButton
-                                size="small"
-                                color={exp.is_manually_paid ? "success" : "default"}
-                                onClick={() => handleMarkPaid(exp)}
-                              >
-                                <CheckCircleIcon fontSize="small" />
-                              </IconButton>
-                            </Tooltip>
-                            <Tooltip title={t("delete")}>
-                              <IconButton
-                                size="small"
-                                color="error"
-                                onClick={() => setDeleteTarget(exp)}
-                              >
-                                <DeleteIcon fontSize="small" />
-                              </IconButton>
-                            </Tooltip>
-                          </>
-                        )}
-                      </Stack>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </TableContainer>
-      )}
+      <DataTable
+        id="expenses-table"
+        testId="expenses-data-table"
+        columns={columns}
+        rows={expenses}
+        rowKey="id"
+        size="small"
+        loading={loading}
+        total={expenseTotal}
+        page={page}
+        rowsPerPage={rowsPerPage}
+        onPageChange={setPage}
+        onRowsPerPageChange={(n) => { setRowsPerPage(n); setPage(0); }}
+        onSearchChange={setSearch}
+        sort={sort}
+        onSortChange={setSort}
+        emptyMessage={`${t("no_expenses")} ${isAdmin ? t("no_expenses_hint") : ""}`.trim()}
+      />
 
       {/* ── Add / Edit Dialog ─────────────────────────────────────────────── */}
       <Dialog open={formOpen} onClose={() => setFormOpen(false)} maxWidth="sm" fullWidth>
@@ -782,10 +803,19 @@ export default function ExpensesPage() {
                 <Typography variant="caption" color="text.secondary" mb={0.5} display="block">
                   {t("custom_weight_hint")}
                 </Typography>
-                <Table size="small">
-                  <TableHead>
-                    <TableRow>
-                      <TableCell padding="checkbox">
+                <DataTable
+                  size="small"
+                  searchable={false}
+                  pagination={false}
+                  rowKey="id"
+                  rows={buildingApartments}
+                  minWidth={0}
+                  columns={[
+                    {
+                      id: "select",
+                      sortable: false,
+                      width: 48,
+                      label: (
                         <Checkbox
                           size="small"
                           checked={buildingApartments.length > 0 && buildingApartments.every((a) => a.id in customWeights)}
@@ -800,57 +830,55 @@ export default function ExpensesPage() {
                             }
                           }}
                         />
-                      </TableCell>
-                      <TableCell>{t("unit")}</TableCell>
-                      <TableCell>{t("type")}</TableCell>
-                      <TableCell width={100}>{t("weight")}</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {buildingApartments.map((apt) => {
-                      const checked = apt.id in customWeights;
-                      return (
-                        <TableRow key={apt.id} hover>
-                          <TableCell padding="checkbox">
-                            <Checkbox
-                              size="small"
-                              checked={checked}
-                              onChange={(e) => {
-                                if (e.target.checked) {
-                                  setCustomWeights((prev) => ({ ...prev, [apt.id]: 1 }));
-                                } else {
-                                  setCustomWeights((prev) => {
-                                    const next = { ...prev };
-                                    delete next[apt.id];
-                                    return next;
-                                  });
-                                }
-                              }}
-                            />
-                          </TableCell>
-                          <TableCell>{apt.unit_number}</TableCell>
-                          <TableCell>{apt.type === "store" ? t("unit_type_store") : t("unit_type_apartment")}</TableCell>
-                          <TableCell>
-                            <TextField
-                              size="small"
-                              type="number"
-                              inputProps={{ min: 0, step: 0.1 }}
-                              value={customWeights[apt.id] ?? ""}
-                              disabled={!checked}
-                              onChange={(e) =>
-                                setCustomWeights((prev) => ({
-                                  ...prev,
-                                  [apt.id]: parseFloat(e.target.value) || 0,
-                                }))
-                              }
-                              sx={{ width: 80 }}
-                            />
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
+                      ),
+                      render: (apt) => (
+                        <Checkbox
+                          size="small"
+                          checked={apt.id in customWeights}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setCustomWeights((prev) => ({ ...prev, [apt.id]: 1 }));
+                            } else {
+                              setCustomWeights((prev) => {
+                                const next = { ...prev };
+                                delete next[apt.id];
+                                return next;
+                              });
+                            }
+                          }}
+                        />
+                      ),
+                    },
+                    { id: "unit_number", label: t("unit") },
+                    {
+                      id: "type",
+                      label: t("type"),
+                      render: (apt) => (apt.type === "store" ? t("unit_type_store") : t("unit_type_apartment")),
+                    },
+                    {
+                      id: "weight",
+                      label: t("weight"),
+                      sortable: false,
+                      width: 100,
+                      render: (apt) => (
+                        <TextField
+                          size="small"
+                          type="number"
+                          inputProps={{ min: 0, step: 0.1 }}
+                          value={customWeights[apt.id] ?? ""}
+                          disabled={!(apt.id in customWeights)}
+                          onChange={(e) =>
+                            setCustomWeights((prev) => ({
+                              ...prev,
+                              [apt.id]: parseFloat(e.target.value) || 0,
+                            }))
+                          }
+                          sx={{ width: 80 }}
+                        />
+                      ),
+                    },
+                  ]}
+                />
               </Box>
             )}
 
@@ -970,66 +998,63 @@ export default function ExpensesPage() {
                     {t("no_units_assigned")}
                   </Typography>
                 ) : (
-                  <Table size="small">
-                    <TableHead>
-                      <TableRow>
-                        <TableCell>{t("unit")}</TableCell>
-                        <TableCell align="right">{t("share_amount")}</TableCell>
-                        <TableCell align="right">{t("paid_amount")}</TableCell>
-                        <TableCell align="center">{t("status")}</TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {detailExpense.apartment_shares.map((s) => {
-                        const statusConfig = {
-                          paid:    { label: t("status_paid", "Paid"),    color: "success", icon: <CheckCircleIcon fontSize="small" color="success" /> },
-                          partial: { label: t("status_partial", "Partial"), color: "warning", icon: <HourglassIcon fontSize="small" color="warning" /> },
-                          unpaid:  { label: t("status_unpaid", "Unpaid"),  color: "error",   icon: <CancelIcon fontSize="small" color="error" /> },
-                        };
-                        const sc = statusConfig[s.payment_status] || statusConfig.unpaid;
-                        return (
-                          <TableRow key={s.id}>
-                            <TableCell>{s.unit_number}</TableCell>
-                            <TableCell align="right" sx={{ fontWeight: 500 }}>
-                              {parseFloat(s.share_amount).toLocaleString("en-US", {
-                                minimumFractionDigits: 2,
-                              })}
-                            </TableCell>
-                            <TableCell align="right" sx={{ fontWeight: 500 }}>
-                              {parseFloat(s.total_paid || 0).toLocaleString("en-US", {
-                                minimumFractionDigits: 2,
-                              })}
-                            </TableCell>
-                            <TableCell align="center">
-                              <Chip
-                                icon={sc.icon}
-                                label={sc.label}
-                                size="small"
-                                color={sc.color}
-                                variant="outlined"
-                              />
-                            </TableCell>
-                          </TableRow>
-                        );
-                      })}
-                    </TableBody>
-                    <TableFooter>
-                      <TableRow sx={{ "& td": { borderTop: "2px solid", borderColor: "divider" } }}>
-                        <TableCell sx={{ fontWeight: 700 }}>{t("total_shares")}</TableCell>
-                        <TableCell align="right" sx={{ fontWeight: 700 }}>
+                  <DataTable
+                    size="small"
+                    searchable={false}
+                    pagination={false}
+                    rowKey="id"
+                    minWidth={0}
+                    rows={detailExpense.apartment_shares}
+                    columns={[
+                      { id: "unit_number", label: t("unit") },
+                      {
+                        id: "share_amount",
+                        label: t("share_amount"),
+                        align: "right",
+                        sortValue: (s) => parseFloat(s.share_amount),
+                        cellSx: { fontWeight: 500 },
+                        render: (s) => parseFloat(s.share_amount).toLocaleString("en-US", { minimumFractionDigits: 2 }),
+                      },
+                      {
+                        id: "total_paid",
+                        label: t("paid_amount"),
+                        align: "right",
+                        sortValue: (s) => parseFloat(s.total_paid || 0),
+                        cellSx: { fontWeight: 500 },
+                        render: (s) => parseFloat(s.total_paid || 0).toLocaleString("en-US", { minimumFractionDigits: 2 }),
+                      },
+                      {
+                        id: "payment_status",
+                        label: t("status"),
+                        align: "center",
+                        render: (s) => {
+                          const statusConfig = {
+                            paid:    { label: t("status_paid", "Paid"),    color: "success", icon: <CheckCircleIcon fontSize="small" color="success" /> },
+                            partial: { label: t("status_partial", "Partial"), color: "warning", icon: <HourglassIcon fontSize="small" color="warning" /> },
+                            unpaid:  { label: t("status_unpaid", "Unpaid"),  color: "error",   icon: <CancelIcon fontSize="small" color="error" /> },
+                          };
+                          const sc = statusConfig[s.payment_status] || statusConfig.unpaid;
+                          return <Chip icon={sc.icon} label={sc.label} size="small" color={sc.color} variant="outlined" />;
+                        },
+                      },
+                    ]}
+                    footer={
+                      <TableRow sx={{ "& td": { borderTop: "2px solid", borderColor: "divider", fontWeight: 700 } }}>
+                        <TableCell>{t("total_shares")}</TableCell>
+                        <TableCell align="right">
                           {detailExpense.apartment_shares
                             .reduce((sum, s) => sum + parseFloat(s.share_amount), 0)
                             .toLocaleString("en-US", { minimumFractionDigits: 2 })}
                         </TableCell>
-                        <TableCell align="right" sx={{ fontWeight: 700 }}>
+                        <TableCell align="right">
                           {detailExpense.apartment_shares
                             .reduce((sum, s) => sum + parseFloat(s.total_paid || 0), 0)
                             .toLocaleString("en-US", { minimumFractionDigits: 2 })}
                         </TableCell>
                         <TableCell />
                       </TableRow>
-                    </TableFooter>
-                  </Table>
+                    }
+                  />
                 )}
 
                 {(detailExpense.attachments || []).length > 0 && (
