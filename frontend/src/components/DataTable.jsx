@@ -20,7 +20,7 @@ import { Search } from "@mui/icons-material";
  *   debounced 400ms and the table calls onPageChange(0) after a search or sort change).
  * Other props: footer (a <TableRow> for totals, shown under the body), rowKey (string | fn), toolbar (extra filters node), searchable, searchPlaceholder, initialSort
  *   ({id, direction}), pageSizeOptions, defaultRowsPerPage, pagination (false hides it, all rows shown), loading,
- *   emptyMessage, id / testId (put on the TableContainer; tutorial anchors), onRowClick, rowProps(row), size, minWidth.
+ *   emptyMessage, id (on the TableContainer; tutorial anchors), testId (on the <table> element), onRowClick, rowProps(row), size, minWidth.
  */
 const collator = {};
 const getCollator = (lang) => (collator[lang] ??= new Intl.Collator(lang, { numeric: true, sensitivity: "base" }));
@@ -175,8 +175,8 @@ export default function DataTable({
         </Stack>
       )}
 
-      <TableContainer id={id} data-testid={testId} sx={{ overflowX: "auto", position: "relative" }}>
-        <Table size={size} sx={{ minWidth }} aria-label={ariaLabel}>
+      <TableContainer id={id} sx={{ overflowX: "auto", position: "relative" }}>
+        <Table size={size} sx={{ minWidth }} aria-label={ariaLabel} data-testid={testId}>
           <TableHead>
             <TableRow>
               {visibleCols.map((c) => (
