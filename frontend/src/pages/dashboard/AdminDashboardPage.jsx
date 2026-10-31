@@ -15,16 +15,8 @@ import {
   InputLabel,
   LinearProgress,
   MenuItem,
-  Paper,
   Select,
   Stack,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  TableSortLabel,
   TextField,
   Tooltip,
   Typography,
@@ -38,6 +30,7 @@ import { useTranslation } from "react-i18next";
 import { useAuth } from "../../hooks/useAuth";
 import axiosClient from "../../api/axiosClient";
 import { formatCurrency, formatNumber, whatsappLink } from "../../utils/formatters";
+import DataTable from "../../components/DataTable";
 import { PrivateSEO } from "../../components/seo/SEO";
 import TreasuryCard from "../../components/TreasuryCard";
 import PendingClaimsCard from "../../components/PendingClaimsCard";
@@ -79,7 +72,6 @@ export default function AdminDashboardPage() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [balanceSort, setBalanceSort] = useState({ field: "balance", order: "desc" });
 
   // Redirect non-admins away
   useEffect(() => {
@@ -108,30 +100,6 @@ export default function AdminDashboardPage() {
   useEffect(() => {
     fetchDashboard();
   }, [fetchDashboard]);
-
-  const handleBalanceSort = (field) => {
-    setBalanceSort((prev) =>
-      prev.field === field
-        ? { field, order: prev.order === "asc" ? "desc" : "asc" }
-        : { field, order: "asc" }
-    );
-  };
-
-  const sortedUnpaidUnits = [...(data?.unpaid_units ?? [])].sort((a, b) => {
-    const { field, order } = balanceSort;
-    let aVal = a[field] ?? "";
-    let bVal = b[field] ?? "";
-    if (field === "balance") {
-      aVal = parseFloat(aVal);
-      bVal = parseFloat(bVal);
-    } else {
-      aVal = String(aVal).toLowerCase();
-      bVal = String(bVal).toLowerCase();
-    }
-    if (aVal < bVal) return order === "asc" ? -1 : 1;
-    if (aVal > bVal) return order === "asc" ? 1 : -1;
-    return 0;
-  });
 
   const incomeValues = data?.monthly_trend?.map((m) => parseFloat(m.income)) ?? [];
   const expenseValues = data?.monthly_trend?.map((m) => parseFloat(m.expenses)) ?? [];
@@ -354,48 +322,55 @@ export default function AdminDashboardPage() {
               {(data?.recent_expenses ?? []).length === 0 ? (
                 <Typography variant="body2" color="text.secondary">{t("no_expenses_30_days")}</Typography>
               ) : (
-                <TableContainer component={Paper} variant="outlined">
-                  <Table size="small">
-                    <TableHead>
-                      <TableRow sx={{ bgcolor: "action.hover" }}>
-                        <TableCell><strong>{t("expense")}</strong></TableCell>
-                        <TableCell><strong>{t("category")}</strong></TableCell>
-                        <TableCell align="right"><strong>{t("amount_egp")}</strong></TableCell>
-                        <TableCell align="center"><strong>{t("status")}</strong></TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {(data?.recent_expenses ?? []).map((row, i) => (
-                        <TableRow key={i} hover>
-                          <TableCell>{row.title}</TableCell>
-                          <TableCell>{t(`categories:${row.category}`, row.category)}</TableCell>
-                          <TableCell align="right">
-                            {parseFloat(row.amount).toLocaleString("en-US", { minimumFractionDigits: 2 })}
-                          </TableCell>
-                          <TableCell align="center">
-                            <Chip
-                              label={{
-                                'Paid': t('status_paid'),
-                                'Unpaid': t('status_unpaid'),
-                                'Partial': t('status_partial'),
-                                'Overdue': t('status_overdue'),
-                                'paid': t('status_paid'),
-                                'unpaid': t('status_unpaid'),
-                                'partial': t('status_partial'),
-                                'overdue': t('status_overdue'),
-                              }[row.status] || row.status}
-                              size="small"
-                              color={
-                                row.status === "Overdue" || row.status === "overdue" ? "error" :
-                                row.status === "Paid" || row.status === "paid" ? "success" : "warning"
-                              }
-                            />
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </TableContainer>
+                <DataTable
+                  size="small"
+                  rowKey={(row, i) => i}
+                  rows={data?.recent_expenses ?? []}
+                  searchable={false}
+                  pagination={false}
+                  minWidth={0}
+                  testId="recent-expenses-table"
+                  columns={[
+                    { id: "title", label: t("expense") },
+                    {
+                      id: "category",
+                      label: t("category"),
+                      sortValue: (row) => t(`categories:${row.category}`, row.category),
+                      render: (row) => t(`categories:${row.category}`, row.category),
+                    },
+                    {
+                      id: "amount",
+                      label: t("amount_egp"),
+                      align: "right",
+                      sortValue: (row) => parseFloat(row.amount),
+                      render: (row) => parseFloat(row.amount).toLocaleString("en-US", { minimumFractionDigits: 2 }),
+                    },
+                    {
+                      id: "status",
+                      label: t("status"),
+                      align: "center",
+                      render: (row) => (
+                        <Chip
+                          label={{
+                'Paid': t('status_paid'),
+                'Unpaid': t('status_unpaid'),
+                'Partial': t('status_partial'),
+                'Overdue': t('status_overdue'),
+                'paid': t('status_paid'),
+                'unpaid': t('status_unpaid'),
+                'partial': t('status_partial'),
+                'overdue': t('status_overdue'),
+              }[row.status] || row.status}
+                          size="small"
+                          color={
+                            row.status === "Overdue" || row.status === "overdue" ? "error" :
+                            row.status === "Paid" || row.status === "paid" ? "success" : "warning"
+                          }
+                        />
+                      ),
+                    },
+                  ]}
+                />
               )}
             </CardContent>
           </Card>
@@ -407,82 +382,60 @@ export default function AdminDashboardPage() {
                 <Typography variant="h6" gutterBottom>
                   {t("outstanding_balances")}
                 </Typography>
-                <TableContainer component={Paper} variant="outlined">
-                  <Table size="small">
-                    <TableHead>
-                      <TableRow sx={{ bgcolor: "action.hover" }}>
-                        {[
-                          { label: t("unit_col"), field: "unit_number" },
-                          { label: t("building_col"), field: "building_name" },
-                          { label: t("owner_col"), field: "owner_name" },
-                          { label: t("email_col"), field: "owner_email" },
-                        ].map(({ label, field }) => (
-                          <TableCell key={field}>
-                            <TableSortLabel
-                              active={balanceSort.field === field}
-                              direction={balanceSort.field === field ? balanceSort.order : "asc"}
-                              onClick={() => handleBalanceSort(field)}
-                            >
-                              <strong>{label}</strong>
-                            </TableSortLabel>
-                          </TableCell>
-                        ))}
-                        <TableCell><strong>{t("remind_col")}</strong></TableCell>
-                        <TableCell align="right">
-                          <TableSortLabel
-                            active={balanceSort.field === "balance"}
-                            direction={balanceSort.field === "balance" ? balanceSort.order : "asc"}
-                            onClick={() => handleBalanceSort("balance")}
+                <DataTable
+                  size="small"
+                  rowKey={(row, i) => `${row.unit_number}-${row.building_name}-${i}`}
+                  rows={data.unpaid_units}
+                  initialSort={{ id: "balance", direction: "desc" }}
+                  testId="unpaid-units-table"
+                  columns={[
+                    { id: "unit_number", label: t("unit_col") },
+                    { id: "building_name", label: t("building_col"), hideOnMobile: true },
+                    { id: "owner_name", label: t("owner_col") },
+                    { id: "owner_email", label: t("email_col"), hideOnMobile: true },
+                    {
+                      id: "remind",
+                      label: t("remind_col"),
+                      sortable: false,
+                      render: (row) => {
+                        const link = whatsappLink(
+                          row.owner_phone,
+                          t("remind_whatsapp_text", {
+                            name: row.owner_name,
+                            building: row.building_name,
+                            unit: row.unit_number,
+                            amount: formatCurrency(row.balance),
+                          }),
+                        );
+                        return link ? (
+                          <Button
+                            size="small"
+                            color="success"
+                            variant="outlined"
+                            startIcon={<WhatsApp fontSize="small" />}
+                            href={link}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            sx={{ minHeight: 44 }}
                           >
-                            <strong>{t("balance_due_egp")}</strong>
-                          </TableSortLabel>
-                        </TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {sortedUnpaidUnits.map((row, i) => (
-                        <TableRow key={i} hover>
-                          <TableCell>{row.unit_number}</TableCell>
-                          <TableCell>{row.building_name}</TableCell>
-                          <TableCell>{row.owner_name}</TableCell>
-                          <TableCell>{row.owner_email}</TableCell>
-                          <TableCell>
-                            {(() => {
-                              const link = whatsappLink(
-                                row.owner_phone,
-                                t("remind_whatsapp_text", {
-                                  name: row.owner_name,
-                                  building: row.building_name,
-                                  unit: row.unit_number,
-                                  amount: formatCurrency(row.balance),
-                                }),
-                              );
-                              return link ? (
-                                <Button
-                                  size="small"
-                                  color="success"
-                                  variant="outlined"
-                                  startIcon={<WhatsApp fontSize="small" />}
-                                  href={link}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  sx={{ minHeight: 36 }}
-                                >
-                                  {t("remind_whatsapp")}
-                                </Button>
-                              ) : (
-                                <Typography variant="caption" color="text.disabled">{t("remind_no_phone")}</Typography>
-                              );
-                            })()}
-                          </TableCell>
-                          <TableCell align="right" sx={{ color: "error.main", fontWeight: 600 }}>
-                            {parseFloat(row.balance).toLocaleString("en-US", { minimumFractionDigits: 2 })}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </TableContainer>
+                            {t("remind_whatsapp")}
+                          </Button>
+                        ) : (
+                          <Typography variant="caption" color="text.disabled">{t("remind_no_phone")}</Typography>
+                        );
+                      },
+                    },
+                    {
+                      id: "balance",
+                      label: t("balance_due_egp"),
+                      align: "right",
+                      sortValue: (row) => parseFloat(row.balance),
+                      searchValue: (row) => String(row.balance),
+                      cellSx: { color: "error.main", fontWeight: 600 },
+                      render: (row) => parseFloat(row.balance).toLocaleString("en-US", { minimumFractionDigits: 2 }),
+                    },
+                  ]}
+                />
               </CardContent>
             </Card>
           )}

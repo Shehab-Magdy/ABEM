@@ -14,12 +14,6 @@ import {
   TextField,
   Typography,
   Alert,
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableRow,
-  Paper,
   Button,
   Stack,
 } from "@mui/material";
@@ -29,6 +23,7 @@ import { useTranslation } from "react-i18next";
 import axiosClient from "../../api/axiosClient";
 import { apartmentsApi } from "../../api/apartmentsApi";
 import { useAuth } from "../../hooks/useAuth";
+import DataTable from "../../components/DataTable";
 import { PrivateSEO } from "../../components/seo/SEO";
 import TreasuryCard from "../../components/TreasuryCard";
 import QuickActions from "../../components/QuickActions";
@@ -312,30 +307,31 @@ export default function OwnerDashboardPage() {
                   {!hasPayments ? (
                     <Typography color="text.secondary">{t("no_payments_yet")}</Typography>
                   ) : (
-                    <Paper variant="outlined">
-                      <Table size="small">
-                        <TableHead>
-                          <TableRow>
-                            <TableCell>{t("date_col")}</TableCell>
-                            <TableCell>{t("amount_col")}</TableCell>
-                            <TableCell>{t("method_col")}</TableCell>
-                            <TableCell>{t("notes_col")}</TableCell>
-                          </TableRow>
-                        </TableHead>
-                        <TableBody>
-                          {(data?.recent_payments ?? []).map((p) => (
-                            <TableRow key={p.id}>
-                              <TableCell>{p.payment_date}</TableCell>
-                              <TableCell>
-                                {formatCurrency(p.amount_paid)}
-                              </TableCell>
-                              <TableCell>{PAYMENT_METHOD_KEYS[p.payment_method] ? t(PAYMENT_METHOD_KEYS[p.payment_method]) : p.payment_method}</TableCell>
-                              <TableCell>{p.notes}</TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </Paper>
+                    <DataTable
+                      size="small"
+                      rowKey="id"
+                      rows={data?.recent_payments ?? []}
+                      searchable={false}
+                      pagination={false}
+                      minWidth={0}
+                      testId="recent-payments-table"
+                      columns={[
+                        { id: "payment_date", label: t("date_col") },
+                        {
+                          id: "amount_paid",
+                          label: t("amount_col"),
+                          sortValue: (p) => parseFloat(p.amount_paid),
+                          render: (p) => formatCurrency(p.amount_paid),
+                        },
+                        {
+                          id: "payment_method",
+                          label: t("method_col"),
+                          sortValue: (p) => (PAYMENT_METHOD_KEYS[p.payment_method] ? t(PAYMENT_METHOD_KEYS[p.payment_method]) : p.payment_method),
+                          render: (p) => (PAYMENT_METHOD_KEYS[p.payment_method] ? t(PAYMENT_METHOD_KEYS[p.payment_method]) : p.payment_method),
+                        },
+                        { id: "notes", label: t("notes_col"), hideOnMobile: true },
+                      ]}
+                    />
                   )}
                 </CardContent>
               </Card>
