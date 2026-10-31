@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  Alert, Button, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, Link, Stack, Table, TableBody,
-  TableCell, TableHead, TableRow, Typography,
+  Alert, Button, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, Link, Stack, Typography,
 } from "@mui/material";
 import { UploadFile } from "@mui/icons-material";
+import DataTable from "./DataTable";
 
 /**
  * Bulk import from a CSV file in two steps: check the file (nothing is saved, every row with a problem is listed),
@@ -68,17 +68,23 @@ export default function CsvImportDialog({ open, title, help, columns, sample, fi
                     : t("csv_ready", { n: result.total })}
               </Alert>
               {problems.length > 0 && (
-                <Table size="small">
-                  <TableHead><TableRow><TableCell>{t("csv_row")}</TableCell><TableCell>{t("csv_problem")}</TableCell></TableRow></TableHead>
-                  <TableBody>
-                    {problems.slice(0, 50).map((r) => (
-                      <TableRow key={r.row}>
-                        <TableCell>{r.row}{r.unit_number || r.title ? ` · ${r.unit_number || r.title}` : ""}</TableCell>
-                        <TableCell>{r.problems.join(" ")}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                <DataTable
+                  size="small"
+                  rowKey="row"
+                  rows={problems.slice(0, 50)}
+                  searchable={false}
+                  pagination={false}
+                  minWidth={0}
+                  testId="csv-problems-table"
+                  columns={[
+                    {
+                      id: "row",
+                      label: t("csv_row"),
+                      render: (r) => `${r.row}${r.unit_number || r.title ? ` · ${r.unit_number || r.title}` : ""}`,
+                    },
+                    { id: "problem", label: t("csv_problem"), sortable: false, render: (r) => r.problems.join(" ") },
+                  ]}
+                />
               )}
             </>
           )}
