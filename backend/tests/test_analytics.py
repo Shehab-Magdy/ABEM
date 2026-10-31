@@ -1,13 +1,13 @@
 """Platform KPIs: only platform owners see them, and the numbers follow the data."""
+
 from datetime import date
 from decimal import Decimal
 
 import pytest
-from rest_framework.test import APIClient
-
 from apps.apartments.models import Apartment
 from apps.buildings.models import Building
 from apps.payments.models import Payment
+from rest_framework.test import APIClient
 
 pytestmark = pytest.mark.django_db
 URL = "/api/v1/analytics/platform/"
@@ -22,7 +22,10 @@ def _get(user):
 @pytest.fixture
 def superuser(django_user_model):
     return django_user_model.objects.create_superuser(
-        email="root@abem.test", password="Pass1234!x", first_name="Root", last_name="Owner"
+        email="root@abem.test",
+        password="Pass1234!x",
+        first_name="Root",
+        last_name="Owner",
     )
 
 
@@ -38,7 +41,10 @@ def test_numbers_follow_the_data(admin_user, superuser):
     Building.objects.create(name="Empty", address="2 St", admin=admin_user)
     unit = Apartment.objects.create(building=busy, unit_number="1")
     Payment.objects.create(
-        apartment=unit, amount_paid=Decimal("10.00"), payment_date=date.today(), recorded_by=admin_user
+        apartment=unit,
+        amount_paid=Decimal("10.00"),
+        payment_date=date.today(),
+        recorded_by=admin_user,
     )
 
     data = _get(superuser).data
@@ -60,18 +66,31 @@ def test_building_rows_carry_their_plan(admin_user, superuser):
     lapsed = Building.objects.create(name="Lapsed", address="2 St", admin=admin_user)
     old = Building.objects.create(name="Old", address="3 St", admin=admin_user)
     Building.objects.create(name="NoPlan", address="4 St", admin=admin_user)
-    plus, _ = Plan.objects.get_or_create(code="plus", defaults={"name_en": "Plus", "name_ar": "متقدمة"})
+    plus, _ = Plan.objects.get_or_create(
+        code="plus", defaults={"name_en": "Plus", "name_ar": "متقدمة"}
+    )
     today = date.today()
-    BuildingPlan.objects.create(building=paid, plan=plus, paid_until=today + timedelta(days=30))
-    BuildingPlan.objects.create(building=lapsed, plan=plus, paid_until=today - timedelta(days=2))
-    BuildingPlan.objects.create(building=old, plan=plus, paid_until=today - timedelta(days=400))
+    BuildingPlan.objects.create(
+        building=paid, plan=plus, paid_until=today + timedelta(days=30)
+    )
+    BuildingPlan.objects.create(
+        building=lapsed, plan=plus, paid_until=today - timedelta(days=2)
+    )
+    BuildingPlan.objects.create(
+        building=old, plan=plus, paid_until=today - timedelta(days=400)
+    )
 
     rows = {b["name"]: b for b in _get(superuser).data["buildings"]}
     assert rows["Paid"]["plan"] == {
-        "code": "plus", "name_en": plus.name_en, "name_ar": plus.name_ar,
-        "paid_until": (today + timedelta(days=30)).isoformat(), "status": "active",
+        "code": "plus",
+        "name_en": plus.name_en,
+        "name_ar": plus.name_ar,
+        "paid_until": (today + timedelta(days=30)).isoformat(),
+        "status": "active",
     }
     assert rows["Lapsed"]["plan"]["status"] == "grace"
     assert rows["Old"]["plan"]["status"] == "expired"
     assert rows["NoPlan"]["plan"] is None
-    assert {"id", "name", "units", "created_at", "last_activity", "health"} <= set(rows["Paid"])
+    assert {"id", "name", "units", "created_at", "last_activity", "health"} <= set(
+        rows["Paid"]
+    )

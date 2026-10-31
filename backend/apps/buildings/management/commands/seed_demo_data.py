@@ -18,21 +18,23 @@ Usage:
 from datetime import date, timedelta
 from decimal import Decimal
 
-from django.conf import settings
-from django.core.management.base import BaseCommand, CommandError
-from django.db import transaction
-
 from apps.apartments.models import Apartment, ApartmentStatus, UnitType
 from apps.authentication.models import User, UserRole
 from apps.buildings.models import Building, BuildingCoAdmin, UserBuilding
-from apps.expenses.management.commands.seed_expense_categories import \
-    DEFAULT_CATEGORIES
-from apps.expenses.models import (Expense, ExpenseCategory, ExpenseKind,
-                                  SplitType)
+from apps.expenses.management.commands.seed_expense_categories import DEFAULT_CATEGORIES
+from apps.expenses.models import Expense, ExpenseCategory, ExpenseKind, SplitType
 from apps.expenses.utils import run_split_engine
 from apps.payments.allocation import auto_allocate, record_allocations
-from apps.payments.models import (AssetType, BuildingAsset, Payment,
-                                  PaymentClaim, PaymentMethod)
+from apps.payments.models import (
+    AssetType,
+    BuildingAsset,
+    Payment,
+    PaymentClaim,
+    PaymentMethod,
+)
+from django.conf import settings
+from django.core.management.base import BaseCommand, CommandError
+from django.db import transaction
 
 DEFAULT_PASSWORD = "P@ssw0rd"
 
@@ -345,5 +347,6 @@ class Command(BaseCommand):
         if plan is None:
             return
         BuildingPlan.objects.update_or_create(
-            building=building, defaults={"plan": plan, "paid_until": date.today() + timedelta(days=days)}
+            building=building,
+            defaults={"plan": plan, "paid_until": date.today() + timedelta(days=days)},
         )
