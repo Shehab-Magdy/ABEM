@@ -105,5 +105,7 @@
   "renters_close": "Close",
   "renters_load_error": "Could not complete that.",
   "renters_whatsapp_text": "You are invited to live in unit {{unit}} on 3maracom: {{link}}",
-  "renter_dashboard": "My home"
+  "renter_dashboard": "My home",
+  "progress_of": "{{paid}} of {{total}}",
+  "units_settled_of": "{{paid}} of {{total}} units settled"
 }

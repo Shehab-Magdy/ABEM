@@ -61,6 +61,7 @@ import { useNotificationStore } from "../../contexts/notificationStore";
 import { TutorialButton } from "../../tutorial/TutorialOverlay";
 import Footer from "./Footer";
 import BrandLogo from "./BrandLogo";
+import { BRAND } from "../../brand";
 
 const DRAWER_WIDTH = 240;
 
@@ -302,6 +303,23 @@ export default function DashboardLayout() {
                 {t("auth:sign_out")}
               </MenuItem>
             </Menu>
+            {/* Brand logo: end side of the bar, opposite the side menu. */}
+            <Box
+              component={Link}
+              to="/dashboard"
+              id="app-bar-logo"
+              aria-label={BRAND.combined}
+              sx={{ display: "inline-flex", alignItems: "center", ml: 1, textDecoration: "none", flexShrink: 0 }}
+            >
+              <Box component="img" src="/abem-app-icon.svg" alt={BRAND.combined} sx={{ height: 36, width: 36, borderRadius: 1 }} />
+              <Typography
+                component="span"
+                fontWeight={700}
+                sx={{ display: { xs: "none", sm: "block" }, ml: 1, color: "text.primary", fontFamily: "Cairo, Inter, sans-serif", fontSize: 18 }}
+              >
+                {isRtl ? BRAND.nameAr : BRAND.nameEn}
+              </Typography>
+            </Box>
           </Toolbar>
         </AppBar>
 

@@ -50,5 +50,13 @@
   "cancel": "إلغاء",
   "saved": "تم الحفظ.",
   "grace_days": "أيام السماح",
-  "grace_help": "استمرار الفواتير الشهرية بعد انتهاء الباقة"
+  "grace_help": "استمرار الفواتير الشهرية بعد انتهاء الباقة",
+  "plan": "الباقة",
+  "status": "الحالة",
+  "paid_until": "حتى {{date}}",
+  "plan_status_active": "نشطة",
+  "plan_status_trial": "تجريبية",
+  "plan_status_expired": "منتهية",
+  "plan_status_pending": "قيد الانتظار",
+  "plan_status_cancelled": "ملغاة"
 }

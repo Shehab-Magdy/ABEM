@@ -38,7 +38,11 @@ export default function TreasuryCard() {
       <Card
         key={row.building_id}
         data-testid="treasury-card"
-        sx={{ mb: 3, bgcolor: "primary.main", color: "primary.contrastText" }}
+        sx={{
+          mb: 3,
+          bgcolor: (th) => (th.palette.mode === "dark" ? "primary.dark" : "primary.main"),
+          color: "#fff",
+        }}
       >
         <CardContent>
           <Typography variant="overline" sx={{ opacity: 0.85 }}>

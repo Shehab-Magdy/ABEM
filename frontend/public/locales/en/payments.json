@@ -102,5 +102,7 @@
   "reverseHint": "A reversal does not delete the payment. It adds a linked negative entry and puts the amount back on the unit's balance.",
   "reverseReason": "Reason (required)",
   "reverseDone": "Payment reversed.",
-  "reverseError": "Could not reverse the payment."
+  "reverseError": "Could not reverse the payment.",
+  "unit_option": "Unit {{number}}",
+  "unit_option_store": "Unit {{number}} (Store)"
 }

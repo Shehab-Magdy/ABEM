@@ -50,5 +50,13 @@
   "cancel": "Cancel",
   "saved": "Saved.",
   "grace_days": "Grace days",
-  "grace_help": "Monthly billing keeps running after a plan ends"
+  "grace_help": "Monthly billing keeps running after a plan ends",
+  "plan": "Plan",
+  "status": "Status",
+  "paid_until": "until {{date}}",
+  "plan_status_active": "Active",
+  "plan_status_trial": "Trial",
+  "plan_status_expired": "Expired",
+  "plan_status_pending": "Pending",
+  "plan_status_cancelled": "Cancelled"
 }
