@@ -47,6 +47,12 @@ export default function PlanPage() {
   }, [load]);
 
   const price = (tier) => (period === "yearly" ? tier.price_yearly : tier.price_monthly);
+  /** Whole-number percent saved by paying yearly instead of 12 months; 0 when there is no saving. */
+  const yearlySaving = (tier) => {
+    const full = Number(tier.price_monthly) * 12;
+    const pct = full > 0 ? Math.round((1 - Number(tier.price_yearly) / full) * 100) : 0;
+    return pct > 0 ? pct : 0;
+  };
 
   const submit = async () => {
     setBusy(true);
@@ -104,7 +110,17 @@ export default function PlanPage() {
               <Card key={tier.code} variant="outlined" sx={{ flex: 1, ...(mine && { borderColor: "success.main", borderWidth: 2 }) }}>
                 <CardContent>
                   <Typography variant="h6" fontWeight={800}>{planName(tier, i18n.language)}</Typography>
-                  <Typography variant="h5" fontWeight={800} sx={{ my: 1 }}>{free ? t("free") : formatCurrency(price(tier))}</Typography>
+                  <Typography variant="h5" fontWeight={800} sx={{ mt: 1 }}>{free ? t("free") : formatCurrency(price(tier))}</Typography>
+                  <Box sx={{ minHeight: 28, mb: 1 }}>
+                    {!free && yearlySaving(tier) > 0 && (period === "yearly" ? (
+                      <Stack direction="row" spacing={1} alignItems="center">
+                        <Typography variant="body2" color="text.secondary" sx={{ textDecoration: "line-through" }}>{formatCurrency(Number(tier.price_monthly) * 12)}</Typography>
+                        <Chip size="small" color="success" label={t("save_percent", { pct: yearlySaving(tier) })} />
+                      </Stack>
+                    ) : (
+                      <Typography variant="body2" color="success.main">{t("save_with_yearly", { pct: yearlySaving(tier) })}</Typography>
+                    ))}
+                  </Box>
                   <Stack spacing={0.5} sx={{ mb: 2 }}>
                     <Typography variant="body2">{tier.max_units == null ? t("limit_unlimited") : t("limit_units", { n: tier.max_units })}</Typography>
                     {["subscriptions", "annual_report"].map((f) => (

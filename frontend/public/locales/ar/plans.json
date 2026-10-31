@@ -8,6 +8,8 @@
   "units_of": "{{n}} من {{max}} وحدة",
   "monthly": "شهرياً",
   "yearly": "سنوياً",
+  "save_percent": "وفّر {{pct}}٪",
+  "save_with_yearly": "وفّر {{pct}}٪ مع الاشتراك السنوي",
   "free": "مجانية",
   "limit_unlimited": "وحدات بلا حد أقصى",
   "limit_units": "حتى {{n}} وحدة",
