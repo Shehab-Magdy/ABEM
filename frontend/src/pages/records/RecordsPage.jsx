@@ -213,7 +213,7 @@ export default function RecordsPage() {
           </TextField>
         )}
         {isAdmin && buildingId && (
-          <Button variant="outlined" startIcon={<Download />} onClick={exportAll} data-testid="export-building" sx={{ mb: 2, minHeight: 44, display: "flex" }}>
+          <Button id="export-building-btn" variant="outlined" startIcon={<Download />} onClick={exportAll} data-testid="export-building" sx={{ mb: 2, minHeight: 44, display: "flex" }}>
             {t("export_building")}
           </Button>
         )}

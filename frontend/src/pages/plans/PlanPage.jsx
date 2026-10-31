@@ -97,7 +97,7 @@ export default function PlanPage() {
           </Card>
         )}
 
-        <ToggleButtonGroup exclusive size="small" value={period} onChange={(_, v) => v && setPeriod(v)} sx={{ mb: 2 }}>
+        <ToggleButtonGroup id="plan-period-toggle" exclusive size="small" value={period} onChange={(_, v) => v && setPeriod(v)} sx={{ mb: 2 }}>
           <ToggleButton value="monthly">{t("monthly")}</ToggleButton>
           <ToggleButton value="yearly">{t("yearly")}</ToggleButton>
         </ToggleButtonGroup>

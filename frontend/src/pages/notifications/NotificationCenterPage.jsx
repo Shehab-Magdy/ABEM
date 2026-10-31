@@ -678,7 +678,7 @@ export default function NotificationCenterPage() {
                 <CircularProgress />
               </Box>
             ) : notifications.length === 0 ? (
-              <Alert severity="info" data-testid="empty-notifications">
+              <Alert id="notifications-list" severity="info" data-testid="empty-notifications">
                 {t("noNotificationsYet")}
               </Alert>
             ) : (
