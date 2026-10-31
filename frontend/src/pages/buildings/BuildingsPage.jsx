@@ -38,7 +38,7 @@ import {
   Tooltip,
   Typography,
 } from "@mui/material";
-import { DataGrid } from "@mui/x-data-grid";
+import DataTable from "../../components/DataTable";
 import { Add, Apartment, Groups, SwapHoriz, Check, ContentCopy, Delete, Edit, PersonAdd, PhotoCamera, Send, PersonPin, PowerSettingsNew, WhatsApp } from "@mui/icons-material";
 import { useForm } from "react-hook-form";
 import { buildingsApi } from "../../api/buildingsApi";
@@ -60,7 +60,10 @@ export default function BuildingsPage() {
 
   const [rows, setRows] = useState([]);
   const [rowCount, setRowCount] = useState(0);
-  const [paginationModel, setPaginationModel] = useState({ page: 0, pageSize: 20 });
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [search, setSearch] = useState("");
+  const [sort, setSort] = useState({ id: "name", direction: "asc" });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -113,8 +116,10 @@ export default function BuildingsPage() {
     setError(null);
     try {
       const res = await buildingsApi.list({
-        page: paginationModel.page + 1,
-        page_size: paginationModel.pageSize,
+        page: page + 1,
+        page_size: rowsPerPage,
+        ...(search ? { search } : {}),
+        ordering: `${sort.direction === "desc" ? "-" : ""}${sort.id}`,
       }, options);
       const data = res.data;
       setRows(data.results ?? data);
@@ -125,7 +130,7 @@ export default function BuildingsPage() {
     } finally {
       setLoading(false);
     }
-  }, [paginationModel]);
+  }, [page, rowsPerPage, search, sort]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -383,38 +388,38 @@ export default function BuildingsPage() {
   };
 
   // ── Columns ─────────────────────────────────────────────────────────────────
+  // Server-driven: the API orders by name / created_at / num_floors and searches name, address, city.
   const columns = [
-    { field: "name", headerName: t("name"), flex: 1.2, minWidth: 160 },
-    { field: "address", headerName: t("address"), flex: 1.5, minWidth: 180 },
-    { field: "city", headerName: t("city"), width: 130 },
-    { field: "country", headerName: t("country"), width: 120 },
-    { field: "num_floors", headerName: t("floors"), width: 80, type: "number" },
+    { id: "name", label: t("name") },
+    { id: "address", label: t("address"), sortable: false, hideOnMobile: true },
+    { id: "city", label: t("city"), sortable: false },
+    { id: "country", label: t("country"), sortable: false, hideOnMobile: true },
+    { id: "num_floors", label: t("floors"), align: "right" },
     {
-      field: "is_active",
-      headerName: t("status"),
-      width: 100,
-      renderCell: ({ value }) => (
+      id: "is_active",
+      label: t("status"),
+      sortable: false,
+      render: (row) => (
         <Chip
-          label={value ? t("active") : t("inactive")}
+          label={row.is_active ? t("active") : t("inactive")}
           size="small"
-          color={value ? "success" : "error"}
+          color={row.is_active ? "success" : "error"}
         />
       ),
     },
     {
-      field: "created_at",
-      headerName: t("created"),
-      width: 130,
-      valueFormatter: (value) => new Date(value).toLocaleDateString(),
+      id: "created_at",
+      label: t("created"),
+      hideOnMobile: true,
+      render: (row) => new Date(row.created_at).toLocaleDateString(),
     },
     ...(isAdmin
       ? [
           {
-            field: "actions",
-            headerName: t("actions"),
-            width: 170,
+            id: "actions",
+            label: t("actions"),
             sortable: false,
-            renderCell: ({ row }) => (
+            render: (row) => (
               <Stack id="building-actions-row" direction="row" spacing={0.5}>
                 <Tooltip title={t("edit")}>
                   <IconButton size="small" onClick={() => openEdit(row)}>
@@ -488,18 +493,21 @@ export default function BuildingsPage() {
         </Alert>
       )}
 
-      <DataGrid
-        rows={rows}
+      <DataTable
         columns={columns}
-        rowCount={rowCount}
+        rows={rows}
+        rowKey="id"
         loading={loading}
-        paginationMode="server"
-        paginationModel={paginationModel}
-        onPaginationModelChange={setPaginationModel}
-        pageSizeOptions={[10, 20, 50]}
-        autoHeight
-        disableRowSelectionOnClick
-        sx={{ bgcolor: "background.paper" }}
+        total={rowCount}
+        page={page}
+        rowsPerPage={rowsPerPage}
+        onPageChange={setPage}
+        onRowsPerPageChange={(n) => { setRowsPerPage(n); setPage(0); }}
+        onSearchChange={setSearch}
+        sort={sort}
+        onSortChange={setSort}
+        testId="buildings-table"
+        emptyMessage={t("no_buildings", "No buildings found.")}
       />
 
       {/* ── Create / Edit Dialog ──────────────────────────────────────────── */}
