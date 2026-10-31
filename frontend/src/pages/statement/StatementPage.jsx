@@ -1,13 +1,14 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  Alert, Box, Button, Card, CardContent, Chip, CircularProgress, MenuItem, Stack, Table, TableBody,
-  TableCell, TableHead, TableRow, TextField, ToggleButton, ToggleButtonGroup, Typography,
+  Alert, Box, Button, Card, CardContent, Chip, CircularProgress, MenuItem, Stack,
+  TextField, ToggleButton, ToggleButtonGroup, Typography,
 } from "@mui/material";
 import { Download, Share } from "@mui/icons-material";
 import { buildingsApi } from "../../api/buildingsApi";
 import { formatCurrency } from "../../utils/formatters";
 import AnnualReportPanel from "./AnnualReportPanel";
+import DataTable from "../../components/DataTable";
 import { PrivateSEO } from "../../components/seo/SEO";
 
 const thisMonth = () => new Date().toISOString().slice(0, 7);
@@ -149,20 +150,31 @@ export default function StatementPage() {
                 {data.received.length === 0 ? (
                   <Typography color="text.secondary">{t("none")}</Typography>
                 ) : (
-                  <Table size="small">
-                    <TableHead>
-                      <TableRow><TableCell>{t("date")}</TableCell><TableCell>{t("unit")}</TableCell><TableCell align="right">{t("amount")}</TableCell></TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {data.received.map((r, i) => (
-                        <TableRow key={i}>
-                          <TableCell>{r.date}</TableCell>
-                          <TableCell>{r.kind === "payment" ? r.unit : r.label}</TableCell>
-                          <TableCell align="right">{formatCurrency(r.amount)}</TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                  <DataTable
+                    size="small"
+                    rows={data.received}
+                    rowKey={(r, i) => `${r.date}-${r.kind}-${r.amount}-${i}`}
+                    testId="statement-received-table"
+                    minWidth={0}
+                    initialSort={{ id: "date", direction: "desc" }}
+                    columns={[
+                      { id: "date", label: t("date") },
+                      {
+                        id: "unit",
+                        label: t("unit"),
+                        sortValue: (r) => (r.kind === "payment" ? r.unit : r.label),
+                        render: (r) => (r.kind === "payment" ? r.unit : r.label),
+                      },
+                      {
+                        id: "amount",
+                        label: t("amount"),
+                        align: "right",
+                        sortValue: (r) => parseFloat(r.amount),
+                        searchValue: (r) => String(r.amount),
+                        render: (r) => formatCurrency(r.amount),
+                      },
+                    ]}
+                  />
                 )}
               </CardContent>
             </Card>
@@ -173,20 +185,26 @@ export default function StatementPage() {
                 {data.expenses.length === 0 ? (
                   <Typography color="text.secondary">{t("none")}</Typography>
                 ) : (
-                  <Table size="small">
-                    <TableHead>
-                      <TableRow><TableCell>{t("date")}</TableCell><TableCell>{t("details")}</TableCell><TableCell align="right">{t("amount")}</TableCell></TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {data.expenses.map((e, i) => (
-                        <TableRow key={i}>
-                          <TableCell>{e.date}</TableCell>
-                          <TableCell>{e.title}</TableCell>
-                          <TableCell align="right">{formatCurrency(e.amount)}</TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                  <DataTable
+                    size="small"
+                    rows={data.expenses}
+                    rowKey={(e, i) => `${e.date}-${e.amount}-${i}`}
+                    testId="statement-expenses-table"
+                    minWidth={0}
+                    initialSort={{ id: "date", direction: "desc" }}
+                    columns={[
+                      { id: "date", label: t("date") },
+                      { id: "title", label: t("details") },
+                      {
+                        id: "amount",
+                        label: t("amount"),
+                        align: "right",
+                        sortValue: (e) => parseFloat(e.amount),
+                        searchValue: (e) => String(e.amount),
+                        render: (e) => formatCurrency(e.amount),
+                      },
+                    ]}
+                  />
                 )}
               </CardContent>
             </Card>

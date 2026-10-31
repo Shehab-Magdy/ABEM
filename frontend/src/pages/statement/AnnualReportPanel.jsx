@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import DataTable from "../../components/DataTable";
 import {
-  Alert, Button, Card, CardContent, CircularProgress, Stack, Table, TableBody, TableCell, TableHead, TableRow, TextField, Typography,
+  Alert, Button, Card, CardContent, CircularProgress, Stack, TextField, Typography,
 } from "@mui/material";
 import { Download, Share } from "@mui/icons-material";
 import { buildingsApi } from "../../api/buildingsApi";
@@ -76,18 +77,32 @@ export default function AnnualReportPanel({ buildingId }) {
           <Card>
             <CardContent>
               <Typography variant="subtitle1" fontWeight={700} gutterBottom>{t("by_month")}</Typography>
-              <Table size="small">
-                <TableHead><TableRow><TableCell>{t("month")}</TableCell><TableCell align="right">{t("annual_collected")}</TableCell><TableCell align="right">{t("spent")}</TableCell></TableRow></TableHead>
-                <TableBody>
-                  {data.months.map((m) => (
-                    <TableRow key={m.month}>
-                      <TableCell>{monthName(m.month)}</TableCell>
-                      <TableCell align="right">{formatCurrency(m.collected)}</TableCell>
-                      <TableCell align="right">{formatCurrency(m.expenses)}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+              <DataTable
+                size="small"
+                rows={data.months}
+                rowKey="month"
+                searchable={false}
+                pagination={false}
+                minWidth={0}
+                testId="annual-months-table"
+                columns={[
+                  { id: "month", label: t("month"), render: (m) => monthName(m.month) },
+                  {
+                    id: "collected",
+                    label: t("annual_collected"),
+                    align: "right",
+                    sortValue: (m) => parseFloat(m.collected),
+                    render: (m) => formatCurrency(m.collected),
+                  },
+                  {
+                    id: "expenses",
+                    label: t("spent"),
+                    align: "right",
+                    sortValue: (m) => parseFloat(m.expenses),
+                    render: (m) => formatCurrency(m.expenses),
+                  },
+                ]}
+              />
             </CardContent>
           </Card>
 
@@ -97,13 +112,25 @@ export default function AnnualReportPanel({ buildingId }) {
               {data.expenses_by_category.length === 0 ? (
                 <Typography color="text.secondary">{t("annual_none")}</Typography>
               ) : (
-                <Table size="small">
-                  <TableBody>
-                    {data.expenses_by_category.map((c) => (
-                      <TableRow key={c.category}><TableCell>{c.category}</TableCell><TableCell align="right">{formatCurrency(c.amount)}</TableCell></TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                <DataTable
+                  size="small"
+                  rows={data.expenses_by_category}
+                  rowKey="category"
+                  searchable={data.expenses_by_category.length > 10}
+                  pagination={false}
+                  minWidth={0}
+                  testId="annual-categories-table"
+                  columns={[
+                    { id: "category", label: t("details") },
+                    {
+                      id: "amount",
+                      label: t("amount"),
+                      align: "right",
+                      sortValue: (c) => parseFloat(c.amount),
+                      render: (c) => formatCurrency(c.amount),
+                    },
+                  ]}
+                />
               )}
             </CardContent>
           </Card>
@@ -114,13 +141,25 @@ export default function AnnualReportPanel({ buildingId }) {
               {data.unpaid_units.length === 0 ? (
                 <Typography color="text.secondary">{t("annual_none")}</Typography>
               ) : (
-                <Table size="small">
-                  <TableBody>
-                    {data.unpaid_units.map((u) => (
-                      <TableRow key={u.unit}><TableCell>{u.unit}</TableCell><TableCell align="right">{formatCurrency(u.balance_due)}</TableCell></TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                <DataTable
+                  size="small"
+                  rows={data.unpaid_units}
+                  rowKey="unit"
+                  searchable={data.unpaid_units.length > 10}
+                  pagination={false}
+                  minWidth={0}
+                  testId="annual-unpaid-table"
+                  columns={[
+                    { id: "unit", label: t("unit") },
+                    {
+                      id: "balance_due",
+                      label: t("amount"),
+                      align: "right",
+                      sortValue: (u) => parseFloat(u.balance_due),
+                      render: (u) => formatCurrency(u.balance_due),
+                    },
+                  ]}
+                />
               )}
             </CardContent>
           </Card>
