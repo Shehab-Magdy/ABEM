@@ -14,7 +14,6 @@ import {
   Box,
   Button,
   Chip,
-  CircularProgress,
   Dialog,
   DialogActions,
   DialogContent,
@@ -28,17 +27,12 @@ import {
   Select,
   Snackbar,
   Stack,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
   TextField,
   Tooltip,
   Typography,
 } from "@mui/material";
 import { Add as AddIcon, Sell as SellIcon } from "@mui/icons-material";
+import DataTable from "../../components/DataTable";
 import { assetsApi } from "../../api/assetsApi";
 import { buildingsApi } from "../../api/buildingsApi";
 import { PrivateSEO } from "../../components/seo/SEO";
@@ -106,7 +100,7 @@ export default function AssetsPage() {
     if (!selectedBuilding) return;
     setLoading(true);
     try {
-      const res = await assetsApi.list({ building_id: selectedBuilding });
+      const res = await assetsApi.list({ building_id: selectedBuilding, page_size: 500 });
       setAssets(res.data.results ?? res.data);
     } catch {
       setSnack({ open: true, msg: t("assets.failedToLoadAssets", "Failed to load assets"), severity: "error" });
@@ -200,6 +194,81 @@ export default function AssetsPage() {
 
   // ── Render ──────────────────────────────────────────────────────────────────
 
+  const columns = [
+    {
+      id: "name",
+      label: t("name", "Name"),
+      searchValue: (asset) => `${asset.name} ${asset.description ?? ""}`,
+      render: (asset) => (
+        <>
+          <Typography variant="body2" fontWeight={500}>{asset.name}</Typography>
+          {asset.description && (
+            <Typography variant="caption" color="text.secondary">{asset.description}</Typography>
+          )}
+        </>
+      ),
+    },
+    {
+      id: "asset_type",
+      label: t("type", "Type"),
+      sortValue: (asset) => ASSET_TYPES.find((at) => at.value === asset.asset_type)?.label ?? asset.asset_type,
+      render: (asset) => (
+        <Chip
+          label={ASSET_TYPES.find((at) => at.value === asset.asset_type)?.label ?? asset.asset_type}
+          size="small"
+          variant="outlined"
+        />
+      ),
+    },
+    { id: "acquisition_date", label: t("assets.acquired", "Acquired"), render: (asset) => asset.acquisition_date || "—" },
+    {
+      id: "acquisition_value",
+      label: t("assets.acquisitionValue", "Acquisition Value"),
+      sortValue: (asset) => (asset.acquisition_value != null ? parseFloat(asset.acquisition_value) : null),
+      render: (asset) =>
+        asset.acquisition_value != null
+          ? parseFloat(asset.acquisition_value).toLocaleString("en-US", { minimumFractionDigits: 2 })
+          : "—",
+    },
+    {
+      id: "is_sold",
+      label: t("status", "Status"),
+      searchValue: (asset) => (asset.is_sold ? t("assets.sold", "Sold") : t("assets.active", "Active")),
+      sortValue: (asset) => (asset.is_sold ? t("assets.sold", "Sold") : t("assets.active", "Active")),
+      render: (asset) => (
+        <Chip
+          label={asset.is_sold ? t("assets.sold", "Sold") : t("assets.active", "Active")}
+          size="small"
+          color={asset.is_sold ? "default" : "success"}
+        />
+      ),
+    },
+    {
+      id: "sale_price",
+      label: t("assets.salePrice", "Sale Price"),
+      hideOnMobile: true,
+      sortValue: (asset) => (asset.sale?.sale_price != null ? parseFloat(asset.sale.sale_price) : null),
+      render: (asset) =>
+        asset.sale?.sale_price != null
+          ? parseFloat(asset.sale.sale_price).toLocaleString("en-US", { minimumFractionDigits: 2 })
+          : "—",
+    },
+    {
+      id: "actions",
+      label: t("actions", "Actions"),
+      align: "right",
+      sortable: false,
+      render: (asset) =>
+        !asset.is_sold && (
+          <Tooltip title={t("assets.recordSale", "Record Sale")}>
+            <IconButton size="small" color="primary" onClick={() => openSale(asset)} sx={{ minWidth: 44, minHeight: 44 }}>
+              <SellIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+        ),
+    },
+  ];
+
   return (
     <>
       <PrivateSEO title={`3maracom – ${t("assets.pageTitle", "Assets")}`} />
@@ -254,81 +323,17 @@ export default function AssetsPage() {
       )}
 
       {/* Assets table */}
-      {loading ? (
-        <Box display="flex" justifyContent="center" mt={6}>
-          <CircularProgress />
-        </Box>
-      ) : (
-        <TableContainer id="assets-table" component={Paper} variant="outlined">
-          <Table size="small">
-            <TableHead>
-              <TableRow>
-                <TableCell><strong>{t("name", "Name")}</strong></TableCell>
-                <TableCell><strong>{t("type", "Type")}</strong></TableCell>
-                <TableCell><strong>{t("assets.acquired", "Acquired")}</strong></TableCell>
-                <TableCell><strong>{t("assets.acquisitionValue", "Acquisition Value")}</strong></TableCell>
-                <TableCell><strong>{t("status", "Status")}</strong></TableCell>
-                <TableCell><strong>{t("assets.salePrice", "Sale Price")}</strong></TableCell>
-                <TableCell align="right"><strong>{t("actions", "Actions")}</strong></TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {assets.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={7} align="center" sx={{ py: 4, color: "text.secondary" }}>
-                    {t("assets.emptyState", "No assets found. Click \"Add Asset\" to create one.")}
-                  </TableCell>
-                </TableRow>
-              ) : (
-                assets.map((asset) => (
-                  <TableRow key={asset.id} hover>
-                    <TableCell>
-                      <Typography variant="body2" fontWeight={500}>{asset.name}</Typography>
-                      {asset.description && (
-                        <Typography variant="caption" color="text.secondary">{asset.description}</Typography>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <Chip
-                        label={ASSET_TYPES.find((at) => at.value === asset.asset_type)?.label ?? asset.asset_type}
-                        size="small"
-                        variant="outlined"
-                      />
-                    </TableCell>
-                    <TableCell>{asset.acquisition_date || "—"}</TableCell>
-                    <TableCell>
-                      {asset.acquisition_value != null
-                        ? parseFloat(asset.acquisition_value).toLocaleString("en-US", { minimumFractionDigits: 2 })
-                        : "—"}
-                    </TableCell>
-                    <TableCell>
-                      <Chip
-                        label={asset.is_sold ? t("assets.sold", "Sold") : t("assets.active", "Active")}
-                        size="small"
-                        color={asset.is_sold ? "default" : "success"}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      {asset.sale?.sale_price != null
-                        ? parseFloat(asset.sale.sale_price).toLocaleString("en-US", { minimumFractionDigits: 2 })
-                        : "—"}
-                    </TableCell>
-                    <TableCell align="right">
-                      {!asset.is_sold && (
-                        <Tooltip title={t("assets.recordSale", "Record Sale")}>
-                          <IconButton size="small" color="primary" onClick={() => openSale(asset)}>
-                            <SellIcon fontSize="small" />
-                          </IconButton>
-                        </Tooltip>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </TableContainer>
-      )}
+      <DataTable
+        id="assets-table"
+        testId="assets-data-table"
+        columns={columns}
+        rows={assets}
+        rowKey="id"
+        size="small"
+        loading={loading}
+        initialSort={{ id: "name", direction: "asc" }}
+        emptyMessage={t("assets.emptyState", "No assets found. Click \"Add Asset\" to create one.")}
+      />
 
       {/* Add Asset dialog */}
       <Dialog open={assetFormOpen} onClose={() => setAssetFormOpen(false)} maxWidth="sm" fullWidth>
