@@ -167,5 +167,7 @@
   "table_first_page": "الصفحة الأولى",
   "table_previous_page": "الصفحة السابقة",
   "table_next_page": "الصفحة التالية",
-  "table_last_page": "الصفحة الأخيرة"
+  "table_last_page": "الصفحة الأخيرة",
+  "table_search_by": "ابحث بـ {{fields}}…",
+  "table_list_separator": "، "
 }

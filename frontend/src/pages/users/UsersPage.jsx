@@ -502,6 +502,7 @@ export default function UsersPage() {
         onPageChange={setPage}
         onRowsPerPageChange={(n) => { setRowsPerPage(n); setPage(0); }}
         onSearchChange={setSearch}
+        searchFields={["email", "full_name"]}
         sort={sort}
         onSortChange={setSort}
         testId="users-table"

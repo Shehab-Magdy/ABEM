@@ -509,6 +509,7 @@ export default function BuildingsPage() {
         onPageChange={setPage}
         onRowsPerPageChange={(n) => { setRowsPerPage(n); setPage(0); }}
         onSearchChange={setSearch}
+        searchFields={["name", "address", "city"]}
         sort={sort}
         onSortChange={setSort}
         testId="buildings-table"

@@ -167,5 +167,7 @@
   "table_first_page": "First page",
   "table_previous_page": "Previous page",
   "table_next_page": "Next page",
-  "table_last_page": "Last page"
+  "table_last_page": "Last page",
+  "table_search_by": "Search by {{fields}}…",
+  "table_list_separator": ", "
 }

@@ -18,6 +18,9 @@ import { Search } from "@mui/icons-material";
  *   page only. Search and sorting stay client-side over that page unless the page also passes `onSearchChange`
  *   and/or `sort`/`onSortChange` (then those are controlled by the parent, who sends them to the API; `onSearchChange` is
  *   debounced 400ms and the table calls onPageChange(0) after a search or sort change).
+ * searchFields (server search): array of column ids or ready-made labels that the API's search covers; they name the
+ *   fields in the placeholder ("Search by name, address, city…"). Without it the placeholder is built from the
+ *   searchable column labels (client search) or falls back to a generic "Search...".
  * Other props: footer (a <TableRow> for totals, shown under the body), rowKey (string | fn(row, indexOnPage)), toolbar (extra filters node), searchable, searchPlaceholder, initialSort
  *   ({id, direction}), pageSizeOptions, defaultRowsPerPage, pagination (false hides it, all rows shown), loading,
  *   emptyMessage, id (on the TableContainer; tutorial anchors), testId (on the <table> element), onRowClick, rowProps(row), size, minWidth.
@@ -65,7 +68,7 @@ export default function DataTable({
   footer, id, testId, onRowClick, rowProps, size = "medium", minWidth = 560, ariaLabel,
   // server mode
   total, page: pageProp, rowsPerPage: rowsPerPageProp, onPageChange, onRowsPerPageChange,
-  search: searchProp, onSearchChange, sort: sortProp, onSortChange,
+  search: searchProp, onSearchChange, sort: sortProp, onSortChange, searchFields,
 }) {
   const { t, i18n } = useTranslation("common");
   const lang = i18n.language?.startsWith("ar") ? "ar" : "en";
@@ -150,6 +153,26 @@ export default function DataTable({
     }
   };
 
+  // Placeholder naming the searched columns, e.g. "Search by name, email, phone…".
+  const placeholderFields = useMemo(() => {
+    let names;
+    if (searchFields?.length) {
+      names = searchFields.map((f) => {
+        const col = columns.find((c) => c.id === f);
+        return col ? col.label : f;
+      });
+    } else if (!onSearchChange) {
+      names = columns.filter((c) => c.searchable ?? (isSortable(c) || !!c.searchValue)).map((c) => c.label);
+    }
+    return (names ?? []).filter((n) => typeof n === "string" && n.trim());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [columns, searchFields, onSearchChange]);
+  const placeholder =
+    searchPlaceholder ??
+    (placeholderFields.length
+      ? t("table_search_by", { fields: placeholderFields.join(t("table_list_separator")).toLocaleLowerCase(lang) })
+      : t("table_search"));
+
   const keyOf = (r, i) => (typeof rowKey === "function" ? rowKey(r, i) : r[rowKey] ?? i);
   const showToolbar = searchable || toolbar;
 
@@ -163,12 +186,12 @@ export default function DataTable({
               type="search"
               value={searchLocal}
               onChange={(e) => handleSearch(e.target.value)}
-              placeholder={searchPlaceholder ?? t("table_search")}
+              placeholder={placeholder}
               slotProps={{
-                htmlInput: { "aria-label": searchPlaceholder ?? t("table_search"), "data-testid": testId ? `${testId}-search` : "table-search" },
+                htmlInput: { "aria-label": placeholder, title: placeholder, "data-testid": testId ? `${testId}-search` : "table-search" },
                 input: { startAdornment: <InputAdornment position="start"><Search fontSize="small" /></InputAdornment> },
               }}
-              sx={{ minWidth: { sm: 260 }, flexGrow: { xs: 1, sm: 0 }, "& .MuiInputBase-root": { minHeight: 44 } }}
+              sx={{ minWidth: { sm: 260 }, flexGrow: { xs: 1, sm: 0 }, "& .MuiInputBase-root": { minHeight: 44 }, "& input::placeholder": { textOverflow: "ellipsis" } }}
             />
           )}
           {toolbar && <Box sx={{ display: "flex", gap: 1.5, flexWrap: "wrap", alignItems: "center", flexGrow: 1 }}>{toolbar}</Box>}

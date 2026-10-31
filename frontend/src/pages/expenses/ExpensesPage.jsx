@@ -706,6 +706,7 @@ export default function ExpensesPage() {
         onPageChange={setPage}
         onRowsPerPageChange={(n) => { setRowsPerPage(n); setPage(0); }}
         onSearchChange={setSearch}
+        searchFields={["title", t("description")]}
         sort={sort}
         onSortChange={setSort}
         emptyMessage={`${t("no_expenses")} ${isAdmin ? t("no_expenses_hint") : ""}`.trim()}
