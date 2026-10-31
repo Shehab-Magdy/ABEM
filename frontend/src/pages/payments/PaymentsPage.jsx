@@ -33,12 +33,6 @@ import {
   Select,
   Snackbar,
   Stack,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
   TextField,
   Typography,
 } from "@mui/material";
@@ -47,6 +41,7 @@ import { paymentsApi } from "../../api/paymentsApi";
 import { buildingsApi } from "../../api/buildingsApi";
 import { expensesApi } from "../../api/expensesApi";
 import axiosClient from "../../api/axiosClient";
+import DataTable from "../../components/DataTable";
 import { useAuth } from "../../hooks/useAuth";
 import { PrivateSEO } from "../../components/seo/SEO";
 import { formatCurrency } from "../../utils/formatters";
@@ -102,6 +97,9 @@ export default function PaymentsPage() {
   const [buildings, setBuildings] = useState([]);
   const [apartments, setApartments] = useState([]);
   const [payments, setPayments] = useState([]);
+  const [paymentTotal, setPaymentTotal] = useState(0);
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
   const [balance, setBalance] = useState(null);
 
   const [selectedBuilding, setSelectedBuilding] = useState("");
@@ -169,15 +167,18 @@ export default function PaymentsPage() {
     if (!apartmentId) return;
     setLoading(true);
     try {
-      const res = await paymentsApi.list({ apartment_id: apartmentId }, { signal });
-      setPayments(res.data?.results ?? res.data ?? []);
+      const res = await paymentsApi.list({ apartment_id: apartmentId, page: page + 1, page_size: rowsPerPage }, { signal });
+      const list = res.data?.results ?? res.data ?? [];
+      setPayments(list);
+      setPaymentTotal(res.data?.count ?? list.length);
     } catch (err) {
       if (err?.code === "ERR_CANCELED") return;
       setPayments([]);
+      setPaymentTotal(0);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [page, rowsPerPage]);
 
   const loadBalance = useCallback(async (apartmentId, { signal } = {}) => {
     if (!apartmentId) return;
@@ -205,12 +206,21 @@ export default function PaymentsPage() {
     if (selectedApartment) {
       const controller = new AbortController();
       loadPayments(selectedApartment, { signal: controller.signal });
+      return () => controller.abort();
+    }
+    setPayments([]);
+    setPaymentTotal(0);
+    return undefined;
+  }, [selectedApartment, loadPayments]);
+  useEffect(() => {
+    setPage(0);
+    if (selectedApartment) {
+      const controller = new AbortController();
       loadBalance(selectedApartment, { signal: controller.signal });
       return () => controller.abort();
-    } else {
-      setPayments([]);
-      setBalance(null);
     }
+    setBalance(null);
+    return undefined;
   }, [selectedApartment]);
 
   // ── Dialog helpers ───────────────────────────────────────────────────────────
@@ -326,6 +336,115 @@ export default function PaymentsPage() {
 
   // ── Render ───────────────────────────────────────────────────────────────────
 
+  // Client-side sort and search over the loaded page (the payments API has no search/ordering parameters).
+  const columns = [
+    { id: "receipt_no", label: t("colReceiptNo"), sortValue: (p) => p.receipt_no ?? "",
+      render: (p) => (
+        <>
+    {p.receipt_no ? `#${p.receipt_no}` : "—"}
+    {p.is_voided && <Chip label={t("voided")} color="error" size="small" sx={{ ml: 1 }} />}
+    {p.is_reversal && (
+      <Chip label={t("reversal")} color="warning" size="small" sx={{ ml: 1 }} title={p.reversal_reason} />
+    )}
+        </>
+      ),
+    },
+    { id: "payment_date", label: t("colDate"), render: (p) => p.payment_date },
+    { id: "amount_paid", label: t("colAmount"), sortValue: (p) => parseFloat(p.amount_paid), searchValue: (p) => String(p.amount_paid),
+      render: (p) => <span style={{ whiteSpace: "nowrap" }}>{formatCurrency(p.amount_paid)}</span> },
+    { id: "payment_method", label: t("colMethod"), sortValue: (p) => methodLabel(p.payment_method, t), render: (p) => methodLabel(p.payment_method, t) },
+    { id: "notes", label: t("colNotes"), hideOnMobile: true, cellSx: { maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" },
+      render: (p) => p.notes || "—" },
+    { id: "balance_after", label: t("colBalanceAfter"), sortValue: (p) => parseFloat(p.balance_after), searchable: false,
+      render: (p) => (
+        <Chip label={balanceLabel(p.balance_after, t)} color={balanceColor(p.balance_after)} size="small" />
+      ) },
+    { id: "receipt", label: t("colReceipt"), sortable: false,
+      render: (p) => (
+        <>
+    <Button
+      size="small"
+      variant="outlined"
+      startIcon={loadingReceipt === p.id ? <CircularProgress size={14} /> : <PictureAsPdf fontSize="small" />}
+      disabled={loadingReceipt === p.id}
+      data-testid="print-receipt"
+      onClick={async () => {
+        // Open blank tab synchronously (in the click handler)
+        // to avoid popup-blocker issues.
+        const newTab = window.open("", "_blank");
+        setLoadingReceipt(p.id);
+        try {
+          const res = await paymentsApi.receipt(p.id);
+          const blob = new Blob([res.data], { type: "application/pdf" });
+          const url = URL.createObjectURL(blob);
+          if (newTab) {
+            newTab.location.href = url;
+          } else {
+            // Fallback if popup was still blocked
+            window.location.href = url;
+          }
+          setTimeout(() => URL.revokeObjectURL(url), 30000);
+        } catch (err) {
+          if (newTab) newTab.close();
+          const isTimeout = err?.code === "ECONNABORTED" || err?.message?.includes("timeout");
+          let msg = t("receipt_load_error", "Could not load receipt.");
+          
+          if (isTimeout) {
+            msg = t("receipt_timeout", "Receipt generation is taking too long.");
+          } else if (err?.response?.status === 403) {
+            msg = t("receipt_forbidden", "You do not have permission to view this receipt.");
+          } else if (err?.response?.status === 404) {
+            msg = t("receipt_not_found", "Payment receipt not found.");
+          } else if (err?.response?.status === 503) {
+            msg = t("receipt_generation_error", "PDF generation failed. Please try again later.");
+          } else if (err?.response?.data) {
+            // Try to extract error detail from response
+            try {
+              let errorData = err.response.data;
+              
+              // If response is a Blob, convert to text first
+              if (errorData instanceof Blob) {
+                const text = await errorData.text();
+                errorData = JSON.parse(text);
+              }
+              
+              // Extract detail message from error object
+              if (typeof errorData === "string") {
+                msg = errorData;
+              } else if (errorData?.detail) {
+                msg = errorData.detail;
+              } else if (errorData?.error) {
+                msg = errorData.error;
+              }
+            } catch { 
+              // keep default msg if parsing fails
+            }
+          }
+          
+          setSnackbar({ open: true, message: msg, severity: "error" });
+        } finally {
+          setLoadingReceipt(null);
+        }
+      }}
+    >
+      {loadingReceipt === p.id ? t("generating") : t("colReceipt")}
+    </Button>
+    {isAdmin && !p.is_voided && !p.is_reversal && (
+      <Button
+        size="small"
+        color="error"
+        sx={{ ml: 1 }}
+        data-testid="reverse-payment"
+        onClick={() => setReverseTarget(p)}
+      >
+        {t("reverse")}
+      </Button>
+    )}
+        </>
+      ),
+    },
+  ];
+
   return (
     <>
       <PrivateSEO title="3maracom – Payments" />
@@ -421,157 +540,23 @@ export default function PaymentsPage() {
         </Card>
       )}
 
-      {/* Payment history table */}
-      <TableContainer id="payments-table" component={Paper} sx={{ overflowX: "auto", maxWidth: "100%" }}>
-        <Table size="small">
-          <TableHead>
-            <TableRow sx={{ backgroundColor: "primary.main" }}>
-              {[
-                { key: "colReceiptNo", label: t("colReceiptNo") },
-                { key: "colDate", label: t("colDate") },
-                { key: "colAmount", label: t("colAmount") },
-                { key: "colMethod", label: t("colMethod") },
-                { key: "colNotes", label: t("colNotes") },
-                { key: "colBalanceAfter", label: t("colBalanceAfter") },
-                { key: "colReceipt", label: t("colReceipt") },
-              ].map((h) => (
-                <TableCell key={h.key} sx={{ color: "primary.contrastText", fontWeight: 600, whiteSpace: "nowrap" }}>
-                  {h.label}
-                </TableCell>
-              ))}
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {loading ? (
-              <TableRow>
-                <TableCell colSpan={7} align="center" sx={{ py: 4 }}>
-                  <CircularProgress size={28} />
-                </TableCell>
-              </TableRow>
-            ) : payments.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={7} align="center" sx={{ py: 4, color: "text.secondary" }}>
-                  {selectedApartment
-                    ? t("noPaymentHistory")
-                    : t("selectApartmentPrompt")}
-                </TableCell>
-              </TableRow>
-            ) : (
-              payments.map((p) => (
-                <TableRow key={p.id} hover sx={p.is_voided ? { opacity: 0.6 } : undefined}>
-                  <TableCell>
-                    {p.receipt_no ? `#${p.receipt_no}` : "—"}
-                    {p.is_voided && <Chip label={t("voided")} color="error" size="small" sx={{ ml: 1 }} />}
-                    {p.is_reversal && (
-                      <Chip label={t("reversal")} color="warning" size="small" sx={{ ml: 1 }} title={p.reversal_reason} />
-                    )}
-                  </TableCell>
-                  <TableCell>{p.payment_date}</TableCell>
-                  <TableCell sx={{ whiteSpace: "nowrap" }}>{formatCurrency(p.amount_paid)}</TableCell>
-                  <TableCell>{methodLabel(p.payment_method, t)}</TableCell>
-                  <TableCell
-                    sx={{
-                      maxWidth: 200,
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    {p.notes || "—"}
-                  </TableCell>
-                  <TableCell>
-                    <Chip
-                      label={balanceLabel(p.balance_after, t)}
-                      color={balanceColor(p.balance_after)}
-                      size="small"
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <Button
-                      size="small"
-                      variant="outlined"
-                      startIcon={loadingReceipt === p.id ? <CircularProgress size={14} /> : <PictureAsPdf fontSize="small" />}
-                      disabled={loadingReceipt === p.id}
-                      data-testid="print-receipt"
-                      onClick={async () => {
-                        // Open blank tab synchronously (in the click handler)
-                        // to avoid popup-blocker issues.
-                        const newTab = window.open("", "_blank");
-                        setLoadingReceipt(p.id);
-                        try {
-                          const res = await paymentsApi.receipt(p.id);
-                          const blob = new Blob([res.data], { type: "application/pdf" });
-                          const url = URL.createObjectURL(blob);
-                          if (newTab) {
-                            newTab.location.href = url;
-                          } else {
-                            // Fallback if popup was still blocked
-                            window.location.href = url;
-                          }
-                          setTimeout(() => URL.revokeObjectURL(url), 30000);
-                        } catch (err) {
-                          if (newTab) newTab.close();
-                          const isTimeout = err?.code === "ECONNABORTED" || err?.message?.includes("timeout");
-                          let msg = t("receipt_load_error", "Could not load receipt.");
-                          
-                          if (isTimeout) {
-                            msg = t("receipt_timeout", "Receipt generation is taking too long.");
-                          } else if (err?.response?.status === 403) {
-                            msg = t("receipt_forbidden", "You do not have permission to view this receipt.");
-                          } else if (err?.response?.status === 404) {
-                            msg = t("receipt_not_found", "Payment receipt not found.");
-                          } else if (err?.response?.status === 503) {
-                            msg = t("receipt_generation_error", "PDF generation failed. Please try again later.");
-                          } else if (err?.response?.data) {
-                            // Try to extract error detail from response
-                            try {
-                              let errorData = err.response.data;
-                              
-                              // If response is a Blob, convert to text first
-                              if (errorData instanceof Blob) {
-                                const text = await errorData.text();
-                                errorData = JSON.parse(text);
-                              }
-                              
-                              // Extract detail message from error object
-                              if (typeof errorData === "string") {
-                                msg = errorData;
-                              } else if (errorData?.detail) {
-                                msg = errorData.detail;
-                              } else if (errorData?.error) {
-                                msg = errorData.error;
-                              }
-                            } catch { 
-                              // keep default msg if parsing fails
-                            }
-                          }
-                          
-                          setSnackbar({ open: true, message: msg, severity: "error" });
-                        } finally {
-                          setLoadingReceipt(null);
-                        }
-                      }}
-                    >
-                      {loadingReceipt === p.id ? t("generating") : t("colReceipt")}
-                    </Button>
-                    {isAdmin && !p.is_voided && !p.is_reversal && (
-                      <Button
-                        size="small"
-                        color="error"
-                        sx={{ ml: 1 }}
-                        data-testid="reverse-payment"
-                        onClick={() => setReverseTarget(p)}
-                      >
-                        {t("reverse")}
-                      </Button>
-                    )}
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </TableContainer>
+      {/* Payment history table (server-paginated) */}
+      <DataTable
+        id="payments-table"
+        testId="payments-data-table"
+        columns={columns}
+        rows={payments}
+        rowKey="id"
+        size="small"
+        loading={loading}
+        total={paymentTotal}
+        page={page}
+        rowsPerPage={rowsPerPage}
+        onPageChange={setPage}
+        onRowsPerPageChange={(n) => { setRowsPerPage(n); setPage(0); }}
+        rowProps={(p) => (p.is_voided ? { sx: { opacity: 0.6 } } : {})}
+        emptyMessage={selectedApartment ? t("noPaymentHistory") : t("selectApartmentPrompt")}
+      />
 
       {/* Record Payment dialog */}
       <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="sm" fullWidth>
