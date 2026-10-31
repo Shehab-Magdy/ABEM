@@ -18,7 +18,7 @@ import { Search } from "@mui/icons-material";
  *   page only. Search and sorting stay client-side over that page unless the page also passes `onSearchChange`
  *   and/or `sort`/`onSortChange` (then those are controlled by the parent, who sends them to the API; `onSearchChange` is
  *   debounced 400ms and the table calls onPageChange(0) after a search or sort change).
- * Other props: footer (a <TableRow> for totals, shown under the body), rowKey (string | fn), toolbar (extra filters node), searchable, searchPlaceholder, initialSort
+ * Other props: footer (a <TableRow> for totals, shown under the body), rowKey (string | fn(row, indexOnPage)), toolbar (extra filters node), searchable, searchPlaceholder, initialSort
  *   ({id, direction}), pageSizeOptions, defaultRowsPerPage, pagination (false hides it, all rows shown), loading,
  *   emptyMessage, id (on the TableContainer; tutorial anchors), testId (on the <table> element), onRowClick, rowProps(row), size, minWidth.
  */
@@ -150,7 +150,7 @@ export default function DataTable({
     }
   };
 
-  const keyOf = (r, i) => (typeof rowKey === "function" ? rowKey(r) : r[rowKey] ?? i);
+  const keyOf = (r, i) => (typeof rowKey === "function" ? rowKey(r, i) : r[rowKey] ?? i);
   const showToolbar = searchable || toolbar;
 
   return (
