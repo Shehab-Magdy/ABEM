@@ -1,6 +1,5 @@
 import { createTheme } from "@mui/material/styles";
 import { arEG as coreArEG } from "@mui/material/locale";
-import { arSD as gridArSD } from "@mui/x-data-grid/locales";
 
 // Tokens mirror branding/design-tokens.json (عِمارة.كوم / 3maracom).
 const navy = {
@@ -226,13 +225,12 @@ export const ltrTheme = build("light", "ltr");
 
 // RTL theme merges MUI Arabic locale packs for:
 // - Core components (TablePagination "Rows per page", etc.)
-// - DataGrid (column menu, filter, pagination labels)
 // - DatePicker (month/day names)
-export const rtlTheme = build("light", "rtl", coreArEG, gridArSD);
+export const rtlTheme = build("light", "rtl", coreArEG);
 
 // Dark variants (not yet selected anywhere; wire to a mode toggle in App.jsx).
 export const ltrDarkTheme = build("dark", "ltr");
-export const rtlDarkTheme = build("dark", "rtl", coreArEG, gridArSD);
+export const rtlDarkTheme = build("dark", "rtl", coreArEG);
 
 // Default export for backward compatibility
 export default ltrTheme;
