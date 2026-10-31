@@ -29,11 +29,6 @@ import {
   OutlinedInput,
   Select,
   Stack,
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableRow,
   TextField,
   Tooltip,
   Typography,
@@ -50,6 +45,16 @@ import ManageRentersDialog from "../../components/ManageRentersDialog";
 import CsvImportDialog from "../../components/CsvImportDialog";
 import { useTranslation } from "react-i18next";
 import { PrivateSEO } from "../../components/seo/SEO";
+
+const UNIT_STATUS_LABEL = (status, t) =>
+  ({
+    Occupied: t("status_occupied"),
+    Vacant: t("status_vacant"),
+    "Under Maintenance": t("status_under_maintenance"),
+    occupied: t("status_occupied"),
+    vacant: t("status_vacant"),
+    under_maintenance: t("status_under_maintenance"),
+  })[status] || status;
 
 export default function BuildingsPage() {
   const { t } = useTranslation("buildings");
@@ -751,169 +756,189 @@ export default function BuildingsPage() {
           {unitsLoading ? (
             <Box display="flex" justifyContent="center" p={3}><CircularProgress /></Box>
           ) : (
-            <Table size="small">
-              <TableHead>
-                <TableRow>
-                  <TableCell>{t("unit")}</TableCell>
-                  <TableCell>{t("type")}</TableCell>
-                  <TableCell>{t("status")}</TableCell>
-                  <TableCell width={110}>{t("floor")}</TableCell>
-                  <TableCell width={110}>{t("size_sqm")}</TableCell>
-                  <TableCell>{t("invite_owner")}</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {units.map((u) => (
-                  <TableRow key={u.id}>
-                    <TableCell>
+            <DataTable
+              size="small"
+              rowKey="id"
+              rows={units}
+              testId="units-table"
+              minWidth={720}
+              initialSort={{ id: "unit_number", direction: "asc" }}
+              columns={[
+                {
+                  id: "unit_number",
+                  label: t("unit"),
+                  render: (u) => (
+                    <>
                       {u.unit_number}
                       <Tooltip title={`${t("renters_manage")}${u.renters?.length ? ` (${u.renters.length})` : ""}`}>
                         <IconButton size="small" onClick={() => setRentersUnitId(u.id)} aria-label={t("renters_manage")}>
                           <Groups fontSize="small" color={u.renters?.length ? "primary" : "action"} />
                         </IconButton>
                       </Tooltip>
-                    </TableCell>
-                    <TableCell>
-                      <Chip
-                        label={u.type === "store" ? t("store") : t("apt")}
-                        size="small"
-                        color={u.type === "store" ? "warning" : "primary"}
-                        variant="outlined"
-                      />
-                    </TableCell>
-                    <TableCell>
-                      {{
-                        'Occupied': t('status_occupied'),
-                        'Vacant': t('status_vacant'),
-                        'Under Maintenance': t('status_under_maintenance'),
-                        'occupied': t('status_occupied'),
-                        'vacant': t('status_vacant'),
-                        'under_maintenance': t('status_under_maintenance'),
-                      }[u.status] || u.status}
-                    </TableCell>
-                    <TableCell>
-                      <TextField
-                        type="number"
-                        size="small"
-                        inputProps={{ min: 0, max: unitsTarget?.num_floors ?? 99 }}
-                        value={floorEdits[u.id] ?? u.floor}
-                        onChange={(e) =>
-                          setFloorEdits((prev) => ({ ...prev, [u.id]: e.target.value }))
-                        }
-                        sx={{ width: 80 }}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <TextField
-                        type="number"
-                        size="small"
-                        inputProps={{ min: 0, step: "0.01" }}
-                        value={sizeEdits[u.id] ?? u.size_sqm ?? ""}
-                        onChange={(e) =>
-                          setSizeEdits((prev) => ({ ...prev, [u.id]: e.target.value }))
-                        }
-                        sx={{ width: 90 }}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Stack spacing={0.5}>
-                        {/* Current owners */}
-                        {u.owner_names?.length > 0 && (
-                          <Typography variant="caption" color="text.secondary">
-                            {u.owner_names.join(", ")}
-                          </Typography>
-                        )}
-                        {/* Invite form */}
-                        {claimingUnit === u.id ? (
-                          <CircularProgress size={16} />
-                        ) : inviteLinks[u.id] ? (
-                          <Stack spacing={0.5}>
-                            <Stack direction="row" spacing={0.5} alignItems="center">
-                              <Typography variant="caption" sx={{ maxWidth: 180, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                                {inviteLinks[u.id]}
-                              </Typography>
-                              <Tooltip title={copiedUnit === u.id ? t("copied") : t("copy_link")}>
-                                <IconButton size="small" onClick={() => copyLink(u.id)}>
-                                  {copiedUnit === u.id ? <Check fontSize="small" color="success" /> : <ContentCopy fontSize="small" />}
-                                </IconButton>
-                              </Tooltip>
-                            </Stack>
-                            <Button
-                              size="small"
-                              variant="contained"
-                              color="success"
-                              startIcon={<WhatsApp fontSize="small" />}
-                              onClick={() => shareWhatsApp(u)}
-                              sx={{ alignSelf: "flex-start" }}
-                            >
-                              {t("share_whatsapp", "Share on WhatsApp")}
-                            </Button>
-                            {inviteCodes[u.id] && (
-                              <Stack direction="row" spacing={0.5} alignItems="center">
-                                <Typography variant="caption" color="text.secondary">{t("code_label", "Code:")}</Typography>
-                                <Chip label={inviteCodes[u.id]} size="small" variant="outlined" color="secondary" />
-                              </Stack>
-                            )}
-                            <Button
-                              size="small"
-                              onClick={() => setInviteLinks((prev) => ({ ...prev, [u.id]: null }))}
-                              sx={{ alignSelf: "flex-start", textTransform: "none", p: 0, minWidth: 0 }}
-                            >
-                              {t("invite_another")}
-                            </Button>
+                    </>
+                  ),
+                },
+                {
+                  id: "type",
+                  label: t("type"),
+                  sortValue: (u) => (u.type === "store" ? t("store") : t("apt")),
+                  render: (u) => (
+                    <Chip
+                      label={u.type === "store" ? t("store") : t("apt")}
+                      size="small"
+                      color={u.type === "store" ? "warning" : "primary"}
+                      variant="outlined"
+                    />
+                  ),
+                },
+                {
+                  id: "status",
+                  label: t("status"),
+                  sortValue: (u) => UNIT_STATUS_LABEL(u.status, t),
+                  render: (u) => UNIT_STATUS_LABEL(u.status, t),
+                },
+                {
+                  id: "floor",
+                  label: t("floor"),
+                  width: 110,
+                  sortValue: (u) => Number(floorEdits[u.id] ?? u.floor),
+                  searchable: false,
+                  render: (u) => (
+                    <TextField
+                      type="number"
+                      size="small"
+                      inputProps={{ min: 0, max: unitsTarget?.num_floors ?? 99 }}
+                      value={floorEdits[u.id] ?? u.floor}
+                      onChange={(e) =>
+                        setFloorEdits((prev) => ({ ...prev, [u.id]: e.target.value }))
+                      }
+                      sx={{ width: 80 }}
+                    />
+                  ),
+                },
+                {
+                  id: "size_sqm",
+                  label: t("size_sqm"),
+                  width: 110,
+                  sortValue: (u) => (u.size_sqm != null ? Number(u.size_sqm) : null),
+                  searchable: false,
+                  render: (u) => (
+                    <TextField
+                      type="number"
+                      size="small"
+                      inputProps={{ min: 0, step: "0.01" }}
+                      value={sizeEdits[u.id] ?? u.size_sqm ?? ""}
+                      onChange={(e) =>
+                        setSizeEdits((prev) => ({ ...prev, [u.id]: e.target.value }))
+                      }
+                      sx={{ width: 90 }}
+                    />
+                  ),
+                },
+                {
+                  id: "invite",
+                  label: t("invite_owner"),
+                  sortable: false,
+                  searchValue: (u) => (u.owner_names ?? []).join(" "),
+                  render: (u) => (
+                    <Stack spacing={0.5}>
+                      {/* Current owners */}
+                      {u.owner_names?.length > 0 && (
+                        <Typography variant="caption" color="text.secondary">
+                          {u.owner_names.join(", ")}
+                        </Typography>
+                      )}
+                      {/* Invite form */}
+                      {claimingUnit === u.id ? (
+                        <CircularProgress size={16} />
+                      ) : inviteLinks[u.id] ? (
+                        <Stack spacing={0.5}>
+                          <Stack direction="row" spacing={0.5} alignItems="center">
+                            <Typography variant="caption" sx={{ maxWidth: 180, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                              {inviteLinks[u.id]}
+                            </Typography>
+                            <Tooltip title={copiedUnit === u.id ? t("copied") : t("copy_link")}>
+                              <IconButton size="small" onClick={() => copyLink(u.id)}>
+                                {copiedUnit === u.id ? <Check fontSize="small" color="success" /> : <ContentCopy fontSize="small" />}
+                              </IconButton>
+                            </Tooltip>
                           </Stack>
-                        ) : (
-                          <Stack spacing={0.5}>
+                          <Button
+                            size="small"
+                            variant="contained"
+                            color="success"
+                            startIcon={<WhatsApp fontSize="small" />}
+                            onClick={() => shareWhatsApp(u)}
+                            sx={{ alignSelf: "flex-start" }}
+                          >
+                            {t("share_whatsapp", "Share on WhatsApp")}
+                          </Button>
+                          {inviteCodes[u.id] && (
                             <Stack direction="row" spacing={0.5} alignItems="center">
-                              <Autocomplete
-                                freeSolo
-                                size="small"
-                                options={buildingMembers.map((m) => m.email)}
-                                inputValue={inviteEmails[u.id] ?? ""}
-                                onInputChange={(_, val) => setInviteEmails((prev) => ({ ...prev, [u.id]: val }))}
-                                sx={{ width: 200 }}
-                                renderInput={(params) => (
-                                  <TextField
-                                    {...params}
-                                    placeholder={t("invite_email_optional", "owner@email.com (optional)")}
-                                    type="email"
-                                  />
-                                )}
-                              />
-                              <Tooltip title={t("generate_invite_link")}>
-                                <span>
-                                  <IconButton
-                                    size="small"
-                                    color="primary"
-                                    disabled={invitingUnit === u.id}
-                                    onClick={() => generateInvite(u)}
-                                  >
-                                    {invitingUnit === u.id ? <CircularProgress size={16} /> : <Send fontSize="small" />}
-                                  </IconButton>
-                                </span>
-                              </Tooltip>
+                              <Typography variant="caption" color="text.secondary">{t("code_label", "Code:")}</Typography>
+                              <Chip label={inviteCodes[u.id]} size="small" variant="outlined" color="secondary" />
                             </Stack>
-                            {!(u.owner_ids?.length > 0 || u.owner_id) && (
-                              <Tooltip title={t("claim_for_self")}>
-                                <Button
+                          )}
+                          <Button
+                            size="small"
+                            onClick={() => setInviteLinks((prev) => ({ ...prev, [u.id]: null }))}
+                            sx={{ alignSelf: "flex-start", textTransform: "none", p: 0, minWidth: 0 }}
+                          >
+                            {t("invite_another")}
+                          </Button>
+                        </Stack>
+                      ) : (
+                        <Stack spacing={0.5}>
+                          <Stack direction="row" spacing={0.5} alignItems="center">
+                            <Autocomplete
+                              freeSolo
+                              size="small"
+                              options={buildingMembers.map((m) => m.email)}
+                              inputValue={inviteEmails[u.id] ?? ""}
+                              onInputChange={(_, val) => setInviteEmails((prev) => ({ ...prev, [u.id]: val }))}
+                              sx={{ width: 200 }}
+                              renderInput={(params) => (
+                                <TextField
+                                  {...params}
+                                  placeholder={t("invite_email_optional", "owner@email.com (optional)")}
+                                  type="email"
+                                />
+                              )}
+                            />
+                            <Tooltip title={t("generate_invite_link")}>
+                              <span>
+                                <IconButton
                                   size="small"
-                                  variant="outlined"
-                                  startIcon={<PersonPin fontSize="small" />}
-                                  onClick={() => claimUnit(u)}
-                                  sx={{ alignSelf: "flex-start" }}
+                                  color="primary"
+                                  disabled={invitingUnit === u.id}
+                                  onClick={() => generateInvite(u)}
                                 >
-                                  {t("claim_for_self")}
-                                </Button>
-                              </Tooltip>
-                            )}
+                                  {invitingUnit === u.id ? <CircularProgress size={16} /> : <Send fontSize="small" />}
+                                </IconButton>
+                              </span>
+                            </Tooltip>
                           </Stack>
-                        )}
-                      </Stack>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                          {!(u.owner_ids?.length > 0 || u.owner_id) && (
+                            <Tooltip title={t("claim_for_self")}>
+                              <Button
+                                size="small"
+                                variant="outlined"
+                                startIcon={<PersonPin fontSize="small" />}
+                                onClick={() => claimUnit(u)}
+                                sx={{ alignSelf: "flex-start" }}
+                              >
+                                {t("claim_for_self")}
+                              </Button>
+                            </Tooltip>
+                          )}
+                        </Stack>
+                      )}
+                    </Stack>
+
+                  ),
+                },
+              ]}
+            />
           )}
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2 }}>
