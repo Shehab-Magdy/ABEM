@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  Box, CircularProgress, InputAdornment, Paper, Stack, Table, TableBody, TableCell, TableContainer, TableHead,
+  Box, CircularProgress, InputAdornment, Paper, Stack, Table, TableBody, TableCell, TableContainer, TableFooter, TableHead,
   TablePagination, TableRow, TableSortLabel, TextField, Typography, useMediaQuery,
 } from "@mui/material";
 import { Search } from "@mui/icons-material";
@@ -18,7 +18,7 @@ import { Search } from "@mui/icons-material";
  *   page only. Search and sorting stay client-side over that page unless the page also passes `onSearchChange`
  *   and/or `sort`/`onSortChange` (then those are controlled by the parent, who sends them to the API; `onSearchChange` is
  *   debounced 400ms and the table calls onPageChange(0) after a search or sort change).
- * Other props: rowKey (string | fn), toolbar (extra filters node), searchable, searchPlaceholder, initialSort
+ * Other props: footer (a <TableRow> for totals, shown under the body), rowKey (string | fn), toolbar (extra filters node), searchable, searchPlaceholder, initialSort
  *   ({id, direction}), pageSizeOptions, defaultRowsPerPage, pagination (false hides it, all rows shown), loading,
  *   emptyMessage, id / testId (put on the TableContainer; tutorial anchors), onRowClick, rowProps(row), size, minWidth.
  */
@@ -62,7 +62,7 @@ const cellText = (col, row) => {
 export default function DataTable({
   columns, rows = [], rowKey = "id", toolbar, searchable = true, searchPlaceholder, initialSort,
   pageSizeOptions = [10, 25, 50], defaultRowsPerPage, pagination = true, loading = false, emptyMessage,
-  id, testId, onRowClick, rowProps, size = "medium", minWidth = 560, ariaLabel,
+  footer, id, testId, onRowClick, rowProps, size = "medium", minWidth = 560, ariaLabel,
   // server mode
   total, page: pageProp, rowsPerPage: rowsPerPageProp, onPageChange, onRowsPerPageChange,
   search: searchProp, onSearchChange, sort: sortProp, onSortChange,
@@ -237,6 +237,7 @@ export default function DataTable({
               ))
             )}
           </TableBody>
+          {footer && <TableFooter>{footer}</TableFooter>}
         </Table>
       </TableContainer>
 
