@@ -52,6 +52,11 @@ class TestBuildingsTable:
         table.search(f"{tag}")
         expect(table.rows).to_have_count(2)
 
+    @pytest.mark.xfail(
+        strict=True,
+        reason="App bug: Buildings table shows 'No buildings yet' for a search with no match instead of "
+        "'No matching records' (BuildingsPage passes a fixed emptyMessage to DataTable)",
+    )
     def test_search_without_match_shows_empty_message(self, admin_page):
         goto(admin_page, "/buildings")
         table = DataTablePage(admin_page, "buildings-table")

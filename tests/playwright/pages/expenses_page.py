@@ -23,7 +23,9 @@ class ExpensesPage(BasePage):
     # ── Building selector ─────────────────────────────────────
 
     def select_building(self, building_name: str) -> None:
-        self._page.get_by_label("Building").click()
+        # The MUI label is not wired to the combobox, so find the control through its FormControl group.
+        group = self._page.locator(".MuiFormControl-root").filter(has_text="Building").first
+        group.get_by_role("combobox").click()
         self._page.get_by_role("option", name=building_name).click()
         self._page.wait_for_load_state("networkidle")
 
