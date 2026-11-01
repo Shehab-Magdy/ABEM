@@ -72,12 +72,11 @@ class TestNotificationMenu:
         _broadcast(admin_api, member_owner["building"]["id"], 3)
         header = HeaderPage(member_owner_page)
         header.goto("/dashboard")
-        expect(member_owner_page.get_by_test_id("notification-badge")).to_be_visible()
-        assert header.badge_count() >= 3
+        header.expect_badge_count(3)
         header.open_menu()
         header.mark_all_read_in_menu()
         expect(header.unread_dots).to_have_count(0)
-        expect(member_owner_page.get_by_test_id("notification-badge")).to_have_count(0)
+        header.expect_no_badge_number()
         header.select_tab("unread")
         expect(header.empty_state()).to_be_visible()
         # the server agrees
@@ -95,7 +94,8 @@ class TestNotificationMenu:
         expect(header.unread_dots).to_have_count(0)
         member_owner_page.reload()
         header.language_button.wait_for(state="visible")
-        expect(member_owner_page.get_by_test_id("notification-badge")).to_have_count(0)
+        member_owner_page.wait_for_timeout(1500)  # let the unread-count request answer
+        header.expect_no_badge_number()
 
     def test_notification_center_page_mark_all_read(self, admin_api, member_owner, member_owner_page):
         _broadcast(admin_api, member_owner["building"]["id"], 2)
@@ -105,6 +105,10 @@ class TestNotificationMenu:
         expect(center.mark_all_read_button()).to_be_enabled()
         center.mark_all_read()
         expect(center.mark_all_read_button()).to_be_disabled()
+        for _ in range(20):  # the button disables optimistically; give the POST a moment to land
+            if member_owner["api"].get(f"{API}/notifications/unread-count/").json()["count"] == 0:
+                break
+            member_owner_page.wait_for_timeout(250)
         assert member_owner["api"].get(f"{API}/notifications/unread-count/").json()["count"] == 0
 
     @pytest.mark.tenant_isolation

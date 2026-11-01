@@ -6,7 +6,7 @@ import re
 import pytest
 from playwright.sync_api import expect
 
-from fixtures.phase5 import API
+from fixtures.phase5 import API, goto
 from pages.data_table_page import DataTablePage
 from pages.expenses_page import ExpensesPage
 from pages.payments_page import PaymentsPage
@@ -27,7 +27,7 @@ class TestBuildingsTable:
         return tag, create_building(name=f"{tag} Alpha"), create_building(name=f"{tag} Zulu")
 
     def test_is_a_plain_table_with_search_and_pager(self, admin_page):
-        admin_page.goto("/buildings")
+        goto(admin_page, "/buildings")
         table = DataTablePage(admin_page, "buildings-table")
         table.wait_ready()
         _no_datagrid(admin_page)
@@ -36,14 +36,14 @@ class TestBuildingsTable:
         assert table.rows_per_page_options() == ["10", "25", "50"]
 
     def test_placeholder_names_the_searched_columns(self, admin_page):
-        admin_page.goto("/buildings")
+        goto(admin_page, "/buildings")
         table = DataTablePage(admin_page, "buildings-table")
         table.wait_ready()
         assert table.search_placeholder() == "Search by name, address, city…"
 
     def test_search_filters_rows(self, admin_page, two_buildings):
         tag, alpha, zulu = two_buildings
-        admin_page.goto("/buildings")
+        goto(admin_page, "/buildings")
         table = DataTablePage(admin_page, "buildings-table")
         table.wait_ready()
         table.search(f"{tag} Zulu")
@@ -53,7 +53,7 @@ class TestBuildingsTable:
         expect(table.rows).to_have_count(2)
 
     def test_search_without_match_shows_empty_message(self, admin_page):
-        admin_page.goto("/buildings")
+        goto(admin_page, "/buildings")
         table = DataTablePage(admin_page, "buildings-table")
         table.wait_ready()
         table.search("zz-no-such-building-" + unique_prefix())
@@ -61,7 +61,7 @@ class TestBuildingsTable:
 
     def test_sort_by_name_toggles_direction(self, admin_page, two_buildings):
         tag, alpha, zulu = two_buildings
-        admin_page.goto("/buildings")
+        goto(admin_page, "/buildings")
         table = DataTablePage(admin_page, "buildings-table")
         table.wait_ready()
         table.search(tag)
@@ -80,7 +80,7 @@ class TestBuildingsTable:
 class TestUsersTable:
     def test_placeholder_search_and_sort(self, admin_page, create_user):
         user = create_user(role="owner")
-        admin_page.goto("/users")
+        goto(admin_page, "/users")
         table = DataTablePage(admin_page, "users-table")
         table.wait_ready()
         _no_datagrid(admin_page)
@@ -100,7 +100,7 @@ class TestUsersTable:
         assert emails == sorted(emails, reverse=True)
 
     def test_name_column_is_not_sortable(self, admin_page):
-        admin_page.goto("/users")
+        goto(admin_page, "/users")
         table = DataTablePage(admin_page, "users-table")
         table.wait_ready()
         expect(table.header("Name").locator(".MuiTableSortLabel-root")).to_have_count(0)

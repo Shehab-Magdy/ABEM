@@ -5,7 +5,7 @@ from datetime import date
 
 import pytest
 
-from fixtures.phase5 import API, money, unwrap
+from fixtures.phase5 import API, errors, money, unwrap
 from utils.data_factory import build_building, build_payment
 
 
@@ -42,19 +42,19 @@ class TestBuildingIsImmutable:
         apt_id = billed_unit["apartment"]["id"]
         resp = admin_api.patch(f"{API}/apartments/{apt_id}/", data={"building_id": other_building["id"]})
         assert resp.status == 400
-        assert "building_id" in resp.json()
+        assert "building_id" in errors(resp)
         assert admin_api.get(f"{API}/apartments/{apt_id}/").json()["building_id"] == billed_unit["building"]["id"]
 
     def test_expense_cannot_move_to_another_building(self, admin_api, billed_unit, other_building):
         exp_id = billed_unit["expense"]["id"]
         resp = admin_api.patch(f"{API}/expenses/{exp_id}/", data={"building_id": other_building["id"]})
         assert resp.status == 400
-        assert "building_id" in resp.json()
+        assert "building_id" in errors(resp)
 
     def test_asset_cannot_move_to_another_building(self, admin_api, asset, other_building):
         resp = admin_api.patch(_assets_url(f"{asset['id']}/"), data={"building_id": other_building["id"]})
         assert resp.status == 400
-        assert "building_id" in resp.json()
+        assert "building_id" in errors(resp)
 
     def test_patching_the_same_building_is_allowed(self, admin_api, billed_unit):
         apt_id = billed_unit["apartment"]["id"]
@@ -118,13 +118,13 @@ class TestAssetSaleValidation:
     def test_price_must_be_positive(self, admin_api, asset, price):
         resp = self._sell(admin_api, asset, sale_price=price)
         assert resp.status == 400
-        assert "sale_price" in resp.json()
+        assert "sale_price" in errors(resp)
 
     @pytest.mark.parametrize("bad_date", ["2026-13-45", "not-a-date", ""])
     def test_date_must_be_valid(self, admin_api, asset, bad_date):
         resp = self._sell(admin_api, asset, sale_date=bad_date)
         assert resp.status == 400
-        assert "sale_date" in resp.json()
+        assert "sale_date" in errors(resp)
 
     def test_failed_sale_leaves_the_asset_unsold(self, admin_api, asset):
         self._sell(admin_api, asset, sale_price="0")
@@ -155,7 +155,7 @@ class TestOwnerAssignment:
         apt_id = billed_unit["apartment"]["id"]
         resp = admin_api.patch(f"{API}/apartments/{apt_id}/", data={"owner_id": outsider["id"]})
         assert resp.status == 400
-        assert "owner_id" in resp.json()
+        assert "owner_id" in errors(resp)
 
     def test_a_building_member_can_be_assigned(self, admin_api, member_owner):
         apt_id = member_owner["apartment"]["id"]

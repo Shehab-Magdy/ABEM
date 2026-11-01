@@ -2,7 +2,7 @@
 
 import pytest
 
-from fixtures.phase5 import API, apartment_balance, money, unwrap
+from fixtures.phase5 import API, errors, apartment_balance, money, unwrap
 
 
 def _reverse(api, payment_id, reason="Entered in error"):
@@ -61,7 +61,7 @@ class TestPaymentReversal:
         pid = reversible_payment["payment"]["id"]
         resp = admin_api.post(f"{API}/payments/{pid}/reverse/", data=body)
         assert resp.status == 400
-        assert "reason" in resp.json()
+        assert "reason" in errors(resp)
         assert admin_api.get(f"{API}/payments/{pid}/").json()["is_voided"] is False
 
     def test_allocations_are_negated(self, admin_api, reversible_payment):

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import re
+
 from playwright.sync_api import Locator, Page, expect
 
 from config.settings import settings
@@ -51,10 +53,24 @@ class HeaderPage:
     def unread_dots(self) -> Locator:
         return self.panel.get_by_test_id("notification-unread-dot")
 
+    @property
+    def badge(self) -> Locator:
+        """The Badge root: always in the DOM; it only contains digits while there are unread notifications."""
+        return self._page.get_by_test_id("notification-badge")
+
     def badge_count(self) -> int:
-        badge = self._page.get_by_test_id("notification-badge")
-        text = badge.inner_text().strip() if badge.count() else ""
+        text = self.badge.inner_text().strip() if self.badge.count() else ""
         return int("".join(ch for ch in text if ch.isdigit()) or 0)
+
+    def expect_badge_count(self, minimum: int = 1) -> int:
+        """Wait until the badge shows a number >= minimum and return it."""
+        expect(self.badge).to_contain_text(re.compile(r"\d"))
+        count = self.badge_count()
+        assert count >= minimum, f"badge shows {count}, expected at least {minimum}"
+        return count
+
+    def expect_no_badge_number(self) -> None:
+        expect(self.badge).not_to_contain_text(re.compile(r"\d"))
 
     def open_menu(self) -> None:
         self.bell.click()

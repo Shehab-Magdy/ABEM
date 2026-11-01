@@ -13,7 +13,6 @@ from playwright.sync_api import APIRequestContext, Browser, Playwright
 
 from config.settings import settings
 from pw_config import (
-    ADMIN_STORAGE_STATE,
     DEFAULT_TIMEOUT,
     LOCALE,
     NAVIGATION_TIMEOUT,
@@ -31,6 +30,17 @@ API = "/api/v1"
 def unwrap(body):
     """Return the list of rows from a paginated or plain list response."""
     return body.get("results", body) if isinstance(body, dict) else body
+
+
+def goto(page, path: str) -> None:
+    """Open an app path on the frontend (the suite's pages have no base_url)."""
+    page.goto(f"{settings.BASE_URL}{path}")
+
+
+def errors(resp) -> dict:
+    """Field errors of a 400 response; the API wraps them as {"status","code","errors":{field: [...]}}."""
+    body = resp.json()
+    return body.get("errors", body) if isinstance(body, dict) else {}
 
 
 def money(value) -> Decimal:
@@ -117,20 +127,29 @@ def member_owner(playwright: Playwright, admin_api: APIRequestContext, billed_un
 
 
 @pytest.fixture(scope="function")
-def raw_admin_page(playwright: Playwright, playwright_browser: Browser, admin_page):
-    """Admin page WITHOUT the suite's forced-English init script, for language switch / persistence tests.
+def raw_admin_page(playwright_browser: Browser):
+    """Admin page signed in through the login form WITHOUT the suite's forced-English init script.
 
-    Depends on admin_page so the saved admin storage state exists; starts in English via the profile language.
+    For language switch / persistence tests. The only seeding is "start in English if nothing is saved yet", so a
+    language saved by the app (localStorage or the profile) is honoured across reloads. Signing in fresh avoids
+    depending on a possibly expired shared storage state.
     """
     context = playwright_browser.new_context(
-        storage_state=ADMIN_STORAGE_STATE,
         viewport={"width": VIEWPORT_WIDTH, "height": VIEWPORT_HEIGHT},
         locale=LOCALE,
         timezone_id=TIMEZONE_ID,
     )
+    context.add_init_script(
+        "try { if (!localStorage.getItem('abem_language')) localStorage.setItem('abem_language', 'en'); } catch (e) {}"
+    )
     context.set_default_timeout(DEFAULT_TIMEOUT)
     context.set_default_navigation_timeout(NAVIGATION_TIMEOUT)
     pg = context.new_page()
+    pg.goto(f"{settings.BASE_URL}/login")
+    pg.get_by_label("Email address").fill(settings.ADMIN_EMAIL)
+    pg.get_by_label("Password", exact=True).fill(settings.ADMIN_PASSWORD)
+    pg.get_by_role("button", name="Sign in").click()
+    pg.wait_for_url("**/dashboard**", timeout=15_000)
     yield pg
     pg.close()
     context.close()
