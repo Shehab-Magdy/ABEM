@@ -43,4 +43,6 @@ class TestRBAC:
         resp = api_context.post("/api/v1/auth/login/", data={
             "email": user["email"], "password": user["_password"],
         })
-        assert resp.status == 401
+        # the API answers 403 "This account has been deactivated." (not a generic 401)
+        assert resp.status == 403
+        assert "deactivated" in resp.text().lower()

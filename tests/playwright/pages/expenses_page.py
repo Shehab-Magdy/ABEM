@@ -100,15 +100,15 @@ class ExpensesPage(BasePage):
         self._page.get_by_role("button", name="Cancel").click()
 
     def click_view_expense(self, title: str) -> None:
-        row = self._page.locator(f"tr:has-text('{title}'), [role='row']:has-text('{title}')")
+        row = self._page.locator(f"tr:has-text('{title}')")
         row.locator("[aria-label*='View'], [aria-label*='view']").first.click()
 
     def click_edit_expense(self, title: str) -> None:
-        row = self._page.locator(f"tr:has-text('{title}'), [role='row']:has-text('{title}')")
+        row = self._page.locator(f"tr:has-text('{title}')")
         row.locator("[aria-label*='Edit'], [aria-label*='edit']").first.click()
 
     def click_delete_expense(self, title: str) -> None:
-        row = self._page.locator(f"tr:has-text('{title}'), [role='row']:has-text('{title}')")
+        row = self._page.locator(f"tr:has-text('{title}')")
         row.locator("[aria-label*='Delete'], [aria-label*='delete']").first.click()
 
     def confirm_delete(self) -> None:
@@ -118,7 +118,7 @@ class ExpensesPage(BasePage):
 
     def click_upload_bill(self, title: str) -> None:
         """Click the upload bill icon for an expense row."""
-        row = self._page.locator(f"tr:has-text('{title}'), [role='row']:has-text('{title}')")
+        row = self._page.locator(f"tr:has-text('{title}')")
         row.locator("[aria-label*='Upload'], [aria-label*='upload']").first.click()
 
     def upload_file(self, file_path: str) -> None:
@@ -130,8 +130,7 @@ class ExpensesPage(BasePage):
     def get_expense_titles(self) -> list[str]:
         self._page.wait_for_load_state("networkidle")
         rows = self._page.locator(
-            "#expenses-table tbody tr td:first-child, "
-            "[role='row'] [data-field='title']"
+            "#expenses-table tbody tr td:first-child"
         ).all()
         return [r.inner_text().strip() for r in rows if r.inner_text().strip()]
 
@@ -159,9 +158,9 @@ class ExpensesPage(BasePage):
         return shares
 
     def is_recurring_badge_visible(self, title: str) -> bool:
-        row = self._page.locator(f"tr:has-text('{title}'), [role='row']:has-text('{title}')")
+        row = self._page.locator(f"tr:has-text('{title}')")
         return row.locator("[class*='recurring'], [aria-label*='recurring']").count() > 0
 
     def is_bill_attachment_visible(self, title: str) -> bool:
-        row = self._page.locator(f"tr:has-text('{title}'), [role='row']:has-text('{title}')")
+        row = self._page.locator(f"tr:has-text('{title}')")
         return row.locator("[aria-label*='attachment'], [aria-label*='bill']").count() > 0

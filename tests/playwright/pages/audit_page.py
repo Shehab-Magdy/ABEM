@@ -35,7 +35,7 @@ class AuditPage(BasePage):
     def get_log_entries(self) -> list[dict]:
         """Read all visible audit log entries."""
         self._page.wait_for_load_state("networkidle")
-        rows = self._page.locator("table tbody tr, [role='row']").all()
+        rows = self._page.locator("[data-testid='audit-table'] tbody tr").all()
         entries = []
         for row in rows:
             cells = row.locator("td").all()

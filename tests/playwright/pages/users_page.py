@@ -49,19 +49,19 @@ class UsersPage(BasePage):
         self._page.get_by_role("button", name="Cancel").click()
 
     def click_edit_user(self, email: str) -> None:
-        row = self._page.locator(f"[role='row']:has-text('{email}')")
+        row = self._page.locator(f"tr:has-text('{email}')")
         row.locator("[aria-label*='Edit'], [aria-label*='edit']").first.click()
 
     def click_deactivate_user(self, email: str) -> None:
-        row = self._page.locator(f"[role='row']:has-text('{email}')")
+        row = self._page.locator(f"tr:has-text('{email}')")
         row.locator("[aria-label*='Deactivate'], [aria-label*='deactivate']").first.click()
 
     def click_activate_user(self, email: str) -> None:
-        row = self._page.locator(f"[role='row']:has-text('{email}')")
+        row = self._page.locator(f"tr:has-text('{email}')")
         row.locator("[aria-label*='Activate'], [aria-label*='activate']").first.click()
 
     def click_reset_password(self, email: str) -> None:
-        row = self._page.locator(f"[role='row']:has-text('{email}')")
+        row = self._page.locator(f"tr:has-text('{email}')")
         row.locator("[aria-label*='Reset'], [aria-label*='reset']").first.click()
 
     # ── State readers ─────────────────────────────────────────
@@ -69,7 +69,7 @@ class UsersPage(BasePage):
     def get_user_emails(self) -> list[str]:
         self._page.wait_for_load_state("networkidle")
         cells = self._page.locator(
-            "[role='row'] [data-field='email']"
+            "[data-testid='users-table'] tbody tr td:first-child"
         ).all()
         return [c.inner_text().strip() for c in cells if c.inner_text().strip()]
 
@@ -77,6 +77,6 @@ class UsersPage(BasePage):
         return self._page.locator(f"text='{email}'").count() > 0
 
     def get_user_status(self, email: str) -> str:
-        row = self._page.locator(f"[role='row']:has-text('{email}')")
+        row = self._page.locator(f"tr:has-text('{email}')")
         chip = row.locator("[class*='Chip'], [class*='chip']").first
         return chip.inner_text().strip() if chip.count() > 0 else ""

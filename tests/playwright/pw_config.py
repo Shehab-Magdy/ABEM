@@ -20,8 +20,10 @@ LOCALE = "en-US"
 TIMEZONE_ID = "Africa/Cairo"
 
 # ── Timeouts (ms) ─────────────────────────────────────────────
-DEFAULT_TIMEOUT = 30_000
-NAVIGATION_TIMEOUT = 60_000
+# Playwright's own timeouts must be shorter than the 30s per-test pytest timeout, otherwise a missing element makes
+# pytest-timeout kill the whole session instead of failing one test.
+DEFAULT_TIMEOUT = int(os.getenv("PW_DEFAULT_TIMEOUT", "12000"))
+NAVIGATION_TIMEOUT = int(os.getenv("PW_NAVIGATION_TIMEOUT", "20000"))
 EXPECT_TIMEOUT = 10_000
 
 # ── Artifacts ─────────────────────────────────────────────────

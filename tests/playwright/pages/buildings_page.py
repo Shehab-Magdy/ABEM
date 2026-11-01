@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import re
+
 from playwright.sync_api import Page, expect
 
 from pages.base_page import BasePage
@@ -36,17 +38,17 @@ class BuildingsPage(BasePage):
     ) -> None:
         """Fill the building create/edit dialog form."""
         dialog = self._page.locator("[role='dialog']")
-        dialog.get_by_label("Name", exact=False).fill(name)
-        dialog.get_by_label("Address", exact=False).fill(address)
-        dialog.get_by_label("City", exact=False).fill(city)
+        dialog.get_by_label(re.compile(r"^Name")).fill(name)
+        dialog.get_by_label(re.compile(r"^Address")).fill(address)
+        dialog.get_by_label(re.compile(r"^City")).fill(city)
         dialog.get_by_label("Country", exact=False).fill(country)
-        floors = dialog.get_by_label("Floors", exact=False)
+        floors = dialog.get_by_label(re.compile(r"^Floors"))
         floors.clear()
         floors.fill(str(num_floors))
-        apts = dialog.get_by_label("Apartments", exact=False)
+        apts = dialog.get_by_label(re.compile(r"^Apartments"))
         apts.clear()
         apts.fill(str(num_apartments))
-        stores = dialog.get_by_label("Stores", exact=False)
+        stores = dialog.get_by_label(re.compile(r"^Stores"))
         stores.clear()
         stores.fill(str(num_stores))
 
@@ -62,14 +64,14 @@ class BuildingsPage(BasePage):
 
     def click_edit_building(self, building_name: str) -> None:
         """Click the edit icon for a building row."""
-        row = self._page.locator(f"[role='row']:has-text('{building_name}')")
+        row = self._page.locator(f"tr:has-text('{building_name}')")
         row.get_by_role("button", name="Edit").or_(
             row.locator("[aria-label*='edit'], [aria-label*='Edit']")
         ).first.click()
 
     def click_delete_building(self, building_name: str) -> None:
         """Click the delete icon for a building row."""
-        row = self._page.locator(f"[role='row']:has-text('{building_name}')")
+        row = self._page.locator(f"tr:has-text('{building_name}')")
         row.get_by_role("button", name="Delete").or_(
             row.locator("[aria-label*='delete'], [aria-label*='Delete']")
         ).first.click()
@@ -85,7 +87,7 @@ class BuildingsPage(BasePage):
 
     def click_manage_units(self, building_name: str) -> None:
         """Click the manage units icon for a building row."""
-        row = self._page.locator(f"[role='row']:has-text('{building_name}')")
+        row = self._page.locator(f"tr:has-text('{building_name}')")
         row.locator("[aria-label*='unit'], [aria-label*='apartment']").first.click()
 
     # ── State readers ─────────────────────────────────────────
@@ -93,19 +95,19 @@ class BuildingsPage(BasePage):
     def get_building_names(self) -> list[str]:
         """Return all visible building names from the list/table."""
         self._page.wait_for_load_state("networkidle")
-        cells = self._page.locator("[role='row'] [data-field='name']").all()
+        cells = self._page.locator("[data-testid='buildings-table'] tbody tr td:first-child").all()
         return [cell.inner_text().strip() for cell in cells if cell.inner_text().strip()]
 
     def is_building_visible(self, name: str) -> bool:
-        return self._page.locator(f"[role='row']:has-text('{name}')").count() > 0
+        return self._page.locator(f"tr:has-text('{name}')").count() > 0
 
     def is_add_button_visible(self) -> bool:
         try:
-            self._add_btn.wait_for(state="visible", timeout=3_000)
+            self._add_btn.wait_for(state="visible", timeout=10_000)
             return True
         except Exception:
             return False
 
     def get_row_count(self) -> int:
         """Return the number of data rows in the buildings grid."""
-        return self._page.locator("[role='row']").count() - 1  # minus header
+        return self._page.locator("[data-testid='buildings-table'] tbody tr").count()

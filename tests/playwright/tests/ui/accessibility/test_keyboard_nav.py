@@ -27,7 +27,9 @@ class TestKeyboardNav:
         images = admin_page.locator("img").all()
         for img in images:
             alt = img.get_attribute("alt")
-            assert alt is not None and alt.strip() != "", f"Image missing alt text: {img}"
+            # The alt attribute must exist. alt="" is the WCAG way to mark a decorative image (the app's logo
+            # next to the brand text), so an empty value is fine; a missing attribute is not.
+            assert alt is not None, f"Image has no alt attribute: {img.evaluate('e => e.outerHTML')[:160]}"
 
     def test_form_inputs_have_labels(self, page):
         page.goto(f"{settings.BASE_URL}/login")

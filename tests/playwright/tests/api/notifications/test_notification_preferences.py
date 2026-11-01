@@ -18,6 +18,6 @@ class TestNotificationPreferences:
     def test_update_preferences(self, owner_api: APIRequestContext):
         resp = owner_api.patch(
             "/api/v1/auth/profile/",
-            data={"notification_preferences": {"email_enabled": False}},
+            data={"notification_preferences": {"email": False}},
         )
         assert resp.status in (200, 204)

@@ -43,7 +43,7 @@ class CategoriesPage(BasePage):
         ).click()
 
     def click_delete_category(self, name: str) -> None:
-        row = self._page.locator(f"[role='row']:has-text('{name}'), tr:has-text('{name}')")
+        row = self._page.locator(f"tr:has-text('{name}')")
         row.locator("[aria-label*='Delete'], [aria-label*='delete']").first.click()
 
     def confirm_delete(self) -> None:
@@ -56,7 +56,7 @@ class CategoriesPage(BasePage):
     def get_category_names(self) -> list[str]:
         self._page.wait_for_load_state("networkidle")
         cells = self._page.locator(
-            "[role='row'] td:first-child, [role='row'] [data-field='name']"
+            "tbody tr td:first-child"
         ).all()
         return [c.inner_text().strip() for c in cells if c.inner_text().strip()]
 
