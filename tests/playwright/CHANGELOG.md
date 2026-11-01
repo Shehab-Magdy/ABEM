@@ -19,6 +19,8 @@ All notable changes to the ABEM Playwright test framework.
 - Markers: `phase5`, `datatable`, `i18n`, `money_path`.
 
 ### Changed
+- Credentials default to the QA accounts and passwords come only from the environment; UI/e2e use a fresh login per test; Playwright timeouts are shorter than the 30s pytest timeout.
+- Page objects for buildings, users, categories, expenses and audit use plain-table selectors; deactivated login now expects 403; notification preference key is `email`.
 - Tests no longer rely on `role=grid` / DataGrid; tables are the shared plain MUI `DataTable`.
 
 ## [1.0.0] - 2026-03-18

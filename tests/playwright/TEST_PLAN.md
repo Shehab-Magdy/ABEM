@@ -105,9 +105,9 @@ Every test case follows a consistent ID format used in pytest markers, reports, 
 
 | Role | Email | Purpose |
 |------|-------|---------|
-| Admin | `admin@abem.test` | Primary admin for all admin operations |
-| Owner | `owner@abem.test` | Primary owner for read-only and RBAC tests |
-| Admin2 | `admin2@abem.test` | Second admin for multi-tenant isolation tests |
+| Admin | `qa.admin@abem.test` | Primary admin for all admin operations (password from `ADMIN_PASSWORD`) |
+| Owner | `qa.owner@abem.test` | Primary owner for read-only and RBAC tests (`OWNER_PASSWORD`) |
+| Admin2 | `qa.admin2@abem.test` | Second admin for multi-tenant isolation tests (`ADMIN2_PASSWORD`) |
 
 ### Test Data Strategy
 

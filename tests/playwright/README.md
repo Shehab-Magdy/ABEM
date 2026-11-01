@@ -199,8 +199,14 @@ tests/playwright/
 - Phase 5 fixtures live in `fixtures/phase5.py` and are loaded by `tests/{api,ui}/phase5/conftest.py` and
   `tests/e2e/conftest.py`, not by the root conftest. `raw_admin_page` is an admin page WITHOUT the forced-English init
   script (needed to test persisted language); tests using it restore the profile language to English afterwards.
-- The suite expects the three accounts from `.env` (admin, owner, admin2). They must exist in the target database with
-  those passwords; repeated failed logins lock an account for 15 minutes and every fixture then errors.
+- Credentials: emails default to the dedicated `qa.admin@`, `qa.admin2@` and `qa.owner@abem.test` accounts; passwords have no default and
+  must be set in the environment (`ADMIN_PASSWORD`, `ADMIN2_PASSWORD`, `OWNER_PASSWORD`) or a local `.env`. Repeated failed logins lock an
+  account for 15 minutes and every fixture then errors.
+- `tests/ui` and `tests/e2e` override `admin_page` / `owner_page` with a fresh form login per test (`fixtures/fresh_sessions.py`): the app
+  rotates refresh tokens, so replaying one saved storage state made long runs fail progressively.
+- The `db` layer connects with `DB_HOST/DB_PORT` (default 127.0.0.1:5432). If another Postgres listens on that port (for example a local
+  Homebrew one in front of the Docker port mapping) the db tests read the wrong database and fail; point `DB_HOST` at the stack's database.
+- Keep only one pytest session running at a time and kill leftover Chromium processes after an aborted run.
 
 ## Test Reports
 
