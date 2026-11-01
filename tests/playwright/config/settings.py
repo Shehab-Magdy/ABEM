@@ -16,16 +16,18 @@ class Settings(BaseSettings):
     API_BASE_URL: str = "http://127.0.0.1:8000"
 
     # ── Admin credentials ─────────────────────────────────────
-    ADMIN_EMAIL: str = "admin@abem.test"
-    ADMIN_PASSWORD: str = "Admin@123!"
+    # Credentials: emails default to the dedicated QA accounts; passwords have NO default and must come from the
+    # environment (ADMIN_PASSWORD, OWNER_PASSWORD, ADMIN2_PASSWORD) or a local .env. Never commit them.
+    ADMIN_EMAIL: str = "qa.admin@abem.test"
+    ADMIN_PASSWORD: str = ""
 
     # ── Owner credentials ─────────────────────────────────────
-    OWNER_EMAIL: str = "owner@abem.test"
-    OWNER_PASSWORD: str = "Owner@123!"
+    OWNER_EMAIL: str = "qa.owner@abem.test"
+    OWNER_PASSWORD: str = ""
 
     # ── Second admin (multi-tenant isolation) ─────────────────
-    ADMIN2_EMAIL: str = "admin2@abem.test"
-    ADMIN2_PASSWORD: str = "Admin2@123!"
+    ADMIN2_EMAIL: str = "qa.admin2@abem.test"
+    ADMIN2_PASSWORD: str = ""
 
     # ── Database ──────────────────────────────────────────────
     DB_HOST: str = "127.0.0.1"

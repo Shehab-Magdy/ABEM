@@ -24,6 +24,12 @@ def _get_cached_tokens(
     """Authenticate once per session and cache the tokens."""
     if cache_key in _token_cache:
         return _token_cache[cache_key]
+    if not password:
+        pytest.fail(
+            f"No password configured for {email}: set ADMIN_PASSWORD / OWNER_PASSWORD / ADMIN2_PASSWORD "
+            "in the environment",
+            pytrace=False,
+        )
 
     ctx = playwright.request.new_context(base_url=settings.API_BASE_URL)
     try:
