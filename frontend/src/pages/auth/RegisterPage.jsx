@@ -24,7 +24,6 @@ import {
   FormControlLabel,
   FormLabel,
   IconButton,
-  InputAdornment,
   InputLabel,
   Link,
   MenuItem,
@@ -40,13 +39,14 @@ import {
   ToggleButtonGroup,
   Typography,
 } from "@mui/material";
-import { Add, Delete, Visibility, VisibilityOff } from "@mui/icons-material";
+import { Add, Delete } from "@mui/icons-material";
 import { useTranslation } from "react-i18next";
 import { authApi } from "../../api/authApi";
 import { buildingsApi } from "../../api/buildingsApi";
 import { apartmentsApi } from "../../api/apartmentsApi";
 import { useAuthStore } from "../../contexts/authStore";
 import PhoneInput from "../../components/PhoneInput";
+import OtpLoginForm from "../../components/auth/OtpLoginForm";
 import { PublicSEO } from "../../components/seo/SEO";
 import LanguageSwitcher from "../../components/LanguageSwitcher";
 import BrandLogo from "../../components/common/BrandLogo";
@@ -57,33 +57,30 @@ import BrandLogo from "../../components/common/BrandLogo";
 
 function AccountStep({ onDone, prefillEmail, fixedRole }) {
   const { t, i18n } = useTranslation("auth");
-  const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [registeredEmail, setRegisteredEmail] = useState(null); // set once self-register succeeds → show OTP step
   const { login } = useAuthStore();
-  const { register, handleSubmit, watch, control, formState: { errors } } = useForm({
+  const { register, handleSubmit, control, formState: { errors } } = useForm({
     defaultValues: { role: "owner", email: prefillEmail ?? "" },
   });
-  const password = watch("password", "");
 
   const onSubmit = async (data) => {
     setError(null);
     setLoading(true);
     try {
-      const res = await authApi.selfRegister({
+      // self-register/ no longer returns tokens — it only creates the user
+      // record. The actual session is established right after via OTP.
+      await authApi.selfRegister({
         first_name: data.first_name,
         last_name: data.last_name,
         email: data.email,
         phone: data.phone || "",
         role: fixedRole || data.role,
-        password: data.password,
-        confirm_password: data.confirm_password,
         preferred_language: i18n.language || "en",
         accept_terms: data.accept_terms === true,
       });
-      const { access, refresh, user } = res.data;
-      login(user, access, refresh);
-      onDone(user.role);
+      setRegisteredEmail(data.email);
     } catch (err) {
       const data = err.response?.data;
       // Backend wraps errors: {"status":"error","code":400,"errors":{field:[msgs]}}
@@ -97,6 +94,20 @@ function AccountStep({ onDone, prefillEmail, fixedRole }) {
       setLoading(false);
     }
   };
+
+  // Account record created — finish logging the new user in via OTP.
+  if (registeredEmail) {
+    return (
+      <OtpLoginForm
+        email={registeredEmail}
+        showGoogle={false}
+        onSuccess={(user, accessToken) => {
+          login(user, accessToken);
+          onDone(user.role);
+        }}
+      />
+    );
+  }
 
   return (
     <Box component="form" onSubmit={handleSubmit(onSubmit)} noValidate>
@@ -136,25 +147,6 @@ function AccountStep({ onDone, prefillEmail, fixedRole }) {
             />
           )}
         />
-        <TextField label={t("password")} type={showPw ? "text" : "password"} fullWidth
-          error={!!errors.password}
-          helperText={errors.password?.message || t("password_min_length")}
-          InputProps={{
-            endAdornment: (
-              <InputAdornment position="end">
-                <IconButton onClick={() => setShowPw((p) => !p)} edge="end" tabIndex={-1}>
-                  {showPw ? <VisibilityOff /> : <Visibility />}
-                </IconButton>
-              </InputAdornment>
-            ),
-          }}
-          {...register("password", { required: t("common:required") })} />
-        <TextField label={t("confirm_password")} type={showPw ? "text" : "password"} fullWidth
-          error={!!errors.confirm_password} helperText={errors.confirm_password?.message}
-          {...register("confirm_password", {
-            required: t("common:required"),
-            validate: (v) => v === password || t("passwords_dont_match"),
-          })} />
         {!fixedRole && <FormControl component="fieldset">
           <FormLabel>{t("i_am_a")}</FormLabel>
           <Controller

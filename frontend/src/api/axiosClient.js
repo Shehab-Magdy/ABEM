@@ -16,6 +16,10 @@ const axiosClient = axios.create({
   baseURL: BASE_URL,
   headers: { "Content-Type": "application/json" },
   timeout: 15000,
+  // The refresh_token (scoped to /auth/refresh/) and trusted_device (scoped
+  // to /auth/otp/request/) cookies are httponly — the browser attaches them
+  // automatically on same-origin/CORS-allowed requests as long as we opt in.
+  withCredentials: true,
 });
 
 // ── Request interceptor: inject access token + normalize Eastern Arabic digits
@@ -53,7 +57,8 @@ axiosClient.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
-    const isAuthEndpoint = originalRequest.url?.includes("/auth/login") ||
+    const isAuthEndpoint = originalRequest.url?.includes("/auth/otp/") ||
+                           originalRequest.url?.includes("/auth/google") ||
                            originalRequest.url?.includes("/auth/refresh");
 
     if (error.response?.status === 401 && !originalRequest._retry && !isAuthEndpoint) {
@@ -71,12 +76,14 @@ axiosClient.interceptors.response.use(
       originalRequest._retry = true;
       isRefreshing = true;
 
-      const refreshToken = useAuthStore.getState().refreshToken;
       try {
-        const { data } = await axios.post(`${BASE_URL}/auth/refresh/`, {
-          refresh: refreshToken,
-        });
-        useAuthStore.getState().setTokens(data.access, refreshToken);
+        // No body: the backend reads the httponly refresh_token cookie.
+        const { data } = await axios.post(
+          `${BASE_URL}/auth/refresh/`,
+          undefined,
+          { withCredentials: true }
+        );
+        useAuthStore.getState().setAccessToken(data.access);
         processQueue(null, data.access);
         originalRequest.headers.Authorization = `Bearer ${data.access}`;
         return axiosClient(originalRequest);

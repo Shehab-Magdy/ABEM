@@ -13,9 +13,9 @@ from django_filters.rest_framework import DjangoFilterBackend
 
 from django.utils.translation import gettext_lazy as _
 from apps.audit.mixins import AuditLogMixin, log_action
+from .otp import request_otp_for_user
 from .permissions import IsAdminRole
 from .serializers import (
-    AdminResetPasswordSerializer,
     RegisterUserSerializer,
     UserSerializer,
     UserUpdateSerializer,
@@ -35,7 +35,7 @@ class UserViewSet(AuditLogMixin, ModelViewSet):
     DELETE /api/v1/users/{id}/       – hard delete (use deactivate for soft disable)
     POST   /api/v1/users/{id}/deactivate/    – deactivate account
     POST   /api/v1/users/{id}/activate/      – reactivate account
-    POST   /api/v1/users/{id}/reset-password/ – admin-initiated password reset
+    POST   /api/v1/users/{id}/resend-invite/ – re-send an email OTP sign-in code
     """
 
     permission_classes = [IsAdminRole]
@@ -88,8 +88,6 @@ class UserViewSet(AuditLogMixin, ModelViewSet):
             return RegisterUserSerializer
         if self.action in ["update", "partial_update"]:
             return UserUpdateSerializer
-        if self.action == "reset_password":
-            return AdminResetPasswordSerializer
         return UserSerializer
 
     def get_serializer_context(self):
@@ -146,9 +144,7 @@ class UserViewSet(AuditLogMixin, ModelViewSet):
     def activate(self, request, pk=None):
         user = self.get_object()
         user.is_active = True
-        user.failed_login_attempts = 0
-        user.locked_until = None
-        user.save(update_fields=["is_active", "failed_login_attempts", "locked_until"])
+        user.save(update_fields=["is_active"])
         log_action(
             user=request.user,
             action="activate",
@@ -194,19 +190,21 @@ class UserViewSet(AuditLogMixin, ModelViewSet):
             "individual_messaging_blocked": user.individual_messaging_blocked,
         })
 
-    @action(detail=True, methods=["post"], url_path="reset-password")
-    def reset_password(self, request, pk=None):
+    @action(detail=True, methods=["post"], url_path="resend-invite")
+    def resend_invite(self, request, pk=None):
+        """
+        POST /api/v1/users/{id}/resend-invite/
+
+        There is no password to reset any more — this re-sends a sign-in
+        code to the user's email, exactly like `otp/request/` would.
+        """
         user = self.get_object()
-        serializer = AdminResetPasswordSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        user.set_password(serializer.validated_data["new_password"])
-        user.must_change_password = True
-        user.save(update_fields=["password", "must_change_password"])
+        request_otp_for_user(user)
         log_action(
             user=request.user,
-            action="reset_password",
+            action="resend_invite",
             entity="user",
             entity_id=user.id,
             request=request,
         )
-        return Response({"detail": _("Password reset for %(email)s.") % {"email": user.email}})
+        return Response({"detail": _("A sign-in code has been sent to %(email)s.") % {"email": user.email}})

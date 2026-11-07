@@ -28,10 +28,7 @@ const PlanPage = lazy(() => import("../pages/plans/PlanPage"));
 const HelpPage = lazy(() => import("../pages/help/HelpPage"));
 const StatementPage = lazy(() => import("../pages/statement/StatementPage"));
 const MaintenancePage = lazy(() => import("../pages/maintenance/MaintenancePage"));
-const ResetPasswordPage = lazy(() => import("../pages/auth/ResetPasswordPage"));
 const RegisterPage = lazy(() => import("../pages/auth/RegisterPage"));
-const ForgotPasswordPage = lazy(() => import("../pages/auth/ForgotPasswordPage"));
-const ForceChangePasswordPage = lazy(() => import("../pages/auth/ForceChangePasswordPage"));
 const AdminDashboardPage = lazy(() => import("../pages/dashboard/AdminDashboardPage"));
 const OwnerDashboardPage = lazy(() => import("../pages/dashboard/OwnerDashboardPage"));
 const UsersPage = lazy(() => import("../pages/users/UsersPage"));
@@ -60,17 +57,9 @@ function postLoginTarget() {
 // ── Route guards ──────────────────────────────────────────────────────────────
 
 function RequireAuth({ children }) {
-  const { accessToken, user } = useAuthStore();
+  const { accessToken } = useAuthStore();
   if (!accessToken) return <Navigate to="/login" replace />;
-  if (user?.must_change_password) return <Navigate to="/change-password-required" replace />;
   return children;
-}
-
-function RequireForceChange({ children }) {
-  const { user } = useAuthStore();
-  if (!user) return <Navigate to="/login" replace />;
-  if (user.must_change_password) return children;
-  return <Navigate to="/dashboard" replace />;
 }
 
 function RequireAdmin({ children }) {
@@ -106,20 +95,8 @@ export default function AppRouter() {
           which would otherwise cause an immediate redirect away before the user finishes the wizard. */}
       <Route path="/register" element={<RegisterPage />} />
       <Route path="/join/:token" element={<JoinPage />} />
-      <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route path="/privacy" element={<LegalPage doc="privacy" />} />
       <Route path="/terms" element={<LegalPage doc="terms" />} />
-      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-
-      {/* Forced password change — accessible only when must_change_password is true */}
-      <Route
-        path="/change-password-required"
-        element={
-          <RequireForceChange>
-            <ForceChangePasswordPage />
-          </RequireForceChange>
-        }
-      />
 
       {/* Protected – all routes share the DashboardLayout shell */}
       <Route

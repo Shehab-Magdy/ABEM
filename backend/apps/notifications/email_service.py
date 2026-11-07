@@ -41,6 +41,10 @@ _SUBJECTS = {
         "en": "Payment Overdue — {building_name}",
         "ar": "تنبيه: دفعة متأخرة السداد — {building_name}",
     },
+    "otp": {
+        "en": "Your sign-in code — 3maracom",
+        "ar": "رمز تسجيل الدخول — عِمارة.كوم",
+    },
 }
 
 

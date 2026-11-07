@@ -1,27 +1,11 @@
-import { useState } from "react";
-import { useNavigate, Link as RouterLink, useSearchParams } from "react-router-dom";
-import { useForm } from "react-hook-form";
+import { useNavigate, useSearchParams, Link as RouterLink } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import {
-  Alert,
-  Box,
-  Button,
-  Card,
-  CardContent,
-  CircularProgress,
-  IconButton,
-  InputAdornment,
-  Link,
-  Stack,
-  TextField,
-  Typography,
-} from "@mui/material";
-import { Visibility, VisibilityOff } from "@mui/icons-material";
-import { authApi } from "../../api/authApi";
+import { Box, Card, CardContent, Link, Stack, Typography } from "@mui/material";
 import { useAuthStore } from "../../contexts/authStore";
 import { PublicSEO } from "../../components/seo/SEO";
 import LanguageSwitcher from "../../components/LanguageSwitcher";
 import BrandLogo from "../../components/common/BrandLogo";
+import OtpLoginForm from "../../components/auth/OtpLoginForm";
 
 export default function LoginPage() {
   const { t, i18n } = useTranslation("auth");
@@ -29,55 +13,15 @@ export default function LoginPage() {
   const { login } = useAuthStore();
   const [searchParams] = useSearchParams();
 
-  const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState(null);
-  const [errorCode, setErrorCode] = useState(null);
-  const [lockoutUntil, setLockoutUntil] = useState(null);
-  const [isLoading, setIsLoading] = useState(false);
-
-  const {
-    register,
-    handleSubmit,
-    getValues,
-    formState: { errors },
-  } = useForm({ defaultValues: { email: searchParams.get("email") || "" } });
-
-  const onSubmit = async (data) => {
-    setError(null);
-    setErrorCode(null);
-    setLockoutUntil(null);
-    setIsLoading(true);
-    try {
-      const response = await authApi.login(data);
-      const { access, refresh, user } = response.data;
-      login(user, access, refresh);
-      if (user.preferred_language) {
-        i18n.changeLanguage(user.preferred_language);
-      }
-      const next = searchParams.get("next");
-      // only follow same-site relative paths (blocks open redirects like //evil.com)
-      const safeNext = next && next.startsWith("/") && !next.startsWith("//") ? next : "/dashboard";
-      navigate(safeNext, { replace: true });
-    } catch (err) {
-      const httpStatus = err.response?.status;
-      const resData = err.response?.data;
-      const code = resData?.code || null;
-      const detail =
-        resData?.detail ||
-        resData?.non_field_errors?.[0] ||
-        resData?.email?.[0] ||
-        resData?.password?.[0] ||
-        (httpStatus === 401 ? t("incorrect_credentials", "Invalid email or password.") : t("errors:server_error", "An unexpected error occurred."));
-
-      if (httpStatus === 423) {
-        setLockoutUntil(err.response.data.locked_until);
-      } else {
-        setErrorCode(code);
-        setError(detail);
-      }
-    } finally {
-      setIsLoading(false);
+  const handleSuccess = (user, accessToken) => {
+    login(user, accessToken);
+    if (user.preferred_language) {
+      i18n.changeLanguage(user.preferred_language);
     }
+    const next = searchParams.get("next");
+    // only follow same-site relative paths (blocks open redirects like //evil.com)
+    const safeNext = next && next.startsWith("/") && !next.startsWith("//") ? next : "/dashboard";
+    navigate(safeNext, { replace: true });
   };
 
   return (
@@ -116,101 +60,14 @@ export default function LoginPage() {
             </Typography>
           </Stack>
 
-          {/* Lockout alert */}
-          {lockoutUntil && (
-            <Alert severity="error" sx={{ mb: 2 }}>
-              {t("account_locked")}
-              <br />
-              {t("try_again_after", "Try again after")}{" "}
-              <strong>{new Date(lockoutUntil).toLocaleTimeString()}</strong>.
-            </Alert>
-          )}
+          <OtpLoginForm initialEmail={searchParams.get("email") || undefined} onSuccess={handleSuccess} />
 
-          {/* Generic error */}
-          {error && !lockoutUntil && (
-            <Alert
-              severity="error"
-              sx={{ mb: 2 }}
-              action={
-                errorCode === "email_not_found" ? (
-                  <Button
-                    color="inherit"
-                    size="small"
-                    component={RouterLink}
-                    to={`/register?email=${encodeURIComponent(getValues("email"))}`}
-                  >
-                    {t("create_account")}
-                  </Button>
-                ) : undefined
-              }
-            >
-              {error}
-            </Alert>
-          )}
-
-          {/* Form */}
-          <Box component="form" onSubmit={handleSubmit(onSubmit)} noValidate>
-            <Stack spacing={2.5}>
-              <TextField
-                label={t("email_address")}
-                type="email"
-                fullWidth
-                autoComplete="email"
-                autoFocus
-                error={!!errors.email}
-                helperText={errors.email?.message}
-                {...register("email", {
-                  required: t("email_required"),
-                  pattern: {
-                    value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-                    message: t("errors:invalid_email"),
-                  },
-                })}
-              />
-
-              <TextField
-                label={t("password")}
-                type={showPassword ? "text" : "password"}
-                fullWidth
-                autoComplete="current-password"
-                error={!!errors.password}
-                helperText={errors.password?.message}
-                InputProps={{
-                  endAdornment: (
-                    <InputAdornment position="end">
-                      <IconButton
-                        onClick={() => setShowPassword((prev) => !prev)}
-                        edge="end"
-                        tabIndex={-1}
-                        aria-label={showPassword ? "Hide password" : "Show password"}
-                      >
-                        {showPassword ? <VisibilityOff /> : <Visibility />}
-                      </IconButton>
-                    </InputAdornment>
-                  ),
-                }}
-                {...register("password", { required: t("password_required") })}
-              />
-
-              <Button
-                type="submit"
-                variant="contained"
-                size="large"
-                fullWidth
-                disabled={isLoading}
-                sx={{ mt: 1 }}
-              >
-                {isLoading ? <CircularProgress size={24} color="inherit" /> : t("sign_in")}
-              </Button>
-
-              <Typography variant="body2" align="center" color="text.secondary">
-                {t("dont_have_account")}{" "}
-                <Link component={RouterLink} to="/register" underline="hover">
-                  {t("create_account")}
-                </Link>
-              </Typography>
-            </Stack>
-          </Box>
+          <Typography variant="body2" align="center" color="text.secondary" sx={{ mt: 2.5 }}>
+            {t("dont_have_account")}{" "}
+            <Link component={RouterLink} to="/register" underline="hover">
+              {t("create_account")}
+            </Link>
+          </Typography>
         </CardContent>
       </Card>
     </Box>

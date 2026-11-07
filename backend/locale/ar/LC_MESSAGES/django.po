@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: 3maracom 1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-03-18 23:49+0000\n"
+"POT-Creation-Date: 2026-11-07 20:43+0000\n"
 "PO-Revision-Date: 2026-03-19 00:00+0200\n"
 "Last-Translator: 3maracom Team\n"
 "Language-Team: Arabic\n"
@@ -14,7 +14,8 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Plural-Forms: nplurals=6; plural=n==0 ? 0 : n==1 ? 1 : n==2 ? 2 : n%100>=3 && n%100<=10 ? 3 : n%100>=11 && n%100<=99 ? 4 : 5;\n"
+"Plural-Forms: nplurals=6; plural=n==0 ? 0 : n==1 ? 1 : n==2 ? 2 : n%100>=3 "
+"&& n%100<=10 ? 3 : n%100>=11 && n%100<=99 ? 4 : 5;\n"
 
 #: apps/apartments/models.py:14
 msgid "Apartment"
@@ -36,147 +37,268 @@ msgstr "شاغر"
 msgid "Under Maintenance"
 msgstr "تحت الصيانة"
 
-#: apps/apartments/serializers.py:78
-#, python-format
-msgid "Floor %(floor)s exceeds the building's maximum of %(num_floors)s floor(s)."
-msgstr "الطابق %(floor)s يتجاوز الحد الأقصى للمبنى البالغ %(num_floors)s طابق(طوابق)."
+#: apps/apartments/serializers.py:76
+msgid "The rate factor must be between 0.1 and 10."
+msgstr "يجب أن يكون المعامل بين 0.1 و10."
 
-#: apps/apartments/views.py:135
+#: apps/apartments/serializers.py:99
+msgid "A unit cannot be moved to another building."
+msgstr "لا يمكن نقل الوحدة إلى عمارة أخرى."
+
+#: apps/apartments/serializers.py:111
+msgid ""
+"Only people already in the building can be made owners. Invite them instead."
+msgstr ""
+"لا يمكن تعيين مالك إلا من الأشخاص الموجودين في المبنى. قم بدعوته بدلاً من ذلك."
+
+#: apps/apartments/serializers.py:118
+#, python-format
+msgid ""
+"Floor %(floor)s exceeds the building's maximum of %(num_floors)s floor(s)."
+msgstr ""
+"الطابق %(floor)s يتجاوز الحد الأقصى للمبنى البالغ %(num_floors)s طابق(طوابق)."
+
+#: apps/apartments/views.py:87 apps/buildings/views.py:267
+msgid "Your plan's unit limit is reached. Upgrade the plan to add more units."
+msgstr ""
+"تم بلوغ الحد الأقصى للوحدات في باقتك. قم بترقية الباقة لإضافة المزيد من "
+"الوحدات."
+
+#: apps/apartments/views.py:203
 msgid "building_id query parameter is required."
 msgstr "معرّف المبنى (building_id) مطلوب."
 
-#: apps/apartments/views.py:156
+#: apps/apartments/views.py:224
 msgid "Apartment not found."
 msgstr "الوحدة غير موجودة."
 
-#: apps/apartments/views.py:160
+#: apps/apartments/views.py:228
+msgid "Renters join a unit through an invite from its owner."
+msgstr "ينضم المستأجر إلى الوحدة عبر دعوة من مالكها."
+
+#: apps/apartments/views.py:233
 msgid "This apartment is already assigned to an owner."
 msgstr "هذه الوحدة مسندة بالفعل إلى مالك."
 
-#: apps/apartments/views.py:197
-msgid "email is required."
-msgstr "البريد الإلكتروني مطلوب."
+#: apps/apartments/views.py:243
+msgid "You already asked to claim this unit."
+msgstr "لقد طلبت الانضمام إلى هذه الوحدة من قبل."
 
-#: apps/apartments/views.py:228 apps/apartments/views.py:266
+#: apps/apartments/views.py:245
+msgid "Request sent. The building admin will review it."
+msgstr "تم إرسال الطلب. سيراجعه مدير العمارة."
+
+#: apps/apartments/views.py:289
+msgid "Enter a valid email address."
+msgstr "أدخل عنوان بريد إلكتروني صالحاً."
+
+#: apps/apartments/views.py:321
+msgid "Renters cannot invite other residents."
+msgstr "لا يمكن للمستأجر دعوة سكان آخرين."
+
+#: apps/apartments/views.py:332
+msgid "Renters cannot remove other residents."
+msgstr "لا يمكن للمستأجر إنهاء ارتباط سكان آخرين."
+
+#: apps/apartments/views.py:337
+msgid "That renter does not live in this unit."
+msgstr "هذا المستأجر لا يسكن في هذه الوحدة."
+
+#: apps/apartments/views.py:364 apps/apartments/views.py:405
 msgid "token or code is required."
 msgstr "الرمز أو كود الدعوة مطلوب."
 
-#: apps/apartments/views.py:239
+#: apps/apartments/views.py:375
 msgid "Invalid invite link or code."
 msgstr "رابط أو كود الدعوة غير صالح."
 
-#: apps/apartments/views.py:242 apps/apartments/views.py:280
+#: apps/apartments/views.py:378 apps/apartments/views.py:415
 msgid "This invite link has expired or already been used."
 msgstr "رابط الدعوة منتهي الصلاحية أو تم استخدامه بالفعل."
 
-#: apps/apartments/views.py:277
+#: apps/apartments/views.py:412
 msgid "Invalid invite."
 msgstr "دعوة غير صالحة."
 
-#: apps/apartments/views.py:284
+#: apps/apartments/views.py:421
+msgid "This invite was sent to a different email address."
+msgstr "هذه الدعوة أُرسلت إلى بريد إلكتروني آخر."
+
+#: apps/apartments/views.py:429
 msgid "You are already an owner of this unit."
 msgstr "أنت بالفعل مالك هذه الوحدة."
 
-#: apps/apartments/views.py:325
+#: apps/apartments/views.py:471
 msgid "You do not have permission to view this apartment's balance."
 msgstr "ليس لديك صلاحية لعرض رصيد هذه الوحدة."
 
-#: apps/authentication/serializers.py:48 apps/authentication/serializers.py:114
+#: apps/apartments/views.py:531 apps/apartments/views.py:555
+msgid "This request was already reviewed."
+msgstr "تمت مراجعة هذا الطلب من قبل."
+
+#: apps/authentication/otp.py:121
+msgid "No active code was found for this email. Request a new one."
+msgstr "لم يتم العثور على رمز نشط لهذا البريد الإلكتروني. اطلب رمزاً جديداً."
+
+#: apps/authentication/otp.py:122
+msgid "This code has expired. Request a new one."
+msgstr "انتهت صلاحية هذا الرمز. اطلب رمزاً جديداً."
+
+#: apps/authentication/otp.py:123
+msgid "Incorrect code."
+msgstr "رمز غير صحيح."
+
+#: apps/authentication/otp.py:124
+msgid "Too many attempts. Request a new code."
+msgstr "عدد كبير جداً من المحاولات. اطلب رمزاً جديداً."
+
+#: apps/authentication/otp.py:125
+msgid "Could not verify this code."
+msgstr "تعذر التحقق من هذا الرمز."
+
+#: apps/authentication/serializers.py:147
+#: apps/authentication/serializers.py:534
 msgid "A user with this email already exists."
 msgstr "يوجد مستخدم بهذا البريد الإلكتروني بالفعل."
 
-#: apps/authentication/serializers.py:86
-msgid "Current password is incorrect."
-msgstr "كلمة المرور الحالية غير صحيحة."
+#: apps/authentication/serializers.py:158
+#: apps/authentication/serializers.py:323
+msgid "At least one building must be assigned to an admin user."
+msgstr "يجب تعيين مبنى واحد على الأقل لمستخدم مدير."
 
-#: apps/authentication/serializers.py:92 apps/authentication/serializers.py:142
-msgid "New passwords do not match."
-msgstr "كلمتا المرور الجديدتان غير متطابقتين."
+#: apps/authentication/serializers.py:177
+#: apps/authentication/serializers.py:333
+msgid "You do not manage all selected buildings."
+msgstr "أنت لا تدير جميع المباني المحددة."
 
-#: apps/authentication/serializers.py:119
-#: apps/authentication/serializers.py:159
-msgid "Passwords do not match."
-msgstr "كلمتا المرور غير متطابقتين."
+#: apps/authentication/serializers.py:195
+#: apps/authentication/serializers.py:344
+msgid "One or more apartments do not exist."
+msgstr "شقة واحدة أو أكثر غير موجودة."
 
-#: apps/authentication/user_views.py:87
+#: apps/authentication/serializers.py:202
+#: apps/authentication/serializers.py:351
+msgid "You do not manage the building(s) for all selected apartments."
+msgstr "أنت لا تدير مبنى (مباني) جميع الشقق المحددة."
+
+#: apps/authentication/serializers.py:497
+#, python-format
+msgid "Notification preferences must be on/off switches for: %(keys)s."
+msgstr "تفضيلات الإشعارات يجب أن تكون مفاتيح تشغيل/إيقاف للبنود: %(keys)s."
+
+#: apps/authentication/serializers.py:541
+msgid "You must accept the Terms of Service and Privacy Policy."
+msgstr "يجب الموافقة على شروط الاستخدام وسياسة الخصوصية."
+
+#: apps/authentication/user_views.py:129
 msgid "You cannot deactivate your own account."
 msgstr "لا يمكنك تعطيل حسابك الشخصي."
 
-#: apps/authentication/user_views.py:99
+#: apps/authentication/user_views.py:141
 #, python-format
 msgid "User %(email)s deactivated."
 msgstr "تم تعطيل حساب المستخدم %(email)s."
 
-#: apps/authentication/user_views.py:115
+#: apps/authentication/user_views.py:155
 #, python-format
 msgid "User %(email)s activated."
 msgstr "تم تفعيل حساب المستخدم %(email)s."
 
-#: apps/authentication/user_views.py:136
+#: apps/authentication/user_views.py:176
 msgid "Provide messaging_blocked or individual_messaging_blocked."
 msgstr "يرجى تحديد messaging_blocked أو individual_messaging_blocked."
 
-#: apps/authentication/user_views.py:168
+#: apps/authentication/user_views.py:210
 #, python-format
-msgid "Password reset for %(email)s."
-msgstr "تم إعادة تعيين كلمة المرور لـ %(email)s."
+msgid "A sign-in code has been sent to %(email)s."
+msgstr "تم إرسال رمز تسجيل الدخول إلى %(email)s."
 
-#: apps/authentication/validators.py:16
-msgid "Password must be at least 8 characters."
-msgstr "يجب أن تتكون كلمة المرور من ٨ أحرف على الأقل."
+#: apps/authentication/views.py:131
+msgid "Too many requests. Please wait a moment and try again."
+msgstr "عدد كبير جداً من الطلبات. يرجى الانتظار قليلاً والمحاولة مرة أخرى."
 
-#: apps/authentication/validators.py:18
-msgid "Password must contain at least one uppercase letter."
-msgstr "يجب أن تحتوي كلمة المرور على حرف كبير واحد على الأقل."
-
-#: apps/authentication/validators.py:20
-msgid "Password must contain at least one digit."
-msgstr "يجب أن تحتوي كلمة المرور على رقم واحد على الأقل."
-
-#: apps/authentication/validators.py:22
-msgid "Password must contain at least one special character."
-msgstr "يجب أن تحتوي كلمة المرور على رمز خاص واحد على الأقل."
-
-#: apps/authentication/validators.py:28
-msgid "Password must be at least 8 characters and include an uppercase letter, a digit, and a special character."
-msgstr "يجب أن تتكون كلمة المرور من ٨ أحرف على الأقل وتتضمن حرفاً كبيراً ورقماً ورمزاً خاصاً."
-
-#: apps/authentication/views.py:49
-msgid "No account found with this email address."
-msgstr "لا يوجد حساب بهذا البريد الإلكتروني."
-
-#: apps/authentication/views.py:60
-#, python-format
-msgid "Account locked. Try again in %(minutes)s minute(s)."
-msgstr "تم قفل الحساب. أعد المحاولة بعد %(minutes)s دقيقة/دقائق."
-
-#: apps/authentication/views.py:82
-msgid "Incorrect password."
-msgstr "كلمة المرور غير صحيحة."
-
-#: apps/authentication/views.py:89
+#: apps/authentication/views.py:145 apps/authentication/views.py:197
+#: apps/authentication/views.py:271
 msgid "This account has been deactivated."
 msgstr "هذا الحساب معطّل."
 
-#: apps/authentication/views.py:126
+#: apps/authentication/views.py:173
+msgid "A sign-in code has been sent to your email."
+msgstr "تم إرسال رمز تسجيل الدخول إلى بريدك الإلكتروني."
+
+#: apps/authentication/views.py:191
+msgid "No sign-in code was requested for this email."
+msgstr "لم يُطلب رمز تسجيل دخول لهذا البريد الإلكتروني."
+
+#: apps/authentication/views.py:239
+msgid "Google Sign-In is not configured."
+msgstr "تسجيل الدخول بواسطة جوجل غير مُفعَّل."
+
+#: apps/authentication/views.py:249 apps/authentication/views.py:256
+msgid "Invalid Google sign-in token."
+msgstr "رمز تسجيل الدخول بواسطة جوجل غير صالح."
+
+#: apps/authentication/views.py:307
 msgid "Refresh token is required."
 msgstr "رمز التحديث مطلوب."
 
-#: apps/authentication/views.py:134
+#: apps/authentication/views.py:385
+msgid "This refresh token was already used. Please try again."
+msgstr "تم استخدام رمز التحديث هذا من قبل. يرجى المحاولة مرة أخرى."
+
+#: apps/authentication/views.py:403
+msgid "Session invalidated for your safety. Please sign in again."
+msgstr "تم إلغاء الجلسة لحمايتك. يرجى تسجيل الدخول مرة أخرى."
+
+#: apps/authentication/views.py:408
+msgid "Refresh token is invalid or expired."
+msgstr "رمز التحديث غير صالح أو منتهي الصلاحية."
+
+#: apps/authentication/views.py:427
+msgid "No session to log out of."
+msgstr "لا توجد جلسة لتسجيل الخروج منها."
+
+#: apps/authentication/views.py:436
 msgid "Token is invalid or already blacklisted."
 msgstr "الرمز غير صالح أو تم إبطاله بالفعل."
 
-#: apps/authentication/views.py:146
+#: apps/authentication/views.py:455
 msgid "Successfully logged out."
 msgstr "تم تسجيل الخروج بنجاح."
 
-#: apps/authentication/views.py:216 apps/authentication/views.py:247
-msgid "Password changed successfully."
-msgstr "تم تغيير كلمة المرور بنجاح."
+#: apps/authentication/views.py:512
+msgid "All trusted devices have been revoked."
+msgstr "تم إبطال جميع الأجهزة الموثوقة."
 
-#: apps/authentication/views.py:227
-msgid "Password change is not required."
-msgstr "تغيير كلمة المرور غير مطلوب."
+#: apps/authentication/views.py:556
+msgid "Use /auth/logout/ to sign out of your current session."
+msgstr "استخدم /auth/logout/ لتسجيل الخروج من جلستك الحالية."
+
+#: apps/authentication/views.py:579
+msgid "Session revoked."
+msgstr "تم إبطال الجلسة."
+
+#: apps/authentication/views.py:733
+msgid ""
+"You are the administrator of a building. Hand it over to another admin "
+"before deleting your account."
+msgstr "أنت مدير لإحدى العمارات. سلّمها لمدير آخر قبل حذف حسابك."
+
+#: apps/authentication/views.py:746
+msgid ""
+"You are the last platform owner. Make someone else a platform owner first."
+msgstr "أنت آخر مالك للمنصة. عيّن مالكاً آخر للمنصة أولاً."
+
+#: apps/authentication/views.py:761
+msgid ""
+"You still owe a balance on your unit. Send confirm_balance to delete your "
+"account anyway."
+msgstr ""
+"ما زال عليك رصيد مستحق على وحدتك. أكّد (confirm_balance) لحذف حسابك رغم ذلك."
+
+#: apps/authentication/views.py:829
+msgid "Your account has been deleted."
+msgstr "تم حذف حسابك."
 
 #: apps/buildings/serializers.py:39
 msgid "Number of apartment units in the building."
@@ -186,98 +308,373 @@ msgstr "عدد الشقق السكنية في المبنى."
 msgid "Number of store/commercial units in the building."
 msgstr "عدد المحلات التجارية في المبنى."
 
-#: apps/buildings/serializers.py:71
+#: apps/buildings/serializers.py:75
 msgid "num_floors must be a positive integer greater than 0."
 msgstr "عدد الطوابق يجب أن يكون عدداً صحيحاً موجباً أكبر من صفر."
 
-#: apps/buildings/serializers.py:188
+#: apps/buildings/serializers.py:192
 msgid "User not found."
 msgstr "المستخدم غير موجود."
 
-#: apps/buildings/views.py:148
+#: apps/buildings/views.py:170
 #, python-format
 msgid "User '%(email)s' assigned to building '%(name)s'."
 msgstr "تم تعيين المستخدم '%(email)s' في المبنى '%(name)s'."
 
-#: apps/buildings/views.py:169
+#: apps/buildings/views.py:183
+msgid "Only the building's primary administrator can hand it over."
+msgstr "المدير الأساسي للعمارة هو وحده من يمكنه نقل الإدارة."
+
+#: apps/buildings/views.py:189
+msgid "Choose one of the building's co-admins. Add them as a co-admin first."
+msgstr "اختر أحد المديرين المشاركين في العمارة. أضفه كمدير مشارك أولاً."
+
+#: apps/buildings/views.py:231
+msgid "unit_number is required."
+msgstr "رقم الوحدة مطلوب."
+
+#: apps/buildings/views.py:233
+msgid "This unit already exists in the building."
+msgstr "هذه الوحدة موجودة بالفعل في العمارة."
+
+#: apps/buildings/views.py:235
+msgid "This unit appears twice in the file."
+msgstr "هذه الوحدة مكررة في الملف."
+
+#: apps/buildings/views.py:238
+msgid "type must be apartment or store."
+msgstr "النوع يجب أن يكون apartment أو store."
+
+#: apps/buildings/views.py:244
+#, python-format
+msgid "floor must be between 0 and %(n)s."
+msgstr "الطابق يجب أن يكون بين 0 و%(n)s."
+
+#: apps/buildings/views.py:246
+msgid "floor must be a whole number."
+msgstr "الطابق يجب أن يكون رقماً صحيحاً."
+
+#: apps/buildings/views.py:254
+msgid "size_sqm must be a positive number."
+msgstr "المساحة يجب أن تكون رقماً موجباً."
+
+#: apps/buildings/views.py:290
+msgid "Only the building's admins can assign board titles."
+msgstr "مديرو العمارة وحدهم يمكنهم تعيين المناصب."
+
+#: apps/buildings/views.py:293
+msgid "Choose chair, treasurer or secretary."
+msgstr "اختر رئيساً أو أمين صندوق أو أمين سر."
+
+#: apps/buildings/views.py:297
+msgid "That person is not a member of this building."
+msgstr "هذا الشخص ليس عضواً في هذه العمارة."
+
+#: apps/buildings/views.py:355
+msgid "Monthly subscription billing is part of the Standard and Plus plans."
+msgstr "الفوترة بالاشتراك الشهري جزء من باقتي القياسية وبلس."
+
+#: apps/buildings/views.py:367
+msgid "Enter a valid amount, billing day and due days."
+msgstr "أدخل مبلغاً ويوم تحصيل وعدد أيام استحقاق صحيحة."
+
+#: apps/buildings/views.py:369
+msgid "Amount must be above zero, billing day 1-28 and due days 0-60."
+msgstr ""
+"يجب أن يكون المبلغ أكبر من صفر، ويوم التحصيل بين 1 و28، وأيام الاستحقاق بين "
+"0 و60."
+
+#: apps/buildings/views.py:377
+msgid ""
+"Late fee: choose none, a fixed amount or a percent (up to 100), and 0-60 "
+"grace days."
+msgstr ""
+"غرامة التأخير: اختر بدون أو مبلغاً ثابتاً أو نسبة (حتى 100) وأيام سماح من 0 "
+"إلى 60."
+
+#: apps/buildings/views.py:409
+msgid "month must look like 2026-10."
+msgstr "الشهر يجب أن يكون بصيغة 2026-10."
+
+#: apps/buildings/views.py:456
+msgid "The annual report is part of the Plus plan."
+msgstr "التقرير السنوي جزء من باقة بلس."
+
+#: apps/buildings/views.py:462
+msgid "year must look like 2026."
+msgstr "السنة يجب أن تكون بالشكل 2026."
+
+#: apps/buildings/views.py:570
 #, python-format
 msgid "Building '%(name)s' deactivated."
 msgstr "تم تعطيل المبنى '%(name)s'."
 
-#: apps/buildings/views.py:188
+#: apps/buildings/views.py:589
 #, python-format
 msgid "Building '%(name)s' activated."
 msgstr "تم تفعيل المبنى '%(name)s'."
+
+#: apps/core/csv_import.py:20
+msgid "Attach a CSV file."
+msgstr "أرفق ملف CSV."
+
+#: apps/core/csv_import.py:22
+msgid "The file is too large (1 MB at most)."
+msgstr "الملف كبير جداً (1 ميجابايت كحد أقصى)."
+
+#: apps/core/csv_import.py:26
+msgid "Save the file as UTF-8 CSV."
+msgstr "احفظ الملف بصيغة CSV وترميز UTF-8."
+
+#: apps/core/csv_import.py:34
+#, python-format
+msgid "Missing columns: %(cols)s."
+msgstr "أعمدة ناقصة: %(cols)s."
+
+#: apps/core/csv_import.py:36
+#, python-format
+msgid "Unknown columns: %(cols)s."
+msgstr "أعمدة غير معروفة: %(cols)s."
+
+#: apps/core/csv_import.py:43
+msgid "The file has no rows."
+msgstr "الملف لا يحتوي على صفوف."
+
+#: apps/core/csv_import.py:45
+#, python-format
+msgid "At most %(n)s rows per file."
+msgstr "الحد الأقصى %(n)s صف في الملف."
 
 #: apps/dashboard/views.py:46
 msgid "Building not found or not accessible by you."
 msgstr "المبنى غير موجود أو ليس لديك صلاحية الوصول إليه."
 
-#: apps/dashboard/views.py:226
+#: apps/dashboard/views.py:261 apps/notifications/models.py:68
 msgid "Overdue"
 msgstr "متأخر"
 
-#: apps/dashboard/views.py:226
+#: apps/dashboard/views.py:261
 msgid "Active"
 msgstr "نشط"
 
-#: apps/expenses/models.py:17
+#: apps/expenses/models.py:19
 msgid "Material icon name (used by web and mobile)"
 msgstr "اسم أيقونة Material (للويب والموبايل)"
 
-#: apps/expenses/models.py:19
+#: apps/expenses/models.py:21
 msgid "Hex color for the category badge"
 msgstr "لون Hex لشارة الفئة"
 
-#: apps/expenses/models.py:39
+#: apps/expenses/models.py:41
 msgid "Equal – All Units"
 msgstr "توزيع متساوٍ على الجميع"
 
-#: apps/expenses/models.py:40
+#: apps/expenses/models.py:42
 msgid "Equal – Apartments Only"
 msgstr "الشقق السكنية فقط"
 
-#: apps/expenses/models.py:41
+#: apps/expenses/models.py:43
 msgid "Equal – Stores Only"
 msgstr "المحلات التجارية فقط"
 
-#: apps/expenses/models.py:42
+#: apps/expenses/models.py:44
 msgid "Custom Subset"
 msgstr "توزيع مخصص"
 
-#: apps/expenses/models.py:46
+#: apps/expenses/models.py:48 apps/plans/models.py:60
 msgid "Monthly"
 msgstr "شهري"
 
-#: apps/expenses/models.py:47
+#: apps/expenses/models.py:49
 msgid "Quarterly"
 msgstr "ربع سنوي"
 
-#: apps/expenses/models.py:48
+#: apps/expenses/models.py:50
 msgid "Annual"
 msgstr "سنوي"
 
-#: apps/expenses/serializers.py:143
+#: apps/expenses/models.py:54
+msgid "Cost"
+msgstr "تكلفة"
+
+#: apps/expenses/models.py:55
+msgid "Monthly subscription"
+msgstr "الاشتراك الشهري"
+
+#: apps/expenses/models.py:56
+msgid "Late fee"
+msgstr "غرامة تأخير"
+
+#: apps/expenses/serializers.py:182
 msgid "amount must be greater than 0."
 msgstr "يجب أن يكون المبلغ أكبر من صفر."
 
-#: apps/expenses/serializers.py:153
+#: apps/expenses/serializers.py:189
+msgid "An expense cannot be moved to another building."
+msgstr "لا يمكن نقل المصروف إلى عمارة أخرى."
+
+#: apps/expenses/serializers.py:193
+msgid "This category belongs to another building."
+msgstr "هذه الفئة تابعة لعمارة أخرى."
+
+#: apps/expenses/serializers.py:205
+msgid "Every unit in a custom split must belong to this building."
+msgstr "يجب أن تنتمي كل وحدة في التقسيم المخصص إلى هذه العمارة."
+
+#: apps/expenses/serializers.py:213
 msgid "frequency is required when is_recurring is true."
 msgstr "التكرار مطلوب عند تفعيل خيار المصروف المتكرر."
 
-#: apps/expenses/views.py:228
+#: apps/expenses/serializers.py:230
+msgid ""
+"This expense has payments. Its amount, split and units cannot be changed; "
+"reverse the payments or add a credit note instead."
+msgstr ""
+"عليه مدفوعات. لا يمكن تغيير مبلغ هذا المصروف أو تقسيمه أو وحداته؛ قم بإلغاء "
+"المدفوعات أو أضف إشعار دائن بدلاً من ذلك."
+
+#: apps/expenses/views.py:209
+#, python-format
+msgid "category must be one of: %(names)s."
+msgstr "الفئة يجب أن تكون إحدى: %(names)s."
+
+#: apps/expenses/views.py:238
+msgid "Only the building's chair can decide on this expense."
+msgstr "رئيس الاتحاد وحده يمكنه البتّ في هذا المصروف."
+
+#: apps/expenses/views.py:240
+msgid "This expense is not waiting for approval."
+msgstr "هذا المصروف لا ينتظر الاعتماد."
+
+#: apps/expenses/views.py:274
+msgid "A vote on this expense is already open."
+msgstr "يوجد تصويت مفتوح على هذا المصروف بالفعل."
+
+#: apps/expenses/views.py:276
+#, python-format
+msgid "Approve this expense: %(title)s (%(amount)s)"
+msgstr "الموافقة على مصروف: %(title)s (%(amount)s)"
+
+#: apps/expenses/views.py:280
+msgid "Approve"
+msgstr "موافق"
+
+#: apps/expenses/views.py:280
+msgid "Reject"
+msgstr "غير موافق"
+
+#: apps/expenses/views.py:292
+msgid "New vote"
+msgstr "تصويت جديد"
+
+#: apps/expenses/views.py:327
+msgid ""
+"This expense has payments and cannot be deleted. Reverse the payments or add "
+"a credit note instead."
+msgstr ""
+"عليه مدفوعات ولا يمكن حذفه. قم بإلغاء المدفوعات أو أضف إشعار دائن بدلاً من "
+"ذلك."
+
+#: apps/expenses/views.py:407
 msgid "No file provided. Use multipart/form-data with key 'file'."
 msgstr "لم يتم تقديم ملف. استخدم multipart/form-data بمفتاح 'file'."
 
-#: apps/expenses/views.py:243
+#: apps/expenses/views.py:422
 #, python-format
 msgid "Unsupported file type '%(mime_type)s'. Allowed types: %(allowed_types)s"
-msgstr "نوع الملف '%(mime_type)s' غير مدعوم. الأنواع المسموحة: %(allowed_types)s"
+msgstr ""
+"نوع الملف '%(mime_type)s' غير مدعوم. الأنواع المسموحة: %(allowed_types)s"
 
-#: apps/expenses/views.py:255
+#: apps/expenses/views.py:434
 #, python-format
 msgid "File size %(size)s bytes exceeds the %(limit)s MB limit."
 msgstr "حجم الملف %(size)s بايت يتجاوز الحد المسموح %(limit)s ميغابايت."
+
+#: apps/governance/serializers.py:30
+msgid "The closing time must be in the future."
+msgstr "يجب أن يكون وقت الإغلاق في المستقبل."
+
+#: apps/governance/views.py:69
+msgid "This vote is closed."
+msgstr "هذا التصويت مغلق."
+
+#: apps/governance/views.py:74
+msgid "Choose one of this vote's options for your unit."
+msgstr "اختر أحد خيارات التصويت لوحدتك."
+
+#: apps/governance/views.py:76
+msgid "Only an owner of this unit can vote for it."
+msgstr "مالك الوحدة وحده يمكنه التصويت عنها."
+
+#: apps/governance/views.py:86
+msgid "This vote is already closed."
+msgstr "تم إغلاق هذا التصويت من قبل."
+
+#: apps/governance/views.py:128 apps/governance/views.py:179
+#: apps/governance/views.py:192
+msgid "Only the building's secretary or admins can keep the minutes."
+msgstr "أمين السر أو مديرو العمارة وحدهم يمكنهم تدوين المحاضر وحفظ المستندات."
+
+#: apps/governance/views.py:182
+msgid "Attach a file."
+msgstr "أرفق ملفاً."
+
+#: apps/governance/views.py:185
+msgid "Only PDF, JPEG or PNG files are allowed."
+msgstr "يُسمح بملفات PDF أو صور JPEG وPNG فقط."
+
+#: apps/governance/views.py:187
+msgid "The file is too large."
+msgstr "حجم الملف كبير جداً."
+
+#: apps/maintenance/models.py:13
+msgid "Elevator"
+msgstr "المصعد"
+
+#: apps/maintenance/models.py:14
+msgid "Stairs"
+msgstr "السلم"
+
+#: apps/maintenance/models.py:15
+msgid "Cleaning"
+msgstr "النظافة"
+
+#: apps/maintenance/models.py:16
+msgid "Electricity"
+msgstr "الكهرباء"
+
+#: apps/maintenance/models.py:17
+msgid "Water"
+msgstr "المياه"
+
+#: apps/maintenance/models.py:18 apps/payments/models.py:18
+#: apps/payments/models.py:116
+msgid "Other"
+msgstr "أخرى"
+
+#: apps/maintenance/models.py:22 apps/support/models.py:9
+msgid "Open"
+msgstr "مفتوح"
+
+#: apps/maintenance/models.py:23 apps/maintenance/models.py:52
+msgid "In progress"
+msgstr "جاري الإصلاح"
+
+#: apps/maintenance/models.py:24 apps/maintenance/models.py:53
+msgid "Done"
+msgstr "تم"
+
+#: apps/maintenance/models.py:51
+msgid "Assigned"
+msgstr "تم الإسناد"
+
+#: apps/maintenance/views.py:87
+msgid "Only the building's admins and board can manage work orders."
+msgstr "مديرو العمارة وأعضاء الهيئة وحدهم يمكنهم إدارة أوامر العمل."
+
+#: apps/maintenance/views.py:93
+msgid "This report already has a work order."
+msgstr "لهذا البلاغ أمر عمل بالفعل."
 
 #: apps/notifications/models.py:9
 msgid "Payment Due"
@@ -307,549 +704,378 @@ msgstr "مستخدم جديد مسجل"
 msgid "Announcement"
 msgstr "إشعار من إدارة المبنى"
 
-#: apps/notifications/models.py:19
+#: apps/notifications/models.py:16
+msgid "Message"
+msgstr "الرسالة"
+
+#: apps/notifications/models.py:20
 msgid "Email"
 msgstr "البريد الإلكتروني"
 
-#: apps/notifications/models.py:20
+#: apps/notifications/models.py:21
 msgid "Push Notification"
 msgstr "إشعار الجهاز"
 
-#: apps/notifications/models.py:21
+#: apps/notifications/models.py:22
 msgid "In-App"
 msgstr "داخل التطبيق"
 
-#: apps/notifications/views.py:116
+#: apps/notifications/models.py:67
+msgid "Due soon"
+msgstr "يستحق قريباً"
+
+#: apps/notifications/views.py:174
 msgid "You have been blocked from sending messages."
 msgstr "تم حظرك من إرسال الرسائل."
 
-#: apps/notifications/views.py:127
+#: apps/notifications/views.py:185
 msgid "building_id is required."
 msgstr "معرّف المبنى مطلوب."
 
-#: apps/notifications/views.py:129
+#: apps/notifications/views.py:187
 msgid "title and message are required."
 msgstr "العنوان والرسالة مطلوبان."
 
-#: apps/notifications/views.py:137
+#: apps/notifications/views.py:195
 msgid "You are not a member of this building."
 msgstr "أنت لست عضواً في هذا المبنى."
 
-#: apps/notifications/views.py:157
+#: apps/notifications/views.py:215
 msgid "You have been blocked from sending individual messages."
 msgstr "تم حظرك من إرسال الرسائل الفردية."
 
-#: apps/notifications/views.py:161
+#: apps/notifications/views.py:219
 msgid "recipient_ids is required for individual send."
 msgstr "معرّفات المستلمين مطلوبة للإرسال الفردي."
 
-#: apps/notifications/views.py:167
+#: apps/notifications/views.py:225
 msgid "Invalid recipient_type."
 msgstr "نوع المستلم غير صالح."
 
-#: apps/payments/models.py:12
+#: apps/operations/views.py:46
+msgid "Only the building's admins and board can change this."
+msgstr "مديرو العمارة وأعضاء الهيئة وحدهم يمكنهم تعديل هذا."
+
+#: apps/payments/allocation.py:56
+msgid "Each expense can appear only once."
+msgstr "يمكن ذكر كل مصروف مرة واحدة فقط."
+
+#: apps/payments/allocation.py:59
+msgid ""
+"An allocated expense is not owed by this apartment (or is already paid)."
+msgstr ""
+"أحد المصروفات المخصّص لها مبلغ غير مستحق على هذه الوحدة (أو مدفوع بالفعل)."
+
+#: apps/payments/allocation.py:63
+msgid "Each allocation needs a valid amount."
+msgstr "يلزم لكل تخصيص مبلغ صحيح."
+
+# Messages added with the payments, invites, reminders and account features
+#: apps/payments/allocation.py:66 apps/payments/serializers.py:71
+msgid "Allocated amount cannot be negative."
+msgstr "لا يمكن أن يكون المبلغ المخصّص سالباً."
+
+#: apps/payments/allocation.py:69
+#, python-format
+msgid ""
+"Allocation for '%(title)s' (%(value)s) is more than this apartment still "
+"owes (%(remaining)s)."
+msgstr ""
+"المبلغ المخصّص للمصروف «%(title)s» (%(value)s) أكبر مما لا يزال مستحقاً على "
+"هذه الوحدة (%(remaining)s)."
+
+#: apps/payments/allocation.py:76 apps/payments/serializers.py:185
+#, python-format
+msgid "Total allocated (%(sum)s) cannot exceed amount paid (%(amount)s)."
+msgstr ""
+"مجموع المبالغ المخصّصة (%(sum)s) لا يمكن أن يزيد على المبلغ المدفوع "
+"(%(amount)s)."
+
+#: apps/payments/models.py:13
 msgid "Cash"
 msgstr "نقداً"
 
-#: apps/payments/models.py:13
+#: apps/payments/models.py:14
 msgid "Bank Transfer"
 msgstr "تحويل بنكي"
 
-#: apps/payments/models.py:14
+#: apps/payments/models.py:15
 msgid "Cheque"
 msgstr "شيك"
 
-#: apps/payments/models.py:15 apps/payments/models.py:58
-msgid "Other"
-msgstr "أخرى"
+#: apps/payments/models.py:16
+msgid "Mobile Wallet"
+msgstr "محفظة موبايل"
 
-#: apps/payments/models.py:53
+#: apps/payments/models.py:17
+msgid "InstaPay"
+msgstr "إنستا باي"
+
+#: apps/payments/models.py:100
+msgid ""
+"Amount of the payment allocated to this expense. NULL = legacy/unspecified."
+msgstr "مبلغ الدفعة المخصص لهذا المصروف. فارغ = قديم/غير محدد."
+
+#: apps/payments/models.py:111
 msgid "Vehicle"
 msgstr "مركبة"
 
-#: apps/payments/models.py:54
+#: apps/payments/models.py:112
 msgid "Equipment"
 msgstr "معدات"
 
-#: apps/payments/models.py:55
+#: apps/payments/models.py:113
 msgid "Furniture"
 msgstr "أثاث"
 
-#: apps/payments/models.py:56
+#: apps/payments/models.py:114
 msgid "Electronics"
 msgstr "إلكترونيات"
 
-#: apps/payments/models.py:57
+#: apps/payments/models.py:115
 msgid "Property"
 msgstr "عقار"
 
-#: apps/payments/serializers.py:100
+#: apps/payments/models.py:165 apps/plans/models.py:65
+msgid "Pending"
+msgstr "قيد الانتظار"
+
+#: apps/payments/models.py:166 apps/plans/models.py:66
+msgid "Confirmed"
+msgstr "مؤكَّد"
+
+#: apps/payments/models.py:167 apps/plans/models.py:67
+msgid "Rejected"
+msgstr "مرفوض"
+
+#: apps/payments/models.py:181
+msgid "InstaPay transfer reference"
+msgstr "رقم عملية التحويل عبر إنستا باي"
+
+#: apps/payments/serializers.py:24
+msgid "sale_price must be greater than zero."
+msgstr "سعر البيع يجب أن يكون أكبر من صفر."
+
+#: apps/payments/serializers.py:46
+msgid "An asset cannot be moved to another building."
+msgstr "لا يمكن نقل الأصل إلى عمارة أخرى."
+
+#: apps/payments/serializers.py:155
 msgid "amount_paid must be greater than zero."
 msgstr "المبلغ المدفوع يجب أن يكون أكبر من صفر."
 
-#: apps/payments/serializers.py:116
+#: apps/payments/serializers.py:172
 #, python-format
 msgid "Expense '%(title)s' has not been assigned to the specified apartment."
 msgstr "المصروف '%(title)s' لم يتم تعيينه للوحدة المحددة."
 
-#: apps/payments/views.py:136
-msgid "You do not have permission to view this receipt."
-msgstr "ليس لديك صلاحية لعرض هذا الإيصال."
-
-#: apps/payments/views.py:155
-msgid "Amount Paid"
-msgstr "المبلغ المدفوع"
-
-#: apps/payments/views.py:156
-msgid "Payment Date"
-msgstr "تاريخ الدفع"
-
-#: apps/payments/views.py:157
-msgid "Payment Method"
-msgstr "طريقة الدفع"
-
-#: apps/payments/views.py:158
-msgid "For Expenses"
-msgstr "عن مصروفات"
-
-#: apps/payments/views.py:159
-msgid "Balance Before"
-msgstr "الرصيد قبل"
-
-#: apps/payments/views.py:160
-msgid "Balance After"
-msgstr "الرصيد بعد"
-
-#: apps/payments/views.py:161
-msgid "Recorded By"
-msgstr "سُجّل بواسطة"
-
-#: apps/payments/views.py:162
-msgid "Notes"
-msgstr "ملاحظات"
-
-#: apps/payments/views.py:326
-msgid "This asset has already been sold."
-msgstr "تم بيع هذا الأصل بالفعل."
-
-#: apps/payments/views.py:331
-msgid "sale_date and sale_price are required."
-msgstr "تاريخ البيع وسعر البيع مطلوبان."
-
-#: config/settings/base.py:128
-msgid "English"
-msgstr "English"
-
-#: config/settings/base.py:129
-msgid "العربية"
-msgstr "العربية"
-
-# Messages added with the payments, invites, reminders and account features
-
-msgid "Allocated amount cannot be negative."
-msgstr "لا يمكن أن يكون المبلغ المخصّص سالباً."
-
-msgid "Allocation for '%(title)s' (%(value)s) is more than this apartment still owes (%(remaining)s)."
-msgstr "المبلغ المخصّص للمصروف «%(title)s» (%(value)s) أكبر مما لا يزال مستحقاً على هذه الوحدة (%(remaining)s)."
-
-msgid "An allocated expense is not owed by this apartment (or is already paid)."
-msgstr "أحد المصروفات المخصّص لها مبلغ غير مستحق على هذه الوحدة (أو مدفوع بالفعل)."
-
-msgid "Cleaning"
-msgstr "النظافة"
-
-msgid "Confirmed"
-msgstr "مؤكَّد"
-
-msgid "Done"
-msgstr "تم"
-
-msgid "Due soon"
-msgstr "يستحق قريباً"
-
-msgid "Each allocation needs a valid amount."
-msgstr "يلزم لكل تخصيص مبلغ صحيح."
-
-msgid "Each expense can appear only once."
-msgstr "يمكن ذكر كل مصروف مرة واحدة فقط."
-
-msgid "Electricity"
-msgstr "الكهرباء"
-
-msgid "Elevator"
-msgstr "المصعد"
-
-msgid "If that email is registered, a reset link has been sent."
-msgstr "إذا كان هذا البريد مسجلاً لدينا فقد أرسلنا إليه رابط إعادة التعيين."
-
-msgid "In progress"
-msgstr "جاري الإصلاح"
-
-msgid "InstaPay"
-msgstr "إنستا باي"
-
-msgid "InstaPay transfer reference"
-msgstr "رقم عملية التحويل عبر إنستا باي"
-
-msgid "Open"
-msgstr "مفتوح"
-
-msgid "Password has been reset. You can now sign in."
-msgstr "تمت إعادة تعيين كلمة المرور. يمكنك تسجيل الدخول الآن."
-
-msgid "Password is incorrect."
-msgstr "كلمة المرور غير صحيحة."
-
-msgid "Pending"
-msgstr "قيد الانتظار"
-
-msgid "Rejected"
-msgstr "مرفوض"
-
-msgid "Request sent. The building admin will review it."
-msgstr "تم إرسال الطلب. سيراجعه مدير العمارة."
-
-msgid "Stairs"
-msgstr "السلم"
-
-msgid "This claim was already reviewed."
-msgstr "تمت مراجعة هذا الطلب من قبل."
-
-msgid "This invite was sent to a different email address."
-msgstr "هذه الدعوة أُرسلت إلى بريد إلكتروني آخر."
-
-msgid "This request was already reviewed."
-msgstr "تمت مراجعة هذا الطلب من قبل."
-
-msgid "This reset link is invalid or has expired."
-msgstr "رابط إعادة التعيين غير صالح أو انتهت صلاحيته."
-
-msgid "Total allocated (%(sum)s) cannot exceed amount paid (%(amount)s)."
-msgstr "مجموع المبالغ المخصّصة (%(sum)s) لا يمكن أن يزيد على المبلغ المدفوع (%(amount)s)."
-
-msgid "Water"
-msgstr "المياه"
-
-msgid "You already asked to claim this unit."
-msgstr "لقد طلبت الانضمام إلى هذه الوحدة من قبل."
-
-msgid "You are the administrator of a building. Hand it over to another admin before deleting your account."
-msgstr "أنت مدير لإحدى العمارات. سلّمها لمدير آخر قبل حذف حسابك."
-
-msgid "You must accept the Terms of Service and Privacy Policy."
-msgstr "يجب الموافقة على شروط الاستخدام وسياسة الخصوصية."
-
-msgid "Your account has been deleted."
-msgstr "تم حذف حسابك."
-
+#: apps/payments/serializers.py:241
 msgid "amount must be greater than zero."
 msgstr "يجب أن يكون المبلغ أكبر من صفر."
 
-msgid "month must look like 2026-10."
-msgstr "الشهر يجب أن يكون بصيغة 2026-10."
-
-msgid "Only the building's primary administrator can hand it over."
-msgstr "المدير الأساسي للعمارة هو وحده من يمكنه نقل الإدارة."
-
-msgid "Choose one of the building's co-admins. Add them as a co-admin first."
-msgstr "اختر أحد المديرين المشاركين في العمارة. أضفه كمدير مشارك أولاً."
-
-msgid "Renters cannot invite other residents."
-msgstr "لا يمكن للمستأجر دعوة سكان آخرين."
-
-msgid "Renters cannot remove other residents."
-msgstr "لا يمكن للمستأجر إنهاء ارتباط سكان آخرين."
-
-msgid "That renter does not live in this unit."
-msgstr "هذا المستأجر لا يسكن في هذه الوحدة."
-
-msgid "Renters join a unit through an invite from its owner."
-msgstr "ينضم المستأجر إلى الوحدة عبر دعوة من مالكها."
-
-msgid "This vote is closed."
-msgstr "هذا التصويت مغلق."
-
-msgid "Choose one of this vote's options for your unit."
-msgstr "اختر أحد خيارات التصويت لوحدتك."
-
-msgid "This vote is already closed."
-msgstr "تم إغلاق هذا التصويت من قبل."
-
-msgid "Only an owner of this unit can vote for it."
-msgstr "مالك الوحدة وحده يمكنه التصويت عنها."
-
-msgid "The closing time must be in the future."
-msgstr "يجب أن يكون وقت الإغلاق في المستقبل."
-
-msgid "More than half of the votes cast"
-msgstr "أكثر من نصف الأصوات"
-
-msgid "At least two thirds of the votes cast"
-msgstr "ثلثا الأصوات على الأقل"
-
-msgid "Enter a valid amount, billing day and due days."
-msgstr "أدخل مبلغاً ويوم تحصيل وعدد أيام استحقاق صحيحة."
-
-msgid "Amount must be above zero, billing day 1-28 and due days 0-60."
-msgstr "يجب أن يكون المبلغ أكبر من صفر، ويوم التحصيل بين 1 و28، وأيام الاستحقاق بين 0 و60."
-
-msgid "Cost"
-msgstr "تكلفة"
-
-msgid "Monthly subscription"
-msgstr "الاشتراك الشهري"
-
-msgid "Late fee"
-msgstr "غرامة تأخير"
-
-msgid "The rate factor must be between 0.1 and 10."
-msgstr "يجب أن يكون المعامل بين 0.1 و10."
-
-msgid "Late fee: choose none, a fixed amount or a percent (up to 100), and 0-60 grace days."
-msgstr "غرامة التأخير: اختر بدون أو مبلغاً ثابتاً أو نسبة (حتى 100) وأيام سماح من 0 إلى 60."
-
-msgid "Only the building's admins can assign board titles."
-msgstr "مديرو العمارة وحدهم يمكنهم تعيين المناصب."
-
-msgid "Choose chair, treasurer or secretary."
-msgstr "اختر رئيساً أو أمين صندوق أو أمين سر."
-
-msgid "That person is not a member of this building."
-msgstr "هذا الشخص ليس عضواً في هذه العمارة."
-
-msgid "Only the building's admins or treasurer can review this."
-msgstr "مديرو العمارة أو أمين الصندوق وحدهم يمكنهم مراجعة هذا."
-
-msgid "Chair"
-msgstr "الرئيس"
-
-msgid "Treasurer"
-msgstr "أمين الصندوق"
-
-msgid "Secretary"
-msgstr "أمين السر"
-
-msgid "Only the building's chair can decide on this expense."
-msgstr "رئيس الاتحاد وحده يمكنه البتّ في هذا المصروف."
-
-msgid "This expense is not waiting for approval."
-msgstr "هذا المصروف لا ينتظر الاعتماد."
-
-msgid "A vote on this expense is already open."
-msgstr "يوجد تصويت مفتوح على هذا المصروف بالفعل."
-
-msgid "Only the building's secretary or admins can keep the minutes."
-msgstr "أمين السر أو مديرو العمارة وحدهم يمكنهم تدوين المحاضر وحفظ المستندات."
-
-msgid "Attach a file."
-msgstr "أرفق ملفاً."
-
-msgid "Only PDF, JPEG or PNG files are allowed."
-msgstr "يُسمح بملفات PDF أو صور JPEG وPNG فقط."
-
-msgid "The file is too large."
-msgstr "حجم الملف كبير جداً."
-
-msgid "Contract"
-msgstr "عقد"
-
-msgid "Bylaws"
-msgstr "لائحة"
-
-msgid "Receipt / proof of work"
-msgstr "إيصال / إثبات عمل"
-
-msgid "Minutes"
-msgstr "محضر"
-
-msgid "Only the building's admins and board can change this."
-msgstr "مديرو العمارة وأعضاء الهيئة وحدهم يمكنهم تعديل هذا."
-
-msgid "Only the building's admins and board can manage work orders."
-msgstr "مديرو العمارة وأعضاء الهيئة وحدهم يمكنهم إدارة أوامر العمل."
-
-msgid "This report already has a work order."
-msgstr "لهذا البلاغ أمر عمل بالفعل."
-
-msgid "Assigned"
-msgstr "تم الإسناد"
-
-msgid "Notification preferences must be on/off switches for: %(keys)s."
-msgstr "تفضيلات الإشعارات يجب أن تكون مفاتيح تشغيل/إيقاف للبنود: %(keys)s."
-
-msgid "Attach a CSV file."
-msgstr "أرفق ملف CSV."
-
-msgid "The file is too large (1 MB at most)."
-msgstr "الملف كبير جداً (1 ميجابايت كحد أقصى)."
-
-msgid "Save the file as UTF-8 CSV."
-msgstr "احفظ الملف بصيغة CSV وترميز UTF-8."
-
-msgid "Missing columns: %(cols)s."
-msgstr "أعمدة ناقصة: %(cols)s."
-
-msgid "Unknown columns: %(cols)s."
-msgstr "أعمدة غير معروفة: %(cols)s."
-
-msgid "The file has no rows."
-msgstr "الملف لا يحتوي على صفوف."
-
-msgid "At most %(n)s rows per file."
-msgstr "الحد الأقصى %(n)s صف في الملف."
-
-msgid "unit_number is required."
-msgstr "رقم الوحدة مطلوب."
-
-msgid "This unit already exists in the building."
-msgstr "هذه الوحدة موجودة بالفعل في العمارة."
-
-msgid "This unit appears twice in the file."
-msgstr "هذه الوحدة مكررة في الملف."
-
-msgid "type must be apartment or store."
-msgstr "النوع يجب أن يكون apartment أو store."
-
-msgid "floor must be between 0 and %(n)s."
-msgstr "الطابق يجب أن يكون بين 0 و%(n)s."
-
-msgid "floor must be a whole number."
-msgstr "الطابق يجب أن يكون رقماً صحيحاً."
-
-msgid "size_sqm must be a positive number."
-msgstr "المساحة يجب أن تكون رقماً موجباً."
-
-msgid "category must be one of: %(names)s."
-msgstr "الفئة يجب أن تكون إحدى: %(names)s."
-
-msgid "year must look like 2026."
-msgstr "السنة يجب أن تكون بالشكل 2026."
-
-msgid "A unit cannot be moved to another building."
-msgstr "لا يمكن نقل الوحدة إلى عمارة أخرى."
-
-msgid "An asset cannot be moved to another building."
-msgstr "لا يمكن نقل الأصل إلى عمارة أخرى."
-
-msgid "An expense cannot be moved to another building."
-msgstr "لا يمكن نقل المصروف إلى عمارة أخرى."
-
-msgid "This category belongs to another building."
-msgstr "هذه الفئة تابعة لعمارة أخرى."
-
-msgid "Every unit in a custom split must belong to this building."
-msgstr "يجب أن تنتمي كل وحدة في التقسيم المخصص إلى هذه العمارة."
-
+#: apps/payments/views.py:177
 msgid "A reason is required to reverse a payment."
 msgstr "السبب مطلوب لإلغاء الدفعة."
 
+#: apps/payments/views.py:182
 msgid "A reversal cannot itself be reversed."
 msgstr "لا يمكن إلغاء عملية إلغاء."
 
+#: apps/payments/views.py:184
 msgid "This payment was already reversed."
 msgstr "تم إلغاء هذه الدفعة مسبقاً."
 
-msgid "sale_price must be greater than zero."
-msgstr "سعر البيع يجب أن يكون أكبر من صفر."
+#: apps/payments/views.py:364
+msgid "You do not have permission to view this receipt."
+msgstr "ليس لديك صلاحية لعرض هذا الإيصال."
 
-msgid "This expense has payments. Its amount, split and units cannot be changed; reverse the payments or add a credit note instead."
-msgstr "عليه مدفوعات. لا يمكن تغيير مبلغ هذا المصروف أو تقسيمه أو وحداته؛ قم بإلغاء المدفوعات أو أضف إشعار دائن بدلاً من ذلك."
+#: apps/payments/views.py:606
+msgid "This asset has already been sold."
+msgstr "تم بيع هذا الأصل بالفعل."
 
-msgid "This expense has payments and cannot be deleted. Reverse the payments or add a credit note instead."
-msgstr "عليه مدفوعات ولا يمكن حذفه. قم بإلغاء المدفوعات أو أضف إشعار دائن بدلاً من ذلك."
-
-msgid "Only people already in the building can be made owners. Invite them instead."
-msgstr "لا يمكن تعيين مالك إلا من الأشخاص الموجودين في المبنى. قم بدعوته بدلاً من ذلك."
-
-msgid "A plan payment for this building is already waiting for review."
-msgstr "توجد دفعة باقة لهذا المبنى بانتظار المراجعة."
-
+#: apps/payments/views.py:672
 msgid "You cannot review a payment claim for a unit you own or rent."
 msgstr "لا يمكنك مراجعة مطالبة دفع لوحدة تملكها أو تستأجرها."
 
-msgid "You are the last platform owner. Make someone else a platform owner first."
-msgstr "أنت آخر مالك للمنصة. عيّن مالكاً آخر للمنصة أولاً."
+#: apps/payments/views.py:706 apps/payments/views.py:736
+msgid "This claim was already reviewed."
+msgstr "تمت مراجعة هذا الطلب من قبل."
 
-msgid "You still owe a balance on your unit. Send confirm_balance to delete your account anyway."
-msgstr "ما زال عليك رصيد مستحق على وحدتك. أكّد (confirm_balance) لحذف حسابك رغم ذلك."
-
-msgid "Your plan's unit limit is reached. Upgrade the plan to add more units."
-msgstr "تم بلوغ الحد الأقصى للوحدات في باقتك. قم بترقية الباقة لإضافة المزيد من الوحدات."
-
-msgid "Monthly subscription billing is part of the Standard and Plus plans."
-msgstr "الفوترة بالاشتراك الشهري جزء من باقتي القياسية وبلس."
-
-msgid "The annual report is part of the Plus plan."
-msgstr "التقرير السنوي جزء من باقة بلس."
-
-msgid "Mobile Wallet"
-msgstr "محفظة موبايل"
-
-msgid "Amount of the payment allocated to this expense. NULL = legacy/unspecified."
-msgstr "مبلغ الدفعة المخصص لهذا المصروف. فارغ = قديم/غير محدد."
-
+#: apps/plans/models.py:20
 msgid "Empty = unlimited"
 msgstr "فارغ = غير محدود"
 
+#: apps/plans/models.py:21
 msgid "Any of: annual_report, subscriptions"
 msgstr "أي من: annual_report, subscriptions"
 
+#: apps/plans/models.py:39
 msgid "Days monthly billing keeps running after a paid plan or trial ends"
-msgstr "عدد الأيام التي تستمر فيها الفوترة الشهرية بعد انتهاء الباقة المدفوعة أو الفترة التجريبية"
+msgstr ""
+"عدد الأيام التي تستمر فيها الفوترة الشهرية بعد انتهاء الباقة المدفوعة أو "
+"الفترة التجريبية"
 
+#: apps/plans/models.py:61
 msgid "Yearly"
 msgstr "سنوي"
 
+#: apps/plans/models.py:78
 msgid "The price when it was requested"
 msgstr "السعر وقت الطلب"
 
+#: apps/plans/views.py:50 apps/plans/views.py:94
 msgid "Not found."
 msgstr "غير موجود."
 
+#: apps/plans/views.py:78
 msgid "Only a building admin can pay for a plan."
 msgstr "يمكن لمدير المبنى فقط دفع ثمن الباقة."
 
+#: apps/plans/views.py:84
 msgid "This plan is free; there is nothing to pay."
 msgstr "هذه الباقة مجانية؛ لا يوجد ما يجب دفعه."
 
+#: apps/plans/views.py:89
+msgid "A plan payment for this building is already waiting for review."
+msgstr "توجد دفعة باقة لهذا المبنى بانتظار المراجعة."
+
+#: apps/plans/views.py:98
 msgid "This payment was already reviewed."
 msgstr "تمت مراجعة هذه الدفعة بالفعل."
 
+#: apps/plans/views.py:138
 msgid "Trial and grace days must be whole numbers."
 msgstr "يجب أن تكون أيام التجربة والسماح أعداداً صحيحة."
 
+#: apps/support/models.py:10
 msgid "Closed"
 msgstr "مغلق"
 
+#: apps/support/models.py:23
 msgid "The screen the user was on"
 msgstr "الشاشة التي كان المستخدم عليها"
 
-msgid "Enter a valid email address."
-msgstr "أدخل عنوان بريد إلكتروني صالحاً."
+#: config/settings/base.py:139
+msgid "English"
+msgstr "English"
 
-msgid "At least one building must be assigned to an admin user."
-msgstr "يجب تعيين مبنى واحد على الأقل لمستخدم مدير."
+#: config/settings/base.py:140
+msgid "العربية"
+msgstr "العربية"
 
-msgid "You do not manage all selected buildings."
-msgstr "أنت لا تدير جميع المباني المحددة."
+#~ msgid "email is required."
+#~ msgstr "البريد الإلكتروني مطلوب."
 
-msgid "One or more apartments do not exist."
-msgstr "شقة واحدة أو أكثر غير موجودة."
+#~ msgid "Current password is incorrect."
+#~ msgstr "كلمة المرور الحالية غير صحيحة."
 
-msgid "You do not manage the building(s) for all selected apartments."
-msgstr "أنت لا تدير مبنى (مباني) جميع الشقق المحددة."
+#~ msgid "New passwords do not match."
+#~ msgstr "كلمتا المرور الجديدتان غير متطابقتين."
 
-msgid "Message"
-msgstr "الرسالة"
+#~ msgid "Passwords do not match."
+#~ msgstr "كلمتا المرور غير متطابقتين."
 
-msgid "Approve this expense: %(title)s (%(amount)s)"
-msgstr "الموافقة على مصروف: %(title)s (%(amount)s)"
+#, python-format
+#~ msgid "Password reset for %(email)s."
+#~ msgstr "تم إعادة تعيين كلمة المرور لـ %(email)s."
 
-msgid "Approve"
-msgstr "موافق"
+#~ msgid "Password must be at least 8 characters."
+#~ msgstr "يجب أن تتكون كلمة المرور من ٨ أحرف على الأقل."
 
-msgid "Reject"
-msgstr "غير موافق"
+#~ msgid "Password must contain at least one uppercase letter."
+#~ msgstr "يجب أن تحتوي كلمة المرور على حرف كبير واحد على الأقل."
 
-msgid "New vote"
-msgstr "تصويت جديد"
+#~ msgid "Password must contain at least one digit."
+#~ msgstr "يجب أن تحتوي كلمة المرور على رقم واحد على الأقل."
+
+#~ msgid "Password must contain at least one special character."
+#~ msgstr "يجب أن تحتوي كلمة المرور على رمز خاص واحد على الأقل."
+
+#~ msgid ""
+#~ "Password must be at least 8 characters and include an uppercase letter, a "
+#~ "digit, and a special character."
+#~ msgstr ""
+#~ "يجب أن تتكون كلمة المرور من ٨ أحرف على الأقل وتتضمن حرفاً كبيراً ورقماً "
+#~ "ورمزاً خاصاً."
+
+#~ msgid "No account found with this email address."
+#~ msgstr "لا يوجد حساب بهذا البريد الإلكتروني."
+
+#, python-format
+#~ msgid "Account locked. Try again in %(minutes)s minute(s)."
+#~ msgstr "تم قفل الحساب. أعد المحاولة بعد %(minutes)s دقيقة/دقائق."
+
+#~ msgid "Password changed successfully."
+#~ msgstr "تم تغيير كلمة المرور بنجاح."
+
+#~ msgid "Password change is not required."
+#~ msgstr "تغيير كلمة المرور غير مطلوب."
+
+#~ msgid "Amount Paid"
+#~ msgstr "المبلغ المدفوع"
+
+#~ msgid "Payment Date"
+#~ msgstr "تاريخ الدفع"
+
+#~ msgid "Payment Method"
+#~ msgstr "طريقة الدفع"
+
+#~ msgid "For Expenses"
+#~ msgstr "عن مصروفات"
+
+#~ msgid "Balance Before"
+#~ msgstr "الرصيد قبل"
+
+#~ msgid "Balance After"
+#~ msgstr "الرصيد بعد"
+
+#~ msgid "Recorded By"
+#~ msgstr "سُجّل بواسطة"
+
+#~ msgid "Notes"
+#~ msgstr "ملاحظات"
+
+#~ msgid "sale_date and sale_price are required."
+#~ msgstr "تاريخ البيع وسعر البيع مطلوبان."
+
+#~ msgid "If that email is registered, a reset link has been sent."
+#~ msgstr "إذا كان هذا البريد مسجلاً لدينا فقد أرسلنا إليه رابط إعادة التعيين."
+
+#~ msgid "Password has been reset. You can now sign in."
+#~ msgstr "تمت إعادة تعيين كلمة المرور. يمكنك تسجيل الدخول الآن."
+
+#~ msgid "Password is incorrect."
+#~ msgstr "كلمة المرور غير صحيحة."
+
+#~ msgid "This reset link is invalid or has expired."
+#~ msgstr "رابط إعادة التعيين غير صالح أو انتهت صلاحيته."
+
+#~ msgid "More than half of the votes cast"
+#~ msgstr "أكثر من نصف الأصوات"
+
+#~ msgid "At least two thirds of the votes cast"
+#~ msgstr "ثلثا الأصوات على الأقل"
+
+#~ msgid "Only the building's admins or treasurer can review this."
+#~ msgstr "مديرو العمارة أو أمين الصندوق وحدهم يمكنهم مراجعة هذا."
+
+#~ msgid "Chair"
+#~ msgstr "الرئيس"
+
+#~ msgid "Treasurer"
+#~ msgstr "أمين الصندوق"
+
+#~ msgid "Secretary"
+#~ msgstr "أمين السر"
+
+#~ msgid "Contract"
+#~ msgstr "عقد"
+
+#~ msgid "Bylaws"
+#~ msgstr "لائحة"
+
+#~ msgid "Receipt / proof of work"
+#~ msgstr "إيصال / إثبات عمل"
+
+#~ msgid "Minutes"
+#~ msgstr "محضر"

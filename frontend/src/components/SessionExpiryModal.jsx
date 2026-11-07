@@ -49,7 +49,7 @@ function getTokenExpiry(token) {
  */
 export default function SessionExpiryModal() {
   const { t } = useTranslation("common");
-  const { accessToken, refreshToken, setTokens, logout } = useAuthStore();
+  const { accessToken, setAccessToken, logout } = useAuthStore();
 
   const [showModal, setShowModal] = useState(false);
   const [secondsLeft, setSecondsLeft] = useState(WARNING_SECONDS);
@@ -90,17 +90,19 @@ export default function SessionExpiryModal() {
 
   const handleExtend = useCallback(async () => {
     try {
-      const { data } = await axios.post(`${BASE_URL}/auth/refresh/`, {
-        refresh: refreshToken,
-      });
-      setTokens(data.access, refreshToken);
+      const { data } = await axios.post(
+        `${BASE_URL}/auth/refresh/`,
+        undefined,
+        { withCredentials: true }
+      );
+      setAccessToken(data.access);
       setShowModal(false);
       clearInterval(countdownRef.current);
       // The useEffect watching accessToken will re-schedule the next warning.
     } catch {
       handleLogout();
     }
-  }, [refreshToken, setTokens, handleLogout]);
+  }, [setAccessToken, handleLogout]);
 
   // ── Schedule the warning when accessToken changes ────────────────────────
 

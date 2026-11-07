@@ -619,6 +619,9 @@ SENTRY_DSN=<your-sentry-dsn>
 
 # ── Frontend ──────────────────────────────────────────────────────────────────
 VITE_API_BASE_URL=https://abem.yourdomain.com/api/v1
+# Google Sign-In (frontend-only, public OAuth client ID — see https://console.cloud.google.com/apis/credentials).
+# Leave blank to hide the "Sign in with Google" button; email-OTP sign-in still works without it.
+VITE_GOOGLE_CLIENT_ID=
 ```
 
 > **Security tip:** Use a secrets manager such as [AWS Secrets Manager](https://docs.aws.amazon.com/secretsmanager/latest/userguide/intro.html), [HashiCorp Vault](https://developer.hashicorp.com/vault/docs), or [Doppler](https://docs.doppler.com/) to store and inject secrets at runtime.
@@ -1002,8 +1005,9 @@ The `frontend` container in `docker-compose.prod.yml` builds and serves the Reac
 ```bash
 cd /opt/abem/frontend
 
-# Set the production API URL
+# Set the production API URL (and optionally Google Sign-In's client ID)
 echo "VITE_API_BASE_URL=https://abem.yourdomain.com/api/v1" > .env.production
+echo "VITE_GOOGLE_CLIENT_ID=" >> .env.production
 
 # Install dependencies and build
 npm ci
