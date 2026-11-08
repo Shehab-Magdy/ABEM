@@ -93,6 +93,47 @@ export function formatPhone(phone, locale) {
   return phone;
 }
 
+/**
+ * Format a timestamp as a human-relative string ("2 hours ago", "just now").
+ * en → "2 hours ago"   ar → "منذ ساعتين"
+ * Falls back to formatDate for timestamps older than ~30 days.
+ */
+export function formatRelativeTime(date, locale) {
+  const loc = locale || currentLocale();
+  const d = date instanceof Date ? date : new Date(date);
+  if (Number.isNaN(d.getTime())) return String(date);
+
+  const diffMs = d.getTime() - Date.now();
+  const diffSeconds = Math.round(diffMs / 1000);
+  const absSeconds = Math.abs(diffSeconds);
+
+  if (absSeconds > 60 * 60 * 24 * 30) return formatDate(d, loc);
+
+  const divisions = [
+    { amount: 60, unit: "second" },
+    { amount: 60, unit: "minute" },
+    { amount: 24, unit: "hour" },
+    { amount: 30, unit: "day" },
+  ];
+
+  try {
+    const formatter = new Intl.RelativeTimeFormat(loc === "ar" ? "ar-EG" : "en-GB", {
+      numeric: "auto",
+    });
+    let duration = diffSeconds;
+    for (let i = 0; i < divisions.length; i++) {
+      const division = divisions[i];
+      if (Math.abs(duration) < division.amount) {
+        return formatter.format(Math.round(duration), division.unit);
+      }
+      duration /= division.amount;
+    }
+    return formatter.format(Math.round(duration), "day");
+  } catch {
+    return formatDate(d, loc);
+  }
+}
+
 // ── T-01: Eastern Arabic-Indic digit support ────────────────────────────────
 
 /**

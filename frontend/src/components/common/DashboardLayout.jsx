@@ -111,7 +111,7 @@ function NavSection({ title, items, currentPath }) {
 
 export default function DashboardLayout() {
   const { user, isAdmin, isPlatformOwner } = useAuth();
-  const { logout, refreshToken } = useAuthStore();
+  const { logout } = useAuthStore();
   const { t, i18n } = useTranslation(["common", "auth"]);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
@@ -145,7 +145,7 @@ export default function DashboardLayout() {
 
   const handleLogout = async () => {
     try {
-      await authApi.logout(refreshToken);
+      await authApi.logout();
     } catch { /* best-effort */ }
     logout();
     navigate("/login", { replace: true });

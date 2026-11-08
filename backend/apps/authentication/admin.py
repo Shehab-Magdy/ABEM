@@ -13,7 +13,6 @@ class UserAdmin(BaseUserAdmin):
         (None, {"fields": ("email", "password")}),
         ("Personal Info", {"fields": ("first_name", "last_name", "phone")}),
         ("Permissions", {"fields": ("role", "is_active", "is_staff", "is_superuser", "groups", "user_permissions")}),
-        ("Security", {"fields": ("failed_login_attempts", "locked_until")}),
         ("Preferences", {"fields": ("notification_preferences",)}),
     )
     add_fieldsets = (

@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useForm, Controller } from "react-hook-form";
@@ -9,14 +9,19 @@ import {
   Button,
   Card,
   CardContent,
+  Chip,
   CircularProgress,
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
+  Divider,
   FormControl,
   IconButton,
   InputLabel,
+  List,
+  ListItem,
+  ListItemText,
   MenuItem,
   Select,
   Snackbar,
@@ -32,6 +37,8 @@ import { useAuthStore } from "../../contexts/authStore";
 import { PrivateSEO } from "../../components/seo/SEO";
 import NotificationPreferences from "../../components/NotificationPreferences";
 import PhoneInput from "../../components/PhoneInput";
+import ConfirmDialog from "../../components/ConfirmDialog";
+import { formatRelativeTime } from "../../utils/formatters";
 
 export default function ProfilePage() {
   const { t, i18n } = useTranslation("profile");
@@ -39,18 +46,23 @@ export default function ProfilePage() {
   const storeSetUser = useAuthStore((s) => s.setUser);
   const [profileSuccess, setProfileSuccess] = useState(false);
   const [profileError, setProfileError] = useState(null);
-  const [pwSuccess, setPwSuccess] = useState(false);
-  const [pwError, setPwError] = useState(null);
   const [savingProfile, setSavingProfile] = useState(false);
-  const [savingPw, setSavingPw] = useState(false);
   const [uploadingPic, setUploadingPic] = useState(false);
   const [picError, setPicError] = useState(null);
   const [langSaving, setLangSaving] = useState(false);
   const [langSuccess, setLangSuccess] = useState(false);
+  const [revokeSuccess, setRevokeSuccess] = useState(false);
+  const [revokeError, setRevokeError] = useState(null);
+  const [revoking, setRevoking] = useState(false);
+  const [sessions, setSessions] = useState([]);
+  const [sessionsLoading, setSessionsLoading] = useState(true);
+  const [sessionsError, setSessionsError] = useState(null);
+  const [revokeSessionTarget, setRevokeSessionTarget] = useState(null);
+  const [sessionActionSuccess, setSessionActionSuccess] = useState(false);
+  const [sessionActionError, setSessionActionError] = useState(null);
   const fileInputRef = useRef(null);
 
   const profileForm = useForm({ defaultValues: { first_name: user?.first_name, last_name: user?.last_name, phone: user?.phone } });
-  const pwForm = useForm();
 
   // ── Profile picture upload ───────────────────────────────────────────────────
   const handlePictureChange = async (e) => {
@@ -90,36 +102,103 @@ export default function ProfilePage() {
     }
   };
 
-  // ── Change password ─────────────────────────────────────────────────────────
-  const onChangePassword = async (data) => {
-    setSavingPw(true);
-    setPwError(null);
-    setPwSuccess(false);
+  // ── Signed-in devices (sessions) ────────────────────────────────────────────
+  const fetchSessions = async () => {
+    setSessionsLoading(true);
+    setSessionsError(null);
     try {
-      await authApi.changePassword(data);
-      setPwSuccess(true);
-      pwForm.reset();
-    } catch (err) {
-      const detail = err.response?.data?.detail || err.response?.data;
-      setPwError(typeof detail === "string" ? detail : "Failed to change password.");
+      const res = await authApi.listSessions();
+      setSessions(res.data);
+    } catch {
+      setSessionsError(t("devicesListError", "Could not load your signed-in devices."));
     } finally {
-      setSavingPw(false);
+      setSessionsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchSessions();
+  }, []);
+
+  const handleRevokeSession = async () => {
+    const target = revokeSessionTarget;
+    try {
+      await authApi.revokeSession(target.id);
+      setRevokeSessionTarget(null);
+      setSessionActionSuccess(true);
+      setSessionActionError(null);
+      await fetchSessions();
+    } catch (err) {
+      if (err.response?.status === 400) {
+        // The session couldn't be revoked as "current" (shouldn't happen since
+        // the UI hides the revoke action on that row) — surface and refresh.
+        setRevokeSessionTarget(null);
+        setSessionActionError(err.response?.data?.detail || t("devicesRevokeError", "Could not sign out that device."));
+        await fetchSessions();
+        return;
+      }
+      throw err; // let ConfirmDialog show the error inline for other failures
+    }
+  };
+
+  // ── Log out of all other devices ────────────────────────────────────────────
+  const onRevokeAllDevices = async () => {
+    setRevoking(true);
+    setRevokeError(null);
+    setRevokeSuccess(false);
+    try {
+      await authApi.revokeAllDevices();
+      setRevokeSuccess(true);
+      await fetchSessions();
+    } catch {
+      setRevokeError(t("revokeDevicesError", "Could not log out other devices."));
+    } finally {
+      setRevoking(false);
     }
   };
 
   // ── Delete my account ───────────────────────────────────────────────────────
   const navigate = useNavigate();
   const [deleteOpen, setDeleteOpen] = useState(false);
-  const [deletePw, setDeletePw] = useState("");
+  const [deleteCode, setDeleteCode] = useState("");
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState(null);
   const [balanceOwed, setBalanceOwed] = useState(null); // set when the server asks to confirm an unpaid balance
+  const [sendingDeleteCode, setSendingDeleteCode] = useState(false);
+  const [deleteCodeSent, setDeleteCodeSent] = useState(false);
+
+  const handleSendDeleteCode = async () => {
+    setSendingDeleteCode(true);
+    setDeleteError(null);
+    try {
+      let { data } = await authApi.requestOtp(user?.email);
+      if (data.access) {
+        // This device is still marked "trusted" (from signing in here),
+        // so otp/request/ skipped emailing a code and just re-authenticated
+        // us instead — but deleting the account still needs a real code.
+        // Clear the trusted-device grant and ask for one again; this time
+        // the backend can't bypass it.
+        await authApi.revokeAllDevices();
+        ({ data } = await authApi.requestOtp(user?.email));
+      }
+      if (data.access) {
+        // Still bypassing somehow — surface rather than loop forever.
+        setDeleteError(t("errors:server_error"));
+        return;
+      }
+      setDeleteCodeSent(true);
+    } catch {
+      setDeleteError(t("errors:server_error"));
+    } finally {
+      setSendingDeleteCode(false);
+    }
+  };
 
   const handleDeleteAccount = async () => {
     setDeleting(true);
     setDeleteError(null);
     try {
-      await authApi.deleteAccount(deletePw, balanceOwed !== null);
+      await authApi.deleteAccount(deleteCode, balanceOwed !== null);
       useAuthStore.getState().logout();
       navigate("/login", { replace: true });
     } catch (err) {
@@ -294,48 +373,97 @@ export default function ProfilePage() {
         </CardContent>
       </Card>
 
-      {/* Change password */}
+      {/* Sign-in & devices */}
       <Card>
         <CardContent>
-          <Typography variant="h6" mb={2}>{t("changePassword")}</Typography>
-          {pwSuccess && <Alert severity="success" sx={{ mb: 2 }}>{t("passwordChangedSuccess")}</Alert>}
-          {pwError && <Alert severity="error" sx={{ mb: 2 }}>{pwError}</Alert>}
-          <Box component="form" onSubmit={pwForm.handleSubmit(onChangePassword)}>
-            <Stack spacing={2.5}>
-              <TextField
-                label={t("currentPassword")}
-                type="password"
-                fullWidth
-                error={!!pwForm.formState.errors.current_password}
-                helperText={pwForm.formState.errors.current_password?.message}
-                {...pwForm.register("current_password", { required: "Required." })}
-              />
-              <TextField
-                label={t("newPassword")}
-                type="password"
-                fullWidth
-                error={!!pwForm.formState.errors.new_password}
-                helperText={pwForm.formState.errors.new_password?.message}
-                {...pwForm.register("new_password", { required: "Required.", minLength: { value: 8, message: t("min_8_chars", "Min 8 characters.") } })}
-              />
-              <TextField
-                label={t("confirmNewPassword")}
-                type="password"
-                fullWidth
-                error={!!pwForm.formState.errors.confirm_password}
-                helperText={pwForm.formState.errors.confirm_password?.message}
-                {...pwForm.register("confirm_password", {
-                  required: "Required.",
-                  validate: (val) => val === pwForm.watch("new_password") || "Passwords do not match.",
-                })}
-              />
-              <Button type="submit" variant="contained" color="warning" disabled={savingPw} sx={{ alignSelf: "flex-start" }}>
-                {savingPw ? <CircularProgress size={20} color="inherit" /> : t("changePassword")}
-              </Button>
+          <Typography variant="h6" mb={2}>{t("signInSecurity")}</Typography>
+          {revokeSuccess && <Alert severity="success" sx={{ mb: 2 }}>{t("revokeDevicesSuccess")}</Alert>}
+          {revokeError && <Alert severity="error" sx={{ mb: 2 }}>{revokeError}</Alert>}
+          {sessionActionSuccess && (
+            <Alert severity="success" sx={{ mb: 2 }} onClose={() => setSessionActionSuccess(false)}>
+              {t("devicesRevokeSuccess")}
+            </Alert>
+          )}
+          {sessionActionError && (
+            <Alert severity="error" sx={{ mb: 2 }} onClose={() => setSessionActionError(null)}>
+              {sessionActionError}
+            </Alert>
+          )}
+
+          <Typography variant="subtitle2" sx={{ mb: 1 }}>{t("devicesListTitle")}</Typography>
+
+          {sessionsLoading ? (
+            <Stack direction="row" spacing={1} alignItems="center" sx={{ py: 2 }}>
+              <CircularProgress size={18} />
+              <Typography variant="body2" color="text.secondary">{t("devicesListLoading")}</Typography>
             </Stack>
-          </Box>
+          ) : sessionsError ? (
+            <Alert severity="error" sx={{ mb: 2 }}>{sessionsError}</Alert>
+          ) : (
+            <List disablePadding sx={{ mb: 2 }}>
+              {sessions.map((session, idx) => (
+                <Box key={session.id}>
+                  {idx > 0 && <Divider component="li" />}
+                  <ListItem
+                    disableGutters
+                    secondaryAction={
+                      !session.is_current && (
+                        <Button
+                          size="small"
+                          color="warning"
+                          variant="outlined"
+                          onClick={() => setRevokeSessionTarget(session)}
+                          sx={{ minHeight: 36 }}
+                        >
+                          {t("devicesSignOut")}
+                        </Button>
+                      )
+                    }
+                  >
+                    <ListItemText
+                      primary={
+                        <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
+                          <Typography variant="body2" fontWeight={500}>
+                            {session.device_label || t("devicesUnknownDevice")}
+                          </Typography>
+                          {session.is_current && (
+                            <Chip size="small" color="primary" label={t("devicesThisDevice")} />
+                          )}
+                        </Stack>
+                      }
+                      secondary={
+                        <>
+                          {t("devicesLastActive", { time: formatRelativeTime(session.last_used_at) })}
+                          {session.ip_address ? ` · ${session.ip_address}` : ""}
+                        </>
+                      }
+                      sx={{ pr: session.is_current ? 0 : 10 }}
+                    />
+                  </ListItem>
+                </Box>
+              ))}
+            </List>
+          )}
+
+          <Divider sx={{ mb: 2 }} />
+
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            {t("revokeDevicesHelp")}
+          </Typography>
+          <Button variant="outlined" color="warning" disabled={revoking} onClick={onRevokeAllDevices} sx={{ minHeight: 44 }}>
+            {revoking ? <CircularProgress size={20} color="inherit" /> : t("revokeDevices")}
+          </Button>
         </CardContent>
       </Card>
+
+      <ConfirmDialog
+        open={!!revokeSessionTarget}
+        title={t("devicesRevokeConfirmTitle")}
+        text={t("devicesRevokeConfirmText", { device: revokeSessionTarget?.device_label || t("devicesUnknownDevice") })}
+        confirmLabel={t("devicesSignOut")}
+        onClose={() => setRevokeSessionTarget(null)}
+        onConfirm={handleRevokeSession}
+      />
 
       <NotificationPreferences />
 
@@ -344,7 +472,18 @@ export default function ProfilePage() {
         <CardContent>
           <Typography variant="h6" color="error" gutterBottom>{t("delete_account")}</Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>{t("delete_account_help")}</Typography>
-          <Button variant="outlined" color="error" onClick={() => { setDeleteOpen(true); setDeleteError(null); setBalanceOwed(null); setDeletePw(""); }} sx={{ minHeight: 44 }}>
+          <Button
+            variant="outlined"
+            color="error"
+            onClick={() => {
+              setDeleteOpen(true);
+              setDeleteError(null);
+              setBalanceOwed(null);
+              setDeleteCode("");
+              setDeleteCodeSent(false);
+            }}
+            sx={{ minHeight: 44 }}
+          >
             {t("delete_account")}
           </Button>
         </CardContent>
@@ -358,12 +497,27 @@ export default function ProfilePage() {
               <Alert severity="warning">{t("delete_account_balance", { amount: balanceOwed })}</Alert>
             )}
             <Typography variant="body2">{t("delete_account_confirm_text")}</Typography>
-            <TextField type="password" label={t("currentPassword")} value={deletePw} onChange={(e) => setDeletePw(e.target.value)} autoComplete="current-password" />
+            {!deleteCodeSent ? (
+              <Button variant="outlined" onClick={handleSendDeleteCode} disabled={sendingDeleteCode}>
+                {sendingDeleteCode ? <CircularProgress size={20} /> : t("delete_account_send_code")}
+              </Button>
+            ) : (
+              <>
+                <Alert severity="success">{t("delete_account_code_sent")}</Alert>
+                <TextField
+                  label={t("delete_account_code_label")}
+                  value={deleteCode}
+                  onChange={(e) => setDeleteCode(e.target.value.replace(/\D/g, ""))}
+                  inputProps={{ maxLength: 6, inputMode: "numeric" }}
+                  autoFocus
+                />
+              </>
+            )}
           </Stack>
         </DialogContent>
         <DialogActions sx={{ p: 2 }}>
           <Button onClick={() => setDeleteOpen(false)} sx={{ minHeight: 44 }}>{t("cancel")}</Button>
-          <Button color="error" variant="contained" disabled={deleting || !deletePw} onClick={handleDeleteAccount} sx={{ minHeight: 44 }}>
+          <Button color="error" variant="contained" disabled={deleting || !deleteCode} onClick={handleDeleteAccount} sx={{ minHeight: 44 }}>
             {deleting ? <CircularProgress size={22} color="inherit" /> : t("delete_account_confirm")}
           </Button>
         </DialogActions>

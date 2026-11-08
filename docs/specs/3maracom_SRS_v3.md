@@ -100,7 +100,7 @@ Centralized backend built with Django + Django REST Framework (DRF), connected t
 | Mobile Client | Installable PWA (React web app) | Planned — Android & iOS via browser install |
 | File Storage | Cloudinary | Bill images, profile pictures (validated type + size) |
 | PDF Generation | ReportLab | Auto-generated payment receipt PDFs |
-| Auth | djangorestframework-simplejwt | JWT access + refresh token lifecycle |
+| Auth | djangorestframework-simplejwt + email OTP + Google Sign-In | Passwordless sign-in; JWT access token (body) + httpOnly cookie refresh token with rotation and reuse detection |
 | API Documentation | drf-spectacular | Auto-generated OpenAPI 3.0 schema at `/api/schema/` |
 | Containerization | Docker + Docker Compose | Development and deployment environment |
 
@@ -110,9 +110,10 @@ Roles: `admin`, `owner` and `renter` (R-4, a resident who lives in a unit withou
 
 | Feature | Admin | Owner | Unauthenticated |
 |---|---|---|---|
-| Login / Logout | Full | Full | Login Only |
+| Sign In (email OTP / Google) / Logout | Full | Full | Sign-In Only |
 | Self-Register (wizard) | As Admin | As Owner | Full |
-| Profile Management (name, phone, picture, password) | Full | Full | None |
+| Profile Management (name, phone, picture) | Full | Full | None |
+| Revoke My Trusted Devices | Full | Full | None |
 | Manage Buildings (CRUD) | Full | View Own | None |
 | Assign Co-Admins to Building | Full | None | None |
 | Activate / Deactivate Buildings | Full | None | None |
@@ -132,7 +133,7 @@ Roles: `admin`, `owner` and `renter` (R-4, a resident who lives in a unit withou
 | Admin Dashboard | Full | None | None |
 | Owner Dashboard | None | Full | None |
 | Manage Users (CRUD, activate/deactivate) | Full | None | None |
-| Reset User Passwords | Full | None | None |
+| Resend a User's Sign-In Code | Full | None | None |
 | Toggle User Messaging Restrictions | Full | None | None |
 | Send In-App Messages | Full | Full (unless blocked) | None |
 | Broadcast Announcements to Building | Full | None | None |
@@ -149,11 +150,15 @@ Roles: `admin`, `owner` and `renter` (R-4, a resident who lives in a unit withou
 
 Role-based access control governs all user interactions. The system supports three roles: `admin` (full CRUD within the buildings they administer, including co-admins), `owner` (read-only view of own unit data) and `renter` (R-4: lives in a unit without owning it; invited by the unit's owner or a building admin). Within a building, a resident can additionally hold one board title (R-5): chair (رئيس), treasurer (أمين الصندوق) or secretary (أمين السر), one holder per title. Platform owners (Django superusers) manage plans and see platform analytics; they are not a building role.
 
-**Authentication & Session Management:**
-- JWT-based authentication with access tokens (15-minute TTL) and refresh tokens (7-day TTL).
-- Automatic token refresh via interceptor in the web client; on refresh failure, user is redirected to `/401`.
-- Logout blacklists the refresh token via `rest_framework_simplejwt.token_blacklist`.
-- Account lockout after N consecutive failed login attempts (configurable); returns HTTP 423 with a lockout message. Successful login resets the counter.
+**Authentication & Session Management (passwordless):**
+- There is no password-based login for the admin/owner API. Most user accounts have no usable password at all (`set_unusable_password()` at creation); only Django superusers keep a real password, used solely for the separate `/admin/` site.
+- **Email OTP:** `POST /auth/otp/request/ {email}` finds or creates a pending user and emails a 6-digit code (`OTP_CODE_TTL_MINUTES`, default 10 minutes). `POST /auth/otp/verify/ {email, code}` checks it and signs the user in. A wrong code increments an attempt counter; after `OTP_MAX_ATTEMPTS` (default 5) wrong attempts the code is burned (HTTP 429) and a new one must be requested. OTP requests are rate-limited to 5/minute per (email, IP) pair (HTTP 429 when exceeded).
+- **Google Sign-In:** `POST /auth/google/ {id_token}` verifies the Google ID token server-side against `GOOGLE_CLIENT_ID` and signs the user in, creating a pending user on first sign-in. If an account with that email already exists it is auto-linked (see the security note below).
+- **Trusted devices:** a successful OTP or Google sign-in sets an httpOnly `trusted_device` cookie (30-day TTL, scoped to `/auth/otp/request/`). A later OTP request presenting a valid, unexpired cookie for that user signs them in immediately and skips the code step. `POST /auth/devices/revoke-all/` (authenticated) deletes every trusted device for the caller.
+- JWT access tokens (15-minute TTL) are returned in the response body. Refresh tokens (7-day TTL) are never exposed to JavaScript: they travel only as an httpOnly, `SameSite=Lax`, path-scoped cookie, read by `POST /auth/refresh/`.
+- **Refresh rotation + reuse detection:** each call to `/auth/refresh/` blacklists the presented refresh token and issues a brand-new one (new cookie). If an already-blacklisted token is presented again outside a ~30-second grace window (which tolerates two tabs racing on the same pre-rotation token), every outstanding session for that user is revoked and an `refresh_reuse_detected` audit entry is written.
+- `POST /auth/logout/` blacklists the current refresh token and clears the refresh cookie; the trusted-device cookie is deliberately left alone (logging out of one device should not un-trust it — use `/auth/devices/revoke-all/` for that).
+- A deactivated account (`is_active=False`) is refused at every sign-in step (OTP request, OTP verify, Google) with HTTP 403.
 
 **Self-Registration Wizard (3 paths):**
 1. **Owner path** (3 steps): Account info → Select building + claim unit → Done.
@@ -164,12 +169,12 @@ Role-based access control governs all user interactions. The system supports thr
 - Users can update first name, last name, phone number.
 - Profile picture upload supported (JPEG, PNG, WEBP; max 5 MB; stored in Cloudinary).
 - Email address is read-only after registration.
-- Password change requires current password confirmation.
+- There is no password to change. A user who can't access their email asks an admin to resend their sign-in code (see below), or signs in with Google if that email is linked to a Google account.
 
 **Admin User Management:**
-- Admin can create users directly (assigning role: admin, owner or renter).
-- Admin can activate or deactivate users (`is_active` flag; deactivated users cannot log in).
-- Admin can reset any user's password without requiring the current password.
+- Admin can create users directly (assigning role: admin, owner or renter); the new user is created passwordless and completes their first sign-in via OTP or Google.
+- Admin can activate or deactivate users (`is_active` flag; deactivated users are refused at every sign-in step).
+- Admin can resend a user's sign-in code (`POST /users/{id}/resend-invite/`), which triggers a fresh email OTP. This replaces the old password-reset action now that accounts have no password.
 - Users list is scoped to the admin's managed buildings (users in buildings the admin administers).
 
 **Messaging Restrictions:**
@@ -332,7 +337,7 @@ Admins track physical assets belonging to a building and record their sale.
 ### 3.9 Audit & Compliance
 
 **Audit Log:**
-- Every write operation is logged: entity type, entity ID, action (create, update, delete, activate, deactivate, login, logout, lockout, change_password, assign_user, claim, upload), the performing user, IP address, user agent, and a before/after change delta.
+- Every write operation is logged: entity type, entity ID, action (create, update, delete, activate, deactivate, login, otp_requested, logout, refresh_reuse_detected, devices_revoked, delete_account, assign_user, claim, upload), the performing user, IP address, user agent, and a before/after change delta.
 - Admins can view and filter the audit log by: entity type, action text, date range.
 - Audit records are append-only — no edits or deletions.
 
@@ -378,7 +383,7 @@ A guided in-app walkthrough system that introduces new users to key features. Im
 
 **Quick maintenance reports (بلاغ صيانة سريع).** A resident files a report for their building in three taps (elevator, stairs, cleaning, electricity, water, other + optional note). Building admins see reports for buildings they manage and set the status to open, in progress or done.
 
-**Password reset.** A user requests a reset link by email; the link opens a page to choose a new password. The request always answers the same, so registered emails cannot be probed.
+**Passwordless sign-in.** A user signs in with a 6-digit code emailed to them or with Google Sign-In — there is no password to set, forget or reset. A recognized device can skip the code step for 30 days (trusted device); a user can revoke that trust for every device from their profile. An admin who needs to get a locked-out user back in resends their sign-in code instead of resetting a password.
 
 **Language and direction.** Arabic and English throughout (backend messages, emails, PDF receipts and web UI) with RTL layout; the app sends the chosen language to the API.
 
@@ -389,19 +394,19 @@ A guided in-app walkthrough system that introduces new users to key features. Im
 ### Epic 1: User Management
 
 **US-1.1: Admin User Management**
-As an Admin, I want to create, edit, activate/deactivate, and reset passwords for user accounts, so that access is controlled properly.
-- Acceptance: Only Admins can access user management. Deactivated users are refused at login with HTTP 403 (valid credentials, account not allowed).
+As an Admin, I want to create, edit, activate/deactivate, and resend sign-in codes for user accounts, so that access is controlled properly.
+- Acceptance: Only Admins can access user management. Deactivated users are refused at every sign-in step (OTP request/verify, Google) with HTTP 403.
 
-**US-1.2: Secure Login with Lockout**
-As a user, I want to log in securely; after repeated failures my account is temporarily locked.
-- JWT login returns access + refresh tokens.
-- After N failures: HTTP 423 with lockout expiry message.
-- Acceptance: Expired tokens return HTTP 401; locked accounts return HTTP 423.
+**US-1.2: Passwordless Sign-In with Rate Limiting**
+As a user, I want to sign in without a password, using a one-time code emailed to me or my Google account, with the option to skip the code on a device I use often.
+- `otp/request/` emails a 6-digit code (or signs in immediately if the device presents a valid trusted-device cookie); `otp/verify/` checks it and returns an access token (body) plus refresh/trusted-device cookies (httpOnly). `google/` does the equivalent after verifying a Google ID token.
+- OTP requests are rate-limited (5/minute per email+IP); wrong codes are capped at 5 attempts, after which the code is burned and a new one must be requested.
+- Acceptance: expired/invalid/missing access or refresh tokens return HTTP 401; exceeding the OTP request rate or wrong-attempt cap returns HTTP 429; a replayed (already-rotated) refresh token revokes every session for that user.
 
-**US-1.3: Profile Management**
-As a user, I want to update my name, phone, profile picture, and password on the web.
-- Password change requires current password confirmation.
+**US-1.3: Profile & Device Management**
+As a user, I want to update my name, phone and profile picture on the web, and control which devices can sign in without a code.
 - Profile picture stored in Cloudinary.
+- A user can revoke all trusted devices (`POST /auth/devices/revoke-all/`); every device must then redo the OTP or Google step on its next sign-in.
 
 **US-1.4: Self-Registration Wizard**
 As a new user, I want to register myself through a multi-step wizard that guides me to set up my account and claim my unit.
@@ -535,10 +540,11 @@ As a user, I want to be able to exit the tutorial at any step by clicking outsid
 ## 5. Technical Stories
 
 **TS-1: Authentication & Authorization**
-JWT-based auth with djangorestframework-simplejwt. Roles: Admin, Owner. RBAC enforced at API layer via `IsAdminRole` and `IsAuthenticated` permission classes. Account lockout implemented in `LoginView` with configurable max attempts and cooldown duration. Token blacklist on logout. Profile pictures stored in Cloudinary via ImageField.
-- APIs: POST `/auth/login/`, `/auth/logout/`, `/auth/refresh/`, `/auth/register/`, `/auth/self-register/`, `/auth/change-password/`, GET/PATCH `/auth/profile/`
+Passwordless auth: email OTP (`otp.py`: `EmailOTP` rows, HMAC-SHA256-hashed code, 10-minute TTL, 5 wrong-attempt cap) and Google Sign-In (`google.oauth2.id_token.verify_oauth2_token` against `GOOGLE_CLIENT_ID`), both issuing djangorestframework-simplejwt tokens via `tokens.issue_tokens_for_user`. Trusted devices (`TrustedDevice`: SHA-256-hashed token, 30-day TTL) bypass the OTP step; cookie helpers in `cookies.py` set/clear the httpOnly `refresh_token` (path `/api/v1/auth/`) and `trusted_device` (path `/api/v1/auth/otp/request/`) cookies. `CookieTokenRefreshView` rotates the refresh token on every call and detects reuse of an already-blacklisted token (mass-revokes the user's sessions outside a 30s grace window). Roles: Admin, Owner, Renter. RBAC enforced at API layer via `IsAdminRole` and `IsAuthenticated` permission classes. Token blacklist on logout. Profile pictures stored in Cloudinary via ImageField. Implementation: `backend/apps/authentication/{views,otp,cookies,models,tokens}.py`.
+- APIs: POST `/auth/otp/request/`, `/auth/otp/verify/`, `/auth/google/`, `/auth/logout/`, `/auth/refresh/` (cookie-based), `/auth/register/`, `/auth/self-register/`, `/auth/delete-account/`, `/auth/devices/revoke-all/`, GET/PATCH `/auth/profile/`
 - JWT payload includes: user_id, role, exp
-- Access token TTL: 15 minutes. Refresh token TTL: 7 days.
+- Access token TTL: 15 minutes (returned in the response body). Refresh token TTL: 7 days (httpOnly, `SameSite=Lax` cookie only).
+- Tests: `backend/tests/authentication/test_auth.py` — `TestOTPRequest`, `TestOTPVerify`, `TestGoogleSignIn`, `TestRefresh` (rotation + reuse detection), `TestLogout`, `TestRevokeAllDevices`, `TestRegister`, `TestProfile`, `TestUserManagement`; `backend/tests/authentication/test_terms_and_deletion.py` for the OTP-confirmed delete-account flow.
 
 **TS-2: Multi-Tenant Architecture**
 Tenant isolation via building membership (`UserBuilding` junction table). All querysets filter data by buildings the requesting user is a member of, admin of, or co-admin of. No middleware tenant injection — isolation is enforced per-view in `get_queryset()`.
@@ -563,7 +569,7 @@ Bill uploads validated by file type (JPEG, PNG, PDF only) and size (max 10 MB). 
 `ExportExpensesView` supports `file_format=csv` (default) or `xlsx`; XLSX generated with openpyxl. Both views are scoped to the admin's accessible buildings.
 
 **TS-9: Security Hardening**
-HTTPS enforced (TLS 1.2+). Passwords hashed with Django's PBKDF2. JWT tokens signed with HS256. CORS configured for known origins. SQL injection prevented via Django ORM. XSS prevented via React's escaping. Secrets managed via environment variables. Refresh tokens blacklisted on logout.
+HTTPS enforced (TLS 1.2+). Most accounts have no usable password (`set_unusable_password()`); Django superusers keep a PBKDF2-hashed password for the separate `/admin/` site only. Email OTP codes are HMAC-SHA256-hashed at rest and rate-limited (5/min per email+IP); trusted-device tokens are SHA-256-hashed at rest. JWT tokens signed with HS256; refresh tokens rotate on every use, are blacklisted after rotation, and reuse of a blacklisted token revokes every session for that user. CORS configured for known origins. SQL injection prevented via Django ORM. XSS prevented via React's escaping. Secrets managed via environment variables.
 
 **TS-10: Performance & Scalability**
 Database indexes on: building_id, owner_id, expense_id, apartment_id, token (invitations). Pagination on all list endpoints (default page size: 20; clients can request up to 500 via `page_size` query param). Dashboard queries run directly on PostgreSQL (caching is a planned optimization).
@@ -590,7 +596,9 @@ All tables include UUID primary keys. Multi-tenant isolation is enforced via bui
 
 | Table | Key Fields | Relationships | Notes |
 |---|---|---|---|
-| users | id (UUID), email (unique), first_name, last_name, phone, profile_picture, role (admin\|owner\|renter), must_change_password, preferred_language, preferred_theme, is_active, failed_login_attempts, locked_until, messaging_blocked, individual_messaging_blocked, notification_preferences (JSON), created_at | — | Custom auth model. USERNAME_FIELD = email. |
+| users | id (UUID), email (unique), first_name, last_name, phone, profile_picture, role (admin\|owner\|renter), preferred_language, preferred_theme, is_active, messaging_blocked, individual_messaging_blocked, notification_preferences (JSON), created_at | — | Custom auth model. USERNAME_FIELD = email. Passwordless by default (`set_unusable_password()`); only superusers (for `/admin/`) have a usable password. `must_change_password`, `failed_login_attempts` and `locked_until` were removed with the password-login mechanism. |
+| email_otps | id, user_id → users, code_hash (HMAC-SHA256), expires_at, attempts, created_at | user → users | One-time sign-in code; consumed (row deleted) on success or on exceeding `OTP_MAX_ATTEMPTS`. |
+| trusted_devices | id, user_id → users, token_hash (SHA-256, unique), expires_at, created_at, last_used_at | user → users | Lets a later `otp/request/` skip the code step for 30 days; deleted en masse by `devices/revoke-all/`. |
 | buildings | id (UUID), name, address, city, country, num_floors, num_apartments, num_stores, photo, admin_id → users, is_active, deleted_at | admin → users | Primary admin FK. Co-admins via junction table. |
 | building_co_admins | user_id → users, building_id → buildings, added_at | users ↔ buildings | Multiple co-admins per building. |
 | user_buildings | user_id → users, building_id → buildings, joined_at, board_role (chair\|treasurer\|secretary, blank = none) | users ↔ buildings | Building membership for all users (admins + owners). |
@@ -638,16 +646,15 @@ Base path: `/api/v1/`
 
 | Method | Endpoint | Permission | Description |
 |---|---|---|---|
-| POST | `/auth/login/` | AllowAny | Email + password login → returns access + refresh tokens. Returns HTTP 423 if account locked. |
-| POST | `/auth/logout/` | IsAuthenticated | Blacklists refresh token. |
-| POST | `/auth/refresh/` | AllowAny | Returns new access token from refresh token. |
-| POST | `/auth/register/` | IsAdminRole | Admin creates a new user (any role). |
-| POST | `/auth/self-register/` | AllowAny | Public self-registration; the caller picks `role` (`admin`, `owner` or `renter`, default `owner`) and must accept the terms. Returns tokens and the user. |
-| POST | `/auth/forgot-password/` | AllowAny | Body `{email}`. Always answers 200 so emails cannot be probed; sends a reset link. Throttled. |
-| POST | `/auth/reset-password/` | AllowAny | Body `{uid, token, password, confirm_password}`. Sets a new password from the emailed link; 400 when the link is invalid or expired. Throttled. |
-| POST | `/auth/force-change-password/` | IsAuthenticated | Sets a new password when `must_change_password` is true (e.g. after an admin reset); 400 otherwise. |
-| POST | `/auth/delete-account/` | IsAuthenticated | Body `{password, confirm_balance?}`. Deactivates and anonymises the account but keeps the books (R-31): rejects the user's pending claims, answers 409 `{detail, balance, requires_confirmation}` while a unit balance is owed until `confirm_balance: true`, notifies the building admins when a board member leaves, and answers 409 for the last platform owner or a building's primary admin (who must hand the building over first). |
-| PATCH | `/auth/change-password/` | IsAuthenticated | Change password (requires current password). |
+| POST | `/auth/otp/request/` | AllowAny | Body `{email}`. Finds or creates a pending (passwordless) user. If the caller presents a valid `trusted_device` cookie for that user, signs them in immediately (same response as `otp/verify/`) without sending a code. Otherwise emails a fresh 6-digit code. Rate-limited to 5/min per (email, IP); 429 when exceeded. 403 if the account is deactivated. |
+| POST | `/auth/otp/verify/` | AllowAny | Body `{email, code}` → `{access, user}` + sets the `refresh_token` and `trusted_device` httpOnly cookies. 400 for an unknown/expired/wrong code, 429 after too many wrong attempts (code is burned), 403 if deactivated. |
+| POST | `/auth/google/` | AllowAny | Body `{id_token}`. Verifies the Google ID token server-side; finds or creates a user by the token's email (auto-linking to an existing account by design — approved policy, see R-34 and resolved D-3) and signs them in → `{access, user}` + cookies. 401 for an invalid token or unconfigured `GOOGLE_CLIENT_ID`-mismatched token, 400 if Google Sign-In isn't configured, 403 if deactivated. |
+| POST | `/auth/refresh/` | AllowAny | No body — the refresh token travels as the `refresh_token` httpOnly cookie. Rotates it (blacklists the old one, issues and cookies a new one) and returns a new access token. Replaying an already-rotated token outside a ~30s grace window revokes every session for that user (401). |
+| POST | `/auth/logout/` | IsAuthenticated | Blacklists the refresh token read from the cookie and clears it; the `trusted_device` cookie is left alone. |
+| POST | `/auth/register/` | IsAdminRole | Admin creates a new (passwordless) user; the user completes their first sign-in via OTP or Google. |
+| POST | `/auth/self-register/` | AllowAny | Public self-registration; the caller picks `role` (`admin`, `owner` or `renter`, default `owner`) and must accept the terms. Returns the created (passwordless) user. |
+| POST | `/auth/delete-account/` | IsAuthenticated | Body `{code, confirm_balance?}` — `code` is a fresh email OTP (requested via `otp/request/`), replacing the old password confirmation. Deactivates and anonymises the account but keeps the books (R-31): rejects the user's pending claims, answers 409 `{detail, balance, requires_confirmation}` while a unit balance is owed until `confirm_balance: true`, notifies the building admins when a board member leaves, and answers 409 for the last platform owner or a building's primary admin (who must hand the building over first). |
+| POST | `/auth/devices/revoke-all/` | IsAuthenticated | Deletes every trusted device for the caller and clears the `trusted_device` cookie; does not affect the caller's current session. |
 | GET/PATCH | `/auth/profile/` | IsAuthenticated | Retrieve or update own profile (name, phone, profile picture). |
 
 ### 7.2 Users
@@ -661,7 +668,7 @@ Base path: `/api/v1/`
 | DELETE | `/users/{id}/` | IsAdminRole | Delete user. |
 | POST | `/users/{id}/activate/` | IsAdminRole | Set `is_active=True`. |
 | POST | `/users/{id}/deactivate/` | IsAdminRole | Set `is_active=False`. |
-| POST | `/users/{id}/reset-password/` | IsAdminRole | Admin resets user password without current password. |
+| POST | `/users/{id}/resend-invite/` | IsAdminRole | Re-sends an email OTP sign-in code to the user; replaces the old password-reset action. |
 | POST | `/users/{id}/set-messaging-block/` | IsAdminRole | Set `messaging_blocked` and/or `individual_messaging_blocked` flags. |
 
 ### 7.3 Buildings
@@ -849,10 +856,10 @@ There is no Celery or Redis in the stack: dashboards query PostgreSQL directly, 
 ### 8.2 Security
 
 - HTTPS enforced across all endpoints (TLS 1.2 minimum).
-- Passwords hashed with PBKDF2 (Django default).
-- JWT tokens signed with HS256; refresh tokens blacklisted on logout.
-- API rate limiting uses DRF throttling (`DEFAULT_THROTTLE_RATES` in `config/settings/base.py`): anonymous 30/min, authenticated 60/min; sensitive endpoints (forgot-password, invite validate/use) apply the throttles explicitly.
-- Account lockout after N failed login attempts (configurable; currently returns HTTP 423).
+- No password-based login for the admin/owner API: accounts sign in via email OTP or Google. Most accounts have no usable password; superuser passwords (PBKDF2, Django default) exist only for the `/admin/` site.
+- JWT tokens signed with HS256; refresh tokens rotate on every use and are blacklisted after rotation; reuse of an already-rotated (blacklisted) refresh token revokes every outstanding session for that user.
+- API rate limiting uses DRF throttling (`DEFAULT_THROTTLE_RATES` in `config/settings/base.py`): anonymous 30/min, authenticated 60/min; sensitive endpoints (OTP request, invite validate/use) apply throttles explicitly — OTP requests are capped at 5/minute per (email, IP) pair.
+- Email OTP codes expire after `OTP_CODE_TTL_MINUTES` (default 10 min) and are burned after `OTP_MAX_ATTEMPTS` (default 5) wrong attempts, requiring a fresh code; this is the formal brute-force mitigation replacing the retired account-lockout requirement (see **R-35**, section 11.6).
 - File upload: type whitelist (JPEG, PNG, PDF for bills; JPEG, PNG, WEBP for profile pictures), max size enforced.
 - CORS configured to allow only known frontend origins.
 - All secrets stored in environment variables — never in code.
@@ -898,14 +905,14 @@ There is no Celery or Redis in the stack: dashboards query PostgreSQL directly, 
 | Sprint | Focus | Key Deliverables | Status |
 |---|---|---|---|
 | 0 | Setup & Architecture | Docker Compose, Django project skeleton, React scaffold, PostgreSQL, CI structure | Done |
-| 1 | Auth & User Management | JWT login/logout/refresh, RBAC (Admin/Owner), user CRUD, account lockout, profile management, self-registration wizard | Done |
+| 1 | Auth & User Management | Email OTP + Google Sign-In (passwordless), trusted-device bypass, cookie refresh with rotation, RBAC (Admin/Owner), user CRUD, profile management, self-registration wizard | Done |
 | 2 | Buildings & Apartments | Building CRUD (with co-admins, auto-unit creation), apartment management, unit invitation + registration code flow, unit status | Done |
 | 3 | Expense Management | Expense CRUD, 4 split types (including weighted custom), split engine, rounding rule, configurable categories (icon/color/subcategory), 15 default categories, bill upload (Cloudinary), recurring expenses (daily command) | Done |
 | 4 | Payment Management | Payment recording (atomic + balance snapshots), payment method tracking, M2M expense linking, carry-forward balance, PDF receipt (ReportLab), balance summary card | Done |
 | 5 | Dashboards (Web) | Admin dashboard (income/expense/overdue cards, 12-month bar chart, outstanding balances table), Owner dashboard (balance card, donut chart, recent payments, claim-unit widget) | Done |
 | 6 | Notifications & Messaging | In-app notification center (header badge, mark-as-read), expense + payment auto-notifications, broadcast announcements, direct messaging with recipient type selector, messaging restriction enforcement | Done |
 | 7 | Building Asset Management | BuildingAsset + AssetSale models, asset CRUD, record-sale action, asset status, summary cards | Done |
-| 8 | Audit, Exports & Security | Audit log (all write operations), audit filter UI, CSV/XLSX data exports, account lockout hardening, token blacklist on logout | Done |
+| 8 | Audit, Exports & Security | Audit log (all write operations), audit filter UI, CSV/XLSX data exports, refresh-token rotation + reuse-detection hardening, token blacklist on logout | Done |
 | 9 | UX Polish & Bug Fixes | Form label alignment (shrink=true), PDF receipt popup-blocker fix, pagination fix (page_size param), multi-select expenses in record-payment, users scoping to admin's buildings | Done |
 | 10 | Testing & QA | Unit tests (pytest), integration tests, E2E tests, load testing | Pending |
 | 11 | Deployment & Launch | Production deploy, domain/TLS, monitoring (Sentry), backup configuration | Pending |
@@ -926,11 +933,11 @@ There is no Celery or Redis in the stack: dashboards query PostgreSQL directly, 
 
 | # | Feature | Status | Notes |
 |---|---|---|---|
-| 1 | JWT Authentication (login/logout/refresh) | ✅ Implemented | |
-| 2 | Account lockout after failed logins (HTTP 423) | ✅ Implemented | Configurable attempts + duration |
+| 1 | JWT issuance / logout / cookie refresh with rotation | ✅ Implemented | Access token in body, refresh token httpOnly cookie |
+| 2 | Passwordless sign-in: email OTP + Google Sign-In + trusted-device bypass | ✅ Implemented | Replaces password login and account lockout (HTTP 423) — brute-force mitigation now formalized as R-35 (section 11.6) |
 | 3 | Self-registration wizard (Owner, Admin, Invite paths) | ✅ Implemented | |
 | 4 | Profile management with picture upload | ✅ Implemented | Cloudinary storage |
-| 5 | Admin user management (CRUD, activate/deactivate, reset password) | ✅ Implemented | |
+| 5 | Admin user management (CRUD, activate/deactivate, resend sign-in code) | ✅ Implemented | |
 | 6 | Messaging restrictions (global + individual-level) | ✅ Implemented | |
 | 7 | Multi-admin buildings (primary admin + co-admins) | ✅ Implemented | |
 | 8 | Auto-generation of vacant units on building creation/edit | ✅ Implemented | A01…/S01… numbering |
@@ -1013,7 +1020,7 @@ Phases are delivered in order; within a phase, requirements are independent unle
 **R-3 Legal pages & account deletion** — ✅ Implemented (draft policy text; lawyer review and a support email are still needed before launch). *Why:* required before a public or store launch and for user trust.
 - Privacy Policy and Terms of Service pages in Arabic and English, reachable without signing in and linked from the footer and the sign-up form.
 - Sign-up requires accepting the terms (checkbox); acceptance time is stored.
-- A signed-in user can delete their account (password confirmation). Deletion deactivates the account and removes personal data (name, email, phone, picture) while keeping financial records (payments, expense shares, audit log) attached to an anonymised user.
+- A signed-in user can delete their account, confirmed via a fresh email OTP code (there is no password to confirm with). Deletion deactivates the account and removes personal data (name, email, phone, picture) while keeping financial records (payments, expense shares, audit log) attached to an anonymised user.
 - The sole administrator of a building cannot delete their account until another administrator takes over (see R-6).
 - *Note:* the policy text is a draft for legal review before launch; local legal requirements for handling residents' data must be confirmed.
 
@@ -1085,7 +1092,11 @@ Source: the business-gap review of 2026-10-30 (SRS audit plus code review). Orde
 | **R-31** | Safer account deletion | Deletion rejects pending claims of the user, warns when the user has an outstanding balance (requires confirmation), tells the building admin when a board member leaves, and is blocked for the last platform owner. | ✅ Done. delete-account rejects the user's pending claims, returns 409 `{detail, balance, requires_confirmation}` while they owe a unit balance until `confirm_balance: true` is sent, notifies the building admins when a board member leaves, and returns 409 for the last active platform owner. |
 | **R-32** | Arabic completeness | Every backend `_()` string has an Arabic translation; hard-coded Arabic or English strings in views move to translations; the receipt PDF uses a bundled font, not Google Fonts. | ✅ Done. 27 missing Arabic strings added to `locale/ar` (plans, support, subscriptions, auth serializers) and `django.mo` rebuilt; the put-to-vote poll title, options and notification use gettext in the recipient's language; the receipt Google Fonts `@import` was removed (the stack falls back to system fonts, no binary added); `tests/test_translation_completeness.py` fails when a literal `_()`/gettext string has no Arabic msgstr. The `_two/_few/_many` keys in `ar/notifications.json` are kept: they are Arabic plural forms i18next needs. The receipt label tables stay as per-language dictionaries (the receipt language is chosen at render time). |
 | **R-33** | Full building export | An admin can download one file per building with units, owners, expenses, payments, claims, late fees and audit log. | ✅ Done. `GET /api/v1/exports/building/{building_id}/` (admin only, scoped with `managed_buildings`, 404 for other buildings) returns one XLSX with sheets Units, Residents (owners and renters), Expenses, Payments (reversals included), Claims, Late fees and Audit log; the export itself is audited. Download button on the Records page. Tests: `tests/test_building_export.py`. |
+| **R-34** | Passwordless authentication (email OTP + Google + trusted devices) | A user signs in with a 6-digit code emailed to them or with Google, not a password; a device the user signed in from recently may skip the code step for 30 days; refresh tokens rotate on every use and a replayed (already-rotated) token revokes every session for that user. | ✅ Done. `POST /auth/otp/request/` and `/auth/otp/verify/` (code HMAC-SHA256-hashed, 10-min TTL, 5 wrong-attempt cap, 5/min per email+IP); `POST /auth/google/` verifies the Google ID token and auto-links to an existing account by email — **this is approved product behavior (see D-3): anyone who controls a Google account matching an existing user's email thereby signs into that 3maracom account; there is no separate "link your Google account" confirmation step.** `trusted_device` httpOnly cookie (30-day TTL) bypasses the code step; `POST /auth/devices/revoke-all/` clears it everywhere. `POST /auth/refresh/` rotates the httpOnly `refresh_token` cookie and mass-revokes sessions on reuse of a blacklisted token. Code: `backend/apps/authentication/{views,otp,cookies,models,tokens}.py`. Tests: `backend/tests/authentication/test_auth.py` (`TestOTPRequest`, `TestOTPVerify`, `TestGoogleSignIn`, `TestRefresh`, `TestLogout`, `TestRevokeAllDevices`), `backend/tests/authentication/test_terms_and_deletion.py` (OTP-confirmed delete-account). Replaces password login, password reset/change, forced password change and failed-login-attempt lockout — all removed from the codebase. |
+| **R-35** | Brute-force mitigation for passwordless sign-in (replaces account lockout) | This is the formal replacement for the retired "account lockout after N failed logins" story, with explicit SLA numbers rather than an incidental description of code: (1) an email OTP code expires 10 minutes after it is issued; (2) a code is burned (invalidated, forcing a fresh request) after 5 wrong verification attempts, and the 6th attempt on a burned code returns HTTP 429, not a generic 400; (3) `POST /auth/otp/request/` is rate-limited to 5 requests per minute per `(email, IP)` pair, and `POST /auth/otp/verify/` to 10 requests per minute per `(email, IP)` pair (volume-based, independent of whether a given attempt is right or wrong), both enforced via `CACHES["ratelimit"]` (`django.core.cache.backends.db.DatabaseCache`, table `ratelimit_cache_table`), a cache shared across every gunicorn worker process — not a per-worker in-memory counter a multi-worker deployment could bypass by landing retries on different workers. Client IP for rate-limiting and session/audit display is read from the non-spoofable `X-Real-IP` header (set by nginx from the real TCP connection), never from the client-controlled `X-Forwarded-For`. | ✅ Done. TTL/burn: `OTP_CODE_TTL_MINUTES`/`OTP_MAX_ATTEMPTS` in `backend/apps/authentication/otp.py`. Shared cross-process throttle: `backend/config/settings/base.py` (`CACHES["ratelimit"]`, `RATELIMIT_USE_CACHE`), migration `0012_create_ratelimit_cache_table.py`, applied to both `OTPRequestView` and `OTPVerifyView` in `backend/apps/authentication/views.py`. Non-spoofable IP: `backend/apps/authentication/device.py::client_ip_from_request`. Covered by `backend/tests/authentication/test_auth.py` (`TestOTPVerify`, `TestClientIpFromRequest`, and a cross-process proof via two independent `manage.py shell` processes performed during QA). |
 | **D-1** | SRS drift cleanup | Status rows 20, 23, 36, 42, heading 1.2.2, roles in 2.2 and 3.1, rate limiting in 8.2, and sections 6 and 7 match the code. | ✅ Done. Status rows 20, 23, 36 and 42, heading 1.2.2, roles in 2.2 and 3.1 (renter and board titles), notification types in 3.7, DRF throttling in 8.2 and the scheduled commands in 8.3 now match the code. Section 6 gained the tables for claims, subscriptions, late fees, plans, polls, minutes, documents, contractors, obligations, maintenance, work orders and support; section 7 gained 7.11 to 7.14 and the missing auth, building, apartment, expense, payment and export endpoints, each checked against the `urls.py` files and views. |
+| **D-2** | Resolved: brute-force-mitigation story after lockout removal | US-1.2 formerly required "account lockout after N consecutive failed login attempts (HTTP 423)". That mechanism, the `failed_login_attempts`/`locked_until` user columns, and `LoginView` are gone entirely. | ✅ Resolved. Product decided a formal replacement requirement is needed rather than documenting the ad-hoc behavior alone — see **R-35** above for the numbered SLA (10-min OTP TTL, 5-wrong-attempt burn with 429, 5/min per-email+IP request throttle). R-35 also tracks the companion backend fix moving the request throttle from a per-worker `LocMemCache` counter to a shared cross-process cache so the limit actually holds across all gunicorn workers in production; R-35 stays 🟡 until that cache change lands. |
+| **D-3** | Resolved: Google auto-link security note | Google Sign-In auto-links to an existing account by email with no additional verification step (`views.py` `_get_or_create_pending_user`, documented factually in R-34 above). An attacker who controls (or later gains control of, e.g. via a lapsed domain) a Google account sharing an existing 3maracom user's email address can sign into that user's account. | ✅ Approved by product — this is the intended behavior, not a gap. Auto-link-by-email is the deliberate policy: no "link your Google account" confirmation step, no required pre-verification of the email at account creation, and no extra notification on first linked sign-in are planned. The security note inline in R-34 stays as the factual description of this approved behavior for anyone reading that row in isolation. |
 
 ### 11.7 Deferred and not planned
 

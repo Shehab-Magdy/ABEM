@@ -1,28 +1,39 @@
 from django.urls import path
-from rest_framework_simplejwt.views import TokenRefreshView
+
 from .views import (
-    LoginView,
-    LogoutView,
-    ChangePasswordView,
-    ForceChangePasswordView,
-    RegisterView,
+    CookieTokenRefreshView,
     DeleteAccountView,
-    ForgotPasswordView,
-    ResetPasswordView,
-    SelfRegisterView,
+    GoogleSignInView,
+    LogoutView,
+    OTPRequestView,
+    OTPVerifyView,
     ProfileView,
+    RegisterView,
+    RevokeAllDevicesView,
+    SelfRegisterView,
+    SessionListView,
+    SessionRevokeView,
 )
 
 urlpatterns = [
-    path("login/", LoginView.as_view(), name="auth-login"),
+    path("otp/request/", OTPRequestView.as_view(), name="auth-otp-request"),
+    path("otp/verify/", OTPVerifyView.as_view(), name="auth-otp-verify"),
+    path("google/", GoogleSignInView.as_view(), name="auth-google"),
     path("logout/", LogoutView.as_view(), name="auth-logout"),
-    path("refresh/", TokenRefreshView.as_view(), name="auth-token-refresh"),
+    path("refresh/", CookieTokenRefreshView.as_view(), name="auth-token-refresh"),
     path("register/", RegisterView.as_view(), name="auth-register"),
     path("self-register/", SelfRegisterView.as_view(), name="auth-self-register"),
-    path("forgot-password/", ForgotPasswordView.as_view(), name="auth-forgot-password"),
-    path("reset-password/", ResetPasswordView.as_view(), name="auth-reset-password"),
     path("delete-account/", DeleteAccountView.as_view(), name="auth-delete-account"),
-    path("change-password/", ChangePasswordView.as_view(), name="auth-change-password"),
-    path("force-change-password/", ForceChangePasswordView.as_view(), name="auth-force-change-password"),
+    path(
+        "devices/revoke-all/",
+        RevokeAllDevicesView.as_view(),
+        name="auth-devices-revoke-all",
+    ),
+    path("sessions/", SessionListView.as_view(), name="auth-sessions"),
+    path(
+        "sessions/<int:session_pk>/revoke/",
+        SessionRevokeView.as_view(),
+        name="auth-session-revoke",
+    ),
     path("profile/", ProfileView.as_view(), name="auth-profile"),
 ]

@@ -92,13 +92,13 @@ These 15 API tests validate the project scaffolding before any feature developme
 | TC-S0-010 | Referrer-Policy header is set (not empty) | API | Security Headers | Security |
 | TC-S0-011 | CORS OPTIONS rejects requests from unknown/evil origins | API | CORS | Security |
 | TC-S0-012 | CORS allows preflight from the legitimate frontend origin | API | CORS | Positive |
-| TC-S0-013 | OPTIONS preflight to /auth/login/ returns 200 or 204 | API | CORS | Positive |
-| TC-S0-014 | POST /auth/login/ with wrong creds returns 400/401, not 500 (DB probe) | API | DB Connectivity | Positive |
+| TC-S0-013 | OPTIONS preflight to /auth/otp/request/ returns 200 or 204 | API | CORS | Positive |
+| TC-S0-014 | POST /auth/otp/verify/ with a wrong code returns 400, not 500 (DB probe) | API | DB Connectivity | Positive |
 | TC-S0-015 | Every API response is valid JSON — no HTML error pages returned | API | Response Format | Positive |
 
 ---
 
-### Sprint 1 — Authentication & User Management (85 Cases)
+### Sprint 1 — Authentication & User Management (86 Cases)
 
 The most security-critical sprint. RBAC failures can expose all tenant data. Every auth edge case, injection vector, and role boundary is tested.
 
@@ -108,29 +108,29 @@ The most security-critical sprint. RBAC failures can expose all tenant data. Eve
 
 | Test ID | Description | Layer | Category | Type |
 |---|---|---|---|---|
-| TC-S1-API-001 | Admin login with valid credentials returns HTTP 200 + access + refresh tokens | API | Login | Positive |
-| TC-S1-API-002 | Owner login with valid credentials returns HTTP 200 + both tokens | API | Login | Positive |
+| TC-S1-API-001 | otp/request with an unknown email creates a pending user + OTP row, returns 200 | API | OTP | Positive |
+| TC-S1-API-002 | otp/verify with the correct code returns HTTP 200 + access token (body) + refresh/trusted_device cookies | API | OTP | Positive |
 | TC-S1-API-003 | Access token is a valid JWT with user_id, role, and exp claims | API | Token | Positive |
 | TC-S1-API-004 | JWT issued to Admin contains role=Admin claim | API | Token | Positive |
 | TC-S1-API-005 | JWT issued to Owner contains role=Owner claim | API | Token | Positive |
-| TC-S1-API-006 | Login response time is under 500ms (NFR) | API | Performance | Performance |
-| TC-S1-API-007 | Login with email in UPPERCASE is accepted (case-insensitive) | API | Login | Positive |
-| TC-S1-API-008 | Wrong password returns HTTP 401 | API | Login | Negative |
-| TC-S1-API-009 | Non-existent email returns HTTP 401 (not 404) | API | Login | Negative |
-| TC-S1-API-010 | Error message does not confirm whether email exists (anti-enumeration) | API | Security | Security |
-| TC-S1-API-011 | Empty email field returns HTTP 400 | API | Validation | Negative |
-| TC-S1-API-012 | Empty password field returns HTTP 400 | API | Validation | Negative |
-| TC-S1-API-013 | Missing email field in body returns HTTP 400 | API | Validation | Negative |
-| TC-S1-API-014 | Missing password field in body returns HTTP 400 | API | Validation | Negative |
-| TC-S1-API-015 | Empty JSON body {} returns HTTP 400 | API | Validation | Negative |
+| TC-S1-API-006 | otp/verify response time is under 500ms (NFR) | API | Performance | Performance |
+| TC-S1-API-007 | OTP request/verify with email in UPPERCASE is accepted (case-insensitive) | API | OTP | Positive |
+| TC-S1-API-008 | otp/verify with the wrong code increments attempts and returns HTTP 400 | API | OTP | Negative |
+| TC-S1-API-009 | otp/verify for an email with no active code returns HTTP 400, not 404 | API | OTP | Negative |
+| TC-S1-API-010 | otp/request answers the same shape whether or not the email is registered (anti-enumeration; a pending user is created either way) | API | Security | Security |
+| TC-S1-API-011 | Empty email field on otp/request returns HTTP 400 | API | Validation | Negative |
+| TC-S1-API-012 | Empty code field on otp/verify returns HTTP 400 | API | Validation | Negative |
+| TC-S1-API-013 | Missing email field in otp/request body returns HTTP 400 | API | Validation | Negative |
+| TC-S1-API-014 | Missing code field in otp/verify body returns HTTP 400 | API | Validation | Negative |
+| TC-S1-API-015 | Empty JSON body {} on otp/request returns HTTP 400 | API | Validation | Negative |
 | TC-S1-API-016 | Malformed email format (not@valid) returns HTTP 400 | API | Validation | Negative |
-| TC-S1-API-017 | SQL injection in email field returns 400/401, never 200 or 500 | API | Security | Security |
+| TC-S1-API-017 | SQL injection in email field returns 400, never 200 or 500 | API | Security | Security |
 | TC-S1-API-018 | XSS payload in email field is not reflected unescaped in response | API | Security | Security |
-| TC-S1-API-019 | 7 weak password variants are all rejected with 400 on registration | API | Security | Security |
-| TC-S1-API-020 | Valid refresh token generates a new access token (200) | API | Token | Positive |
-| TC-S1-API-021 | Forged/invalid refresh token returns HTTP 401 | API | Token | Negative |
-| TC-S1-API-022 | Missing refresh token in body returns HTTP 400 | API | Token | Negative |
-| TC-S1-API-023 | Logout blacklists the refresh token — reuse after logout returns 401 | API | Security | Security |
+| TC-S1-API-019 | otp/request is rate-limited to 5/min per (email, IP) — the 6th request in a minute returns 429 | API | Security | Security |
+| TC-S1-API-020 | Valid refresh cookie rotates to a new refresh cookie and returns a new access token (200) | API | Token | Positive |
+| TC-S1-API-021 | Forged/invalid refresh cookie returns HTTP 401 | API | Token | Negative |
+| TC-S1-API-022 | Missing refresh_token cookie on /auth/refresh/ returns HTTP 401 | API | Token | Negative |
+| TC-S1-API-023 | Logout blacklists the refresh token — reusing the cookie afterward returns 401 | API | Security | Security |
 | TC-S1-API-024 | Expired or forged access token on any endpoint returns 401 | API | Security | Security |
 | TC-S1-API-025 | Unauthenticated request to /buildings/ returns 401 | API | RBAC | Security |
 | TC-S1-API-026 | Owner POST /buildings/ is forbidden — returns 403 | API | RBAC | Security |
@@ -139,70 +139,71 @@ The most security-critical sprint. RBAC failures can expose all tenant data. Eve
 | TC-S1-API-029 | Admin GET /buildings/ returns 200 with all buildings | API | RBAC | Positive |
 | TC-S1-API-030 | Admin GET /users/ returns 200 with all users | API | RBAC | Positive |
 | TC-S1-API-031 | Owner cannot access a building they are not assigned to (403 or 404) | API | Multi-Tenant | Security |
-| TC-S1-API-032 | Admin creates new user — returns 201 with id and email | API | User CRUD | Positive |
-| TC-S1-API-033 | Password and password_hash never appear in any user API response | API | Security | Security |
+| TC-S1-API-032 | Admin creates new (passwordless) user — returns 201 with id and email | API | User CRUD | Positive |
+| TC-S1-API-033 | No password, password_hash or OTP code ever appears in any user/auth API response | API | Security | Security |
 | TC-S1-API-034 | Duplicate email registration returns HTTP 400 | API | Validation | Negative |
 | TC-S1-API-035 | Admin deactivates user — is_active becomes false | API | User CRUD | Positive |
-| TC-S1-API-036 | Deactivated user cannot log in — returns 401 | API | User CRUD | Negative |
-| TC-S1-API-037 | Password change with correct current password returns 200/204 | API | User CRUD | Positive |
-| TC-S1-API-038 | Password change with wrong current password returns 400 | API | User CRUD | Negative |
-| TC-S1-API-039 | Password confirm mismatch returns 400 | API | User CRUD | Negative |
-| TC-S1-API-040 | Account locks after 5 consecutive failed logins (returns 401/423) | API | Security | Security |
+| TC-S1-API-036 | Deactivated user is refused at otp/request, otp/verify and google/ — returns 403 | API | User CRUD | Negative |
+| TC-S1-API-037 | Admin resend-invite action sends a fresh OTP and returns 200/204 | API | User CRUD | Positive |
+| TC-S1-API-038 | otp/verify after exceeding OTP_MAX_ATTEMPTS wrong codes returns HTTP 429 and burns the code | API | Security | Security |
+| TC-S1-API-039 | A trusted_device cookie from a previous sign-in lets otp/request skip the code step and sign in directly | API | OTP | Positive |
+| TC-S1-API-040 | Replaying an already-rotated refresh token outside the grace window revokes every outstanding session for that user | API | Security | Security |
 
-#### Sprint 1 — Web UI Tests (25 cases)
+#### Sprint 1 — Web UI Tests (26 cases)
 
 | Test ID | Description | Layer | Category | Type |
 |---|---|---|---|---|
-| TC-S1-WEB-001 | Login page title contains 3maracom or Login | Web | Rendering | Positive |
-| TC-S1-WEB-002 | Email input field is visible on login page | Web | Rendering | Positive |
-| TC-S1-WEB-003 | Password input field is visible on login page | Web | Rendering | Positive |
-| TC-S1-WEB-004 | Password field is type=password (masked) by default | Web | Security | Security |
-| TC-S1-WEB-005 | Login submit button is visible and enabled | Web | Rendering | Positive |
-| TC-S1-WEB-006 | Admin login redirects to /dashboard | Web | Auth Flow | Positive |
-| TC-S1-WEB-007 | Owner login redirects to /dashboard | Web | Auth Flow | Positive |
+| TC-S1-WEB-001 | Login page title contains 3maracom or Sign In | Web | Rendering | Positive |
+| TC-S1-WEB-002 | Email input field is visible on the sign-in page | Web | Rendering | Positive |
+| TC-S1-WEB-003 | Entering a valid email and submitting reveals the 6-digit code input | Web | Rendering | Positive |
+| TC-S1-WEB-004 | Code input accepts only digits, max 6 characters | Web | Validation | Positive |
+| TC-S1-WEB-005 | "Send code" / "Verify" submit button is visible and enabled | Web | Rendering | Positive |
+| TC-S1-WEB-006 | Admin sign-in (OTP) redirects to /dashboard | Web | Auth Flow | Positive |
+| TC-S1-WEB-007 | Owner sign-in (OTP) redirects to /dashboard | Web | Auth Flow | Positive |
 | TC-S1-WEB-008 | Admin dashboard shows admin-only controls (buildings, users) | Web | RBAC | Positive |
 | TC-S1-WEB-009 | Owner dashboard does NOT show admin-only controls | Web | RBAC | Security |
 | TC-S1-WEB-010 | Browser Back after logout does not expose dashboard | Web | Security | Security |
-| TC-S1-WEB-011 | Wrong password shows inline error — no dashboard redirect | Web | Error UX | Negative |
-| TC-S1-WEB-012 | Error message is generic — does not confirm email existence | Web | Security | Security |
+| TC-S1-WEB-011 | Wrong code shows inline error — no dashboard redirect | Web | Error UX | Negative |
+| TC-S1-WEB-012 | otp/request error message is generic — does not confirm email existence | Web | Security | Security |
 | TC-S1-WEB-013 | Empty form submission shows validation errors | Web | Validation | Negative |
 | TC-S1-WEB-014 | Empty email prevents form submission | Web | Validation | Negative |
-| TC-S1-WEB-015 | Empty password prevents form submission | Web | Validation | Negative |
-| TC-S1-WEB-016 | Show/hide password toggle changes field type password ↔ text | Web | Security UX | Positive |
+| TC-S1-WEB-015 | Empty code prevents verify submission | Web | Validation | Negative |
+| TC-S1-WEB-016 | "Sign in with Google" button renders and launches the Google ID-token flow | Web | Auth Flow | Positive |
 | TC-S1-WEB-017 | /login is accessible to unauthenticated users (no redirect loop) | Web | Routing | Positive |
 | TC-S1-WEB-018 | Direct navigation to /dashboard redirects unauth user to /login | Web | Security | Security |
 | TC-S1-WEB-019 | Login page is served over HTTPS in staging/prod environments | Web | Security | Security |
-| TC-S1-WEB-020 | Forgot Password link navigates to /forgot-password | Web | Navigation | Positive |
-| TC-S1-WEB-021 | Tab key navigates email → password → submit in order | Web | Accessibility | Positive |
-| TC-S1-WEB-022 | Enter key in password field submits the login form | Web | Accessibility | Positive |
+| TC-S1-WEB-020 | "Resend code" link re-triggers otp/request and shows a cooldown | Web | Navigation | Positive |
+| TC-S1-WEB-021 | Tab key navigates email → code → submit in order | Web | Accessibility | Positive |
+| TC-S1-WEB-022 | Enter key in the code field submits the verify form | Web | Accessibility | Positive |
 | TC-S1-WEB-023 | Email input has type=email (browser validation + mobile keyboard) | Web | Accessibility | Positive |
-| TC-S1-WEB-024 | Password field has autocomplete=current-password | Web | Accessibility | Positive |
+| TC-S1-WEB-024 | Code input has autocomplete=one-time-code | Web | Accessibility | Positive |
 | TC-S1-WEB-025 | No horizontal scroll at 375px viewport (mobile responsive) | Web | Responsive | Positive |
+| TC-S1-WEB-026 | Profile page "log out of all other devices" action calls devices/revoke-all and confirms | Web | Security | Positive |
 
 #### Sprint 1 — Mobile Tests (20 cases)
 
 | Test ID | Description | Layer | Category | Type |
 |---|---|---|---|---|
-| TC-S1-MOB-001 | Login screen is shown on first app launch | Mobile | Rendering | Mobile |
-| TC-S1-MOB-002 | Email input is visible and enabled on login screen | Mobile | Rendering | Mobile |
-| TC-S1-MOB-003 | Password input is visible and text is obscured | Mobile | Security | Security |
-| TC-S1-MOB-004 | Login button is visible and tappable | Mobile | Rendering | Mobile |
-| TC-S1-MOB-005 | Tapping email field raises the soft keyboard | Mobile | UX | Mobile |
-| TC-S1-MOB-006 | Admin login navigates to Buildings screen (no dashboard on mobile) | Mobile | Auth Flow | Mobile |
-| TC-S1-MOB-007 | Owner login navigates to Owner Home / Balance screen | Mobile | Auth Flow | Mobile |
-| TC-S1-MOB-008 | Token persists after backgrounding — user stays logged in | Mobile | Security | Security |
+| TC-S1-MOB-001 | Sign-in screen is shown on first PWA launch | Mobile | Rendering | Mobile |
+| TC-S1-MOB-002 | Email input is visible and enabled on the sign-in screen | Mobile | Rendering | Mobile |
+| TC-S1-MOB-003 | Code input appears after otp/request and is numeric-only | Mobile | Rendering | Mobile |
+| TC-S1-MOB-004 | "Send code" / "Verify" button is visible and tappable | Mobile | Rendering | Mobile |
+| TC-S1-MOB-005 | Tapping email field raises the soft keyboard (email layout); tapping the code field raises the numeric keypad | Mobile | UX | Mobile |
+| TC-S1-MOB-006 | Admin OTP sign-in navigates to Buildings screen (no dashboard on mobile) | Mobile | Auth Flow | Mobile |
+| TC-S1-MOB-007 | Owner OTP sign-in navigates to Owner Home / Balance screen | Mobile | Auth Flow | Mobile |
+| TC-S1-MOB-008 | Access token refreshes via the httpOnly cookie after backgrounding — user stays signed in | Mobile | Security | Security |
 | TC-S1-MOB-009 | Admin sees Buildings, Expenses, Payments in navigation | Mobile | RBAC | Mobile |
 | TC-S1-MOB-010 | Owner does NOT see user management or all-buildings nav items | Mobile | RBAC | Security |
-| TC-S1-MOB-011 | Wrong password shows error message — stays on login screen | Mobile | Error UX | Negative |
-| TC-S1-MOB-012 | Empty fields tap login shows validation — no API call | Mobile | Validation | Negative |
-| TC-S1-MOB-013 | Loading indicator shown during login request | Mobile | UX | Mobile |
-| TC-S1-MOB-014 | Login button disabled during in-flight request (no double-submit) | Mobile | UX | Mobile |
-| TC-S1-MOB-015 | Logout clears secure storage — reopening shows login screen | Mobile | Security | Security |
+| TC-S1-MOB-011 | Wrong code shows error message — stays on verify screen | Mobile | Error UX | Negative |
+| TC-S1-MOB-012 | Empty fields tap submit shows validation — no API call | Mobile | Validation | Negative |
+| TC-S1-MOB-013 | Loading indicator shown during otp/request and otp/verify requests | Mobile | UX | Mobile |
+| TC-S1-MOB-014 | Submit button disabled during in-flight request (no double-submit) | Mobile | UX | Mobile |
+| TC-S1-MOB-015 | Logout clears the refresh cookie/local state — reopening shows the sign-in screen | Mobile | Security | Security |
 | TC-S1-MOB-016 | User can view their profile (name, email) from profile screen | Mobile | Profile | Mobile |
 | TC-S1-MOB-017 | User can update phone number from profile screen | Mobile | Profile | Mobile |
 | TC-S1-MOB-018 | Invalid phone format shows validation error | Mobile | Profile | Negative |
-| TC-S1-MOB-019 | Password change requires correct current password on mobile | Mobile | Profile | Negative |
-| TC-S1-MOB-020 | Session expires gracefully — app redirects to login with message | Mobile | Security | Security |
+| TC-S1-MOB-019 | "Log out of all other devices" action on profile calls devices/revoke-all | Mobile | Profile | Mobile |
+| TC-S1-MOB-020 | Session expires gracefully — app redirects to sign-in with message | Mobile | Security | Security |
 
 ---
 
@@ -281,7 +282,7 @@ Tests the core data model of the platform. Tenant isolation (multi-building) is 
 
 | Test ID | Description | Layer | Category | Type |
 |---|---|---|---|---|
-| TC-S2-MOB-001 | Buildings list screen shows after admin login | Mobile | Building UI | Mobile |
+| TC-S2-MOB-001 | Buildings list screen shows after admin OTP sign-in | Mobile | Building UI | Mobile |
 | TC-S2-MOB-002 | Admin can create a new building from mobile | Mobile | Building UI | Mobile |
 | TC-S2-MOB-003 | New building appears in list immediately after creation | Mobile | Building UI | Mobile |
 | TC-S2-MOB-004 | Admin can edit building name from mobile | Mobile | Building UI | Mobile |
@@ -755,14 +756,14 @@ Sprint 9 is dedicated to non-functional quality. Performance tests use Locust to
 | Test ID | Description | Layer | Category | Type |
 |---|---|---|---|---|
 | TC-S9-PERF-001 | GET /health/ P95 response < 200ms under 100 concurrent users | API | Performance | Performance |
-| TC-S9-PERF-002 | POST /auth/login/ P95 < 500ms under 50 concurrent requests | API | Performance | Performance |
+| TC-S9-PERF-002 | POST /auth/otp/verify/ P95 < 500ms under 50 concurrent requests | API | Performance | Performance |
 | TC-S9-PERF-003 | GET /buildings/ P95 < 500ms under 100 concurrent users | API | Performance | Performance |
 | TC-S9-PERF-004 | GET /expenses/?building_id= P95 < 500ms under 100 concurrent users | API | Performance | Performance |
 | TC-S9-PERF-005 | POST /payments/ P95 < 800ms under 50 concurrent users | API | Performance | Performance |
 | TC-S9-PERF-006 | GET /dashboard/admin/ P95 < 1000ms (cached) under 50 users | API | Performance | Performance |
 | TC-S9-PERF-007 | File upload 5MB bill image completes in < 10 seconds | API | Performance | Performance |
 | TC-S9-PERF-008 | Error rate < 1% under sustained 100 req/sec load for 5 minutes | API | Performance | Performance |
-| TC-S9-PERF-009 | Web login page loads in < 2 seconds (Lighthouse metric) | Web | Performance | Performance |
+| TC-S9-PERF-009 | Web sign-in page loads in < 2 seconds (Lighthouse metric) | Web | Performance | Performance |
 | TC-S9-PERF-010 | Web dashboard page loads in < 3 seconds with full data | Web | Performance | Performance |
 | TC-S9-PERF-011 | Web page Lighthouse Performance score >= 70 | Web | Performance | Performance |
 | TC-S9-PERF-012 | Largest Contentful Paint (LCP) < 2.5s on dashboard | Web | Performance | Performance |
@@ -781,13 +782,13 @@ Sprint 9 is dedicated to non-functional quality. Performance tests use Locust to
 |---|---|---|---|---|
 | TC-S9-SEC-001 | OWASP A01 — Owner cannot escalate to Admin by modifying JWT role claim | API | OWASP A01 | Security |
 | TC-S9-SEC-002 | OWASP A01 — Horizontal privilege: user cannot modify another user's data | API | OWASP A01 | Security |
-| TC-S9-SEC-003 | OWASP A02 — All passwords are hashed (bcrypt/PBKDF2) — no plain text in DB | API | OWASP A02 | Security |
+| TC-S9-SEC-003 | OWASP A02 — Superuser passwords stay PBKDF2-hashed; OTP codes are HMAC-SHA256-hashed and trusted-device tokens SHA-256-hashed — no plaintext secret in DB | API | OWASP A02 | Security |
 | TC-S9-SEC-004 | OWASP A02 — TLS 1.2+ enforced — TLS 1.0 and 1.1 connections rejected | API | OWASP A02 | Security |
 | TC-S9-SEC-005 | OWASP A03 — SQL injection in all string inputs returns 400, not 500 | API | OWASP A03 | Security |
 | TC-S9-SEC-006 | OWASP A03 — XSS payloads in all text inputs stored escaped, returned escaped | API | OWASP A03 | Security |
 | TC-S9-SEC-007 | OWASP A04 — Insecure Direct Object Reference: /apartments/{id}/ enforces ownership | API | OWASP A04 | Security |
 | TC-S9-SEC-008 | OWASP A04 — IDOR: /payments/{id}/ returns 403 for non-owner access | API | OWASP A04 | Security |
-| TC-S9-SEC-009 | OWASP A05 — No sensitive data (passwords, tokens) in server logs | API | OWASP A05 | Security |
+| TC-S9-SEC-009 | OWASP A05 — No sensitive data (OTP codes, tokens) in server logs | API | OWASP A05 | Security |
 | TC-S9-SEC-010 | OWASP A06 — Django ALLOWED_HOSTS restricts invalid Host headers | API | OWASP A06 | Security |
 | TC-S9-SEC-011 | OWASP A07 — Auth endpoint rate-limited to 10 req/min (429 after limit) | API | OWASP A07 | Security |
 | TC-S9-SEC-012 | OWASP A08 — File uploads scanned for executable content (magic bytes) | API | OWASP A08 | Security |

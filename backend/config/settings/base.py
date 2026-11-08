@@ -1,9 +1,11 @@
 """
 ABEM – Base Django settings shared across all environments.
 """
-from pathlib import Path
+
 from datetime import timedelta
-from decouple import config, Csv
+from pathlib import Path
+
+from decouple import Csv, config
 from django.utils.translation import gettext_lazy as _
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
@@ -119,7 +121,9 @@ AUTH_USER_MODEL = "authentication.User"
 # Password validation
 # ---------------------------------------------------------------------------
 AUTH_PASSWORD_VALIDATORS = [
-    {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
+    {
+        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"
+    },
     {
         "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
         "OPTIONS": {"min_length": 8},
@@ -201,7 +205,9 @@ SIMPLE_JWT = {
 # ---------------------------------------------------------------------------
 # CORS
 # ---------------------------------------------------------------------------
-CORS_ALLOWED_ORIGINS = config("CORS_ALLOWED_ORIGINS", default="http://localhost:5173", cast=Csv())
+CORS_ALLOWED_ORIGINS = config(
+    "CORS_ALLOWED_ORIGINS", default="http://localhost:5173", cast=Csv()
+)
 CORS_ALLOW_CREDENTIALS = True
 
 # ---------------------------------------------------------------------------
@@ -210,7 +216,23 @@ CORS_ALLOW_CREDENTIALS = True
 # In-process cache: no extra service to run. Rate-limit counters are kept per server
 # process, so the effective limit is per worker. Recurring expenses are created by the
 # `generate_recurring_expenses` management command, run daily by the host scheduler.
-CACHES = {"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}}
+CACHES = {
+    "default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"},
+    # django_ratelimit counters must be shared across gunicorn worker
+    # processes in production, or the effective rate becomes
+    # ~(configured rate x worker count). LocMemCache is per-process, so
+    # rate-limited views use this DB-backed cache instead (see
+    # RATELIMIT_USE_CACHE below). Table is provisioned by the
+    # `0012_create_ratelimit_cache_table` migration - no manual
+    # `createcachetable` step needed.
+    "ratelimit": {
+        "BACKEND": "django.core.cache.backends.db.DatabaseCache",
+        "LOCATION": "ratelimit_cache_table",
+    },
+}
+
+# django_ratelimit: which CACHES alias counters are stored in (see comment above).
+RATELIMIT_USE_CACHE = "ratelimit"
 
 # ---------------------------------------------------------------------------
 # Email
@@ -225,7 +247,9 @@ EMAIL_HOST_PASSWORD = config("EMAIL_HOST_PASSWORD", default="")
 # Where in-app problem reports are emailed (public address, not a secret)
 SUPPORT_EMAIL = config("SUPPORT_EMAIL", default="cegres1@gmail.com")
 FRONTEND_URL = config("FRONTEND_URL", default="http://localhost:5173")
-DEFAULT_FROM_EMAIL = config("DEFAULT_FROM_EMAIL", default="عِمارة.كوم <noreply@3mara.com>")
+DEFAULT_FROM_EMAIL = config(
+    "DEFAULT_FROM_EMAIL", default="عِمارة.كوم <noreply@3mara.com>"
+)
 
 # ---------------------------------------------------------------------------
 # Firebase (FCM)
@@ -242,10 +266,10 @@ SPECTACULAR_SETTINGS = {
         "**عِمارة.كوم (3maracom)** — building expense management for owners' associations and residents.\n\n"
         "Manages buildings, apartments, shared expenses, payments, notifications, and audit logs.\n\n"
         "### Authentication\n"
-        "All endpoints (except `/auth/login/` and `/auth/register/`) require a **Bearer JWT** token.\n"
-        "Obtain tokens via `POST /api/v1/auth/login/` and include `Authorization: Bearer <access>` "
-        "in every request.  Access tokens expire after 60 minutes; use the refresh endpoint to "
-        "obtain a new one.\n\n"
+        "Sign in with email OTP (`POST /auth/otp/request/` then `POST /auth/otp/verify/`) or "
+        "Google Sign-In (`POST /auth/google/`). Most endpoints require a **Bearer JWT** access "
+        "token obtained from one of those; the refresh token travels as an httpOnly cookie, not "
+        "in the response body.\n\n"
         "### Roles\n"
         "| Role  | Description |\n"
         "|-------|-------------|\n"
@@ -276,16 +300,22 @@ SPECTACULAR_SETTINGS = {
     },
     # ── Tag grouping (matches app names) ──────────────────────────────────────
     "TAGS": [
-        {"name": "auth",          "description": "Login, logout, register, token refresh, profile"},
-        {"name": "users",         "description": "User management (admin only)"},
-        {"name": "buildings",     "description": "Building CRUD and user assignment"},
-        {"name": "apartments",    "description": "Apartment CRUD with owner assignment"},
-        {"name": "expenses",      "description": "Shared expense creation and split management"},
-        {"name": "payments",      "description": "Payment recording and receipt generation"},
-        {"name": "dashboard",     "description": "Aggregated financial dashboards"},
+        {
+            "name": "auth",
+            "description": "Login, logout, register, token refresh, profile",
+        },
+        {"name": "users", "description": "User management (admin only)"},
+        {"name": "buildings", "description": "Building CRUD and user assignment"},
+        {"name": "apartments", "description": "Apartment CRUD with owner assignment"},
+        {
+            "name": "expenses",
+            "description": "Shared expense creation and split management",
+        },
+        {"name": "payments", "description": "Payment recording and receipt generation"},
+        {"name": "dashboard", "description": "Aggregated financial dashboards"},
         {"name": "notifications", "description": "In-app notification inbox"},
-        {"name": "audit",         "description": "Immutable audit log (admin only)"},
-        {"name": "exports",       "description": "CSV/XLSX data exports (admin only)"},
+        {"name": "audit", "description": "Immutable audit log (admin only)"},
+        {"name": "exports", "description": "CSV/XLSX data exports (admin only)"},
     ],
     # ── UI enhancements ────────────────────────────────────────────────────────
     "SORT_OPERATIONS": False,
@@ -293,10 +323,11 @@ SPECTACULAR_SETTINGS = {
 }
 
 # ---------------------------------------------------------------------------
-# Security – account lockout settings
+# Auth – email OTP + Google Sign-In
 # ---------------------------------------------------------------------------
-LOGIN_MAX_ATTEMPTS = 5
-LOGIN_LOCKOUT_DURATION_MINUTES = 15
+GOOGLE_CLIENT_ID = config("GOOGLE_CLIENT_ID", default="")
+OTP_CODE_TTL_MINUTES = config("OTP_CODE_TTL_MINUTES", default=10, cast=int)
+OTP_MAX_ATTEMPTS = config("OTP_MAX_ATTEMPTS", default=5, cast=int)
 
 # ---------------------------------------------------------------------------
 # File upload limits

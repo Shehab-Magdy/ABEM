@@ -18,8 +18,13 @@ def log_action(*, user, action, entity, entity_id, changes=None, request=None):
     user_agent = ""
 
     if request is not None:
-        forwarded = request.META.get("HTTP_X_FORWARDED_FOR")
-        ip_address = forwarded.split(",")[0].strip() if forwarded else request.META.get("REMOTE_ADDR")
+        # X-Real-IP is set by nginx from the actual TCP connection
+        # (`proxy_set_header X-Real-IP $remote_addr;`) and can't be spoofed
+        # by the client. X-Forwarded-For is client-controlled - nginx only
+        # APPENDS to it (`$proxy_add_x_forwarded_for`), so trusting its
+        # first entry would let a client lie about its IP.
+        real_ip = request.META.get("HTTP_X_REAL_IP")
+        ip_address = real_ip.strip() if real_ip else request.META.get("REMOTE_ADDR")
         user_agent = request.META.get("HTTP_USER_AGENT", "")
 
     AuditLog.objects.create(

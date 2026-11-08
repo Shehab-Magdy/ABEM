@@ -1,6 +1,9 @@
 """Custom user model with role-based access control."""
+
 import uuid
-from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
+
+from django.contrib.auth.models import (AbstractBaseUser, BaseUserManager,
+                                        PermissionsMixin)
 from django.db import models
 from django.utils import timezone
 
@@ -14,15 +17,29 @@ class UserRole(models.TextChoices):
 
 class UserManager(BaseUserManager):
     def create_user(self, email, password=None, **extra_fields):
+        """
+        Create a user for OTP/Google-only authentication by default.
+
+        Most accounts never have a usable password — they sign in via email OTP
+        or Google. Only pass `password` when a real password is required (the
+        `create_superuser` path, kept for Django admin login).
+        """
         if not email:
             raise ValueError("Email is required")
         email = self.normalize_email(email)
         user = self.model(email=email, **extra_fields)
-        user.set_password(password)
+        if password:
+            user.set_password(password)
+        else:
+            user.set_unusable_password()
         user.save(using=self._db)
         return user
 
     def create_superuser(self, email, password=None, **extra_fields):
+        if not password:
+            raise ValueError(
+                "Superusers must have a password (used for /admin/ login)."
+            )
         extra_fields.setdefault("role", UserRole.ADMIN)
         extra_fields.setdefault("is_staff", True)
         extra_fields.setdefault("is_superuser", True)
@@ -37,17 +54,14 @@ class User(AbstractBaseUser, PermissionsMixin):
     phone = models.CharField(max_length=20, blank=True)
     # When the user accepted the Terms of Service and Privacy Policy (set at self sign-up)
     terms_accepted_at = models.DateTimeField(null=True, blank=True)
-    profile_picture = models.ImageField(upload_to="profile_pictures/", null=True, blank=True)
-    role = models.CharField(max_length=10, choices=UserRole.choices, default=UserRole.OWNER)
+    profile_picture = models.ImageField(
+        upload_to="profile_pictures/", null=True, blank=True
+    )
+    role = models.CharField(
+        max_length=10, choices=UserRole.choices, default=UserRole.OWNER
+    )
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
-
-    # Account lockout tracking
-    failed_login_attempts = models.PositiveSmallIntegerField(default=0)
-    locked_until = models.DateTimeField(null=True, blank=True)
-
-    # Forced password change (set after admin resets password)
-    must_change_password = models.BooleanField(default=False)
 
     # Language preference for i18n
     preferred_language = models.CharField(
@@ -72,11 +86,11 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     # Track which admin created this user (FE-01 scoping)
     created_by = models.ForeignKey(
-        'self',
+        "self",
         null=True,
         blank=True,
         on_delete=models.SET_NULL,
-        related_name='created_users',
+        related_name="created_users",
     )
 
     created_at = models.DateTimeField(auto_now_add=True)
@@ -103,8 +117,111 @@ class User(AbstractBaseUser, PermissionsMixin):
     def is_admin(self):
         return self.role == UserRole.ADMIN
 
+
+class EmailOTP(models.Model):
+    """
+    A one-time passcode emailed to sign in, replacing passwords.
+
+    `user` is null when the code was requested for an email that has no
+    account yet (a brand-new signup via the login page or Google): the
+    pending address is kept in `email` until `otp/verify/` is called with
+    `accept_terms=true`, at which point the account is created and the code
+    is consumed - so no account ever exists without having accepted the
+    Terms of Service. Exactly one of `user`/`email` is set at all times.
+    """
+
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="email_otps",
+        null=True,
+        blank=True,
+    )
+    email = models.EmailField(null=True, blank=True)
+    code_hash = models.CharField(max_length=64)
+    expires_at = models.DateTimeField()
+    attempts = models.PositiveSmallIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Email OTP"
+        verbose_name_plural = "Email OTPs"
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["user", "-created_at"]),
+            models.Index(fields=["email", "-created_at"]),
+        ]
+        constraints = [
+            models.CheckConstraint(
+                check=models.Q(user__isnull=False) | models.Q(email__isnull=False),
+                name="emailotp_user_or_email_required",
+            )
+        ]
+
+    def __str__(self):
+        target = self.user.email if self.user_id else self.email
+        return f"OTP for {target} (expires {self.expires_at})"
+
     @property
-    def is_locked(self):
-        if self.locked_until and self.locked_until > timezone.now():
-            return True
-        return False
+    def is_expired(self):
+        return self.expires_at <= timezone.now()
+
+
+class TrustedDevice(models.Model):
+    """A device that may bypass the OTP step for a limited time after a successful sign-in."""
+
+    user = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name="trusted_devices"
+    )
+    token_hash = models.CharField(max_length=64, unique=True)
+    expires_at = models.DateTimeField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    last_used_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        verbose_name = "Trusted Device"
+        verbose_name_plural = "Trusted Devices"
+        ordering = ["-created_at"]
+        indexes = [models.Index(fields=["user"])]
+
+    def __str__(self):
+        return f"Trusted device for {self.user.email} (expires {self.expires_at})"
+
+    @property
+    def is_expired(self):
+        return self.expires_at <= timezone.now()
+
+
+class UserSession(models.Model):
+    """
+    A real signed-in session, for a "your devices" screen - distinct from
+    `TrustedDevice` (the OTP-skip-bypass grant) and from simplejwt's
+    OutstandingToken/BlacklistedToken (which get a fresh jti on every
+    refresh-token rotation, so they can't represent one continuous session
+    on their own).
+
+    `session_id` is generated once at login and embedded in the refresh
+    token's claims; it stays the same across rotations, while `current_jti`
+    is overwritten on every rotation to track which OutstandingToken a
+    revoke of this session must blacklist.
+    """
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="sessions")
+    session_id = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+    device_label = models.CharField(max_length=100, blank=True)
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    current_jti = models.CharField(max_length=255)
+    created_at = models.DateTimeField(auto_now_add=True)
+    last_used_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "User Session"
+        verbose_name_plural = "User Sessions"
+        ordering = ["-last_used_at"]
+        indexes = [
+            models.Index(fields=["session_id"]),
+            models.Index(fields=["user"]),
+        ]
+
+    def __str__(self):
+        return f"Session for {self.user.email} ({self.device_label})"

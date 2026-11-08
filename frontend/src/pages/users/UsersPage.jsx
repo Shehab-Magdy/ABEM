@@ -88,11 +88,11 @@ export default function UsersPage() {
   const watchEditRole = editForm.watch("role");
   const watchEditOwnerBuilding = editForm.watch("ownerBuilding");
 
-  // Reset password dialog
-  const [resetTarget, setResetTarget] = useState(null);
-  const [resetError, setResetError] = useState(null);
-  const [resetting, setResetting] = useState(false);
-  const resetForm = useForm();
+  // Resend invite (email OTP sign-in code)
+  const [resendTarget, setResendTarget] = useState(null);
+  const [resendError, setResendError] = useState(null);
+  const [resendSuccess, setResendSuccess] = useState(false);
+  const [resending, setResending] = useState(false);
 
   // Messaging restrictions dialog
   const [msgTarget, setMsgTarget] = useState(null);
@@ -259,7 +259,6 @@ export default function UsersPage() {
         email: data.email?.trim(),
         phone: data.phone?.trim(),
         role: data.role,
-        password: data.password,
       };
       if (data.role === "admin") {
         payload.buildings = data.buildings || [];
@@ -278,18 +277,17 @@ export default function UsersPage() {
     }
   };
 
-  // ── Reset password ──────────────────────────────────────────────────────────
-  const onResetPassword = async (data) => {
-    setResetting(true);
-    setResetError(null);
+  // ── Resend invite (fresh email OTP sign-in code) ────────────────────────────
+  const onResendInvite = async () => {
+    setResending(true);
+    setResendError(null);
     try {
-      await usersApi.resetPassword(resetTarget.id, data);
-      setResetTarget(null);
-      resetForm.reset();
+      await usersApi.resendInvite(resendTarget.id);
+      setResendSuccess(true);
     } catch (err) {
-      setResetError(err.response?.data?.detail || "Reset failed.");
+      setResendError(err.response?.data?.detail || t("resendInviteFailed", "Failed to resend invite."));
     } finally {
-      setResetting(false);
+      setResending(false);
     }
   };
 
@@ -462,8 +460,8 @@ export default function UsersPage() {
               )}
             </IconButton>
           </Tooltip>
-          <Tooltip title={t("resetPassword")}>
-            <IconButton size="small" onClick={() => { setResetTarget(row); setResetError(null); }}>
+          <Tooltip title={t("resendInvite", "Resend sign-in code")}>
+            <IconButton size="small" onClick={() => { setResendTarget(row); setResendError(null); setResendSuccess(false); }}>
               <LockReset fontSize="small" color="warning" />
             </IconButton>
           </Tooltip>
@@ -612,7 +610,6 @@ export default function UsersPage() {
                 />
               )}
               {watchCreateRole === "owner" && renderOwnerBuildingUnitFields(createForm, watchCreateOwnerBuilding)}
-              <TextField label={t("password")} type="password" fullWidth required {...createForm.register("password", { required: true })} />
             </Stack>
           </DialogContent>
           <DialogActions sx={{ px: 3, pb: 2 }}>
@@ -738,24 +735,27 @@ export default function UsersPage() {
         </Box>
       </Dialog>
 
-      {/* Reset Password Dialog */}
-      <Dialog open={!!resetTarget} onClose={() => setResetTarget(null)} maxWidth="xs" fullWidth>
-        <DialogTitle>{t("resetPassword")} — {resetTarget?.email}</DialogTitle>
-        <Box component="form" onSubmit={resetForm.handleSubmit(onResetPassword)}>
-          <DialogContent>
-            {resetError && <Alert severity="error" sx={{ mb: 2 }}>{resetError}</Alert>}
-            <Stack spacing={2}>
-              <TextField label={t("newPassword")} type="password" fullWidth required {...resetForm.register("new_password", { required: true })} />
-              <TextField label={t("confirmPassword")} type="password" fullWidth required {...resetForm.register("confirm_password", { required: true })} />
-            </Stack>
-          </DialogContent>
-          <DialogActions sx={{ px: 3, pb: 2 }}>
-            <Button onClick={() => setResetTarget(null)}>{t("cancel")}</Button>
-            <Button type="submit" variant="contained" color="warning" disabled={resetting}>
-              {resetting ? t("resetting") : t("reset")}
+      {/* Resend Invite Dialog */}
+      <Dialog open={!!resendTarget} onClose={() => setResendTarget(null)} maxWidth="xs" fullWidth>
+        <DialogTitle>{t("resendInvite", "Resend sign-in code")} — {resendTarget?.email}</DialogTitle>
+        <DialogContent>
+          {resendError && <Alert severity="error" sx={{ mb: 2 }}>{resendError}</Alert>}
+          {resendSuccess ? (
+            <Alert severity="success">{t("resendInviteSuccess", "A new sign-in code has been emailed.")}</Alert>
+          ) : (
+            <Typography variant="body2">
+              {t("resendInviteConfirm", "Send a new email sign-in code to this user?")}
+            </Typography>
+          )}
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button onClick={() => setResendTarget(null)}>{t("cancel")}</Button>
+          {!resendSuccess && (
+            <Button variant="contained" color="warning" disabled={resending} onClick={onResendInvite}>
+              {resending ? t("resendInviteSending", "Sending…") : t("resendInvite", "Resend sign-in code")}
             </Button>
-          </DialogActions>
-        </Box>
+          )}
+        </DialogActions>
       </Dialog>
 
       {/* Messaging Restrictions Dialog */}
