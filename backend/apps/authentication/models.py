@@ -2,11 +2,8 @@
 
 import uuid
 
-from django.contrib.auth.models import (
-    AbstractBaseUser,
-    BaseUserManager,
-    PermissionsMixin,
-)
+from django.contrib.auth.models import (AbstractBaseUser, BaseUserManager,
+                                        PermissionsMixin)
 from django.db import models
 from django.utils import timezone
 
@@ -122,9 +119,25 @@ class User(AbstractBaseUser, PermissionsMixin):
 
 
 class EmailOTP(models.Model):
-    """A one-time passcode emailed to a user to sign in, replacing passwords."""
+    """
+    A one-time passcode emailed to sign in, replacing passwords.
 
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="email_otps")
+    `user` is null when the code was requested for an email that has no
+    account yet (a brand-new signup via the login page or Google): the
+    pending address is kept in `email` until `otp/verify/` is called with
+    `accept_terms=true`, at which point the account is created and the code
+    is consumed - so no account ever exists without having accepted the
+    Terms of Service. Exactly one of `user`/`email` is set at all times.
+    """
+
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="email_otps",
+        null=True,
+        blank=True,
+    )
+    email = models.EmailField(null=True, blank=True)
     code_hash = models.CharField(max_length=64)
     expires_at = models.DateTimeField()
     attempts = models.PositiveSmallIntegerField(default=0)
@@ -134,10 +147,20 @@ class EmailOTP(models.Model):
         verbose_name = "Email OTP"
         verbose_name_plural = "Email OTPs"
         ordering = ["-created_at"]
-        indexes = [models.Index(fields=["user", "-created_at"])]
+        indexes = [
+            models.Index(fields=["user", "-created_at"]),
+            models.Index(fields=["email", "-created_at"]),
+        ]
+        constraints = [
+            models.CheckConstraint(
+                check=models.Q(user__isnull=False) | models.Q(email__isnull=False),
+                name="emailotp_user_or_email_required",
+            )
+        ]
 
     def __str__(self):
-        return f"OTP for {self.user.email} (expires {self.expires_at})"
+        target = self.user.email if self.user_id else self.email
+        return f"OTP for {target} (expires {self.expires_at})"
 
     @property
     def is_expired(self):

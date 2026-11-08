@@ -16,16 +16,30 @@ class OTPRequestSerializer(serializers.Serializer):
 
 
 class OTPVerifySerializer(serializers.Serializer):
-    """POST /auth/otp/verify/ {email, code}."""
+    """
+    POST /auth/otp/verify/ {email, code, accept_terms?}.
+
+    `accept_terms` is only required when `email` has no account yet (a
+    brand-new signup via the login page): the view rejects with
+    `code: "terms_required"` until it's sent as `true`. It's ignored for an
+    existing user's sign-in.
+    """
 
     email = serializers.EmailField()
     code = serializers.CharField(max_length=6, min_length=6)
+    accept_terms = serializers.BooleanField(required=False, default=False)
 
 
 class GoogleSignInSerializer(serializers.Serializer):
-    """POST /auth/google/ {id_token}."""
+    """
+    POST /auth/google/ {id_token, accept_terms?}.
+
+    `accept_terms` is only required when the Google-verified email has no
+    account yet; see `OTPVerifySerializer`.
+    """
 
     id_token = serializers.CharField()
+    accept_terms = serializers.BooleanField(required=False, default=False)
 
 
 class UserSessionSerializer(serializers.Serializer):
@@ -218,7 +232,8 @@ class RegisterUserSerializer(serializers.ModelSerializer):
 
         if buildings and user.role == "admin":
             from apps.audit.mixins import log_action
-            from apps.buildings.models import Building, BuildingCoAdmin, UserBuilding
+            from apps.buildings.models import (Building, BuildingCoAdmin,
+                                               UserBuilding)
 
             building_objs = Building.objects.filter(id__in=buildings)
             for building in building_objs:
@@ -360,7 +375,8 @@ class UserUpdateSerializer(serializers.ModelSerializer):
 
         if buildings is not None and instance.role == "admin":
             from apps.audit.mixins import log_action
-            from apps.buildings.models import Building, BuildingCoAdmin, UserBuilding
+            from apps.buildings.models import (Building, BuildingCoAdmin,
+                                               UserBuilding)
 
             # Get current building IDs for this co-admin
             old_ids = set(

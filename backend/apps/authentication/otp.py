@@ -60,17 +60,37 @@ def create_otp_for_user(user: User) -> str:
     return code
 
 
-def send_otp_email(user: User, code: str) -> bool:
-    """Email the given plaintext OTP code to `user` in their preferred language."""
+def create_otp_for_email(email: str) -> str:
+    """
+    Create (and return the plaintext of) a new OTP code for an `email` that
+    has no account yet. Used by otp/request/ for a brand-new signup, so no
+    `User` row is created before the Terms of Service are accepted in
+    otp/verify/.
+    """
+    code = generate_otp_code()
+    ttl_minutes = getattr(settings, "OTP_CODE_TTL_MINUTES", 10)
+    EmailOTP.objects.create(
+        user=None,
+        email=email,
+        code_hash=_hmac_hash(code),
+        expires_at=timezone.now() + timedelta(minutes=ttl_minutes),
+    )
+    return code
+
+
+def send_otp_email(
+    email: str, code: str, first_name: str = "", lang: str = "en"
+) -> bool:
+    """Email the given plaintext OTP code to `email` in the given language."""
     from apps.notifications.email_service import send_notification_email
 
-    lang = user.preferred_language if user.preferred_language in ("en", "ar") else "en"
+    lang = lang if lang in ("en", "ar") else "en"
     return send_notification_email(
         "otp",
-        user.email,
+        email,
         {
             "code": code,
-            "first_name": user.first_name,
+            "first_name": first_name,
             "ttl_minutes": getattr(settings, "OTP_CODE_TTL_MINUTES", 10),
         },
         lang=lang,
@@ -80,18 +100,30 @@ def send_otp_email(user: User, code: str) -> bool:
 def request_otp_for_user(user: User) -> str:
     """Create a new OTP for `user` and email it. Returns the plaintext code (for tests)."""
     code = create_otp_for_user(user)
-    send_otp_email(user, code)
+    send_otp_email(
+        user.email, code, first_name=user.first_name, lang=user.preferred_language
+    )
     return code
 
 
-def verify_otp_for_user(user: User, code: str) -> str:
+def request_otp_for_email(email: str) -> str:
     """
-    Verify `code` against the latest non-expired OTP for `user`.
+    Create a new OTP for a not-yet-registered `email` and email it. Mirrors
+    `request_otp_for_user` as closely as possible (same DB write + email
+    send shape) so otp/request/'s response/timing doesn't leak whether the
+    address has an account (anti-enumeration).
+    """
+    code = create_otp_for_email(email)
+    send_otp_email(email, code)
+    return code
 
-    Consumes (deletes) the OTP row on success, or on exceeding the max
-    attempt count. Returns one of the OTP_* status constants above.
+
+def _consume_otp(otp: Optional[EmailOTP], code: str) -> str:
     """
-    otp = EmailOTP.objects.filter(user=user).order_by("-created_at").first()
+    Shared verify/consume logic for a looked-up `EmailOTP` row (by user or
+    by pending email). Consumes (deletes) the row on success, or on
+    exceeding the max attempt count. Returns one of the OTP_* constants.
+    """
     if otp is None:
         return OTP_NOT_FOUND
     if otp.is_expired:
@@ -113,6 +145,31 @@ def verify_otp_for_user(user: User, code: str) -> str:
 
     otp.delete()
     return OTP_OK
+
+
+def verify_otp_for_user(user: User, code: str) -> str:
+    """
+    Verify `code` against the latest non-expired OTP for `user`.
+
+    Consumes (deletes) the OTP row on success, or on exceeding the max
+    attempt count. Returns one of the OTP_* status constants above.
+    """
+    otp = EmailOTP.objects.filter(user=user).order_by("-created_at").first()
+    return _consume_otp(otp, code)
+
+
+def verify_otp_for_email(email: str, code: str) -> str:
+    """
+    Verify `code` against the latest non-expired OTP for a not-yet-registered
+    `email` (user is null). Same consume/attempt-burn semantics as
+    `verify_otp_for_user`. Returns one of the OTP_* status constants above.
+    """
+    otp = (
+        EmailOTP.objects.filter(user__isnull=True, email__iexact=email)
+        .order_by("-created_at")
+        .first()
+    )
+    return _consume_otp(otp, code)
 
 
 def otp_error_message(error_code: str):

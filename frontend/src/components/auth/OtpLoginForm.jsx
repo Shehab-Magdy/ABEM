@@ -1,11 +1,15 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Link as RouterLink } from "react-router-dom";
 import {
   Alert,
   Box,
   Button,
+  Checkbox,
   CircularProgress,
   Divider,
+  FormControlLabel,
+  Link,
   Stack,
   TextField,
   Typography,
@@ -80,6 +84,43 @@ function mapVerifyError(err, t) {
   return err.response?.data?.detail || t("errors:server_error");
 }
 
+// Shared "accept Terms of Service / Privacy Policy" checkbox shown when the
+// backend reports {code: "terms_required"} — i.e. this is a brand-new
+// account (OTP or Google) that hasn't accepted terms yet. Reuses the exact
+// copy/links RegisterPage's AccountStep uses for the same checkbox.
+function AcceptTermsPrompt({ checked, onChange, error }) {
+  const { t, i18n } = useTranslation("auth");
+  return (
+    <Box sx={{ p: 2, bgcolor: "action.hover", borderRadius: 1 }}>
+      <Typography variant="body2" sx={{ mb: 1 }}>
+        {t("terms_required_prompt")}
+      </Typography>
+      <FormControlLabel
+        control={
+          <Checkbox checked={checked} onChange={(e) => onChange(e.target.checked)} />
+        }
+        label={
+          <Typography variant="body2">
+            {t("accept_terms_prefix")}{" "}
+            <Link component={RouterLink} to="/terms" target="_blank" underline="hover">
+              {t("terms_link")}
+            </Link>
+            {" "}{t("and")}{(i18n.language || "").startsWith("ar") ? "" : " "}
+            <Link component={RouterLink} to="/privacy" target="_blank" underline="hover">
+              {t("privacy_link")}
+            </Link>
+          </Typography>
+        }
+      />
+      {error && (
+        <Typography variant="caption" color="error" display="block">
+          {error}
+        </Typography>
+      )}
+    </Box>
+  );
+}
+
 function mapGoogleError(err, t) {
   const status = err.response?.status;
   if (status === 401) return t("google_signin_failed");
@@ -106,6 +147,17 @@ export default function OtpLoginForm({
   const [resending, setResending] = useState(false);
   const [error, setError] = useState(null);
   const [info, setInfo] = useState(null);
+  // Brand-new account via OTP that hasn't accepted terms yet (code is still
+  // valid/unconsumed — see backend contract on /auth/otp/verify/).
+  const [codeNeedsTerms, setCodeNeedsTerms] = useState(false);
+  const [codeAcceptTerms, setCodeAcceptTerms] = useState(false);
+  const [codeTermsError, setCodeTermsError] = useState(null);
+  // Same, for a brand-new account via Google Sign-In. The original id_token
+  // is reused for the resubmit (short-lived but valid within its window).
+  const [googleNeedsTerms, setGoogleNeedsTerms] = useState(false);
+  const [googleAcceptTerms, setGoogleAcceptTerms] = useState(false);
+  const [googleTermsError, setGoogleTermsError] = useState(null);
+  const pendingGoogleTokenRef = useRef(null);
   const googleBtnRef = useRef(null);
   const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
@@ -131,6 +183,9 @@ export default function OtpLoginForm({
       }
       setStep("code");
       setInfo(t("code_sent"));
+      setCodeNeedsTerms(false);
+      setCodeAcceptTerms(false);
+      setCodeTermsError(null);
     } catch (err) {
       setError(mapRequestError(err, t));
     } finally {
@@ -162,6 +217,9 @@ export default function OtpLoginForm({
         return;
       }
       setInfo(t("code_sent"));
+      setCodeNeedsTerms(false);
+      setCodeAcceptTerms(false);
+      setCodeTermsError(null);
     } catch (err) {
       setError(mapRequestError(err, t));
     } finally {
@@ -175,13 +233,24 @@ export default function OtpLoginForm({
       setError(t("code_required"));
       return;
     }
+    if (codeNeedsTerms && !codeAcceptTerms) {
+      setCodeTermsError(t("accept_terms_required"));
+      return;
+    }
     setError(null);
+    setCodeTermsError(null);
     setLoading(true);
     try {
-      const { data } = await authApi.verifyOtp(email.trim(), code.trim());
+      const { data } = await authApi.verifyOtp(email.trim(), code.trim(), codeAcceptTerms);
       handleLoginResponse(data);
     } catch (err) {
-      setError(mapVerifyError(err, t));
+      if (err.response?.data?.code === "terms_required") {
+        // Brand-new account, code is still valid/unconsumed — show the
+        // terms checkbox instead of a generic error, keep the entered code.
+        setCodeNeedsTerms(true);
+      } else {
+        setError(mapVerifyError(err, t));
+      }
     } finally {
       setLoading(false);
     }
@@ -198,12 +267,22 @@ export default function OtpLoginForm({
           client_id: clientId,
           callback: async (response) => {
             setError(null);
+            pendingGoogleTokenRef.current = response.credential;
+            setGoogleNeedsTerms(false);
+            setGoogleAcceptTerms(false);
+            setGoogleTermsError(null);
             setLoading(true);
             try {
               const { data } = await authApi.googleLogin(response.credential);
               handleLoginResponse(data);
             } catch (err) {
-              setError(mapGoogleError(err, t));
+              if (err.response?.data?.code === "terms_required") {
+                // Brand-new Google account — show the terms checkbox; the
+                // id_token is still valid to reuse for the resubmit below.
+                setGoogleNeedsTerms(true);
+              } else {
+                setError(mapGoogleError(err, t));
+              }
             } finally {
               setLoading(false);
             }
@@ -226,6 +305,27 @@ export default function OtpLoginForm({
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showGoogle, clientId]);
+
+  // Resubmit the original (still-valid) Google id_token now that the user
+  // has checked the terms box, per the backend's terms_required contract.
+  const submitGoogleWithTerms = async () => {
+    if (!googleAcceptTerms) {
+      setGoogleTermsError(t("accept_terms_required"));
+      return;
+    }
+    setGoogleTermsError(null);
+    setError(null);
+    setLoading(true);
+    try {
+      const { data } = await authApi.googleLogin(pendingGoogleTokenRef.current, true);
+      handleLoginResponse(data);
+    } catch (err) {
+      setGoogleNeedsTerms(false);
+      setError(mapGoogleError(err, t));
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <Stack spacing={2.5}>
@@ -271,6 +371,13 @@ export default function OtpLoginForm({
               value={code}
               onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
             />
+            {codeNeedsTerms && (
+              <AcceptTermsPrompt
+                checked={codeAcceptTerms}
+                onChange={setCodeAcceptTerms}
+                error={codeTermsError}
+              />
+            )}
             <Button type="submit" variant="contained" size="large" fullWidth disabled={loading}>
               {loading ? <CircularProgress size={24} color="inherit" /> : t("verify_code")}
             </Button>
@@ -283,6 +390,9 @@ export default function OtpLoginForm({
                     setCode("");
                     setError(null);
                     setInfo(null);
+                    setCodeNeedsTerms(false);
+                    setCodeAcceptTerms(false);
+                    setCodeTermsError(null);
                   }}
                 >
                   {t("change_email")}
@@ -307,6 +417,24 @@ export default function OtpLoginForm({
             <Typography variant="caption" color="text.secondary" align="center">
               {t("google_signin_unavailable")}
             </Typography>
+          )}
+          {googleNeedsTerms && (
+            <Stack spacing={2}>
+              <AcceptTermsPrompt
+                checked={googleAcceptTerms}
+                onChange={setGoogleAcceptTerms}
+                error={googleTermsError}
+              />
+              <Button
+                variant="contained"
+                size="large"
+                fullWidth
+                disabled={loading}
+                onClick={submitGoogleWithTerms}
+              >
+                {loading ? <CircularProgress size={24} color="inherit" /> : t("continue")}
+              </Button>
+            </Stack>
           )}
         </>
       )}

@@ -26,43 +26,27 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.settings import api_settings as jwt_api_settings
-from rest_framework_simplejwt.token_blacklist.models import (
-    BlacklistedToken,
-    OutstandingToken,
-)
+from rest_framework_simplejwt.token_blacklist.models import (BlacklistedToken,
+                                                             OutstandingToken)
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from apps.audit.mixins import log_action
 
-from .cookies import (
-    TRUSTED_DEVICE_COOKIE_NAME,
-    clear_refresh_cookie,
-    clear_trusted_device_cookie,
-    set_refresh_cookie,
-    set_trusted_device_cookie,
-)
+from .cookies import (TRUSTED_DEVICE_COOKIE_NAME, clear_refresh_cookie,
+                      clear_trusted_device_cookie, set_refresh_cookie,
+                      set_trusted_device_cookie)
+from .device import client_ip_from_request
 from .models import TrustedDevice, User, UserSession
-from .otp import (
-    OTP_OK,
-    OTP_TOO_MANY_ATTEMPTS,
-    create_trusted_device,
-    find_trusted_device,
-    otp_error_message,
-    request_otp_for_user,
-    touch_trusted_device,
-    verify_otp_for_user,
-)
+from .otp import (OTP_OK, OTP_TOO_MANY_ATTEMPTS, create_trusted_device,
+                  find_trusted_device, otp_error_message,
+                  request_otp_for_email, request_otp_for_user,
+                  touch_trusted_device, verify_otp_for_email,
+                  verify_otp_for_user)
 from .permissions import IsAdminRole
-from .serializers import (
-    GoogleSignInSerializer,
-    OTPRequestSerializer,
-    OTPVerifySerializer,
-    ProfileUpdateSerializer,
-    RegisterUserSerializer,
-    SelfRegisterSerializer,
-    UserSerializer,
-    UserSessionSerializer,
-)
+from .serializers import (GoogleSignInSerializer, OTPRequestSerializer,
+                          OTPVerifySerializer, ProfileUpdateSerializer,
+                          RegisterUserSerializer, SelfRegisterSerializer,
+                          UserSerializer, UserSessionSerializer)
 from .tokens import issue_tokens_for_user
 
 
@@ -117,30 +101,51 @@ def _auth_response(
     return response
 
 
-def _get_or_create_pending_user(email, defaults=None):
-    """Find a user by email, or create a pending (passwordless) record for them."""
-    user, created = User.objects.get_or_create(email=email, defaults=defaults or {})
-    if created:
-        user.set_unusable_password()
-        user.save(update_fields=["password"])
-    return user, created
-
-
 # ── Email OTP ─────────────────────────────────────────────────────────────────
+
+
+def _otp_request_ip_key(_group, request):
+    """
+    Rate-limit email-OTP requests by IP alone, independent of the target
+    email.
+
+    `_otp_rate_key` above (per email+IP) gives every new target address its
+    own fresh budget, so a single IP can otherwise "email-bomb" unlimited
+    different real users, or just run up email-sending cost, by varying the
+    email on each request. This is a second, coarser ceiling stacked on top
+    of it (django_ratelimit ORs `request.limited` across stacked decorators -
+    see OTPRequestView.post).
+
+    30/hour is picked to tolerate a legitimate shared-NAT case - e.g. a
+    whole apartment building of ABEM residents behind one public IP/router,
+    which is a realistic scenario for this product - while still bounding
+    sustained abuse from one source. Keyed on `client_ip_from_request`
+    (X-Real-IP, set by nginx from the real TCP peer; REMOTE_ADDR in local
+    dev/tests) rather than the raw REMOTE_ADDR that `_otp_rate_key` uses, so
+    it can't be defeated by a spoofed X-Forwarded-For.
+    """
+    return client_ip_from_request(request) or ""
 
 
 class OTPRequestView(APIView):
     """
     POST /auth/otp/request/ {email}
 
-    Finds or creates a pending user for `email`. If a valid trusted_device
-    cookie is presented for that user, signs them in immediately (same
-    response shape as otp/verify) without sending a code. Otherwise emails
-    a fresh 6-digit code and returns a plain acknowledgement.
+    Anti-enumeration: the response is the same `200 {"detail": ...}` shape
+    whether or not `email` already has an account, and no `User` row is
+    created for an email that doesn't have one yet - only a pending
+    `EmailOTP` row keyed by the email itself. The account is only created
+    in `otp/verify/`, once `accept_terms: true` has been supplied for it
+    (see OTPVerifyView). If a valid trusted_device cookie is presented for
+    an *existing* user, this signs them in immediately (same response shape
+    as otp/verify) without sending a code.
     """
 
     permission_classes = [AllowAny]
 
+    @method_decorator(
+        ratelimit(key=_otp_request_ip_key, rate="30/h", method="POST", block=False)
+    )
     @method_decorator(
         ratelimit(key=_otp_rate_key, rate="5/m", method="POST", block=False)
     )
@@ -155,9 +160,17 @@ class OTPRequestView(APIView):
         serializer.is_valid(raise_exception=True)
         email = serializer.validated_data["email"].lower()
 
-        user, _created = _get_or_create_pending_user(
-            email, {"first_name": "", "last_name": ""}
-        )
+        user = User.objects.filter(email__iexact=email).first()
+
+        if user is None:
+            # Brand-new address: no account yet, and none is created here -
+            # just a pending OTP row keyed by the email. Mirrors the
+            # existing-user branch below as closely as possible so the
+            # response/timing doesn't reveal that the account doesn't exist.
+            request_otp_for_email(email)
+            return Response(
+                {"detail": _("A sign-in code has been sent to your email.")}
+            )
 
         if not user.is_active:
             return Response(
@@ -193,7 +206,21 @@ class OTPRequestView(APIView):
 
 
 class OTPVerifyView(APIView):
-    """POST /auth/otp/verify/ {email, code} -> {access, user} + refresh/trusted_device cookies."""
+    """
+    POST /auth/otp/verify/ {email, code, accept_terms?} -> {access, user} +
+    refresh/trusted_device cookies.
+
+    If `email` already has an account, this is an ordinary sign-in:
+    `accept_terms` is not needed. If it doesn't, this is a brand-new
+    signup via the login page (mirrors `SelfRegisterView`, which requires
+    acceptance up front - OTP just defers it past the anti-enumeration
+    boundary in otp/request/): `accept_terms: true` must be present, or the
+    request is rejected with `400 {"detail": ..., "code": "terms_required"}`
+    WITHOUT checking or consuming the code, so the frontend can show a
+    terms checkbox and resubmit the same `{email, code, accept_terms: true}`.
+    Once `accept_terms: true` is present and `code` is correct, the account
+    is created (role=owner, terms_accepted_at=now) and the code is consumed.
+    """
 
     permission_classes = [AllowAny]
 
@@ -218,32 +245,64 @@ class OTPVerifyView(APIView):
         serializer.is_valid(raise_exception=True)
         email = serializer.validated_data["email"].lower()
         code = serializer.validated_data["code"]
+        accept_terms = serializer.validated_data.get("accept_terms", False)
 
-        try:
-            user = User.objects.get(email__iexact=email)
-        except User.DoesNotExist:
-            return Response(
-                {"detail": _("No sign-in code was requested for this email.")},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+        user = User.objects.filter(email__iexact=email).first()
 
-        if not user.is_active:
-            return Response(
-                {"detail": _("This account has been deactivated.")},
-                status=status.HTTP_403_FORBIDDEN,
-            )
+        if user is None:
+            if not accept_terms:
+                return Response(
+                    {
+                        "detail": _(
+                            "You must accept the Terms of Service and Privacy Policy."
+                        ),
+                        "code": "terms_required",
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
 
-        result = verify_otp_for_user(user, code)
-        if result != OTP_OK:
-            http_status = (
-                status.HTTP_429_TOO_MANY_REQUESTS
-                if result == OTP_TOO_MANY_ATTEMPTS
-                else status.HTTP_400_BAD_REQUEST
+            result = verify_otp_for_email(email, code)
+            if result != OTP_OK:
+                http_status = (
+                    status.HTTP_429_TOO_MANY_REQUESTS
+                    if result == OTP_TOO_MANY_ATTEMPTS
+                    else status.HTTP_400_BAD_REQUEST
+                )
+                return Response(
+                    {"detail": otp_error_message(result), "code": result},
+                    status=http_status,
+                )
+
+            user = User(email=email, first_name="", last_name="")
+            user.terms_accepted_at = timezone.now()
+            user.set_unusable_password()
+            user.save()
+            log_action(
+                user=user,
+                action="self_register",
+                entity="user",
+                entity_id=user.id,
+                changes={"method": "otp"},
+                request=request,
             )
-            return Response(
-                {"detail": otp_error_message(result), "code": result},
-                status=http_status,
-            )
+        else:
+            if not user.is_active:
+                return Response(
+                    {"detail": _("This account has been deactivated.")},
+                    status=status.HTTP_403_FORBIDDEN,
+                )
+
+            result = verify_otp_for_user(user, code)
+            if result != OTP_OK:
+                http_status = (
+                    status.HTTP_429_TOO_MANY_REQUESTS
+                    if result == OTP_TOO_MANY_ATTEMPTS
+                    else status.HTTP_400_BAD_REQUEST
+                )
+                return Response(
+                    {"detail": otp_error_message(result), "code": result},
+                    status=http_status,
+                )
 
         log_action(
             user=user,
@@ -260,7 +319,18 @@ class OTPVerifyView(APIView):
 
 
 class GoogleSignInView(APIView):
-    """POST /auth/google/ {id_token} -> {access, user} + refresh/trusted_device cookies."""
+    """
+    POST /auth/google/ {id_token, accept_terms?} -> {access, user} +
+    refresh/trusted_device cookies.
+
+    Same signup-requires-terms rule as `OTPVerifyView`: if the
+    Google-verified email already has an account, this is an ordinary
+    sign-in. If it doesn't, `accept_terms: true` must be present in the
+    body or the request is rejected with
+    `400 {"detail": ..., "code": "terms_required"}` WITHOUT creating any
+    account, so the frontend can show a terms checkbox and resubmit the
+    same `{id_token, accept_terms: true}`.
+    """
 
     permission_classes = [AllowAny]
 
@@ -268,6 +338,7 @@ class GoogleSignInView(APIView):
         serializer = GoogleSignInSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         raw_id_token = serializer.validated_data["id_token"]
+        accept_terms = serializer.validated_data.get("accept_terms", False)
 
         if not settings.GOOGLE_CLIENT_ID:
             return Response(
@@ -293,15 +364,37 @@ class GoogleSignInView(APIView):
             )
 
         # Auto-link to an existing account by email - intentional (same person, one identity).
-        user, _created = _get_or_create_pending_user(
-            email,
-            {
-                "first_name": idinfo.get("given_name", "") or "",
-                "last_name": idinfo.get("family_name", "") or "",
-            },
-        )
+        user = User.objects.filter(email__iexact=email).first()
 
-        if not user.is_active:
+        if user is None:
+            if not accept_terms:
+                return Response(
+                    {
+                        "detail": _(
+                            "You must accept the Terms of Service and Privacy Policy."
+                        ),
+                        "code": "terms_required",
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            user = User(
+                email=email,
+                first_name=idinfo.get("given_name", "") or "",
+                last_name=idinfo.get("family_name", "") or "",
+            )
+            user.terms_accepted_at = timezone.now()
+            user.set_unusable_password()
+            user.save()
+            log_action(
+                user=user,
+                action="self_register",
+                entity="user",
+                entity_id=user.id,
+                changes={"method": "google"},
+                request=request,
+            )
+        elif not user.is_active:
             return Response(
                 {"detail": _("This account has been deactivated.")},
                 status=status.HTTP_403_FORBIDDEN,
@@ -744,7 +837,8 @@ class DeleteAccountView(APIView):
 
     def post(self, request):
         from apps.apartments.models import Apartment
-        from apps.buildings.models import Building, BuildingCoAdmin, UserBuilding
+        from apps.buildings.models import (Building, BuildingCoAdmin,
+                                           UserBuilding)
         from apps.notifications.services import building_admins, tell
         from apps.payments.models import ClaimStatus, PaymentClaim
 

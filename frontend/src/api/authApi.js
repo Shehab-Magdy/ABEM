@@ -7,8 +7,13 @@ export const authApi = {
   // {access, user} directly (same shape as verifyOtp) and the caller should
   // treat that as an immediate successful login, skipping the code step.
   requestOtp: (email) => axiosClient.post("/auth/otp/request/", { email }),
-  verifyOtp: (email, code) => axiosClient.post("/auth/otp/verify/", { email, code }),
-  googleLogin: (idToken) => axiosClient.post("/auth/google/", { id_token: idToken }),
+  // acceptTerms: required (true) the first time a brand-new email verifies —
+  // see OtpLoginForm's terms_required handling. Ignored for existing users.
+  verifyOtp: (email, code, acceptTerms = false) =>
+    axiosClient.post("/auth/otp/verify/", { email, code, accept_terms: acceptTerms }),
+  // acceptTerms: same semantics as verifyOtp, for a brand-new Google-verified email.
+  googleLogin: (idToken, acceptTerms = false) =>
+    axiosClient.post("/auth/google/", { id_token: idToken, accept_terms: acceptTerms }),
   revokeAllDevices: () => axiosClient.post("/auth/devices/revoke-all/"),
   listSessions: () => axiosClient.get("/auth/sessions/"),
   revokeSession: (id) => axiosClient.post(`/auth/sessions/${id}/revoke/`),

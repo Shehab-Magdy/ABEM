@@ -25,19 +25,17 @@ from django.core.cache import cache, caches
 from django.core.cache.backends.db import DatabaseCache
 from django.utils import timezone
 from rest_framework import status
-from rest_framework_simplejwt.token_blacklist.models import (
-    BlacklistedToken,
-    OutstandingToken,
-)
+from rest_framework_simplejwt.token_blacklist.models import (BlacklistedToken,
+                                                             OutstandingToken)
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from apps.authentication.cookies import REFRESH_COOKIE_NAME, TRUSTED_DEVICE_COOKIE_NAME
-from apps.authentication.device import (
-    client_ip_from_request,
-    device_label_from_user_agent,
-)
+from apps.authentication.cookies import (REFRESH_COOKIE_NAME,
+                                         TRUSTED_DEVICE_COOKIE_NAME)
+from apps.authentication.device import (client_ip_from_request,
+                                        device_label_from_user_agent)
 from apps.authentication.models import EmailOTP, TrustedDevice, UserSession
-from apps.authentication.otp import OTP_EXPIRED, OTP_NOT_FOUND, verify_otp_for_user
+from apps.authentication.otp import (OTP_EXPIRED, OTP_NOT_FOUND,
+                                     verify_otp_for_user)
 from apps.authentication.tokens import CustomRefreshToken
 
 User = get_user_model()
@@ -82,11 +80,18 @@ def _request_otp(client, email):
 
 
 def _sign_in(client, email, user_agent=None):
-    """Sign in via OTP, set the client's Bearer credentials, and return the user."""
+    """
+    Sign in via OTP, set the client's Bearer credentials, and return the
+    user. `accept_terms: True` is always sent - harmless/ignored for an
+    existing user's sign-in, required the first time a brand-new email
+    signs up this way (see TestOTPVerifyRequiresTermsForNewSignups).
+    """
     _request_otp(client, email)
     extra = {"HTTP_USER_AGENT": user_agent} if user_agent else {}
     response = client.post(
-        OTP_VERIFY_URL, {"email": email, "code": FIXED_CODE}, **extra
+        OTP_VERIFY_URL,
+        {"email": email, "code": FIXED_CODE, "accept_terms": True},
+        **extra,
     )
     client.credentials(HTTP_AUTHORIZATION=f"Bearer {response.data['access']}")
     return User.objects.get(email=email)
@@ -97,12 +102,20 @@ def _sign_in(client, email, user_agent=None):
 
 @pytest.mark.django_db
 class TestOTPRequest:
-    def test_request_creates_pending_user_and_an_otp_row(self, api_client):
+    def test_request_for_unknown_email_creates_no_user_but_stores_a_pending_otp(
+        self, api_client
+    ):
+        """
+        Gap #1 fix: otp/request/ must never create a User row for an email
+        that doesn't have one yet - only otp/verify/ (with accept_terms)
+        does that, once past this anti-enumeration boundary.
+        """
         response = _request_otp(api_client, "new@abem.test")
         assert response.status_code == status.HTTP_200_OK
-        user = User.objects.get(email="new@abem.test")
-        assert not user.has_usable_password()
-        assert EmailOTP.objects.filter(user=user).exists()
+        assert list(response.data.keys()) == ["detail"]
+        assert not User.objects.filter(email="new@abem.test").exists()
+        otp = EmailOTP.objects.get(email="new@abem.test")
+        assert otp.user_id is None
 
     def test_request_for_existing_user_sends_a_new_code(self, api_client, owner_user):
         response = _request_otp(api_client, owner_user.email)
@@ -126,6 +139,23 @@ class TestOTPRequest:
         response = _request_otp(api_client, email)
         assert response.status_code == status.HTTP_429_TOO_MANY_REQUESTS
 
+    def test_ip_wide_limit_trips_across_different_target_emails(self, api_client):
+        """
+        Gap #2 fix: otp/request/ also has an IP-only limit (30/h) stacked
+        on top of the per-(email, IP) one (5/m) - a single IP must not be
+        able to "email-bomb" unlimited different target addresses by
+        varying the email on every request, each getting its own fresh
+        per-email+IP budget.
+        """
+        for i in range(30):
+            response = _request_otp(api_client, f"bomb{i}@abem.test")
+            assert response.status_code == status.HTTP_200_OK
+        # The 31st request, to yet another brand-new email, would pass the
+        # per-(email, IP) limit on its own (fresh email, 0 prior requests)
+        # but must still be blocked by the IP-wide ceiling.
+        response = _request_otp(api_client, "bomb-overflow@abem.test")
+        assert response.status_code == status.HTTP_429_TOO_MANY_REQUESTS
+
     def test_ratelimit_cache_is_db_backed_not_per_process_locmem(self):
         """
         Bug fix: django_ratelimit used to count against CACHES["default"]
@@ -142,7 +172,10 @@ class TestOTPRequest:
     def test_trusted_device_cookie_bypasses_the_code_step(self, api_client):
         email = "trusted@abem.test"
         _request_otp(api_client, email)
-        verify = api_client.post(OTP_VERIFY_URL, {"email": email, "code": FIXED_CODE})
+        verify = api_client.post(
+            OTP_VERIFY_URL,
+            {"email": email, "code": FIXED_CODE, "accept_terms": True},
+        )
         assert verify.status_code == status.HTTP_200_OK
         assert TRUSTED_DEVICE_COOKIE_NAME in api_client.cookies
 
@@ -164,7 +197,10 @@ class TestOTPVerify:
         email = "verify@abem.test"
         _request_otp(api_client, email)
 
-        response = api_client.post(OTP_VERIFY_URL, {"email": email, "code": FIXED_CODE})
+        response = api_client.post(
+            OTP_VERIFY_URL,
+            {"email": email, "code": FIXED_CODE, "accept_terms": True},
+        )
         assert response.status_code == status.HTTP_200_OK
         assert "access" in response.data
         assert response.data["user"]["email"] == email
@@ -176,9 +212,12 @@ class TestOTPVerify:
         email = "wrongcode@abem.test"
         _request_otp(api_client, email)
 
-        response = api_client.post(OTP_VERIFY_URL, {"email": email, "code": "000000"})
+        response = api_client.post(
+            OTP_VERIFY_URL,
+            {"email": email, "code": "000000", "accept_terms": True},
+        )
         assert response.status_code == status.HTTP_400_BAD_REQUEST
-        otp = EmailOTP.objects.get(user__email=email)
+        otp = EmailOTP.objects.get(email=email)
         assert otp.attempts == 1
 
     def test_too_many_wrong_attempts_burns_the_code(self, api_client, settings):
@@ -189,10 +228,11 @@ class TestOTPVerify:
         response = None
         for _ in range(3):
             response = api_client.post(
-                OTP_VERIFY_URL, {"email": email, "code": "000000"}
+                OTP_VERIFY_URL,
+                {"email": email, "code": "000000", "accept_terms": True},
             )
         assert response.status_code == status.HTTP_429_TOO_MANY_REQUESTS
-        assert not EmailOTP.objects.filter(user__email=email).exists()
+        assert not EmailOTP.objects.filter(email=email).exists()
 
     def test_unknown_email_returns_400(self, api_client):
         response = api_client.post(
@@ -203,11 +243,14 @@ class TestOTPVerify:
     def test_expired_code_is_rejected(self, api_client):
         email = "expired@abem.test"
         _request_otp(api_client, email)
-        EmailOTP.objects.filter(user__email=email).update(
+        EmailOTP.objects.filter(email=email).update(
             expires_at=timezone.now() - timedelta(minutes=1)
         )
 
-        response = api_client.post(OTP_VERIFY_URL, {"email": email, "code": FIXED_CODE})
+        response = api_client.post(
+            OTP_VERIFY_URL,
+            {"email": email, "code": FIXED_CODE, "accept_terms": True},
+        )
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         # Bug fix: an expired code must be reported as OTP_EXPIRED, not
         # OTP_NOT_FOUND - the row exists, it's just past expires_at.
@@ -250,12 +293,16 @@ class TestOTPVerify:
         response = None
         for _ in range(10):
             response = api_client.post(
-                OTP_VERIFY_URL, {"email": email, "code": "000000"}
+                OTP_VERIFY_URL,
+                {"email": email, "code": "000000", "accept_terms": True},
             )
             assert response.status_code == status.HTTP_400_BAD_REQUEST
         # 11th request within the window is throttled, independent of the
         # (still wrong) code supplied.
-        response = api_client.post(OTP_VERIFY_URL, {"email": email, "code": "000000"})
+        response = api_client.post(
+            OTP_VERIFY_URL,
+            {"email": email, "code": "000000", "accept_terms": True},
+        )
         assert response.status_code == status.HTTP_429_TOO_MANY_REQUESTS
 
     def test_correct_code_still_succeeds_within_the_rate_limit_window(
@@ -269,13 +316,90 @@ class TestOTPVerify:
 
         for _ in range(5):
             response = api_client.post(
-                OTP_VERIFY_URL, {"email": email, "code": "000000"}
+                OTP_VERIFY_URL,
+                {"email": email, "code": "000000", "accept_terms": True},
             )
             assert response.status_code == status.HTTP_400_BAD_REQUEST
 
-        response = api_client.post(OTP_VERIFY_URL, {"email": email, "code": FIXED_CODE})
+        response = api_client.post(
+            OTP_VERIFY_URL,
+            {"email": email, "code": FIXED_CODE, "accept_terms": True},
+        )
         assert response.status_code == status.HTTP_200_OK
         assert "access" in response.data
+
+
+# ── OTP verify: Terms of Service required for a brand-new signup ───────────
+
+
+@pytest.mark.django_db
+class TestOTPVerifyRequiresTermsForNewSignups:
+    """
+    Gap #1 fix: otp/request/ never creates an account for a new email (see
+    TestOTPRequest above) - the account is only created here, in
+    otp/verify/, and only once accept_terms=true has been supplied for it.
+    """
+
+    def test_missing_accept_terms_returns_terms_required_and_creates_nothing(
+        self, api_client
+    ):
+        email = "newsignup@abem.test"
+        _request_otp(api_client, email)
+        otp_before = EmailOTP.objects.get(email=email)
+
+        response = api_client.post(OTP_VERIFY_URL, {"email": email, "code": FIXED_CODE})
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert response.data["code"] == "terms_required"
+        assert not User.objects.filter(email=email).exists()
+        # the code itself was not consumed/burned by the rejected attempt
+        otp_after = EmailOTP.objects.get(email=email)
+        assert otp_after.attempts == otp_before.attempts
+
+    def test_false_accept_terms_is_also_rejected(self, api_client):
+        email = "newsignupfalse@abem.test"
+        _request_otp(api_client, email)
+
+        response = api_client.post(
+            OTP_VERIFY_URL,
+            {"email": email, "code": FIXED_CODE, "accept_terms": False},
+        )
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert response.data["code"] == "terms_required"
+        assert not User.objects.filter(email=email).exists()
+
+    def test_accept_terms_true_with_correct_code_creates_the_account(self, api_client):
+        email = "newsignupaccepted@abem.test"
+        _request_otp(api_client, email)
+
+        response = api_client.post(
+            OTP_VERIFY_URL,
+            {"email": email, "code": FIXED_CODE, "accept_terms": True},
+        )
+        assert response.status_code == status.HTTP_200_OK
+        assert "access" in response.data
+
+        user = User.objects.get(email=email)
+        assert user.terms_accepted_at is not None
+        assert user.role == "owner"
+        assert not EmailOTP.objects.filter(email=email).exists()
+
+    def test_resubmitting_with_accept_terms_after_a_rejection_still_works(
+        self, api_client
+    ):
+        """The documented re-submit flow: the frontend retries the same
+        {email, code, accept_terms: true} after a terms_required 400."""
+        email = "resubmit@abem.test"
+        _request_otp(api_client, email)
+
+        rejected = api_client.post(OTP_VERIFY_URL, {"email": email, "code": FIXED_CODE})
+        assert rejected.data["code"] == "terms_required"
+
+        accepted = api_client.post(
+            OTP_VERIFY_URL,
+            {"email": email, "code": FIXED_CODE, "accept_terms": True},
+        )
+        assert accepted.status_code == status.HTTP_200_OK
+        assert User.objects.filter(email=email).exists()
 
 
 # ── Google Sign-In ──────────────────────────────────────────────────────────
@@ -294,10 +418,49 @@ class TestGoogleSignIn:
                 "given_name": "Google",
                 "family_name": "User",
             }
-            response = api_client.post(GOOGLE_URL, {"id_token": "fake"})
+            response = api_client.post(
+                GOOGLE_URL, {"id_token": "fake", "accept_terms": True}
+            )
         assert response.status_code == status.HTTP_200_OK
-        assert User.objects.filter(email="googleuser@abem.test").exists()
+        user = User.objects.get(email="googleuser@abem.test")
+        assert user.terms_accepted_at is not None
         assert REFRESH_COOKIE_NAME in api_client.cookies
+
+    def test_new_user_without_accept_terms_returns_terms_required(
+        self, api_client, settings
+    ):
+        """Gap #1 fix: Google Sign-In for a brand-new email has the same
+        ToS-less-account-creation gap as otp/verify/ - same fix."""
+        settings.GOOGLE_CLIENT_ID = "test-client-id"
+        with patch(
+            "apps.authentication.views.google_id_token.verify_oauth2_token"
+        ) as verify:
+            verify.return_value = {
+                "email": "googlenosignup@abem.test",
+                "email_verified": True,
+            }
+            response = api_client.post(GOOGLE_URL, {"id_token": "fake"})
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert response.data["code"] == "terms_required"
+        assert not User.objects.filter(email="googlenosignup@abem.test").exists()
+
+    def test_new_user_with_accept_terms_false_returns_terms_required(
+        self, api_client, settings
+    ):
+        settings.GOOGLE_CLIENT_ID = "test-client-id"
+        with patch(
+            "apps.authentication.views.google_id_token.verify_oauth2_token"
+        ) as verify:
+            verify.return_value = {
+                "email": "googlefalse@abem.test",
+                "email_verified": True,
+            }
+            response = api_client.post(
+                GOOGLE_URL, {"id_token": "fake", "accept_terms": False}
+            )
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert response.data["code"] == "terms_required"
+        assert not User.objects.filter(email="googlefalse@abem.test").exists()
 
     def test_auto_links_an_existing_account_by_email(
         self, api_client, settings, owner_user
@@ -882,7 +1045,7 @@ class TestSessionCreationOnLogin:
             }
             response = api_client.post(
                 GOOGLE_URL,
-                {"id_token": "fake"},
+                {"id_token": "fake", "accept_terms": True},
                 HTTP_USER_AGENT=(
                     "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) "
                     "AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 "
