@@ -157,5 +157,12 @@
   "footer_support": "Support",
   "platform": "Platform",
   "help": "Help & support",
-  "plan": "Plan"
+  "plan": "Plan",
+  "tutorial_videos_title": "See how it works",
+  "tutorial_videos_desc": "Two short videos: sign in with a one-time email code, then a quick tour of what you can do.",
+  "tutorial_tab_admin": "I manage a building",
+  "tutorial_tab_owner": "I own a unit",
+  "tutorial_admin_desc": "Create your account, register your building, invite owners, record expenses and payments.",
+  "tutorial_owner_desc": "Join with your invite, then follow your dues, payments, maintenance reports and monthly statement.",
+  "tutorial_lang_note": "The videos are in Arabic with Arabic captions. An English version is coming soon."
 }

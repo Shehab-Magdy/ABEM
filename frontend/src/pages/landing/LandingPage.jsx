@@ -11,6 +11,7 @@ import {
 } from "@mui/icons-material";
 import { PublicSEO } from "../../components/seo/SEO";
 import BrandLogo from "../../components/common/BrandLogo";
+import TutorialVideos from "./TutorialVideos";
 import { BRAND } from "../../brand";
 
 const structuredData = {
@@ -101,6 +102,8 @@ export default function LandingPage() {
           </Stack>
         </Container>
       </Box>
+
+      <TutorialVideos />
 
       {/* Features */}
       <Container maxWidth="lg" sx={{ py: { xs: 6, md: 10 } }}>
